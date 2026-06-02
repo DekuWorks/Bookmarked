@@ -1,5 +1,6 @@
 export type {
   ShelfStatus,
+  LibraryViewMode,
   ReviewVisibility,
   Profile,
   Book,

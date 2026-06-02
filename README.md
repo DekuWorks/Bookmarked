@@ -1,6 +1,6 @@
 # Bookmarked
 
-Bookmarked is a **web-first** reading platform where users can create accounts, search books, manage shelves, track progress, write reviews, and later use the same account on a mobile app.
+Bookmarked is a **web-first** reading platform where users can create accounts, search books, manage shelves, track progress, write reviews, and explore their collection through interactive bookshelves and **My Reading Room**.
 
 ## Structure
 

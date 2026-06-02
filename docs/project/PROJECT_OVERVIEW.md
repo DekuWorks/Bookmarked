@@ -2,7 +2,9 @@
 
 ## What Bookmarked Is
 
-Bookmarked is a web-first reading platform where readers can discover books, organize personal shelves, track reading progress, write reviews, and share their reading journey with others. It combines the warmth of a cozy bookstore with modern, social reading tools.
+Bookmarked is a **digital home library** where readers can search, collect, organize, track, review, and visualize their reading life through interactive bookshelves and personalized reading spaces.
+
+It combines the warmth of a cozy bookstore with modern reading tools — from virtual bookshelf views and shelf analytics to a signature **My Reading Room** experience.
 
 ## Who It Is For
 
@@ -27,6 +29,7 @@ The mobile app (React Native + Expo + TypeScript) is Phase 3. It will:
 
 - Use the same Supabase backend and shared types in `packages/types`
 - Support login, dashboard, library, reviews, and sync with web data
+- Mirror Reading Room, bookshelf, and grid views with the same data
 - Not block web MVP delivery
 
 ## Core MVP Features
@@ -34,16 +37,20 @@ The mobile app (React Native + Expo + TypeScript) is Phase 3. It will:
 | Feature | Description |
 |---------|-------------|
 | **Accounts** | Sign up, log in, log out via Supabase Auth |
-| **Profiles** | Username, display name, bio, avatar, favorite genres |
+| **Profiles** | Username, display name, bio, avatar, favorite genres, library view preference |
 | **Book search** | Search via Open Library API; cache results in Supabase |
-| **Shelves** | Want to read, currently reading, read |
+| **Shelves** | Want to read, currently reading, read — with dedicated shelf pages |
+| **Library views** | Bookshelf view, grid view, and My Reading Room |
+| **Shelf analytics** | Reading stats, streaks, pages read, and per-shelf insights |
 | **Reading progress** | Pages read, percent complete, start/finish dates |
 | **Reviews** | Ratings, review text, spoiler flags, visibility |
-| **Dashboard** | Overview of current reads, recent activity, quick actions |
+| **Dashboard** | Overview of current reads, quick actions to shelves and search |
 | **Responsive UI** | Mobile-first layout that scales to desktop |
 
 ## Future Features
 
+- Animated shelf transitions and drag-and-drop book movement
+- Horizontal shelf scrolling enhancements
 - Social feed and following other readers
 - Book clubs and group reads
 - Reading streaks and goals
@@ -55,4 +62,4 @@ The mobile app (React Native + Expo + TypeScript) is Phase 3. It will:
 
 ## Summary
 
-Bookmarked is a **web-first reading platform** where users can create accounts, search books, manage shelves, track reading progress, write reviews, and later use the **same account on a mobile app**. Build order: web app → backend completion → mobile app.
+Bookmarked is a **digital home library** where users can create accounts, search books, manage interactive shelves, track reading progress, write reviews, and visualize their collection in **My Reading Room** — with the same account on a mobile app later. Build order: web app → backend completion → mobile app.

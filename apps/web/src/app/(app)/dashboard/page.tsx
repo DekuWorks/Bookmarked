@@ -4,8 +4,12 @@ import { getProfile } from "@/lib/services/profile";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { Button } from "@/components/ui/Button";
 import { ShelfBadge } from "@/components/shelves/ShelfBadge";
+import { shelfStatusToSlug } from "@/lib/constants/shelves";
+import type { ShelfStatus } from "@/types";
 
 export const metadata = { title: "Dashboard" };
+
+const QUICK_SHELVES: ShelfStatus[] = ["want_to_read", "currently_reading", "read"];
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -38,10 +42,10 @@ export default async function DashboardPage() {
           title="Currently reading"
           action={
             <Link
-              href="/library"
+              href="/library/reading"
               className="text-sm font-medium text-primary hover:underline"
             >
-              View library
+              View shelf
             </Link>
           }
         >
@@ -83,9 +87,15 @@ export default async function DashboardPage() {
 
         <DashboardCard title="Quick actions">
           <div className="flex flex-wrap gap-2">
-            <ShelfBadge status="want_to_read" />
-            <ShelfBadge status="currently_reading" />
-            <ShelfBadge status="read" />
+            {QUICK_SHELVES.map((status) => (
+              <Link
+                key={status}
+                href={`/library/${shelfStatusToSlug(status)}`}
+                className="transition hover:opacity-80"
+              >
+                <ShelfBadge status={status} />
+              </Link>
+            ))}
           </div>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <Link href="/search" className="inline-flex">

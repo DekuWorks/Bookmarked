@@ -1,5 +1,7 @@
 export type ShelfStatus = "want_to_read" | "currently_reading" | "read";
 
+export type LibraryViewMode = "bookshelf" | "grid" | "reading_room";
+
 export type ReviewVisibility = "public" | "followers" | "private";
 
 export interface Profile {
@@ -9,6 +11,7 @@ export interface Profile {
   bio: string | null;
   avatar_url: string | null;
   favorite_genres: string[] | null;
+  preferred_library_view: LibraryViewMode;
   created_at: string;
   updated_at: string;
 }

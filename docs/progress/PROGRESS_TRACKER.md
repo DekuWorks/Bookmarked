@@ -25,11 +25,16 @@ Update checkboxes as work completes. Current focus: **Phase 1 (Web MVP)**.
 - [x] Dashboard
 - [x] Book search *(Open Library)*
 - [ ] Book details *(basic page; expand actions)*
-- [x] Shelves *(add from search + library view)*
+- [x] Shelves *(add from search + library view + per-shelf pages)*
 - [ ] Reading progress *(UI on cards; dedicated editor TBD)*
 - [ ] Reviews
 - [ ] Activity feed
 - [x] Responsive UI *(mobile-first Tailwind)*
+- [x] Bookshelf view *(upright spines, shelf sections)*
+- [x] Grid view toggle *(saved to profile)*
+- [x] My Reading Room *(signature library view)*
+- [x] Shelf analytics *(library + per-shelf stats)*
+- [x] Dashboard quick actions *(navigate to shelves/search/library)*
 
 ---
 
@@ -75,4 +80,4 @@ Update checkboxes as work completes. Current focus: **Phase 1 (Web MVP)**.
 
 ## Last Updated
 
-Supabase Bookmarked project live with migration applied. End-to-end smoke test passed: signup, login, profile, Open Library search, add to shelf, library view — verified in browser and Supabase.
+Supabase Bookmarked project live. Interactive bookshelf, Reading Room, shelf pages, analytics, and dashboard quick actions shipped.

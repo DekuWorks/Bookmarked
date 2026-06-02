@@ -1,16 +1,17 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { BookCard } from "@/components/books/BookCard";
+import { getProfile } from "@/lib/services/profile";
+import {
+  computeLibraryAnalytics,
+  getUserLibraryBooks,
+  groupBooksByShelf,
+} from "@/lib/services/library";
+import { LibraryAnalyticsPanel } from "@/components/library/LibraryAnalytics";
+import { LibraryViewShell } from "@/components/library/LibraryViewShell";
 import { Button } from "@/components/ui/Button";
-import type { ShelfStatus } from "@/types";
+import type { LibraryViewMode } from "@/types";
 
 export const metadata = { title: "Library" };
-
-const shelves: { status: ShelfStatus; title: string }[] = [
-  { status: "currently_reading", title: "Currently reading" },
-  { status: "want_to_read", title: "Want to read" },
-  { status: "read", title: "Read" },
-];
 
 export default async function LibraryPage() {
   const supabase = await createClient();
@@ -20,27 +21,23 @@ export default async function LibraryPage() {
 
   if (!user) return null;
 
-  const { data: userBooks } = await supabase
-    .from("user_books")
-    .select(
-      "id, shelf_status, progress_percent, books(id, title, author, cover_url)"
-    )
-    .eq("user_id", user.id)
-    .order("updated_at", { ascending: false });
+  const profile = await getProfile(user.id);
+  const books = await getUserLibraryBooks(user.id);
+  const shelves = groupBooksByShelf(books);
+  const analytics = computeLibraryAnalytics(books);
+  const isEmpty = books.length === 0;
 
-  const byShelf = shelves.map((shelf) => ({
-    ...shelf,
-    items: (userBooks ?? []).filter((ub) => ub.shelf_status === shelf.status),
-  }));
-
-  const isEmpty = !userBooks?.length;
+  const preferredView: LibraryViewMode =
+    profile?.preferred_library_view ?? "bookshelf";
 
   return (
     <div className="space-y-10">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-puce-red">Library</h1>
-          <p className="mt-1 text-text-muted">Your shelves in one place.</p>
+          <p className="mt-1 text-text-muted">
+            Your digital home library — browse shelves, track progress, and explore your collection.
+          </p>
         </div>
         <Link href="/search" className="inline-flex">
           <Button variant="secondary" type="button">
@@ -48,6 +45,8 @@ export default async function LibraryPage() {
           </Button>
         </Link>
       </header>
+
+      {!isEmpty ? <LibraryAnalyticsPanel analytics={analytics} /> : null}
 
       {isEmpty ? (
         <div className="rounded-xl border border-dashed border-border bg-surface p-12 text-center">
@@ -60,36 +59,14 @@ export default async function LibraryPage() {
           </Link>
         </div>
       ) : (
-        byShelf.map((shelf) => (
-          <section key={shelf.status}>
-            <h2 className="mb-4 text-xl font-semibold text-puce-red">{shelf.title}</h2>
-            {shelf.items.length === 0 ? (
-              <p className="text-sm text-text-muted">No books on this shelf yet.</p>
-            ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {shelf.items.map((ub) => {
-                  const book = ub.books as {
-                    id?: string;
-                    title?: string;
-                    author?: string | null;
-                    cover_url?: string | null;
-                  } | null;
-                  return (
-                    <BookCard
-                      key={ub.id}
-                      title={book?.title ?? "Untitled"}
-                      author={book?.author}
-                      coverUrl={book?.cover_url}
-                      shelfStatus={shelf.status}
-                      progressPercent={Number(ub.progress_percent) || 0}
-                      href={book?.id ? `/books/${book.id}` : undefined}
-                    />
-                  );
-                })}
-              </div>
-            )}
-          </section>
-        ))
+        <LibraryViewShell
+          displayName={profile?.display_name ?? null}
+          username={profile?.username ?? null}
+          initialView={preferredView}
+          shelves={shelves}
+          analytics={analytics}
+          allBooks={books}
+        />
       )}
     </div>
   );

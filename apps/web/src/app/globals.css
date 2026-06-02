@@ -33,3 +33,36 @@ body {
   color: var(--color-text);
   font-family: var(--font-sans), system-ui, sans-serif;
 }
+
+/* Bookshelf styling */
+.bookshelf-board {
+  background: linear-gradient(
+    180deg,
+    #c4a882 0%,
+    #a08060 40%,
+    #8b6f52 100%
+  );
+  box-shadow:
+    0 4px 8px rgba(100, 47, 55, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.bookshelf-back {
+  background: linear-gradient(
+    180deg,
+    rgba(184, 157, 187, 0.08) 0%,
+    rgba(100, 47, 55, 0.04) 100%
+  );
+}
+
+.book-spine-shadow {
+  box-shadow:
+    2px 0 4px rgba(0, 0, 0, 0.12),
+    -1px 0 2px rgba(255, 255, 255, 0.1) inset;
+}
+
+.reading-room-wall {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(247, 199, 103, 0.12) 0%, transparent 60%),
+    linear-gradient(180deg, #f5ede8 0%, var(--color-background) 100%);
+}
