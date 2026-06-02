@@ -13,7 +13,7 @@ Update checkboxes as work completes. Current focus: **Phase 1 (Web MVP)**.
 - [x] AI workflow rules
 - [x] Progress tracker
 - [x] Next.js setup
-- [ ] Supabase setup *(apply migration + `.env.local` on your project)*
+- [x] Supabase setup *(Bookmarked project linked; migration applied; env configured)*
 
 ---
 
@@ -42,7 +42,7 @@ Update checkboxes as work completes. Current focus: **Phase 1 (Web MVP)**.
 - [x] Activity events table
 - [x] Row level security
 - [x] Auth policies
-- [ ] Applied in production Supabase project
+- [x] Applied in production Supabase project
 
 ---
 
@@ -59,20 +59,20 @@ Update checkboxes as work completes. Current focus: **Phase 1 (Web MVP)**.
 
 ## PHASE 1 — FINAL CHECK (before mobile)
 
-- [ ] Website loads
-- [ ] User can sign up
-- [ ] User can log in
-- [ ] User can create profile
-- [ ] User can search books
-- [ ] User can add books to shelves
+- [x] Website loads
+- [x] User can sign up
+- [x] User can log in
+- [x] User can create profile
+- [x] User can search books
+- [x] User can add books to shelves
 - [ ] User can track progress
 - [ ] User can write reviews
-- [ ] Data saves in Supabase
-- [ ] Layout is responsive
-- [ ] GitHub repo is updated
+- [x] Data saves in Supabase
+- [x] Layout is responsive
+- [x] GitHub repo is updated
 
 ---
 
 ## Last Updated
 
-Web-first setup: docs, Next.js app, landing, auth, dashboard, Open Library search, shelf add, library view.
+Supabase Bookmarked project live with migration applied. End-to-end smoke test passed: signup, login, profile, Open Library search, add to shelf, library view — verified in browser and Supabase.
