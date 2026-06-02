@@ -2,9 +2,9 @@
 
 ## What Bookmarked Is
 
-Bookmarked is a **digital home library** where readers can search, collect, organize, track, review, and visualize their reading life through interactive bookshelves and personalized reading spaces.
+Bookmarked is a **digital home library** where readers can search, collect, organize, track, review, and visualize their reading life through interactive bookshelves.
 
-It combines the warmth of a cozy bookstore with modern reading tools — from virtual bookshelf views and shelf analytics to a signature **My Reading Room** experience.
+It combines the warmth of a cozy bookstore with modern reading tools — virtual bookshelf views, per-shelf analytics, and a grid layout for traditional browsing.
 
 ## Who It Is For
 
@@ -29,7 +29,7 @@ The mobile app (React Native + Expo + TypeScript) is Phase 3. It will:
 
 - Use the same Supabase backend and shared types in `packages/types`
 - Support login, dashboard, library, reviews, and sync with web data
-- Mirror Reading Room, bookshelf, and grid views with the same data
+- Mirror bookshelf and grid library views with the same data
 - Not block web MVP delivery
 
 ## Core MVP Features
@@ -40,8 +40,8 @@ The mobile app (React Native + Expo + TypeScript) is Phase 3. It will:
 | **Profiles** | Username, display name, bio, avatar, favorite genres, library view preference |
 | **Book search** | Search via Open Library API; cache results in Supabase |
 | **Shelves** | Want to read, currently reading, read — with dedicated shelf pages |
-| **Library views** | Bookshelf view, grid view, and My Reading Room |
-| **Shelf analytics** | Reading stats, streaks, pages read, and per-shelf insights |
+| **Library views** | Bookshelf view and grid view (preference saved to profile) |
+| **Shelf analytics** | Per-shelf stats on dedicated shelf pages |
 | **Reading progress** | Pages read, percent complete, start/finish dates |
 | **Reviews** | Ratings, review text, spoiler flags, visibility |
 | **Dashboard** | Overview of current reads, quick actions to shelves and search |

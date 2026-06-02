@@ -1,5 +1,4 @@
-import { BookCard } from "@/components/books/BookCard";
-import { AddToShelfButton } from "@/components/search/AddToShelfButton";
+import { SearchResultCard } from "@/components/search/SearchResultCard";
 import {
   openLibraryCoverUrl,
   openLibraryWorkId,
@@ -36,12 +35,12 @@ export async function SearchResults({ query }: Props) {
           const coverUrl = openLibraryCoverUrl(doc.cover_i);
 
           return (
-            <li key={external_id || title} className="flex flex-col">
-              <BookCard title={title} author={author} coverUrl={coverUrl} />
-              <AddToShelfButton
+            <li key={external_id || title}>
+              <SearchResultCard
                 title={title}
                 author={author}
                 external_id={external_id}
+                coverUrl={coverUrl}
                 cover_i={String(doc.cover_i ?? "")}
                 page_count={String(doc.number_of_pages_median ?? "")}
               />
