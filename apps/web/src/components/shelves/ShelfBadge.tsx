@@ -1,0 +1,40 @@
+import type { ShelfStatus } from "@/types";
+import { cn } from "@/lib/utils/cn";
+
+const config: Record<
+  ShelfStatus,
+  { label: string; className: string }
+> = {
+  want_to_read: {
+    label: "Want to Read",
+    className: "bg-orange-yellow/30 text-puce-red",
+  },
+  currently_reading: {
+    label: "Reading",
+    className: "bg-royal-orange/25 text-puce-red",
+  },
+  read: {
+    label: "Read",
+    className: "bg-primary/30 text-puce-red",
+  },
+};
+
+type Props = {
+  status: ShelfStatus;
+  className?: string;
+};
+
+export function ShelfBadge({ status, className }: Props) {
+  const { label, className: badgeClass } = config[status];
+  return (
+    <span
+      className={cn(
+        "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium",
+        badgeClass,
+        className
+      )}
+    >
+      {label}
+    </span>
+  );
+}
