@@ -29,17 +29,6 @@ export type ShelfGroup = {
   items: LibraryBookRow[];
 };
 
-export type LibraryAnalytics = {
-  wantToReadCount: number;
-  readingCount: number;
-  readCount: number;
-  readingAvgPercent: number;
-  booksFinishedThisMonth: number;
-  pagesRead: number;
-  averageRating: number | null;
-  readingStreak: number;
-};
-
 const LIBRARY_SELECT =
   "id, shelf_status, progress_percent, progress_pages, rating, is_favorite, finished_at, started_at, updated_at, books(id, title, author, cover_url, page_count)";
 
@@ -63,58 +52,6 @@ export function groupBooksByShelf(books: LibraryBookRow[]): ShelfGroup[] {
     emoji: shelf.emoji,
     items: books.filter((b) => b.shelf_status === shelf.status),
   }));
-}
-
-export function computeLibraryAnalytics(books: LibraryBookRow[]): LibraryAnalytics {
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
-  const wantToRead = books.filter((b) => b.shelf_status === "want_to_read");
-  const reading = books.filter((b) => b.shelf_status === "currently_reading");
-  const read = books.filter((b) => b.shelf_status === "read");
-
-  const readingAvgPercent =
-    reading.length > 0
-      ? reading.reduce((sum, b) => sum + (Number(b.progress_percent) || 0), 0) / reading.length
-      : 0;
-
-  const booksFinishedThisMonth = read.filter((b) => {
-    if (!b.finished_at) return false;
-    return new Date(b.finished_at) >= monthStart;
-  }).length;
-
-  const pagesRead = books.reduce((sum, b) => sum + (Number(b.progress_pages) || 0), 0);
-
-  const rated = books.filter((b) => b.rating != null);
-  const averageRating =
-    rated.length > 0
-      ? rated.reduce((sum, b) => sum + Number(b.rating), 0) / rated.length
-      : null;
-
-  const finishDates = new Set(
-    read
-      .filter((b) => b.finished_at)
-      .map((b) => new Date(b.finished_at!).toDateString())
-  );
-
-  let readingStreak = 0;
-  const cursor = new Date(now);
-  cursor.setHours(0, 0, 0, 0);
-  while (finishDates.has(cursor.toDateString())) {
-    readingStreak++;
-    cursor.setDate(cursor.getDate() - 1);
-  }
-
-  return {
-    wantToReadCount: wantToRead.length,
-    readingCount: reading.length,
-    readCount: read.length,
-    readingAvgPercent,
-    booksFinishedThisMonth,
-    pagesRead,
-    averageRating,
-    readingStreak,
-  };
 }
 
 export type ShelfStats = {

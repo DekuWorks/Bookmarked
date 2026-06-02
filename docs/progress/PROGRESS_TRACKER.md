@@ -32,8 +32,7 @@ Update checkboxes as work completes. Current focus: **Phase 1 (Web MVP)**.
 - [x] Responsive UI *(mobile-first Tailwind)*
 - [x] Bookshelf view *(upright spines, shelf sections)*
 - [x] Grid view toggle *(saved to profile)*
-- [x] My Reading Room *(signature library view)*
-- [x] Shelf analytics *(library + per-shelf stats)*
+- [x] Shelf analytics *(per-shelf stats on shelf pages)*
 - [x] Dashboard quick actions *(navigate to shelves/search/library)*
 
 ---

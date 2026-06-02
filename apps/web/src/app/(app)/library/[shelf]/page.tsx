@@ -42,8 +42,9 @@ export default async function ShelfPage({ params }: Props) {
   const shelfGroup = allShelves.find((s) => s.status === config.status)!;
   const stats = computeShelfStats(books, config.status);
 
+  const rawView = profile?.preferred_library_view ?? "bookshelf";
   const preferredView: LibraryViewMode =
-    profile?.preferred_library_view ?? "bookshelf";
+    rawView === "reading_room" ? "bookshelf" : rawView;
 
   return (
     <div className="space-y-10">

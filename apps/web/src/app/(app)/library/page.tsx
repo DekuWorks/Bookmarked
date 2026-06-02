@@ -1,12 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/services/profile";
-import {
-  computeLibraryAnalytics,
-  getUserLibraryBooks,
-  groupBooksByShelf,
-} from "@/lib/services/library";
-import { LibraryAnalyticsPanel } from "@/components/library/LibraryAnalytics";
+import { getUserLibraryBooks, groupBooksByShelf } from "@/lib/services/library";
 import { LibraryViewShell } from "@/components/library/LibraryViewShell";
 import { Button } from "@/components/ui/Button";
 import type { LibraryViewMode } from "@/types";
@@ -24,11 +19,11 @@ export default async function LibraryPage() {
   const profile = await getProfile(user.id);
   const books = await getUserLibraryBooks(user.id);
   const shelves = groupBooksByShelf(books);
-  const analytics = computeLibraryAnalytics(books);
   const isEmpty = books.length === 0;
 
+  const rawView = profile?.preferred_library_view ?? "bookshelf";
   const preferredView: LibraryViewMode =
-    profile?.preferred_library_view ?? "bookshelf";
+    rawView === "reading_room" ? "bookshelf" : rawView;
 
   return (
     <div className="space-y-10">
@@ -46,8 +41,6 @@ export default async function LibraryPage() {
         </Link>
       </header>
 
-      {!isEmpty ? <LibraryAnalyticsPanel analytics={analytics} /> : null}
-
       {isEmpty ? (
         <div className="rounded-xl border border-dashed border-border bg-surface p-12 text-center">
           <p className="text-lg font-medium text-text">Your library is empty</p>
@@ -59,14 +52,7 @@ export default async function LibraryPage() {
           </Link>
         </div>
       ) : (
-        <LibraryViewShell
-          displayName={profile?.display_name ?? null}
-          username={profile?.username ?? null}
-          initialView={preferredView}
-          shelves={shelves}
-          analytics={analytics}
-          allBooks={books}
-        />
+        <LibraryViewShell initialView={preferredView} shelves={shelves} />
       )}
     </div>
   );
