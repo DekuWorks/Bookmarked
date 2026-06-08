@@ -71,6 +71,7 @@ export async function fetchOpenLibraryWorkDetails(
   const path = normalizeWorkPath(externalId);
   const res = await fetch(`https://openlibrary.org${path}.json`, {
     next: { revalidate: 86400 },
+    signal: AbortSignal.timeout(8000),
   });
 
   if (!res.ok) return null;
