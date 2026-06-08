@@ -7,6 +7,7 @@ import {
   computeReadingGoal,
   type ReadingGoalStatus,
 } from "@/lib/services/readingGoal";
+import { fetchReadingStreakTimestamps } from "@/lib/services/readingInsights";
 import {
   getUserLibraryBooks,
   groupBooksByShelf,
@@ -25,10 +26,14 @@ export type ReadingRoomData = {
 
 export async function getReadingRoomData(
   userId: string,
-  yearlyReadingGoal: number | null = null
+  yearlyReadingGoal: number | null = null,
+  profileGenres?: string[] | null
 ): Promise<ReadingRoomData> {
   const supabase = await createClient();
-  const books = await getUserLibraryBooks(userId);
+  const [books, streakTimestamps] = await Promise.all([
+    getUserLibraryBooks(userId),
+    fetchReadingStreakTimestamps(userId),
+  ]);
 
   const { count: reviewCount } = await supabase
     .from("reviews")
@@ -52,7 +57,12 @@ export async function getReadingRoomData(
     currentlyReading,
     recentlyFinished,
     favorites,
-    analytics: computeReadingAnalytics(books, reviewCount ?? 0),
+    analytics: computeReadingAnalytics({
+      books,
+      reviewsWritten: reviewCount ?? 0,
+      streakTimestamps,
+      profileGenres,
+    }),
     readingGoal: computeReadingGoal(books, yearlyReadingGoal),
     shelves: groupBooksByShelf(books),
   };

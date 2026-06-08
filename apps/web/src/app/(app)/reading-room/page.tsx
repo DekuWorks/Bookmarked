@@ -24,7 +24,8 @@ export default async function ReadingRoomPage() {
   const profile = await getProfile(user.id);
   const data = await getReadingRoomData(
     user.id,
-    profile?.yearly_reading_goal ?? null
+    profile?.yearly_reading_goal ?? null,
+    profile?.favorite_genres
   );
   const displayName = profile?.display_name || profile?.username || "Reader";
 

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/services/profile";
 import { getUserLibraryBooks } from "@/lib/services/library";
 import { computeReadingAnalytics } from "@/lib/services/analytics";
+import { fetchReadingStreakTimestamps } from "@/lib/services/readingInsights";
 import { computeReadingGoal } from "@/lib/services/readingGoal";
 import { ReadingGoalPanel } from "@/components/reading-goal/ReadingGoalPanel";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
@@ -27,7 +28,10 @@ export default async function DashboardPage() {
   if (!user) return null;
 
   const profile = await getProfile(user.id);
-  const books = await getUserLibraryBooks(user.id);
+  const [books, streakTimestamps] = await Promise.all([
+    getUserLibraryBooks(user.id),
+    fetchReadingStreakTimestamps(user.id),
+  ]);
   const currentlyReading = books.filter((b) => b.shelf_status === "currently_reading");
 
   const { count: reviewCount } = await supabase
@@ -35,7 +39,12 @@ export default async function DashboardPage() {
     .select("id", { count: "exact", head: true })
     .eq("user_id", user.id);
 
-  const analytics = computeReadingAnalytics(books, reviewCount ?? 0);
+  const analytics = computeReadingAnalytics({
+    books,
+    reviewsWritten: reviewCount ?? 0,
+    streakTimestamps,
+    profileGenres: profile?.favorite_genres,
+  });
   const readingGoal = computeReadingGoal(
     books,
     profile?.yearly_reading_goal ?? null

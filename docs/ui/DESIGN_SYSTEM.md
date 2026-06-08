@@ -285,9 +285,11 @@ Props: `variant`, `size` (`sm` | `md` | `lg`), `loading`, `disabled`, `children`
 
 **Stats:** Books read, Currently reading, Want to read, Pages read, Reviews written, Avg. rating given
 
-**Optional placeholders:** Reading streak, Favorite genre (`showFuturePlaceholders`)
+**Insights:** Favorite genre (from read-book subjects, profile fallback), reading streak (from activity events), best streak sublabel
 
 **Reading goal stat:** Pass `readingGoal` prop — shows `completed/target` for current year when set
+
+**Optional placeholder:** Reading goal when unset (`showFuturePlaceholders`)
 
 ### ReadingGoalPanel
 

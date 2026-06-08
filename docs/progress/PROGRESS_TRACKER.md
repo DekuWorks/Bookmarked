@@ -50,7 +50,8 @@
 ### Post–Phase 1.5 enhancements
 
 - [x] Reading goal (yearly target, progress on dashboard / reading room / profile)
-- [ ] Reading streak / favorite genre analytics
+- [x] Favorite genre analytics (read-book subjects + profile fallback)
+- [x] Reading streak tracking (activity events, current + best streak)
 - [ ] Badges & achievements
 
 ---

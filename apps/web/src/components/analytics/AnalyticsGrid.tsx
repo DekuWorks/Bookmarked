@@ -5,7 +5,9 @@ import type { ReadingGoalStatus } from "@/lib/services/readingGoal";
 type Stat = {
   label: string;
   value: string | number;
+  sublabel?: string;
   comingSoon?: boolean;
+  valueClassName?: string;
 };
 
 type Props = {
@@ -15,6 +17,31 @@ type Props = {
   className?: string;
   compact?: boolean;
 };
+
+function formatStreak(days: number): string {
+  if (days === 0) return "0 days";
+  return days === 1 ? "1 day" : `${days} days`;
+}
+
+function formatFavoriteGenre(analytics: ReadingAnalytics): Stat {
+  const { genre, bookCount, source } = analytics.favoriteGenre;
+  if (!genre) {
+    return { label: "Favorite genre", value: "—" };
+  }
+  const sublabel =
+    source === "library" && bookCount > 0
+      ? `${bookCount} read book${bookCount === 1 ? "" : "s"}`
+      : source === "profile"
+        ? "From your profile"
+        : undefined;
+
+  return {
+    label: "Favorite genre",
+    value: genre,
+    sublabel,
+    valueClassName: "text-lg leading-snug line-clamp-2",
+  };
+}
 
 export function AnalyticsGrid({
   analytics,
@@ -36,6 +63,15 @@ export function AnalyticsGrid({
           ? analytics.averageRatingGiven.toFixed(1)
           : "—",
     },
+    formatFavoriteGenre(analytics),
+    {
+      label: "Reading streak",
+      value: formatStreak(analytics.readingStreak.current),
+      sublabel:
+        analytics.readingStreak.longest > 0
+          ? `Best: ${formatStreak(analytics.readingStreak.longest)}`
+          : undefined,
+    },
   ];
 
   const goalStat: Stat[] =
@@ -48,15 +84,10 @@ export function AnalyticsGrid({
         ]
       : [];
 
-  const future: Stat[] = showFuturePlaceholders
-    ? [
-        { label: "Reading streak", value: "—", comingSoon: true },
-        { label: "Favorite genre", value: "—", comingSoon: true },
-        ...(readingGoal?.target == null
-          ? [{ label: "Reading goal", value: "—", comingSoon: true }]
-          : []),
-      ]
-    : [];
+  const future: Stat[] =
+    showFuturePlaceholders && readingGoal?.target == null
+      ? [{ label: "Reading goal", value: "—", comingSoon: true }]
+      : [];
 
   const all = [...stats, ...goalStat, ...future];
 
@@ -82,7 +113,17 @@ export function AnalyticsGrid({
               <span className="ml-1 normal-case text-primary">(soon)</span>
             ) : null}
           </dt>
-          <dd className="mt-1 text-2xl font-bold text-puce-red">{s.value}</dd>
+          <dd
+            className={cn(
+              "mt-1 font-bold text-puce-red",
+              s.valueClassName ?? "text-2xl"
+            )}
+          >
+            {s.value}
+          </dd>
+          {s.sublabel ? (
+            <p className="mt-0.5 text-xs text-text-muted">{s.sublabel}</p>
+          ) : null}
         </div>
       ))}
     </dl>

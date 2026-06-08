@@ -1,4 +1,10 @@
 import type { LibraryBookRow } from "@/lib/services/library";
+import {
+  computeFavoriteGenre,
+  computeReadingStreak,
+  type FavoriteGenreInsight,
+  type ReadingStreakInsight,
+} from "@/lib/services/readingInsights";
 
 export type ReadingAnalytics = {
   booksRead: number;
@@ -8,12 +14,23 @@ export type ReadingAnalytics = {
   reviewsWritten: number;
   averageRatingGiven: number | null;
   favoritesCount: number;
+  favoriteGenre: FavoriteGenreInsight;
+  readingStreak: ReadingStreakInsight;
 };
 
-export function computeReadingAnalytics(
-  books: LibraryBookRow[],
-  reviewsWritten: number
-): ReadingAnalytics {
+type AnalyticsInput = {
+  books: LibraryBookRow[];
+  reviewsWritten: number;
+  streakTimestamps?: string[];
+  profileGenres?: string[] | null;
+};
+
+export function computeReadingAnalytics({
+  books,
+  reviewsWritten,
+  streakTimestamps = [],
+  profileGenres,
+}: AnalyticsInput): ReadingAnalytics {
   const wantToRead = books.filter((b) => b.shelf_status === "want_to_read").length;
   const currentlyReading = books.filter(
     (b) => b.shelf_status === "currently_reading"
@@ -36,5 +53,7 @@ export function computeReadingAnalytics(
     reviewsWritten,
     averageRatingGiven,
     favoritesCount,
+    favoriteGenre: computeFavoriteGenre(books, profileGenres),
+    readingStreak: computeReadingStreak(streakTimestamps),
   };
 }
