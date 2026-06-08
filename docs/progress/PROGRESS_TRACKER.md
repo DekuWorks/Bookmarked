@@ -8,34 +8,48 @@
 
 ---
 
-## PHASE 1 — WEB APP MVP
+## PHASE 1 — CORE WEB APP MVP
 
-- [x] Book details page (`/book/[id]` — cover, metadata, shelf, progress, reviews)
-- [x] Reading progress editor (pages, percent, progress bar, started/finished dates, mark finished)
-- [x] Reviews system (create, edit, delete, spoiler toggle, one per user per book)
-- [x] Activity feed events (book_added, shelf_updated, progress_updated, book_finished, review_created)
-- [x] Hydration fixes (NavbarPublicAuth, ButtonLink, suppressHydrationWarning on dates)
-- [x] Empty / loading / error states (search, library, shelves, reviews, covers, actions)
-- [x] Responsive QA (desktop, tablet, mobile)
-- [x] Phase 1 smoke test criteria met
+- [x] **Task 1** — Hydration fixes (NavbarPublicAuth, ButtonLink, date suppressHydrationWarning)
+- [x] **Task 2** — Book details page (`/book/[id]` — metadata, shelf, progress, reviews)
+- [x] **Task 3** — Shelf selector modal (choose shelf before save, move/update, toast feedback)
+- [x] **Task 4** — Reading progress (pages, %, dates, mark finished, full-page suggestion)
+- [x] **Task 5** — Reviews (rating, body, spoiler, edit/delete, one per user per book)
+- [x] **Task 6** — Activity feed (5 event types, dashboard display)
+- [x] **Task 7** — Empty / loading / error states across major flows
+- [x] **Task 8** — Responsive QA (desktop, tablet, mobile)
+- [x] **Task 9** — Database audit (tables, FKs, indexes, RLS — see ARCHITECTURE_CONTEXT)
+- [x] **Task 10** — Documentation updated
+- [x] **Task 11** — Phase 1 smoke test criteria met (18-step journey)
+
+### Phase 1 user capabilities
+
+| Capability | Route / component |
+|------------|-------------------|
+| Auth | `/login`, `/signup`, `proxy.ts` |
+| Profile | `/profile`, `/profile/setup` |
+| Search | `/search` + Open Library |
+| Book details | `/book/[id]` |
+| Shelves | `ShelfSelectMenu`, `BookShelfActions` |
+| Progress | `ReadingProgressPanel` |
+| Reviews | `BookReviewSection` |
+| Activity | `ActivityFeed` on `/dashboard` |
 
 ---
 
 ## PHASE 1.5 — DIFFERENTIATION
 
-- [x] Interactive Bookshelf (bookshelf / grid toggle, `preferred_library_view` persisted)
-- [x] Shelf detail pages (`/library/want-to-read`, `/reading`, `/read`)
-- [x] Shelf search + sort (title, author, recently added)
-- [x] Reading Analytics (dashboard, library, reading room, profile)
-- [x] Reading Room (`/reading-room` — flagship feature)
-- [x] Profile expansion (genres, stats, favorites, recently finished)
-- [x] Dashboard expansion (widgets, quick actions)
-- [x] Visual polish (cover fallbacks, fade-in, empty states, loading states)
-- [x] Design system + progress tracker updated
+- [x] Interactive Bookshelf (bookshelf / grid toggle)
+- [x] Shelf detail pages + search + sort
+- [x] Reading Analytics
+- [x] Reading Room (`/reading-room`)
+- [x] Profile expansion
+- [x] Dashboard expansion
+- [x] Visual polish
 
-### Deferred (post–Phase 1.5)
+### Deferred
 
-- [ ] Reading goal (full feature — placeholder UI exists)
+- [ ] Reading goal (full feature)
 - [ ] Reading streak / favorite genre analytics
 - [ ] Badges & achievements
 
@@ -55,4 +69,4 @@
 
 ## Last Updated
 
-Phase 1.5 complete. Ready for Phase 2 planning when approved.
+Phase 1 complete. Phase 1.5 complete.

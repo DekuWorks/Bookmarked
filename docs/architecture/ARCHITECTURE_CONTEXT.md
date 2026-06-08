@@ -48,6 +48,20 @@ Tables: `profiles`, `books`, `user_books`, `reviews`, `activity_events`
 
 Row Level Security (RLS) and policies are defined in migrations.
 
+### Database audit (Phase 1)
+
+| Table | Foreign keys | Unique / duplicate prevention | Indexes | RLS |
+|-------|--------------|-------------------------------|---------|-----|
+| `profiles` | `id` → `auth.users` | `username` unique | `profiles_username_lower` | Public read; owner insert/update |
+| `books` | — | `(external_source, external_id)` | — | Authenticated read/insert |
+| `user_books` | `user_id`, `book_id` | `(user_id, book_id)` | `user_id`, `book_id` | Owner CRUD only |
+| `reviews` | `user_id`, `book_id` | `(user_id, book_id)` via migration 003 | `book_id`, `user_id` | Owner write; authenticated read |
+| `activity_events` | `user_id` | — | `user_id`, `created_at desc` | Owner read/insert only |
+
+**Auth:** Supabase email/password; `proxy.ts` protects app routes and redirects unauthenticated users to `/login`.
+
+**Migrations:** `001` (schema + RLS), `002` (`preferred_library_view`), `003` (book metadata + review uniqueness).
+
 ### Key routes (web)
 
 | Route | Handler |

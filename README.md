@@ -54,6 +54,18 @@ Apply migrations in order via Supabase SQL Editor or `supabase db push`:
 | `002_preferred_library_view.sql` | `profiles.preferred_library_view` (bookshelf / grid) |
 | `003_book_metadata_and_reviews_unique.sql` | Book publisher/subjects; one review per user per book |
 
+## Phase 1 smoke test
+
+Manual checklist (requires Supabase env configured):
+
+1. Open site → sign up → log in → complete profile
+2. Search a book → open `/book/[id]`
+3. Add to Want to Read → move to Currently Reading
+4. Update progress → mark as finished
+5. Write a review with spoiler toggle
+6. Confirm activity feed and library update
+7. Log out → log back in → confirm data persists
+
 ## Documentation
 
 - [Project overview](docs/project/PROJECT_OVERVIEW.md)

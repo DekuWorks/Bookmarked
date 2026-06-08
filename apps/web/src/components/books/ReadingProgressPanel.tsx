@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { useToast } from "@/components/ui/Toast";
+import { cn } from "@/lib/utils/cn";
 import {
   markBookFinished,
   updateReadingProgress,
@@ -107,6 +108,10 @@ export function ReadingProgressPanel({
   const startedLabel = formatDate(startedAt);
   const finishedLabel = formatDate(finishedAt);
 
+  const cur = Number(page) || 0;
+  const tot = Number(total) || totalPages || 0;
+  const atFullProgress = tot > 0 && cur >= tot && !finishedLabel;
+
   return (
     <section className="rounded-xl border border-border bg-surface p-5">
       <h2 className="text-lg font-semibold text-puce-red">Reading progress</h2>
@@ -176,6 +181,12 @@ export function ReadingProgressPanel({
           value={displayPercent}
           label={`${Math.round(displayPercent)}% complete`}
         />
+        {atFullProgress ? (
+          <p className="rounded-lg bg-orange-yellow/20 px-3 py-2 text-sm text-puce-red">
+            You&apos;ve reached the last page — mark this book as finished to move it to
+            Read.
+          </p>
+        ) : null}
         <Button type="submit" variant="secondary" loading={saving}>
           Save progress
         </Button>
@@ -183,13 +194,20 @@ export function ReadingProgressPanel({
 
       <form
         action={submitFinish}
-        className="mt-4 border-t border-border pt-4"
+        className={cn(
+          "mt-4 border-t border-border pt-4",
+          atFullProgress && "rounded-lg bg-primary/10 px-3 pb-3"
+        )}
         onSubmit={(e) => {
           if (!validateBeforeSubmit()) e.preventDefault();
         }}
       >
         <input type="hidden" name="book_id" value={bookId} />
-        <Button type="submit" variant="outline" loading={finishing}>
+        <Button
+          type="submit"
+          variant={atFullProgress ? "secondary" : "outline"}
+          loading={finishing}
+        >
           Mark as finished
         </Button>
       </form>
