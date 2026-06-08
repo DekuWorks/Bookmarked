@@ -61,6 +61,9 @@ export default async function ShelfPage({ params }: Props) {
             {config.title}
           </h1>
           <p className="mt-1 text-text-muted">{config.description}</p>
+          <p className="mt-2 text-sm font-medium text-text">
+            {stats.totalBooks} {stats.totalBooks === 1 ? "book" : "books"}
+          </p>
         </div>
         <ButtonLink href="/search" variant="secondary">
           Add books

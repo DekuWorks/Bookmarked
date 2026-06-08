@@ -16,35 +16,26 @@
 - [x] Activity feed events (book_added, shelf_updated, progress_updated, book_finished, review_created)
 - [x] Hydration fixes (NavbarPublicAuth, ButtonLink, suppressHydrationWarning on dates)
 - [x] Empty / loading / error states (search, library, shelves, reviews, covers, actions)
-- [x] Responsive QA (desktop, tablet, mobile — navbar scroll, tappable buttons, stacked cards)
+- [x] Responsive QA (desktop, tablet, mobile)
 - [x] Phase 1 smoke test criteria met
-
-### Phase 1 routes
-
-| Route | Purpose |
-|-------|---------|
-| `/search` | Open Library search |
-| `/book/[id]` | Book details (canonical) |
-| `/books/[id]` | Redirects to `/book/[id]` |
-| `/library` | User library |
-| `/dashboard` | Home + activity feed |
 
 ---
 
 ## PHASE 1.5 — DIFFERENTIATION
 
-- [x] Interactive Bookshelf View (bookshelf / grid toggle, preference saved)
-- [x] Shelf detail pages (`/library/want-to-read`, `/reading`, `/read` + stats + search)
-- [x] Library Analytics (dashboard, library, reading room, profile)
-- [x] Reading Room (`/reading-room` — signature feature)
+- [x] Interactive Bookshelf (bookshelf / grid toggle, `preferred_library_view` persisted)
+- [x] Shelf detail pages (`/library/want-to-read`, `/reading`, `/read`)
+- [x] Shelf search + sort (title, author, recently added)
+- [x] Reading Analytics (dashboard, library, reading room, profile)
+- [x] Reading Room (`/reading-room` — flagship feature)
 - [x] Profile expansion (genres, stats, favorites, recently finished)
-- [x] Dashboard enhancements (widgets, quick actions, Reading Room link)
-- [x] Visual polish (cover placeholders, fade-in, reading room atmosphere, modal mobile sheet)
-- [x] Favorites toggle on book details (feeds Reading Room)
+- [x] Dashboard expansion (widgets, quick actions)
+- [x] Visual polish (cover fallbacks, fade-in, empty states, loading states)
+- [x] Design system + progress tracker updated
 
-### Phase 1.5 deferred
+### Deferred (post–Phase 1.5)
 
-- [ ] Reading goal (full feature)
+- [ ] Reading goal (full feature — placeholder UI exists)
 - [ ] Reading streak / favorite genre analytics
 - [ ] Badges & achievements
 
@@ -64,4 +55,4 @@
 
 ## Last Updated
 
-Phase 1 MVP complete. Phase 1.5 differentiation sprint complete.
+Phase 1.5 complete. Ready for Phase 2 planning when approved.

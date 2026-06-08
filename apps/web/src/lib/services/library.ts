@@ -12,6 +12,7 @@ export type LibraryBookRow = {
   finished_at: string | null;
   started_at: string | null;
   updated_at: string;
+  created_at: string;
   books: {
     id: string;
     title: string;
@@ -30,7 +31,7 @@ export type ShelfGroup = {
 };
 
 const LIBRARY_SELECT =
-  "id, shelf_status, progress_percent, progress_pages, rating, is_favorite, finished_at, started_at, updated_at, books(id, title, author, cover_url, page_count)";
+  "id, shelf_status, progress_percent, progress_pages, rating, is_favorite, finished_at, started_at, created_at, updated_at, books(id, title, author, cover_url, page_count)";
 
 export async function getUserLibraryBooks(userId: string): Promise<LibraryBookRow[]> {
   const supabase = await createClient();

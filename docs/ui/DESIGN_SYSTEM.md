@@ -244,7 +244,20 @@ Props: `variant`, `size` (`sm` | `md` | `lg`), `loading`, `disabled`, `children`
 **Path:** `src/components/library/ShelfSearchFilter.tsx`
 
 - Client-side filter by title/author on shelf detail pages
-- Empty state when no matches
+- Sort: Recently added (default), Title, Author — via `lib/utils/shelfSort.ts`
+- Empty state when shelf is empty or search has no matches
+- Fade-in on mount (`.animate-fade-in`)
+
+---
+
+## Component States
+
+| State | Pattern | Examples |
+|-------|---------|----------|
+| **Loading** | `Button` `loading` prop; skeleton in `NavbarPublicAuth` | Progress save, review submit, add-to-shelf, logout |
+| **Empty** | Dashed border panel + short copy + optional CTA | `EmptyShelfMessage`, `ActivityFeed`, shelf search no-match |
+| **Error** | Toast via `ToastProvider`; route `error.tsx` | Book details load failure, action errors |
+| **Success** | Toast confirmation after server actions | Shelf move, progress saved, review posted |
 
 ---
 
