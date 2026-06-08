@@ -285,7 +285,18 @@ Props: `variant`, `size` (`sm` | `md` | `lg`), `loading`, `disabled`, `children`
 
 **Stats:** Books read, Currently reading, Want to read, Pages read, Reviews written, Avg. rating given
 
-**Optional placeholders:** Reading streak, Favorite genre, Reading goal (`showFuturePlaceholders`)
+**Optional placeholders:** Reading streak, Favorite genre (`showFuturePlaceholders`)
+
+**Reading goal stat:** Pass `readingGoal` prop — shows `completed/target` for current year when set
+
+### ReadingGoalPanel
+
+**Path:** `src/components/reading-goal/ReadingGoalPanel.tsx`
+
+- Set / edit / clear yearly book goal (1–500)
+- Progress bar toward `profiles.yearly_reading_goal`
+- Counts books finished in current calendar year (`finished_at`)
+- Variants: `default` (Reading Room, Profile), `compact` (Dashboard)
 
 **Used on:** Dashboard, Library, Reading Room, Profile
 

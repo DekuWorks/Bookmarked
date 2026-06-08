@@ -9,6 +9,7 @@ import { AnalyticsGrid } from "@/components/analytics/AnalyticsGrid";
 import { BookshelfView } from "@/components/library/BookshelfView";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { SHELF_CONFIG } from "@/lib/constants/shelves";
+import { ReadingGoalPanel } from "@/components/reading-goal/ReadingGoalPanel";
 
 export const metadata = { title: "My Reading Room" };
 
@@ -21,7 +22,10 @@ export default async function ReadingRoomPage() {
   if (!user) return null;
 
   const profile = await getProfile(user.id);
-  const data = await getReadingRoomData(user.id);
+  const data = await getReadingRoomData(
+    user.id,
+    profile?.yearly_reading_goal ?? null
+  );
   const displayName = profile?.display_name || profile?.username || "Reader";
 
   return (
@@ -70,24 +74,16 @@ export default async function ReadingRoomPage() {
       </div>
 
       <ReadingRoomSection title="Reading stats" emoji="📊">
-        <AnalyticsGrid analytics={data.analytics} showFuturePlaceholders compact />
+        <AnalyticsGrid
+          analytics={data.analytics}
+          readingGoal={data.readingGoal}
+          showFuturePlaceholders
+          compact
+        />
       </ReadingRoomSection>
 
-      <ReadingRoomSection
-        title="Reading goal"
-        emoji="🎯"
-        className="border-dashed"
-      >
-        <div className="rounded-lg bg-orange-yellow/15 px-4 py-6 text-center">
-          <p className="font-medium text-puce-red">Set a yearly reading goal</p>
-          <p className="mt-1 text-sm text-text-muted">
-            Coming soon — track how many books you want to finish this year.
-          </p>
-          <p className="mt-3 text-sm text-text">
-            You&apos;ve read <strong>{data.analytics.booksRead}</strong> book
-            {data.analytics.booksRead === 1 ? "" : "s"} so far.
-          </p>
-        </div>
+      <ReadingRoomSection title="Reading goal" emoji="🎯">
+        <ReadingGoalPanel status={data.readingGoal} />
       </ReadingRoomSection>
 
       <ReadingRoomSection title="Your bookshelves" emoji="🪵">

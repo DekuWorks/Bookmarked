@@ -12,6 +12,7 @@ export interface Profile {
   avatar_url: string | null;
   favorite_genres: string[] | null;
   preferred_library_view: LibraryViewMode;
+  yearly_reading_goal: number | null;
   created_at: string;
   updated_at: string;
 }

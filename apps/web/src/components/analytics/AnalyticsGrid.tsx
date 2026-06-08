@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils/cn";
 import type { ReadingAnalytics } from "@/lib/services/analytics";
+import type { ReadingGoalStatus } from "@/lib/services/readingGoal";
 
 type Stat = {
   label: string;
@@ -9,6 +10,7 @@ type Stat = {
 
 type Props = {
   analytics: ReadingAnalytics;
+  readingGoal?: ReadingGoalStatus;
   showFuturePlaceholders?: boolean;
   className?: string;
   compact?: boolean;
@@ -16,6 +18,7 @@ type Props = {
 
 export function AnalyticsGrid({
   analytics,
+  readingGoal,
   showFuturePlaceholders = false,
   className,
   compact,
@@ -35,15 +38,27 @@ export function AnalyticsGrid({
     },
   ];
 
+  const goalStat: Stat[] =
+    readingGoal?.target != null
+      ? [
+          {
+            label: `${readingGoal.year} goal`,
+            value: `${readingGoal.completed}/${readingGoal.target}`,
+          },
+        ]
+      : [];
+
   const future: Stat[] = showFuturePlaceholders
     ? [
         { label: "Reading streak", value: "—", comingSoon: true },
         { label: "Favorite genre", value: "—", comingSoon: true },
-        { label: "Reading goal", value: "—", comingSoon: true },
+        ...(readingGoal?.target == null
+          ? [{ label: "Reading goal", value: "—", comingSoon: true }]
+          : []),
       ]
     : [];
 
-  const all = [...stats, ...future];
+  const all = [...stats, ...goalStat, ...future];
 
   return (
     <dl

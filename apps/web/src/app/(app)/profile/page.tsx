@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/services/profile";
 import { getUserLibraryBooks } from "@/lib/services/library";
 import { computeReadingAnalytics } from "@/lib/services/analytics";
+import { computeReadingGoal } from "@/lib/services/readingGoal";
+import { ReadingGoalPanel } from "@/components/reading-goal/ReadingGoalPanel";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { AnalyticsGrid } from "@/components/analytics/AnalyticsGrid";
 import { BookMiniGrid } from "@/components/reading-room/BookMiniGrid";
@@ -27,6 +29,10 @@ export default async function ProfilePage() {
     .eq("user_id", user.id);
 
   const analytics = computeReadingAnalytics(books, reviewCount ?? 0);
+  const readingGoal = computeReadingGoal(
+    books,
+    profile?.yearly_reading_goal ?? null
+  );
 
   const recentlyFinished = books
     .filter((b) => b.shelf_status === "read")
@@ -77,8 +83,18 @@ export default async function ProfilePage() {
       </section>
 
       <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-puce-red">Reading goal</h2>
+        <ReadingGoalPanel status={readingGoal} className="mt-4" />
+      </section>
+
+      <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-puce-red">Reading statistics</h2>
-        <AnalyticsGrid analytics={analytics} className="mt-4" compact />
+        <AnalyticsGrid
+          analytics={analytics}
+          readingGoal={readingGoal}
+          className="mt-4"
+          compact
+        />
       </section>
 
       <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">

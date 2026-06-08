@@ -4,6 +4,10 @@ import {
   type ReadingAnalytics,
 } from "@/lib/services/analytics";
 import {
+  computeReadingGoal,
+  type ReadingGoalStatus,
+} from "@/lib/services/readingGoal";
+import {
   getUserLibraryBooks,
   groupBooksByShelf,
   type LibraryBookRow,
@@ -15,10 +19,14 @@ export type ReadingRoomData = {
   recentlyFinished: LibraryBookRow[];
   favorites: LibraryBookRow[];
   analytics: ReadingAnalytics;
+  readingGoal: ReadingGoalStatus;
   shelves: ShelfGroup[];
 };
 
-export async function getReadingRoomData(userId: string): Promise<ReadingRoomData> {
+export async function getReadingRoomData(
+  userId: string,
+  yearlyReadingGoal: number | null = null
+): Promise<ReadingRoomData> {
   const supabase = await createClient();
   const books = await getUserLibraryBooks(userId);
 
@@ -45,6 +53,7 @@ export async function getReadingRoomData(userId: string): Promise<ReadingRoomDat
     recentlyFinished,
     favorites,
     analytics: computeReadingAnalytics(books, reviewCount ?? 0),
+    readingGoal: computeReadingGoal(books, yearlyReadingGoal),
     shelves: groupBooksByShelf(books),
   };
 }

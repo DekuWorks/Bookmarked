@@ -47,9 +47,9 @@
 - [x] Dashboard expansion
 - [x] Visual polish
 
-### Deferred
+### Post–Phase 1.5 enhancements
 
-- [ ] Reading goal (full feature)
+- [x] Reading goal (yearly target, progress on dashboard / reading room / profile)
 - [ ] Reading streak / favorite genre analytics
 - [ ] Badges & achievements
 

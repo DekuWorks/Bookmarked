@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/services/profile";
 import { getUserLibraryBooks } from "@/lib/services/library";
 import { computeReadingAnalytics } from "@/lib/services/analytics";
+import { computeReadingGoal } from "@/lib/services/readingGoal";
+import { ReadingGoalPanel } from "@/components/reading-goal/ReadingGoalPanel";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
@@ -34,6 +36,10 @@ export default async function DashboardPage() {
     .eq("user_id", user.id);
 
   const analytics = computeReadingAnalytics(books, reviewCount ?? 0);
+  const readingGoal = computeReadingGoal(
+    books,
+    profile?.yearly_reading_goal ?? null
+  );
 
   return (
     <div className="space-y-8">
@@ -55,15 +61,7 @@ export default async function DashboardPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <DashboardCard title="Reading goal">
-          <div className="rounded-lg bg-orange-yellow/15 px-4 py-5">
-            <p className="font-medium text-puce-red">
-              {analytics.booksRead} of — books this year
-            </p>
-            <p className="mt-1 text-sm text-text-muted">
-              Yearly goals are coming soon. Keep reading and your stats will be ready when
-              they arrive.
-            </p>
-          </div>
+          <ReadingGoalPanel status={readingGoal} variant="compact" />
         </DashboardCard>
 
         <DashboardCard title="Quick actions">
@@ -96,7 +94,7 @@ export default async function DashboardPage() {
       </div>
 
       <DashboardCard title="Your reading at a glance">
-        <AnalyticsGrid analytics={analytics} compact />
+        <AnalyticsGrid analytics={analytics} readingGoal={readingGoal} compact />
       </DashboardCard>
 
       <ActivityFeed userId={user.id} />
