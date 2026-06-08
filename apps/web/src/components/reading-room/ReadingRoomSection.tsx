@@ -1,0 +1,36 @@
+import type { ReactNode } from "react";
+import { cn } from "@/lib/utils/cn";
+
+type Props = {
+  title: string;
+  emoji?: string;
+  action?: ReactNode;
+  children: ReactNode;
+  className?: string;
+};
+
+export function ReadingRoomSection({
+  title,
+  emoji,
+  action,
+  children,
+  className,
+}: Props) {
+  return (
+    <section
+      className={cn(
+        "animate-fade-in rounded-2xl border border-border bg-surface/90 p-5 shadow-sm backdrop-blur-sm md:p-6",
+        className
+      )}
+    >
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-puce-red md:text-xl">
+          {emoji ? <span aria-hidden>{emoji}</span> : null}
+          {title}
+        </h2>
+        {action}
+      </div>
+      {children}
+    </section>
+  );
+}

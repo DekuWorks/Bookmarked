@@ -10,7 +10,7 @@ const config: Record<
     className: "bg-orange-yellow/30 text-puce-red",
   },
   currently_reading: {
-    label: "Reading",
+    label: "Currently Reading",
     className: "bg-royal-orange/25 text-puce-red",
   },
   read: {

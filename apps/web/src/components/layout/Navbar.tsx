@@ -1,16 +1,18 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { NavbarPublicAuth } from "@/components/layout/NavbarPublicAuth";
 
 type Props = {
   variant?: "public" | "app";
 };
 
 export async function Navbar({ variant = "public" }: Props) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const supabase = variant === "app" ? await createClient() : null;
+  const user =
+    supabase != null
+      ? (await supabase.auth.getUser()).data.user
+      : null;
 
   const isApp = variant === "app" && user;
 
@@ -26,6 +28,12 @@ export async function Navbar({ variant = "public" }: Props) {
             <>
               <Link href="/dashboard" className="text-puce-red hover:text-rust">
                 Dashboard
+              </Link>
+              <Link
+                href="/reading-room"
+                className="font-semibold text-royal-orange hover:text-rust"
+              >
+                Reading Room
               </Link>
               <Link href="/library" className="text-puce-red hover:text-rust">
                 Library
@@ -46,26 +54,7 @@ export async function Navbar({ variant = "public" }: Props) {
               <Link href="/#contact" className="hidden text-puce-red hover:text-rust sm:inline">
                 Contact
               </Link>
-              {user ? (
-                <Link
-                  href="/dashboard"
-                  className="rounded-lg bg-primary px-4 py-2 text-white hover:opacity-90"
-                >
-                  Dashboard
-                </Link>
-              ) : (
-                <>
-                  <Link href="/login" className="text-puce-red hover:text-rust">
-                    Log in
-                  </Link>
-                  <Link
-                    href="/signup"
-                    className="rounded-lg bg-royal-orange px-4 py-2 text-white hover:opacity-90"
-                  >
-                    Sign up
-                  </Link>
-                </>
-              )}
+              <NavbarPublicAuth />
             </>
           )}
         </div>

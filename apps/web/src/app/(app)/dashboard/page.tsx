@@ -1,8 +1,13 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/services/profile";
+import { getUserLibraryBooks } from "@/lib/services/library";
+import { computeReadingAnalytics } from "@/lib/services/analytics";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
-import { Button } from "@/components/ui/Button";
+import { ButtonLink } from "@/components/ui/ButtonLink";
+import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
+import { AnalyticsGrid } from "@/components/analytics/AnalyticsGrid";
+import { CurrentlyReadingRow } from "@/components/reading-room/CurrentlyReadingRow";
 import { ShelfBadge } from "@/components/shelves/ShelfBadge";
 import { shelfStatusToSlug } from "@/lib/constants/shelves";
 import type { ShelfStatus } from "@/types";
@@ -20,69 +25,45 @@ export default async function DashboardPage() {
   if (!user) return null;
 
   const profile = await getProfile(user.id);
+  const books = await getUserLibraryBooks(user.id);
+  const currentlyReading = books.filter((b) => b.shelf_status === "currently_reading");
 
-  const { data: reading } = await supabase
-    .from("user_books")
-    .select("id, progress_percent, books(id, title, author, cover_url)")
-    .eq("user_id", user.id)
-    .eq("shelf_status", "currently_reading")
-    .limit(4);
+  const { count: reviewCount } = await supabase
+    .from("reviews")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id);
+
+  const analytics = computeReadingAnalytics(books, reviewCount ?? 0);
 
   return (
     <div className="space-y-8">
-      <header>
-        <h1 className="text-3xl font-bold text-puce-red">
-          Hello{profile?.display_name ? `, ${profile.display_name}` : ""}
-        </h1>
-        <p className="mt-1 text-text-muted">@{profile?.username}</p>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-puce-red">
+            Hello{profile?.display_name ? `, ${profile.display_name}` : ""}
+          </h1>
+          <p className="mt-1 text-text-muted">@{profile?.username}</p>
+        </div>
+        <ButtonLink href="/reading-room" variant="secondary">
+          Open Reading Room
+        </ButtonLink>
       </header>
 
+      <DashboardCard title="Currently reading">
+        <CurrentlyReadingRow items={currentlyReading} />
+      </DashboardCard>
+
       <div className="grid gap-6 lg:grid-cols-2">
-        <DashboardCard
-          title="Currently reading"
-          action={
-            <Link
-              href="/library/reading"
-              className="text-sm font-medium text-primary hover:underline"
-            >
-              View shelf
-            </Link>
-          }
-        >
-          {reading && reading.length > 0 ? (
-            <ul className="space-y-3">
-              {reading.map((row) => {
-                const book = row.books as {
-                  title?: string;
-                  author?: string | null;
-                } | null;
-                return (
-                  <li
-                    key={row.id}
-                    className="flex items-center justify-between gap-4 rounded-lg border border-border bg-background px-4 py-3"
-                  >
-                    <div>
-                      <p className="font-medium text-text">{book?.title ?? "Untitled"}</p>
-                      {book?.author ? (
-                        <p className="text-sm text-text-muted">{book.author}</p>
-                      ) : null}
-                    </div>
-                    <span className="text-sm font-medium text-royal-orange">
-                      {Math.round(Number(row.progress_percent) || 0)}%
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <p className="text-text-muted">
-              Nothing on your reading shelf yet.{" "}
-              <Link href="/search" className="font-medium text-primary hover:underline">
-                Search for a book
-              </Link>
-              .
+        <DashboardCard title="Reading goal">
+          <div className="rounded-lg bg-orange-yellow/15 px-4 py-5">
+            <p className="font-medium text-puce-red">
+              {analytics.booksRead} of — books this year
             </p>
-          )}
+            <p className="mt-1 text-sm text-text-muted">
+              Yearly goals are coming soon. Keep reading and your stats will be ready when
+              they arrive.
+            </p>
+          </div>
         </DashboardCard>
 
         <DashboardCard title="Quick actions">
@@ -97,20 +78,28 @@ export default async function DashboardPage() {
               </Link>
             ))}
           </div>
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <Link href="/search" className="inline-flex">
-              <Button variant="secondary" type="button">
-                Search books
-              </Button>
-            </Link>
-            <Link href="/library" className="inline-flex">
-              <Button variant="outline" type="button">
-                Open library
-              </Button>
-            </Link>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            <ButtonLink href="/search" variant="secondary" size="sm">
+              Search books
+            </ButtonLink>
+            <ButtonLink href="/library" variant="outline" size="sm">
+              Open library
+            </ButtonLink>
+            <ButtonLink href="/reading-room" variant="primary" size="sm">
+              Reading Room
+            </ButtonLink>
+            <ButtonLink href="/library/want-to-read" variant="ghost" size="sm">
+              Want to read
+            </ButtonLink>
           </div>
         </DashboardCard>
       </div>
+
+      <DashboardCard title="Your reading at a glance">
+        <AnalyticsGrid analytics={analytics} compact />
+      </DashboardCard>
+
+      <ActivityFeed userId={user.id} />
     </div>
   );
 }

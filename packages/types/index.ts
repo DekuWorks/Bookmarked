@@ -27,5 +27,7 @@ export interface Book {
   page_count: number | null;
   published_date: string | null;
   isbn: string | null;
+  publisher: string | null;
+  subjects: string[] | null;
   created_at: string;
 }

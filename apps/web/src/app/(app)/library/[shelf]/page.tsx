@@ -9,8 +9,8 @@ import {
   groupBooksByShelf,
 } from "@/lib/services/library";
 import { ShelfStatsPanel } from "@/components/library/ShelfStatsPanel";
-import { ShelfViewShell } from "@/components/library/LibraryViewShell";
-import { Button } from "@/components/ui/Button";
+import { ShelfSearchFilter } from "@/components/library/ShelfSearchFilter";
+import { ButtonLink } from "@/components/ui/ButtonLink";
 import type { LibraryViewMode } from "@/types";
 
 type Props = {
@@ -62,16 +62,14 @@ export default async function ShelfPage({ params }: Props) {
           </h1>
           <p className="mt-1 text-text-muted">{config.description}</p>
         </div>
-        <Link href="/search" className="inline-flex">
-          <Button variant="secondary" type="button">
-            Add books
-          </Button>
-        </Link>
+        <ButtonLink href="/search" variant="secondary">
+          Add books
+        </ButtonLink>
       </header>
 
       <ShelfStatsPanel stats={stats} status={config.status} />
 
-      <ShelfViewShell initialView={preferredView} shelves={[shelfGroup]} />
+      <ShelfSearchFilter shelf={shelfGroup} initialView={preferredView} />
     </div>
   );
 }

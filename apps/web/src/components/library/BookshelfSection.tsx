@@ -51,7 +51,7 @@ export function BookshelfSection({
                   title={book?.title ?? "Untitled"}
                   author={book?.author}
                   coverUrl={book?.cover_url}
-                  href={book?.id ? `/books/${book.id}` : undefined}
+                  href={book?.id ? `/book/${book.id}` : undefined}
                 />
               );
             })}

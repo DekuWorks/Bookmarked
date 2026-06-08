@@ -29,7 +29,7 @@ export function Modal({ open, onClose, title, children, className }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby={title ? "modal-title" : undefined}
@@ -42,7 +42,8 @@ export function Modal({ open, onClose, title, children, className }: Props) {
       />
       <div
         className={cn(
-          "relative z-10 w-full max-w-md rounded-xl bg-surface p-6 shadow-xl",
+          "relative z-10 w-full max-w-md rounded-t-2xl bg-surface p-6 shadow-xl sm:rounded-xl",
+          "max-h-[85vh] overflow-y-auto",
           className
         )}
       >

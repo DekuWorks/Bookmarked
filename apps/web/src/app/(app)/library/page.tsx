@@ -3,7 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/services/profile";
 import { getUserLibraryBooks, groupBooksByShelf } from "@/lib/services/library";
 import { LibraryViewShell } from "@/components/library/LibraryViewShell";
-import { Button } from "@/components/ui/Button";
+import { ButtonLink } from "@/components/ui/ButtonLink";
+import { LibraryAnalyticsPanel } from "@/components/library/LibraryAnalyticsPanel";
 import type { LibraryViewMode } from "@/types";
 
 export const metadata = { title: "Library" };
@@ -34,22 +35,26 @@ export default async function LibraryPage() {
             Your digital home library — browse shelves, track progress, and explore your collection.
           </p>
         </div>
-        <Link href="/search" className="inline-flex">
-          <Button variant="secondary" type="button">
-            Add books
-          </Button>
-        </Link>
+        <ButtonLink href="/search" variant="secondary">
+          Add books
+        </ButtonLink>
       </header>
+
+      {!isEmpty ? (
+        <LibraryAnalyticsPanel
+          books={books}
+          userId={user.id}
+          showFuturePlaceholders
+        />
+      ) : null}
 
       {isEmpty ? (
         <div className="rounded-xl border border-dashed border-border bg-surface p-12 text-center">
           <p className="text-lg font-medium text-text">Your library is empty</p>
           <p className="mt-2 text-text-muted">Search for books to add them to a shelf.</p>
-          <Link href="/search" className="mt-6 inline-flex">
-            <Button variant="primary" type="button">
-              Search books
-            </Button>
-          </Link>
+          <ButtonLink href="/search" variant="primary" className="mt-6">
+            Search books
+          </ButtonLink>
         </div>
       ) : (
         <LibraryViewShell initialView={preferredView} shelves={shelves} />

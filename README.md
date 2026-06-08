@@ -30,6 +30,20 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+### Key routes
+
+| Route | Description |
+|-------|-------------|
+| `/` | Landing page |
+| `/search` | Open Library search |
+| `/book/[id]` | Book details, progress, reviews |
+| `/library` | Full library (bookshelf / grid) |
+| `/library/want-to-read` | Want to read shelf |
+| `/library/reading` | Currently reading shelf |
+| `/library/read` | Read shelf |
+| `/dashboard` | Home + analytics + activity feed |
+| `/reading-room` | Personalized reading space (signature feature) |
+
 ## Database
 
 Run `supabase/migrations/001_phase0_schema.sql` in the Supabase SQL Editor for your **Bookmarked** project.

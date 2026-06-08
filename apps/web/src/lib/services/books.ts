@@ -3,7 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getShelfLabel, isShelfStatus } from "@/lib/constants/shelfLabels";
+import { activityMetadata, recordActivity } from "@/lib/services/activity";
 import { openLibraryCoverUrl } from "@/lib/services/openLibrary";
+
+const ADD_BOOK_ERROR = "Could not add book. Please try again.";
 import type { ShelfStatus } from "@/types";
 
 export type ShelfActionState = {
@@ -25,7 +28,7 @@ function revalidateLibraryPaths() {
   revalidatePath("/library/want-to-read");
   revalidatePath("/library/reading");
   revalidatePath("/library/read");
-  revalidatePath("/dashboard");
+  revalidatePath("/dashboard", "page");
 }
 
 async function upsertOpenLibraryCatalogBook(
@@ -117,7 +120,7 @@ export async function addOpenLibraryBookToShelf(
 
   const catalog = await upsertOpenLibraryCatalogBook(supabase, input);
   if (catalog.error || !catalog.bookId) {
-    return { error: catalog.error ?? "Could not save book." };
+    return { error: ADD_BOOK_ERROR };
   }
 
   const bookId = catalog.bookId;
@@ -149,30 +152,30 @@ export async function addOpenLibraryBookToShelf(
     .single();
 
   if (shelfError) {
-    return { error: shelfError.message };
+    return { error: ADD_BOOK_ERROR };
   }
 
   const event_type = existingUserBook ? "shelf_updated" : "book_added";
 
-  await supabase.from("activity_events").insert({
+  await recordActivity(supabase, {
     user_id: user.id,
     event_type,
     entity_type: "user_book",
     entity_id: userBook?.id ?? null,
-    metadata_json: {
-      book_title: input.title,
+    metadata_json: activityMetadata(input.title, {
       shelf_status,
       external_source: "open_library",
       external_id: input.external_id,
       previous_shelf_status: existingUserBook?.shelf_status ?? null,
-    },
+    }),
   });
 
   revalidateLibraryPaths();
 
+  const label = getShelfLabel(shelf_status);
   const action = existingUserBook ? "Moved to" : "Added to";
   return {
-    success: `${action} ${getShelfLabel(shelf_status)}`,
+    success: `${action} ${label}`,
     bookId,
   };
 }

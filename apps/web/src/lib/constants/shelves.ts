@@ -18,7 +18,7 @@ export const SHELF_CONFIG: {
   },
   {
     status: "currently_reading",
-    title: "Reading",
+    title: "Currently Reading",
     slug: "reading",
     emoji: "📖",
     description: "Stories you're in the middle of right now.",

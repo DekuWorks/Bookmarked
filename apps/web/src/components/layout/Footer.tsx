@@ -23,7 +23,8 @@ export function Footer() {
         </div>
       </div>
       <div className="border-t border-white/10 px-4 py-4 text-center text-xs text-white/60">
-        © {new Date().getFullYear()} Bookmarked. All rights reserved.
+        © <span suppressHydrationWarning>{new Date().getFullYear()}</span> Bookmarked. All
+        rights reserved.
       </div>
     </footer>
   );

@@ -41,3 +41,59 @@ export function openLibraryWorkId(key?: string): string | null {
   if (!key) return null;
   return key.replace("/works/", "").replace("/books/", "");
 }
+
+export type OpenLibraryWorkDetails = {
+  description: string | null;
+  subjects: string[];
+  published_date: string | null;
+  publisher: string | null;
+  page_count: number | null;
+};
+
+function normalizeWorkPath(externalId: string): string {
+  if (externalId.startsWith("/works/") || externalId.startsWith("/books/")) {
+    return externalId;
+  }
+  return `/works/${externalId}`;
+}
+
+function parseOpenLibraryDescription(
+  value: string | { value?: string } | undefined
+): string | null {
+  if (!value) return null;
+  if (typeof value === "string") return value;
+  return value.value ?? null;
+}
+
+export async function fetchOpenLibraryWorkDetails(
+  externalId: string
+): Promise<OpenLibraryWorkDetails | null> {
+  const path = normalizeWorkPath(externalId);
+  const res = await fetch(`https://openlibrary.org${path}.json`, {
+    next: { revalidate: 86400 },
+  });
+
+  if (!res.ok) return null;
+
+  const data = (await res.json()) as {
+    description?: string | { value?: string };
+    subjects?: string[];
+    subject_places?: string[];
+    first_publish_date?: string;
+    publishers?: string[];
+    number_of_pages?: number;
+  };
+
+  const subjects = [
+    ...(data.subjects ?? []),
+    ...(data.subject_places ?? []),
+  ].slice(0, 12);
+
+  return {
+    description: parseOpenLibraryDescription(data.description),
+    subjects,
+    published_date: data.first_publish_date ?? null,
+    publisher: data.publishers?.[0] ?? null,
+    page_count: data.number_of_pages ?? null,
+  };
+}

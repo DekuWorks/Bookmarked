@@ -16,8 +16,8 @@ type Props = {
 };
 
 const VIEW_OPTIONS: { mode: DisplayViewMode; label: string }[] = [
-  { mode: "bookshelf", label: "Bookshelf" },
-  { mode: "grid", label: "Grid" },
+  { mode: "bookshelf", label: "Bookshelf View" },
+  { mode: "grid", label: "Grid View" },
 ];
 
 function normalizeView(view: LibraryViewMode): DisplayViewMode {

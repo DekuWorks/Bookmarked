@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
+import { BookCover } from "@/components/books/BookCover";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { ShelfBadge } from "@/components/shelves/ShelfBadge";
 import type { ShelfStatus } from "@/types";
@@ -34,22 +34,7 @@ export function BookCard({
         className
       )}
     >
-      <div className="relative aspect-[2/3] w-full bg-background">
-        {coverUrl ? (
-          <Image
-            src={coverUrl}
-            alt={`Cover of ${title}`}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 50vw, 200px"
-            unoptimized
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center p-4 text-center text-sm text-text-muted">
-            No cover
-          </div>
-        )}
-      </div>
+      <BookCover title={title} coverUrl={coverUrl} className="rounded-none border-0" />
       <div className="flex flex-1 flex-col gap-2 p-4">
         {shelfStatus ? <ShelfBadge status={shelfStatus} /> : null}
         <h3 className="line-clamp-2 font-semibold text-text">{title}</h3>

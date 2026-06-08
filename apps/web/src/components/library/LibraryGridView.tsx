@@ -28,7 +28,7 @@ export function LibraryGridView({ shelves }: Props) {
                     coverUrl={book?.cover_url}
                     shelfStatus={shelf.status}
                     progressPercent={Number(ub.progress_percent) || 0}
-                    href={book?.id ? `/books/${book.id}` : undefined}
+                    href={book?.id ? `/book/${book.id}` : undefined}
                   />
                 );
               })}

@@ -37,7 +37,9 @@ export async function updateSession(request: NextRequest) {
     path.startsWith("/library") ||
     path.startsWith("/search") ||
     path.startsWith("/profile") ||
-    path.startsWith("/books");
+    path.startsWith("/books") ||
+    path.startsWith("/book") ||
+    path.startsWith("/reading-room");
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone();

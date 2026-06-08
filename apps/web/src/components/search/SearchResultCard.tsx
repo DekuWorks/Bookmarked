@@ -84,7 +84,7 @@ export function SearchResultCard({
         toast.error(result.error ?? "Could not open book details.");
         return;
       }
-      router.push(`/books/${result.bookId}`);
+      router.push(`/book/${result.bookId}`);
     } finally {
       setViewDetailsLoading(false);
     }
@@ -107,7 +107,7 @@ export function SearchResultCard({
     try {
       const result = await addOpenLibraryBookToShelf({}, formData);
       if (result.error) {
-        toast.error(result.error);
+        toast.error(result.error || "Could not add book. Please try again.");
         return;
       }
       if (result.success) {

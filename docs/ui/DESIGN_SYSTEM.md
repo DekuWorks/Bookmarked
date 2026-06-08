@@ -131,7 +131,7 @@ Props: `variant`, `size` (`sm` | `md` | `lg`), `loading`, `disabled`, `children`
 **Path:** `src/components/layout/Navbar.tsx`
 
 - Logo / wordmark (primary purple)
-- Links: Dashboard, Library, Search, Profile
+- Links: Dashboard, Library, Reading Room, Search, Profile
 - Auth: Login / Sign up OR user menu + Logout
 - Sticky top, puce-red or white bg depending on context
 
@@ -151,9 +151,73 @@ Props: `variant`, `size` (`sm` | `md` | `lg`), `loading`, `disabled`, `children`
 
 **Path:** `src/components/ui/Modal.tsx`
 
-- Overlay + centered panel
+- Overlay + centered panel (bottom sheet on mobile)
 - Close button, title, children
-- Used for confirm actions, quick forms
+- Used for shelf selector, confirm actions
+
+---
+
+## Bookshelf Components
+
+### BookshelfView / BookshelfSection / BookSpine
+
+**Paths:** `src/components/library/BookshelfView.tsx`, `BookshelfSection.tsx`, `BookSpine.tsx`
+
+- Upright book spines on wooden shelf boards (`.bookshelf-board`, `.bookshelf-back`)
+- Sections per shelf status: Want to Read, Currently Reading, Read
+- Horizontal scroll on narrow viewports
+- Hover: spine lifts slightly (`hover:-translate-y-1`)
+
+### LibraryViewShell
+
+**Path:** `src/components/library/LibraryViewShell.tsx`
+
+- Toggle: **Bookshelf View** | **Grid View**
+- Persists to `profiles.preferred_library_view` (`bookshelf` | `grid`)
+- Default: `bookshelf`
+
+### ShelfSearchFilter
+
+**Path:** `src/components/library/ShelfSearchFilter.tsx`
+
+- Client-side filter by title/author on shelf detail pages
+- Empty state when no matches
+
+---
+
+## Reading Room Components
+
+**Route:** `/reading-room`
+
+| Component | Path | Purpose |
+|-----------|------|---------|
+| `ReadingRoomSection` | `reading-room/ReadingRoomSection.tsx` | Card wrapper with emoji title |
+| `CurrentlyReadingRow` | `reading-room/CurrentlyReadingRow.tsx` | Cover + progress + Continue button |
+| `BookMiniGrid` | `reading-room/BookMiniGrid.tsx` | Compact cover grid with empty states |
+
+**Layout:** `.reading-room-bg` gradient, `.animate-fade-in` section entrance
+
+**Sections:** Currently Reading, Recently Finished, Favorites, Reading Stats, Reading Goal (placeholder), Bookshelves quick links
+
+---
+
+## Analytics Components
+
+### AnalyticsGrid
+
+**Path:** `src/components/analytics/AnalyticsGrid.tsx`
+
+**Stats:** Books read, Currently reading, Want to read, Pages read, Reviews written, Avg. rating given
+
+**Optional placeholders:** Reading streak, Favorite genre, Reading goal (`showFuturePlaceholders`)
+
+**Used on:** Dashboard, Library, Reading Room, Profile
+
+### ShelfStatsPanel
+
+**Path:** `src/components/library/ShelfStatsPanel.tsx`
+
+Per-shelf stats on `/library/want-to-read`, `/library/reading`, `/library/read`
 
 ---
 
