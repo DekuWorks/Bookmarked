@@ -1,4 +1,5 @@
 import { BookCard } from "@/components/books/BookCard";
+import { EmptyShelfMessage } from "@/components/library/EmptyShelfMessage";
 import type { ShelfGroup } from "@/lib/services/library";
 
 type Props = {
@@ -15,7 +16,7 @@ export function LibraryGridView({ shelves }: Props) {
             {shelf.title}
           </h2>
           {shelf.items.length === 0 ? (
-            <p className="text-sm text-text-muted">No books on this shelf yet.</p>
+            <EmptyShelfMessage />
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {shelf.items.map((ub) => {

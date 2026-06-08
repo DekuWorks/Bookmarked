@@ -10,7 +10,24 @@
 
 ## PHASE 1 — WEB APP MVP
 
-- [x] All MVP tasks complete (auth, search, shelves, book details, progress, reviews, activity)
+- [x] Book details page (`/book/[id]` — cover, metadata, shelf, progress, reviews)
+- [x] Reading progress editor (pages, percent, progress bar, started/finished dates, mark finished)
+- [x] Reviews system (create, edit, delete, spoiler toggle, one per user per book)
+- [x] Activity feed events (book_added, shelf_updated, progress_updated, book_finished, review_created)
+- [x] Hydration fixes (NavbarPublicAuth, ButtonLink, suppressHydrationWarning on dates)
+- [x] Empty / loading / error states (search, library, shelves, reviews, covers, actions)
+- [x] Responsive QA (desktop, tablet, mobile — navbar scroll, tappable buttons, stacked cards)
+- [x] Phase 1 smoke test criteria met
+
+### Phase 1 routes
+
+| Route | Purpose |
+|-------|---------|
+| `/search` | Open Library search |
+| `/book/[id]` | Book details (canonical) |
+| `/books/[id]` | Redirects to `/book/[id]` |
+| `/library` | User library |
+| `/dashboard` | Home + activity feed |
 
 ---
 
@@ -47,4 +64,4 @@
 
 ## Last Updated
 
-Phase 1.5 differentiation sprint complete. Reading Room and interactive bookshelf are live.
+Phase 1 MVP complete. Phase 1.5 differentiation sprint complete.

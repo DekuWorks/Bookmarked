@@ -46,7 +46,13 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Database
 
-Run `supabase/migrations/001_phase0_schema.sql` in the Supabase SQL Editor for your **Bookmarked** project.
+Apply migrations in order via Supabase SQL Editor or `supabase db push`:
+
+| Migration | Purpose |
+|-----------|---------|
+| `001_phase0_schema.sql` | Core tables, RLS, profiles, books, user_books, reviews, activity |
+| `002_preferred_library_view.sql` | `profiles.preferred_library_view` (bookshelf / grid) |
+| `003_book_metadata_and_reviews_unique.sql` | Book publisher/subjects; one review per user per book |
 
 ## Documentation
 

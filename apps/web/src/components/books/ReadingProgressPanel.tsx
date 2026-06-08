@@ -13,12 +13,27 @@ import {
 
 const initial: BookActionState = {};
 
+function formatDate(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  try {
+    return new Date(iso).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return null;
+  }
+}
+
 type Props = {
   bookId: string;
   onShelf: boolean;
   currentPage: number;
   totalPages: number;
   progressPercent: number;
+  startedAt?: string | null;
+  finishedAt?: string | null;
 };
 
 export function ReadingProgressPanel({
@@ -27,6 +42,8 @@ export function ReadingProgressPanel({
   currentPage,
   totalPages,
   progressPercent,
+  startedAt,
+  finishedAt,
 }: Props) {
   const toast = useToast();
   const [page, setPage] = useState(String(currentPage || ""));
@@ -87,9 +104,33 @@ export function ReadingProgressPanel({
       ? parseFloat(progressAction.success)
       : previewPercent;
 
+  const startedLabel = formatDate(startedAt);
+  const finishedLabel = formatDate(finishedAt);
+
   return (
     <section className="rounded-xl border border-border bg-surface p-5">
       <h2 className="text-lg font-semibold text-puce-red">Reading progress</h2>
+
+      {startedLabel || finishedLabel ? (
+        <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm">
+          {startedLabel ? (
+            <div>
+              <dt className="inline text-text-muted">Started </dt>
+              <dd className="inline text-text" suppressHydrationWarning>
+                {startedLabel}
+              </dd>
+            </div>
+          ) : null}
+          {finishedLabel ? (
+            <div>
+              <dt className="inline text-text-muted">Finished </dt>
+              <dd className="inline text-text" suppressHydrationWarning>
+                {finishedLabel}
+              </dd>
+            </div>
+          ) : null}
+        </dl>
+      ) : null}
 
       {pageCountUnavailable ? (
         <p className="mt-2 text-sm text-text-muted">

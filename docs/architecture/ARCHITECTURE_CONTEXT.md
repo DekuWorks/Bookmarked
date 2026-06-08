@@ -48,6 +48,26 @@ Tables: `profiles`, `books`, `user_books`, `reviews`, `activity_events`
 
 Row Level Security (RLS) and policies are defined in migrations.
 
+### Key routes (web)
+
+| Route | Handler |
+|-------|---------|
+| `/book/[id]` | Canonical book details (progress, shelf, reviews) |
+| `/books/[id]` | Legacy redirect → `/book/[id]` |
+| `/library`, `/library/[shelf]` | Library views and shelf detail |
+| `/reading-room` | Personalized reading space (Phase 1.5) |
+| `/dashboard` | Activity feed + analytics widgets |
+
+### Server actions & services
+
+| Module | Role |
+|--------|------|
+| `lib/actions/book.ts` | Shelf moves, progress updates, reviews, favorites |
+| `lib/services/bookDetails.ts` | Book + user_book + reviews fetch; Open Library enrich |
+| `lib/services/activity.ts` | Records `activity_events` on user actions |
+| `lib/services/books.ts` | Open Library search → `books` cache + shelf add |
+| `src/proxy.ts` | Auth session refresh + route protection (Next.js 16 proxy) |
+
 ---
 
 ## Mobile (Later)

@@ -23,28 +23,33 @@ export async function Navbar({ variant = "public" }: Props) {
           Bookmarked
         </Link>
 
-        <div className="flex flex-wrap items-center gap-4 text-sm font-medium">
+        <div className="flex max-w-[min(100%,20rem)] items-center gap-3 overflow-x-auto text-sm font-medium scrollbar-thin sm:max-w-none sm:flex-wrap sm:gap-4 md:overflow-visible">
           {isApp ? (
             <>
-              <Link href="/dashboard" className="text-puce-red hover:text-rust">
+              <Link href="/dashboard" className="shrink-0 text-puce-red hover:text-rust">
                 Dashboard
               </Link>
               <Link
                 href="/reading-room"
-                className="font-semibold text-royal-orange hover:text-rust"
+                className="shrink-0 font-semibold text-royal-orange hover:text-rust"
               >
-                Reading Room
+                <span className="sm:hidden" aria-hidden>
+                  Room
+                </span>
+                <span className="hidden sm:inline">Reading Room</span>
               </Link>
-              <Link href="/library" className="text-puce-red hover:text-rust">
+              <Link href="/library" className="shrink-0 text-puce-red hover:text-rust">
                 Library
               </Link>
-              <Link href="/search" className="text-puce-red hover:text-rust">
+              <Link href="/search" className="shrink-0 text-puce-red hover:text-rust">
                 Search
               </Link>
-              <Link href="/profile" className="text-puce-red hover:text-rust">
+              <Link href="/profile" className="shrink-0 text-puce-red hover:text-rust">
                 Profile
               </Link>
-              <LogoutButton />
+              <span className="shrink-0">
+                <LogoutButton />
+              </span>
             </>
           ) : (
             <>

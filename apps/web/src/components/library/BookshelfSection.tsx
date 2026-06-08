@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BookSpine } from "@/components/library/BookSpine";
+import { EmptyShelfMessage } from "@/components/library/EmptyShelfMessage";
 import type { LibraryBookRow } from "@/lib/services/library";
 import type { ShelfStatus } from "@/types";
 
@@ -40,7 +41,7 @@ export function BookshelfSection({
 
       <div className="bookshelf-back px-4 pb-0 pt-6">
         {items.length === 0 ? (
-          <p className="pb-6 text-sm text-text-muted">No books on this shelf yet.</p>
+          <EmptyShelfMessage className="pb-6" />
         ) : (
           <div className="flex items-end gap-2 overflow-x-auto pb-1 scrollbar-thin">
             {items.map((ub) => {

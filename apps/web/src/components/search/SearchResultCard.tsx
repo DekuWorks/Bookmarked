@@ -26,13 +26,13 @@ function ResultActions({
   onViewDetails,
   onAddToShelf,
   viewDetailsLoading,
-  addDisabled,
+  addLoading,
   className,
 }: {
   onViewDetails: () => void;
   onAddToShelf: () => void;
   viewDetailsLoading: boolean;
-  addDisabled: boolean;
+  addLoading: boolean;
   className?: string;
 }) {
   return (
@@ -50,7 +50,8 @@ function ResultActions({
         type="button"
         variant="outline"
         size="sm"
-        disabled={addDisabled}
+        loading={addLoading}
+        disabled={addLoading}
         onClick={onAddToShelf}
         className="border-white bg-white/90 text-puce-red hover:bg-white md:border-primary md:bg-transparent md:text-white md:hover:bg-white/20"
       >
@@ -150,7 +151,7 @@ export function SearchResultCard({
               onViewDetails={handleViewDetails}
               onAddToShelf={openShelfMenu}
               viewDetailsLoading={viewDetailsLoading}
-              addDisabled={saving}
+              addLoading={saving}
             />
           </div>
         </div>
@@ -168,7 +169,7 @@ export function SearchResultCard({
             onViewDetails={handleViewDetails}
             onAddToShelf={openShelfMenu}
             viewDetailsLoading={viewDetailsLoading}
-            addDisabled={saving}
+            addLoading={saving}
           />
         </div>
       </article>

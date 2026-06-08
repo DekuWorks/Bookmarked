@@ -55,8 +55,9 @@ export function BookSpine({ title, author, coverUrl, href, className }: Props) {
           )}
         >
           <span
-            className="max-h-[160px] overflow-hidden text-[9px] font-bold uppercase leading-tight tracking-wide text-white/95"
+            className="max-h-[160px] overflow-hidden text-[10px] font-bold uppercase leading-tight tracking-wide text-white/95 sm:text-[9px]"
             style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
+            aria-label={title}
           >
             {title}
           </span>

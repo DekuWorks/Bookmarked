@@ -132,6 +132,8 @@ export default async function BookDetailsPage({ params }: Props) {
           currentPage={Number(userBook?.progress_pages) || 0}
           totalPages={book.page_count ?? 0}
           progressPercent={Number(userBook?.progress_percent) || 0}
+          startedAt={userBook?.started_at}
+          finishedAt={userBook?.finished_at}
         />
       </div>
 

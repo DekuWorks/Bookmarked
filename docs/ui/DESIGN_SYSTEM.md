@@ -100,9 +100,72 @@ Props: `variant`, `size` (`sm` | `md` | `lg`), `loading`, `disabled`, `children`
 
 **Path:** `src/components/reviews/ReviewCard.tsx`
 
-- User avatar + name, star rating, review excerpt
-- Spoiler warning badge when `has_spoilers`
-- Timestamp, link to full review
+- Display name, star rating, review excerpt
+- Spoiler warning badge when `has_spoilers`; hidden body until "Reveal spoiler"
+- Timestamp with `suppressHydrationWarning`
+
+---
+
+### BookCover
+
+**Path:** `src/components/books/BookCover.tsx`
+
+- Cover image with `onError` fallback to gradient placeholder
+- Used on book details, reading room, library cards
+
+---
+
+### BookShelfActions
+
+**Path:** `src/components/books/BookShelfActions.tsx`
+
+- Current shelf badge, add/move shelf selector, favorite toggle
+- Server actions via `lib/actions/book.ts`
+
+---
+
+### ReadingProgressPanel
+
+**Path:** `src/components/books/ReadingProgressPanel.tsx`
+
+- Current page + total pages inputs, live percent preview, progress bar
+- Started / finished date display (set automatically on shelf moves)
+- Save progress + Mark as finished actions with loading states
+
+---
+
+### BookReviewSection
+
+**Path:** `src/components/books/BookReviewSection.tsx`
+
+- Star rating, textarea, spoiler toggle, submit/edit/delete own review
+- Lists community reviews via `ReviewCard`
+
+---
+
+### ActivityFeed
+
+**Path:** `src/components/dashboard/ActivityFeed.tsx`
+
+- Recent `activity_events` with human-readable copy
+- Empty state when no activity yet
+
+---
+
+### ButtonLink / NavbarPublicAuth
+
+**Paths:** `src/components/ui/ButtonLink.tsx`, `src/components/layout/NavbarPublicAuth.tsx`
+
+- `ButtonLink`: styled Next.js link (avoids hydration mismatch)
+- `NavbarPublicAuth`: client auth skeleton on public pages until session resolves
+
+---
+
+### EmptyShelfMessage
+
+**Path:** `src/components/library/EmptyShelfMessage.tsx`
+
+- Empty shelf copy + CTA to `/search`
 
 ---
 
