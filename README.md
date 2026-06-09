@@ -37,10 +37,20 @@ Open [http://localhost:3000](http://localhost:3000).
 - **Build:** Next.js static export (`output: "export"`) → `apps/web/out/`
 - **DNS:** GoDaddy (four GitHub Pages A records + `www` CNAME → `DekuWorks.github.io`)
 
-**GitHub repo secrets** (required for CI build):
+**GitHub repo secrets** (required — values are baked into the static build at compile time):
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
+Set via GitHub → Settings → Secrets and variables → Actions, or:
+
+```bash
+cd apps/web
+gh secret set NEXT_PUBLIC_SUPABASE_URL --body "$(grep '^NEXT_PUBLIC_SUPABASE_URL=' .env.local | cut -d= -f2-)"
+gh secret set NEXT_PUBLIC_SUPABASE_ANON_KEY --body "$(grep '^NEXT_PUBLIC_SUPABASE_ANON_KEY=' .env.local | cut -d= -f2-)"
+```
+
+The deploy workflow fails fast with a clear error if either secret is missing.
 
 **Manual setup (one-time):**
 
