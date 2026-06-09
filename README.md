@@ -30,6 +30,25 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+### Deployment
+
+- **Hosted on:** [GitHub Pages](https://pages.github.com/) via GitHub Actions (`.github/workflows/deploy.yml`)
+- **Domain:** [bookmarked.online](https://bookmarked.online)
+- **Build:** Next.js static export (`output: "export"`) → `apps/web/out/`
+- **DNS:** GoDaddy (four GitHub Pages A records + `www` CNAME → `DekuWorks.github.io`)
+
+**GitHub repo secrets** (required for CI build):
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
+**Manual setup (one-time):**
+
+1. GitHub → Settings → Pages → Source: **GitHub Actions**; Custom domain: `bookmarked.online`; enforce HTTPS after DNS propagates
+2. GoDaddy DNS: A records `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`; CNAME `www` → `DekuWorks.github.io`
+
+**Static hosting notes:** The production build is a static SPA. Auth and data run client-side via Supabase. Direct navigation to dynamic URLs (e.g. `/book/{uuid}`) relies on GitHub Pages `404.html` fallback; client-side routing handles the rest after load.
+
 ### Key routes
 
 | Route | Description |

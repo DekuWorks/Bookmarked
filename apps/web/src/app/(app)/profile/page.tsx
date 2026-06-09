@@ -1,4 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
+"use client";
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { getProfile } from "@/lib/services/profile";
 import { getUserLibraryBooks } from "@/lib/services/library";
 import { computeReadingAnalytics } from "@/lib/services/analytics";
@@ -9,56 +13,78 @@ import { LogoutButton } from "@/components/auth/LogoutButton";
 import { AnalyticsGrid } from "@/components/analytics/AnalyticsGrid";
 import { BookMiniGrid } from "@/components/reading-room/BookMiniGrid";
 import { ButtonLink } from "@/components/ui/ButtonLink";
-import Link from "next/link";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import type { Profile } from "@/types";
+import type { LibraryBookRow } from "@/lib/services/library";
+import type { ReadingAnalytics } from "@/lib/services/analytics";
+import type { ReadingGoalStatus } from "@/lib/services/readingGoal";
 
-export const metadata = { title: "Profile" };
+type ProfileData = {
+  profile: Profile | null;
+  email: string;
+  analytics: ReadingAnalytics;
+  readingGoal: ReadingGoalStatus;
+  recentlyFinished: LibraryBookRow[];
+  favorites: LibraryBookRow[];
+};
 
-export default async function ProfilePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export default function ProfilePage() {
+  const user = useAuthUser();
+  const [data, setData] = useState<ProfileData | null>(null);
 
-  if (!user) return null;
+  useEffect(() => {
+    if (!user) return;
+    const supabase = createClient();
+    void Promise.all([
+      getProfile(user.id),
+      getUserLibraryBooks(user.id),
+      fetchReadingStreakTimestamps(user.id),
+      supabase
+        .from("reviews")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id),
+    ]).then(([profile, books, streakTimestamps, reviewResult]) => {
+      const analytics = computeReadingAnalytics({
+        books,
+        reviewsWritten: reviewResult.count ?? 0,
+        streakTimestamps,
+        profileGenres: profile?.favorite_genres,
+      });
+      const recentlyFinished = books
+        .filter((b) => b.shelf_status === "read")
+        .sort((a, b) => {
+          const aDate = a.finished_at ? new Date(a.finished_at).getTime() : 0;
+          const bDate = b.finished_at ? new Date(b.finished_at).getTime() : 0;
+          return bDate - aDate;
+        })
+        .slice(0, 4);
+      const favorites = books.filter((b) => b.is_favorite).slice(0, 4);
 
-  const profile = await getProfile(user.id);
-  const [books, streakTimestamps] = await Promise.all([
-    getUserLibraryBooks(user.id),
-    fetchReadingStreakTimestamps(user.id),
-  ]);
+      setData({
+        profile,
+        email: user.email ?? "",
+        analytics,
+        readingGoal: computeReadingGoal(books, profile?.yearly_reading_goal ?? null),
+        recentlyFinished,
+        favorites,
+      });
+    });
+  }, [user]);
 
-  const { count: reviewCount } = await supabase
-    .from("reviews")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id);
+  if (user === undefined || (user && !data)) {
+    return <LoadingState message="Loading profile…" />;
+  }
 
-  const analytics = computeReadingAnalytics({
-    books,
-    reviewsWritten: reviewCount ?? 0,
-    streakTimestamps,
-    profileGenres: profile?.favorite_genres,
-  });
-  const readingGoal = computeReadingGoal(
-    books,
-    profile?.yearly_reading_goal ?? null
-  );
+  if (!user || !data) return null;
 
-  const recentlyFinished = books
-    .filter((b) => b.shelf_status === "read")
-    .sort((a, b) => {
-      const aDate = a.finished_at ? new Date(a.finished_at).getTime() : 0;
-      const bDate = b.finished_at ? new Date(b.finished_at).getTime() : 0;
-      return bDate - aDate;
-    })
-    .slice(0, 4);
-
-  const favorites = books.filter((b) => b.is_favorite).slice(0, 4);
+  const { profile, email, analytics, readingGoal, recentlyFinished, favorites } = data;
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <header>
         <h1 className="text-3xl font-bold text-puce-red">Profile</h1>
-        <p className="mt-1 text-text-muted">{user.email}</p>
+        <p className="mt-1 text-text-muted">{email}</p>
       </header>
 
       <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">

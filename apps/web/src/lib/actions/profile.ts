@@ -1,7 +1,4 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/client";
 
 export type ProfileActionState = {
   error?: string;
@@ -12,7 +9,7 @@ export async function updateYearlyReadingGoal(
   _prev: ProfileActionState,
   formData: FormData
 ): Promise<ProfileActionState> {
-  const supabase = await createClient();
+  const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -29,7 +26,6 @@ export async function updateYearlyReadingGoal(
 
     if (error) return { error: "Could not clear your reading goal." };
 
-    revalidateGoalPaths();
     return { success: "Reading goal cleared." };
   }
 
@@ -47,12 +43,5 @@ export async function updateYearlyReadingGoal(
 
   if (error) return { error: "Could not save your reading goal." };
 
-  revalidateGoalPaths();
   return { success: `Goal set: ${Math.round(goal)} books in ${new Date().getFullYear()}.` };
-}
-
-function revalidateGoalPaths() {
-  revalidatePath("/dashboard");
-  revalidatePath("/reading-room");
-  revalidatePath("/profile");
 }

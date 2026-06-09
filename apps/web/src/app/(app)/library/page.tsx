@@ -1,30 +1,52 @@
-import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+"use client";
+
+import { useEffect, useState } from "react";
 import { getProfile } from "@/lib/services/profile";
 import { getUserLibraryBooks, groupBooksByShelf } from "@/lib/services/library";
 import { LibraryViewShell } from "@/components/library/LibraryViewShell";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LibraryAnalyticsPanel } from "@/components/library/LibraryAnalyticsPanel";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import type { LibraryViewMode } from "@/types";
+import type { LibraryBookRow, ShelfGroup } from "@/lib/services/library";
 
-export const metadata = { title: "Library" };
+type LibraryData = {
+  books: LibraryBookRow[];
+  shelves: ShelfGroup[];
+  preferredView: LibraryViewMode;
+  userId: string;
+};
 
-export default async function LibraryPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export default function LibraryPage() {
+  const user = useAuthUser();
+  const [data, setData] = useState<LibraryData | null>(null);
 
-  if (!user) return null;
+  useEffect(() => {
+    if (!user) return;
+    void Promise.all([getProfile(user.id), getUserLibraryBooks(user.id)]).then(
+      ([profile, books]) => {
+        const rawView = profile?.preferred_library_view ?? "bookshelf";
+        const preferredView: LibraryViewMode =
+          rawView === "reading_room" ? "bookshelf" : rawView;
+        setData({
+          books,
+          shelves: groupBooksByShelf(books),
+          preferredView,
+          userId: user.id,
+        });
+      }
+    );
+  }, [user]);
 
-  const profile = await getProfile(user.id);
-  const books = await getUserLibraryBooks(user.id);
-  const shelves = groupBooksByShelf(books);
+  if (user === undefined || (user && !data)) {
+    return <LoadingState message="Loading library…" />;
+  }
+
+  if (!user || !data) return null;
+
+  const { books, shelves, preferredView, userId } = data;
   const isEmpty = books.length === 0;
-
-  const rawView = profile?.preferred_library_view ?? "bookshelf";
-  const preferredView: LibraryViewMode =
-    rawView === "reading_room" ? "bookshelf" : rawView;
 
   return (
     <div className="space-y-10">
@@ -41,11 +63,7 @@ export default async function LibraryPage() {
       </header>
 
       {!isEmpty ? (
-        <LibraryAnalyticsPanel
-          books={books}
-          userId={user.id}
-          showFuturePlaceholders
-        />
+        <LibraryAnalyticsPanel books={books} userId={userId} showFuturePlaceholders />
       ) : null}
 
       {isEmpty ? (

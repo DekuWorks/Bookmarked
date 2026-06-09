@@ -8,6 +8,30 @@
 
 ---
 
+## Deployment (production)
+
+| Item | Value |
+|------|-------|
+| **Target** | GitHub Pages (static hosting) |
+| **Domain** | `bookmarked.online` |
+| **CI/CD** | `.github/workflows/deploy.yml` on push to `main` |
+| **Artifact** | `apps/web/out/` (Next.js `output: "export"`) |
+| **DNS** | GoDaddy → GitHub Pages A records + `www` CNAME |
+
+### Static export limitations
+
+GitHub Pages serves static files only. The web app is built as a **client-rendered SPA** with Supabase:
+
+- No Next.js server, API routes, middleware, or Server Actions at runtime
+- Auth route protection uses `ClientAuthGuard` (client session check), not server middleware
+- Data mutations run via Supabase JS client (`lib/actions/*`, `lib/services/*`)
+- Shelf slugs are pre-rendered; book detail pages load by ID client-side after auth
+- Direct URL refresh on arbitrary dynamic paths depends on GitHub Pages `404.html` SPA fallback
+
+For full SSR, ISR, or edge middleware later, consider **Vercel** or similar Node-compatible hosting.
+
+---
+
 ## Frontend (Web)
 
 | Technology | Role |
@@ -58,7 +82,7 @@ Row Level Security (RLS) and policies are defined in migrations.
 | `reviews` | `user_id`, `book_id` | `(user_id, book_id)` via migration 003 | `book_id`, `user_id` | Owner write; authenticated read |
 | `activity_events` | `user_id` | — | `user_id`, `created_at desc` | Owner read/insert only |
 
-**Auth:** Supabase email/password; `proxy.ts` protects app routes and redirects unauthenticated users to `/login`.
+**Auth:** Supabase email/password; `ClientAuthGuard` protects `(app)` routes client-side and redirects unauthenticated users to `/login`.
 
 **Migrations:** `001` (schema + RLS), `002` (`preferred_library_view`), `003` (book metadata + review uniqueness).
 
@@ -67,20 +91,19 @@ Row Level Security (RLS) and policies are defined in migrations.
 | Route | Handler |
 |-------|---------|
 | `/book/[id]` | Canonical book details (progress, shelf, reviews) |
-| `/books/[id]` | Legacy redirect → `/book/[id]` |
 | `/library`, `/library/[shelf]` | Library views and shelf detail |
 | `/reading-room` | Personalized reading space (Phase 1.5) |
 | `/dashboard` | Activity feed + analytics widgets |
 
-### Server actions & services
+### Client actions & services
 
 | Module | Role |
 |--------|------|
-| `lib/actions/book.ts` | Shelf moves, progress updates, reviews, favorites |
+| `lib/actions/book.ts` | Shelf moves, progress updates, reviews, favorites (Supabase client) |
 | `lib/services/bookDetails.ts` | Book + user_book + reviews fetch; Open Library enrich |
 | `lib/services/activity.ts` | Records `activity_events` on user actions |
 | `lib/services/books.ts` | Open Library search → `books` cache + shelf add |
-| `src/proxy.ts` | Auth session refresh + route protection (Next.js 16 proxy) |
+| `components/auth/ClientAuthGuard.tsx` | Client-side session + profile setup gate for `(app)` routes |
 
 ---
 

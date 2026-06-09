@@ -35,7 +35,7 @@ export function Footer() {
         </nav>
       </div>
       <div className="border-t border-white/10 px-4 py-4 text-center text-xs text-white/60">
-        © <span suppressHydrationWarning>{new Date().getFullYear()}</span> Bookmarked. All
+        © 2026 Bookmarked. All
         rights reserved.
       </div>
     </footer>

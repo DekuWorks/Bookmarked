@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { saveProfile, type AuthActionState } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
@@ -8,7 +9,12 @@ import { Input, Textarea } from "@/components/ui/Input";
 const initial: AuthActionState = {};
 
 export function ProfileSetupForm() {
+  const router = useRouter();
   const [state, formAction, pending] = useActionState(saveProfile, initial);
+
+  useEffect(() => {
+    if (state.redirect) router.replace(state.redirect);
+  }, [state.redirect, router]);
 
   return (
     <form action={formAction} className="w-full max-w-lg">

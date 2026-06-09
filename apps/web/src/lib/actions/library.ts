@@ -1,11 +1,8 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/client";
 import type { LibraryViewMode } from "@/types";
 
 export async function updatePreferredLibraryView(view: LibraryViewMode): Promise<void> {
-  const supabase = await createClient();
+  const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -16,9 +13,4 @@ export async function updatePreferredLibraryView(view: LibraryViewMode): Promise
     .from("profiles")
     .update({ preferred_library_view: view, updated_at: new Date().toISOString() })
     .eq("id", user.id);
-
-  revalidatePath("/library");
-  revalidatePath("/library/want-to-read");
-  revalidatePath("/library/reading");
-  revalidatePath("/library/read");
 }

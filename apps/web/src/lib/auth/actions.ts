@@ -1,12 +1,9 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/client";
 
 export type AuthActionState = {
   error?: string;
   success?: string;
+  redirect?: string;
 };
 
 export async function login(
@@ -20,7 +17,7 @@ export async function login(
     return { error: "Email and password are required." };
   }
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
@@ -28,7 +25,9 @@ export async function login(
   }
 
   const redirectTo = String(formData.get("redirect") ?? "").trim();
-  redirect(redirectTo && redirectTo.startsWith("/") ? redirectTo : "/dashboard");
+  return {
+    redirect: redirectTo && redirectTo.startsWith("/") ? redirectTo : "/dashboard",
+  };
 }
 
 export async function signup(
@@ -42,7 +41,7 @@ export async function signup(
     return { error: "Email and password are required." };
   }
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data, error } = await supabase.auth.signUp({ email, password });
 
   if (error) {
@@ -50,12 +49,11 @@ export async function signup(
   }
 
   if (data.session) {
-    redirect("/profile/setup");
+    return { redirect: "/profile/setup" };
   }
 
   return {
-    success:
-      "Check your email to confirm your account, then log in.",
+    success: "Check your email to confirm your account, then log in.",
   };
 }
 
@@ -63,7 +61,7 @@ export async function saveProfile(
   _prev: AuthActionState,
   formData: FormData
 ): Promise<AuthActionState> {
-  const supabase = await createClient();
+  const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -101,7 +99,5 @@ export async function saveProfile(
     return { error: error.message };
   }
 
-  revalidatePath("/dashboard");
-  revalidatePath("/profile");
-  redirect("/dashboard");
+  return { redirect: "/dashboard" };
 }

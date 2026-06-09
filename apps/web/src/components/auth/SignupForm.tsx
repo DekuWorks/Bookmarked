@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { signup, type AuthActionState } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -9,7 +10,12 @@ import Link from "next/link";
 const initial: AuthActionState = {};
 
 export function SignupForm() {
+  const router = useRouter();
   const [state, formAction, pending] = useActionState(signup, initial);
+
+  useEffect(() => {
+    if (state.redirect) router.replace(state.redirect);
+  }, [state.redirect, router]);
 
   return (
     <form action={formAction} className="w-full max-w-md">

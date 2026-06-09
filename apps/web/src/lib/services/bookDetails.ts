@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/client";
 import { fetchOpenLibraryWorkDetails } from "@/lib/services/openLibrary";
 import type { Book, Review, UserBook } from "@/types";
 
@@ -13,7 +13,7 @@ export async function getBookDetails(
   bookId: string,
   userId: string
 ): Promise<BookDetailsData | null> {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const { data: book, error } = await supabase
     .from("books")

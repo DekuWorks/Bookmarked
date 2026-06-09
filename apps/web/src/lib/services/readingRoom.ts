@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/client";
 import {
   computeReadingAnalytics,
   type ReadingAnalytics,
@@ -29,7 +29,7 @@ export async function getReadingRoomData(
   yearlyReadingGoal: number | null = null,
   profileGenres?: string[] | null
 ): Promise<ReadingRoomData> {
-  const supabase = await createClient();
+  const supabase = createClient();
   const [books, streakTimestamps] = await Promise.all([
     getUserLibraryBooks(userId),
     fetchReadingStreakTimestamps(userId),

@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { getProfile } from "@/lib/services/profile";
 import { getUserLibraryBooks } from "@/lib/services/library";
 import { computeReadingAnalytics } from "@/lib/services/analytics";
@@ -12,43 +15,65 @@ import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { AnalyticsGrid } from "@/components/analytics/AnalyticsGrid";
 import { CurrentlyReadingRow } from "@/components/reading-room/CurrentlyReadingRow";
 import { ShelfBadge } from "@/components/shelves/ShelfBadge";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { shelfStatusToSlug } from "@/lib/constants/shelves";
+import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import type { Profile } from "@/types";
+import type { LibraryBookRow } from "@/lib/services/library";
+import type { ReadingAnalytics } from "@/lib/services/analytics";
+import type { ReadingGoalStatus } from "@/lib/services/readingGoal";
 import type { ShelfStatus } from "@/types";
-
-export const metadata = { title: "Dashboard" };
 
 const QUICK_SHELVES: ShelfStatus[] = ["want_to_read", "currently_reading", "read"];
 
-export default async function DashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+type DashboardData = {
+  profile: Profile | null;
+  books: LibraryBookRow[];
+  analytics: ReadingAnalytics;
+  readingGoal: ReadingGoalStatus;
+  userId: string;
+};
 
-  if (!user) return null;
+export default function DashboardPage() {
+  const user = useAuthUser();
+  const [data, setData] = useState<DashboardData | null>(null);
 
-  const profile = await getProfile(user.id);
-  const [books, streakTimestamps] = await Promise.all([
-    getUserLibraryBooks(user.id),
-    fetchReadingStreakTimestamps(user.id),
-  ]);
+  useEffect(() => {
+    if (!user) return;
+    const supabase = createClient();
+    void Promise.all([
+      getProfile(user.id),
+      getUserLibraryBooks(user.id),
+      fetchReadingStreakTimestamps(user.id),
+      supabase
+        .from("reviews")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id),
+    ]).then(([profile, books, streakTimestamps, reviewResult]) => {
+      const analytics = computeReadingAnalytics({
+        books,
+        reviewsWritten: reviewResult.count ?? 0,
+        streakTimestamps,
+        profileGenres: profile?.favorite_genres,
+      });
+      setData({
+        profile,
+        books,
+        analytics,
+        readingGoal: computeReadingGoal(books, profile?.yearly_reading_goal ?? null),
+        userId: user.id,
+      });
+    });
+  }, [user]);
+
+  if (user === undefined || (user && !data)) {
+    return <LoadingState message="Loading dashboard…" />;
+  }
+
+  if (!user || !data) return null;
+
+  const { profile, books, analytics, readingGoal, userId } = data;
   const currentlyReading = books.filter((b) => b.shelf_status === "currently_reading");
-
-  const { count: reviewCount } = await supabase
-    .from("reviews")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id);
-
-  const analytics = computeReadingAnalytics({
-    books,
-    reviewsWritten: reviewCount ?? 0,
-    streakTimestamps,
-    profileGenres: profile?.favorite_genres,
-  });
-  const readingGoal = computeReadingGoal(
-    books,
-    profile?.yearly_reading_goal ?? null
-  );
 
   return (
     <div className="space-y-8">
@@ -79,7 +104,7 @@ export default async function DashboardPage() {
               <Link
                 key={status}
                 href={`/library/${shelfStatusToSlug(status)}`}
-                className="inline-flex min-h-[44px] items-center transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange rounded-lg"
+                className="inline-flex min-h-[44px] items-center rounded-lg transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
               >
                 <ShelfBadge status={status} />
               </Link>
@@ -106,7 +131,7 @@ export default async function DashboardPage() {
         <AnalyticsGrid analytics={analytics} readingGoal={readingGoal} compact />
       </DashboardCard>
 
-      <ActivityFeed userId={user.id} />
+      <ActivityFeed userId={userId} />
     </div>
   );
 }

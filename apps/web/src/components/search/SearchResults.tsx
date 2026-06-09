@@ -1,21 +1,40 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { SearchResultCard } from "@/components/search/SearchResultCard";
 import {
   openLibraryCoverUrl,
   openLibraryWorkId,
   searchOpenLibrary,
+  type OpenLibrarySearchResult,
 } from "@/lib/services/openLibrary";
+import { LoadingState } from "@/components/ui/LoadingState";
 
 type Props = {
   query: string;
 };
 
-export async function SearchResults({ query }: Props) {
-  let results;
-  try {
-    results = await searchOpenLibrary(query);
-  } catch (e) {
-    const message = e instanceof Error ? e.message : "Search failed.";
-    return <p className="text-rust">{message}</p>;
+export function SearchResults({ query }: Props) {
+  const [results, setResults] = useState<OpenLibrarySearchResult | null | "error">(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    setResults(null);
+    setErrorMessage(null);
+    void searchOpenLibrary(query)
+      .then(setResults)
+      .catch((e) => {
+        setResults("error");
+        setErrorMessage(e instanceof Error ? e.message : "Search failed.");
+      });
+  }, [query]);
+
+  if (results === null) {
+    return <LoadingState message="Searching…" />;
+  }
+
+  if (results === "error") {
+    return <p className="text-rust">{errorMessage}</p>;
   }
 
   if (!results.docs.length) {
@@ -29,20 +48,22 @@ export async function SearchResults({ query }: Props) {
       </p>
       <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {results.docs.map((doc) => {
-          const title = doc.title ?? "Untitled";
+          const workId = openLibraryWorkId(doc.key);
+          if (!workId || !doc.title) return null;
+          const coverUrl = doc.cover_i ? openLibraryCoverUrl(doc.cover_i) : null;
           const author = doc.author_name?.[0] ?? null;
-          const external_id = doc.key ?? openLibraryWorkId(doc.key) ?? "";
-          const coverUrl = openLibraryCoverUrl(doc.cover_i);
 
           return (
-            <li key={external_id || title}>
+            <li key={doc.key}>
               <SearchResultCard
-                title={title}
+                title={doc.title}
                 author={author}
-                external_id={external_id}
                 coverUrl={coverUrl}
-                cover_i={String(doc.cover_i ?? "")}
-                page_count={String(doc.number_of_pages_median ?? "")}
+                external_id={workId}
+                cover_i={doc.cover_i ? String(doc.cover_i) : ""}
+                page_count={
+                  doc.number_of_pages_median ? String(doc.number_of_pages_median) : ""
+                }
               />
             </li>
           );

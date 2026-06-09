@@ -1,25 +1,13 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/client";
 import { activityMetadata, recordActivity } from "@/lib/services/activity";
 import { getShelfLabel, isShelfStatus } from "@/lib/constants/shelfLabels";
 import type { ShelfStatus } from "@/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type BookActionState = {
   error?: string;
   success?: string;
 };
-
-function revalidateBookPaths(bookId: string) {
-  revalidatePath(`/book/${bookId}`);
-  revalidatePath(`/books/${bookId}`);
-  revalidatePath("/library");
-  revalidatePath("/library/want-to-read");
-  revalidatePath("/library/reading");
-  revalidatePath("/library/read");
-  revalidatePath("/dashboard", "page");
-}
 
 type UserBookRow = {
   id: string;
@@ -34,14 +22,14 @@ type AuthBookContext =
   | { ok: false; error: string }
   | {
       ok: true;
-      supabase: Awaited<ReturnType<typeof createClient>>;
+      supabase: SupabaseClient;
       user: { id: string };
       book: { id: string; title: string; page_count: number | null };
       userBook: UserBookRow | null;
     };
 
 async function getAuthUserBook(bookId: string): Promise<AuthBookContext> {
-  const supabase = await createClient();
+  const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -116,7 +104,6 @@ export async function setBookShelfStatus(
     }),
   });
 
-  revalidateBookPaths(bookId);
   const verb = userBook ? "Moved to" : "Added to";
   return { success: `${verb} ${getShelfLabel(shelf_status)}` };
 }
@@ -183,7 +170,6 @@ export async function updateReadingProgress(
     metadata_json: activityMetadata(book.title, { progress_percent }),
   });
 
-  revalidateBookPaths(bookId);
   return {
     success:
       updates.shelf_status === "read"
@@ -230,7 +216,6 @@ export async function markBookFinished(
     metadata_json: activityMetadata(book.title),
   });
 
-  revalidateBookPaths(bookId);
   return { success: "Marked as finished!" };
 }
 
@@ -256,7 +241,6 @@ export async function removeFromShelf(
     metadata_json: activityMetadata(book.title),
   });
 
-  revalidateBookPaths(bookId);
   return { success: "Removed from your library." };
 }
 
@@ -310,7 +294,6 @@ export async function saveReview(
     metadata_json: activityMetadata(book.title, { rating }),
   });
 
-  revalidateBookPaths(bookId);
   return { success: existing ? "Review updated." : "Review published." };
 }
 
@@ -335,8 +318,6 @@ export async function toggleFavorite(
 
   if (error) return { error: error.message };
 
-  revalidateBookPaths(bookId);
-  revalidatePath("/reading-room", "page");
   return { success: next ? "Added to favorites." : "Removed from favorites." };
 }
 
@@ -345,9 +326,8 @@ export async function deleteReview(
   formData: FormData
 ): Promise<BookActionState> {
   const reviewId = String(formData.get("review_id") ?? "");
-  const bookId = String(formData.get("book_id") ?? "");
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -361,6 +341,5 @@ export async function deleteReview(
 
   if (error) return { error: error.message };
 
-  if (bookId) revalidateBookPaths(bookId);
   return { success: "Review deleted." };
 }

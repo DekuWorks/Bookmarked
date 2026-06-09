@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/client";
 import type { LibraryBookRow } from "@/lib/services/library";
 
 const STREAK_EVENT_TYPES = [
@@ -136,7 +136,7 @@ export function computeReadingStreak(timestamps: string[]): ReadingStreakInsight
 }
 
 export async function fetchReadingStreakTimestamps(userId: string): Promise<string[]> {
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data, error } = await supabase
     .from("activity_events")
     .select("created_at")

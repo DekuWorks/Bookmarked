@@ -1,7 +1,10 @@
+"use client";
+
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { useEffect, useState } from "react";
 import { getProfile } from "@/lib/services/profile";
 import { getReadingRoomData } from "@/lib/services/readingRoom";
+import type { ReadingRoomData } from "@/lib/services/readingRoom";
 import { ReadingRoomSection } from "@/components/reading-room/ReadingRoomSection";
 import { CurrentlyReadingRow } from "@/components/reading-room/CurrentlyReadingRow";
 import { BookMiniGrid } from "@/components/reading-room/BookMiniGrid";
@@ -10,24 +13,33 @@ import { BookshelfView } from "@/components/library/BookshelfView";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { SHELF_CONFIG } from "@/lib/constants/shelves";
 import { ReadingGoalPanel } from "@/components/reading-goal/ReadingGoalPanel";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { useAuthUser } from "@/lib/hooks/useAuthUser";
 
-export const metadata = { title: "My Reading Room" };
+export default function ReadingRoomPage() {
+  const user = useAuthUser();
+  const [data, setData] = useState<ReadingRoomData | null>(null);
+  const [displayName, setDisplayName] = useState("Reader");
 
-export default async function ReadingRoomPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  useEffect(() => {
+    if (!user) return;
+    void getProfile(user.id).then((profile) => {
+      setDisplayName(profile?.display_name || profile?.username || "Reader");
+      return getReadingRoomData(
+        user.id,
+        profile?.yearly_reading_goal ?? null,
+        profile?.favorite_genres
+      );
+    }).then((room) => {
+      if (room) setData(room);
+    });
+  }, [user]);
 
-  if (!user) return null;
+  if (user === undefined || (user && !data)) {
+    return <LoadingState message="Loading reading room…" />;
+  }
 
-  const profile = await getProfile(user.id);
-  const data = await getReadingRoomData(
-    user.id,
-    profile?.yearly_reading_goal ?? null,
-    profile?.favorite_genres
-  );
-  const displayName = profile?.display_name || profile?.username || "Reader";
+  if (!user || !data) return null;
 
   return (
     <div className="reading-room-bg -mx-4 space-y-8 overflow-x-hidden px-4 py-2 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">

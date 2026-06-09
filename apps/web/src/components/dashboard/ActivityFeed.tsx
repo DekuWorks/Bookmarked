@@ -1,18 +1,39 @@
-import { createClient } from "@/lib/supabase/server";
+"use client";
+
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { formatActivityMessage } from "@/lib/services/activity";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
 
-export async function ActivityFeed({ userId }: { userId: string }) {
-  const supabase = await createClient();
+type ActivityEvent = {
+  event_type: string;
+  metadata_json: Record<string, unknown> | null;
+  created_at: string;
+};
 
-  const { data: events } = await supabase
-    .from("activity_events")
-    .select("event_type, metadata_json, created_at")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(12);
+export function ActivityFeed({ userId }: { userId: string }) {
+  const [events, setEvents] = useState<ActivityEvent[] | null>(null);
 
-  if (!events?.length) {
+  useEffect(() => {
+    const supabase = createClient();
+    void supabase
+      .from("activity_events")
+      .select("event_type, metadata_json, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(12)
+      .then(({ data }) => setEvents(data ?? []));
+  }, [userId]);
+
+  if (!events) {
+    return (
+      <DashboardCard title="Recent activity">
+        <p className="text-sm text-text-muted">Loading activity…</p>
+      </DashboardCard>
+    );
+  }
+
+  if (!events.length) {
     return (
       <DashboardCard title="Recent activity">
         <p className="text-sm text-text-muted">
@@ -36,10 +57,7 @@ export async function ActivityFeed({ userId }: { userId: string }) {
             </span>
             <div>
               <p className="text-text">
-                {formatActivityMessage(
-                  event.event_type,
-                  event.metadata_json as Record<string, unknown> | null
-                )}
+                {formatActivityMessage(event.event_type, event.metadata_json)}
               </p>
               <p className="mt-0.5 text-xs text-text-muted">
                 <time suppressHydrationWarning dateTime={event.created_at}>

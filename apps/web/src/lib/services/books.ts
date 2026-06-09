@@ -1,13 +1,11 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/client";
 import { getShelfLabel, isShelfStatus } from "@/lib/constants/shelfLabels";
 import { activityMetadata, recordActivity } from "@/lib/services/activity";
 import { openLibraryCoverUrl } from "@/lib/services/openLibrary";
+import type { ShelfStatus } from "@/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 const ADD_BOOK_ERROR = "Could not add book. Please try again.";
-import type { ShelfStatus } from "@/types";
 
 export type ShelfActionState = {
   error?: string;
@@ -23,16 +21,8 @@ type OpenLibraryBookInput = {
   page_count: string;
 };
 
-function revalidateLibraryPaths() {
-  revalidatePath("/library");
-  revalidatePath("/library/want-to-read");
-  revalidatePath("/library/reading");
-  revalidatePath("/library/read");
-  revalidatePath("/dashboard", "page");
-}
-
 async function upsertOpenLibraryCatalogBook(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: SupabaseClient,
   input: OpenLibraryBookInput
 ): Promise<{ bookId?: string; error?: string }> {
   const { title, author, external_id, cover_i, page_count } = input;
@@ -77,7 +67,7 @@ async function upsertOpenLibraryCatalogBook(
 export async function ensureOpenLibraryBook(
   input: OpenLibraryBookInput
 ): Promise<ShelfActionState> {
-  const supabase = await createClient();
+  const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -95,7 +85,7 @@ export async function addOpenLibraryBookToShelf(
   _prev: ShelfActionState,
   formData: FormData
 ): Promise<ShelfActionState> {
-  const supabase = await createClient();
+  const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -133,7 +123,6 @@ export async function addOpenLibraryBookToShelf(
     .maybeSingle();
 
   if (existingUserBook?.shelf_status === shelf_status) {
-    revalidateLibraryPaths();
     return { success: `Already on ${getShelfLabel(shelf_status)}`, bookId };
   }
 
@@ -169,8 +158,6 @@ export async function addOpenLibraryBookToShelf(
       previous_shelf_status: existingUserBook?.shelf_status ?? null,
     }),
   });
-
-  revalidateLibraryPaths();
 
   const label = getShelfLabel(shelf_status);
   const action = existingUserBook ? "Moved to" : "Added to";

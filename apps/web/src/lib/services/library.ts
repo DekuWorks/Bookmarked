@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/client";
 import { SHELF_CONFIG } from "@/lib/constants/shelves";
 import type { ShelfStatus } from "@/types";
 
@@ -35,7 +35,7 @@ const LIBRARY_SELECT =
   "id, shelf_status, progress_percent, progress_pages, rating, is_favorite, finished_at, started_at, created_at, updated_at, books(id, title, author, cover_url, page_count, subjects)";
 
 export async function getUserLibraryBooks(userId: string): Promise<LibraryBookRow[]> {
-  const supabase = await createClient();
+  const supabase = createClient();
   const { data, error } = await supabase
     .from("user_books")
     .select(LIBRARY_SELECT)

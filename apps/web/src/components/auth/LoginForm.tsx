@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { login, type AuthActionState } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -13,7 +14,12 @@ type Props = {
 };
 
 export function LoginForm({ redirect }: Props) {
+  const router = useRouter();
   const [state, formAction, pending] = useActionState(login, initial);
+
+  useEffect(() => {
+    if (state.redirect) router.replace(state.redirect);
+  }, [state.redirect, router]);
 
   return (
     <form action={formAction} className="w-full max-w-md">

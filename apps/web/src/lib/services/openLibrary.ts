@@ -17,9 +17,7 @@ export async function searchOpenLibrary(
     fields: "key,title,author_name,cover_i,first_publish_year,isbn,number_of_pages_median",
   });
 
-  const res = await fetch(`${SEARCH_URL}?${params}`, {
-    next: { revalidate: 300 },
-  });
+  const res = await fetch(`${SEARCH_URL}?${params}`);
 
   if (!res.ok) {
     throw new Error("Could not search Open Library. Try again.");
@@ -70,7 +68,6 @@ export async function fetchOpenLibraryWorkDetails(
 ): Promise<OpenLibraryWorkDetails | null> {
   const path = normalizeWorkPath(externalId);
   const res = await fetch(`https://openlibrary.org${path}.json`, {
-    next: { revalidate: 86400 },
     signal: AbortSignal.timeout(8000),
   });
 
