@@ -7,7 +7,7 @@ export default function PrivacyPage() {
   return (
     <>
       <Navbar variant="public" />
-      <main className="mx-auto max-w-3xl flex-1 px-4 py-16 md:px-8">
+      <main id="main-content" className="mx-auto max-w-3xl flex-1 px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
         <h1 className="text-3xl font-bold text-puce-red">Privacy Policy</h1>
         <p className="mt-6 leading-relaxed text-text-muted">
           We store account and reading data in Supabase to power your shelves and reviews. We do

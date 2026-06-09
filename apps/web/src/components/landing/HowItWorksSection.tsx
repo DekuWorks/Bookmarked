@@ -7,8 +7,8 @@ const steps = [
 
 export function HowItWorksSection() {
   return (
-    <section id="how-it-works" className="px-4 py-16 md:px-8 md:py-20">
-      <div className="mx-auto max-w-6xl">
+    <section id="how-it-works" className="px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-20">
+      <div className="mx-auto max-w-7xl">
         <h2 className="text-3xl font-bold text-puce-red">How it works</h2>
         <ol className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {steps.map((s) => (

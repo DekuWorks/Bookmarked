@@ -1,68 +1,57 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { NavbarPublicAuth } from "@/components/layout/NavbarPublicAuth";
+import { NavbarMenu, type NavLinkItem } from "@/components/layout/NavbarMenu";
+import { layout } from "@/lib/constants/layout";
+import { cn } from "@/lib/utils/cn";
 
 type Props = {
   variant?: "public" | "app";
 };
 
-export async function Navbar({ variant = "public" }: Props) {
-  const supabase = variant === "app" ? await createClient() : null;
-  const user =
-    supabase != null
-      ? (await supabase.auth.getUser()).data.user
-      : null;
+const APP_LINKS: NavLinkItem[] = [
+  { href: "/dashboard", label: "Dashboard" },
+  {
+    href: "/reading-room",
+    label: "Reading Room",
+    className: "font-semibold text-royal-orange hover:text-rust",
+  },
+  { href: "/library", label: "Library" },
+  { href: "/search", label: "Search" },
+  { href: "/profile", label: "Profile" },
+];
 
-  const isApp = variant === "app" && user;
+const PUBLIC_LINKS: NavLinkItem[] = [
+  { href: "/#features", label: "Features" },
+  { href: "/#contact", label: "Contact" },
+];
+
+export function Navbar({ variant = "public" }: Props) {
+  const isApp = variant === "app";
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-surface/95 backdrop-blur">
-      <nav className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 md:px-8">
-        <Link href="/" className="text-xl font-bold tracking-tight text-primary">
+      <nav
+        className={cn(layout.container, "flex items-center justify-between gap-4 py-3")}
+        aria-label="Main navigation"
+      >
+        <Link
+          href={isApp ? "/dashboard" : "/"}
+          className="shrink-0 text-xl font-bold tracking-tight text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2 rounded-sm"
+        >
           Bookmarked
         </Link>
 
-        <div className="flex max-w-[min(100%,20rem)] items-center gap-3 overflow-x-auto text-sm font-medium scrollbar-thin sm:max-w-none sm:flex-wrap sm:gap-4 md:overflow-visible">
-          {isApp ? (
-            <>
-              <Link href="/dashboard" className="shrink-0 text-puce-red hover:text-rust">
-                Dashboard
-              </Link>
-              <Link
-                href="/reading-room"
-                className="shrink-0 font-semibold text-royal-orange hover:text-rust"
-              >
-                <span className="sm:hidden" aria-hidden>
-                  Room
-                </span>
-                <span className="hidden sm:inline">Reading Room</span>
-              </Link>
-              <Link href="/library" className="shrink-0 text-puce-red hover:text-rust">
-                Library
-              </Link>
-              <Link href="/search" className="shrink-0 text-puce-red hover:text-rust">
-                Search
-              </Link>
-              <Link href="/profile" className="shrink-0 text-puce-red hover:text-rust">
-                Profile
-              </Link>
-              <span className="shrink-0">
-                <LogoutButton />
-              </span>
-            </>
-          ) : (
-            <>
-              <Link href="/#features" className="hidden text-puce-red hover:text-rust sm:inline">
-                Features
-              </Link>
-              <Link href="/#contact" className="hidden text-puce-red hover:text-rust sm:inline">
-                Contact
-              </Link>
-              <NavbarPublicAuth />
-            </>
-          )}
-        </div>
+        <NavbarMenu
+          links={isApp ? APP_LINKS : PUBLIC_LINKS}
+          footer={
+            isApp ? (
+              <LogoutButton />
+            ) : (
+              <NavbarPublicAuth layout="menu" />
+            )
+          }
+        />
       </nav>
     </header>
   );

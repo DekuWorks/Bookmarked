@@ -30,7 +30,7 @@ export default async function ReadingRoomPage() {
   const displayName = profile?.display_name || profile?.username || "Reader";
 
   return (
-    <div className="reading-room-bg -mx-4 space-y-8 px-4 py-2 md:-mx-8 md:px-8">
+    <div className="reading-room-bg -mx-4 space-y-8 overflow-x-hidden px-4 py-2 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
       <header className="animate-fade-in text-center md:text-left">
         <p className="text-sm font-medium uppercase tracking-widest text-primary">
           Your space

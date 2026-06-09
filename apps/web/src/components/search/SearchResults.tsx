@@ -27,7 +27,7 @@ export async function SearchResults({ query }: Props) {
       <p className="mb-4 text-sm text-text-muted">
         {results.numFound.toLocaleString()} results — showing {results.docs.length}
       </p>
-      <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {results.docs.map((doc) => {
           const title = doc.title ?? "Untitled";
           const author = doc.author_name?.[0] ?? null;

@@ -12,7 +12,10 @@ export default async function LoginPage({ searchParams }: Props) {
   return (
     <>
       <Navbar variant="public" />
-      <main className="flex flex-1 flex-col items-center justify-center px-4 py-16">
+      <main
+        id="main-content"
+        className="flex flex-1 flex-col items-center justify-center px-4 py-12 sm:px-6 sm:py-16"
+      >
         <div className="w-full max-w-md text-center">
           <h1 className="text-3xl font-bold text-puce-red">Welcome back</h1>
           <p className="mt-2 text-text-muted">Sign in to your Bookmarked account.</p>

@@ -1,7 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/utils/cn";
-import { useEffect, type ReactNode } from "react";
+import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
+import { useEffect, useRef, type ReactNode } from "react";
 
 type Props = {
   open: boolean;
@@ -12,6 +13,17 @@ type Props = {
 };
 
 export function Modal({ open, onClose, title, children, className }: Props) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
+
+  useFocusTrap(panelRef, open);
+
+  useEffect(() => {
+    if (open) {
+      triggerRef.current = document.activeElement as HTMLElement | null;
+    }
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -22,6 +34,7 @@ export function Modal({ open, onClose, title, children, className }: Props) {
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
+      if (!open) triggerRef.current?.focus?.();
     };
   }, [open, onClose]);
 
@@ -30,9 +43,7 @@ export function Modal({ open, onClose, title, children, className }: Props) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={title ? "modal-title" : undefined}
+      role="presentation"
     >
       <button
         type="button"
@@ -41,9 +52,13 @@ export function Modal({ open, onClose, title, children, className }: Props) {
         onClick={onClose}
       />
       <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? "modal-title" : undefined}
         className={cn(
-          "relative z-10 w-full max-w-md rounded-t-2xl bg-surface p-6 shadow-xl sm:rounded-xl",
-          "max-h-[85vh] overflow-y-auto",
+          "relative z-10 w-full max-w-md rounded-t-2xl bg-surface p-4 shadow-xl sm:rounded-xl sm:p-6",
+          "mx-0 max-h-[90vh] overflow-y-auto sm:mx-4",
           className
         )}
       >
@@ -58,8 +73,8 @@ export function Modal({ open, onClose, title, children, className }: Props) {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg px-2 py-1 text-text-muted hover:bg-background"
-            aria-label="Close"
+            className="inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg text-text-muted hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
+            aria-label="Close dialog"
           >
             ✕
           </button>

@@ -42,8 +42,69 @@ Map in `tailwind.config.ts`:
 |-------|-------|-------|
 | Card radius | `rounded-xl` (12px) | Cards, modals |
 | Button radius | `rounded-lg` (8px) | Buttons, inputs |
-| Section padding | `py-16 px-4 md:px-8` | Landing sections |
+| Section padding | `py-10 sm:py-14 lg:py-20` | Landing sections |
 | Card padding | `p-4 md:p-6` | Dashboard, book cards |
+| Page container | `lib/constants/layout.ts` → `layout.container` | `max-w-7xl px-4 sm:px-6 lg:px-8` |
+| App main | `layout.appMain` | Authenticated pages |
+
+---
+
+## Responsive & Accessibility
+
+### Breakpoints (Tailwind defaults)
+
+| Prefix | Min width | Typical use |
+|--------|-----------|-------------|
+| (none) | 0 | Mobile-first base styles |
+| `sm` | 640px | Large phones, stacked → row |
+| `md` | 768px | Tablet — desktop nav visible |
+| `lg` | 1024px | Laptop multi-column |
+| `xl` | 1280px | Desktop search grid (4 cols) |
+
+Test viewports: 360, 390, 430, 768, 1024, 1280, 1440px.
+
+### Mobile navigation
+
+**Path:** `NavbarMenu.tsx`
+
+- Hamburger below `md` with `aria-expanded`, `aria-controls`, `aria-label`
+- Slide-down drawer; backdrop click and **Escape** close
+- Nav link tap closes menu; route change closes menu
+- Focus trap while open
+- Desktop: horizontal links in header
+
+### Modals
+
+**Path:** `Modal.tsx`
+
+- Bottom sheet on mobile (`items-end`), centered on `sm+`
+- `max-h-[90vh]` scrollable panel
+- Escape + backdrop close
+- Focus trap via `useFocusTrap`
+- Close button `min-h-[44px]`
+
+### Touch targets
+
+- Buttons: `min-h-[44px]` (all sizes)
+- Nav links, footer links, shelf options: 44px minimum
+- Search/grid actions: visible on mobile (not hover-only)
+
+### Color contrast
+
+- **Primary buttons:** `bg-primary` + `text-puce-red` (not white on lavender)
+- **Secondary:** `bg-royal-orange` + white text
+- **Footer brand:** `text-orange-yellow` on `bg-puce-red`
+- **Errors:** `text-rust` on light backgrounds
+- **Focus:** `ring-royal-orange` globally via `:focus-visible`
+
+### Accessibility
+
+- Skip link → `#main-content` on all pages
+- Semantic landmarks: `main`, `nav`, `footer`
+- Form inputs: associated `<label>` via `Input`
+- Modals: `role="dialog"`, `aria-modal`, labelled title
+- Star rating: `role="radiogroup"` + per-star `aria-label`
+- `prefers-reduced-motion`: disables fade-in animation
 
 ---
 

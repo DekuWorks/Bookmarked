@@ -56,6 +56,21 @@
 
 ---
 
+## RESPONSIVE & ACCESSIBILITY SPRINT
+
+- [x] Responsive audit (landing, auth, app pages — 360px–1440px)
+- [x] Global layout tokens (`lib/constants/layout.ts`, `max-w-7xl`)
+- [x] Mobile hamburger navbar (`NavbarMenu` — drawer, escape, focus trap)
+- [x] Landing page mobile polish (hero CTAs stack, section spacing)
+- [x] Auth pages (full-width forms/buttons on mobile, skip link)
+- [x] Dashboard / search / library / book details responsive pass
+- [x] Modal accessibility (focus trap, scroll, 44px close target)
+- [x] Color contrast (primary buttons, footer brand)
+- [x] Touch targets (44px minimum on buttons and nav)
+- [x] Design system + progress tracker updated
+
+---
+
 ## PHASE 2 — SOCIAL (DO NOT START)
 
 - [ ] Follow users, likes, comments, communities, book clubs
@@ -70,4 +85,4 @@
 
 ## Last Updated
 
-Phase 1 complete. Phase 1.5 complete.
+Responsive & accessibility sprint complete. Ready for domain connect / public launch polish.

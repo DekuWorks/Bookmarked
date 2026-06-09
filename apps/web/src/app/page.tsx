@@ -11,7 +11,7 @@ export default function HomePage() {
   return (
     <>
       <Navbar variant="public" />
-      <main>
+      <main id="main-content">
         <HeroSection />
         <AboutSection />
         <FeaturesSection />

@@ -15,7 +15,7 @@ export function ContactSection() {
   }
 
   return (
-    <section id="contact" className="px-4 py-16 md:px-8 md:py-20">
+    <section id="contact" className="px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-20">
       <div className="mx-auto max-w-xl rounded-2xl border border-border bg-surface p-8 shadow-sm md:p-10">
         <h2 className="text-2xl font-bold text-puce-red">Join the waitlist</h2>
         <p className="mt-2 text-text-muted">

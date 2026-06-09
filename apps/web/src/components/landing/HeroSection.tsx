@@ -6,12 +6,12 @@ const btnBase =
 
 export function HeroSection() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-primary/20 via-background to-background px-4 py-20 md:px-8 md:py-28">
-      <div className="mx-auto max-w-6xl text-center">
+    <section className="relative overflow-hidden bg-gradient-to-b from-primary/20 via-background to-background px-4 py-14 sm:px-6 sm:py-20 lg:px-8 lg:py-28">
+      <div className="mx-auto max-w-7xl text-center">
         <p className="mb-4 inline-block rounded-full bg-orange-yellow/40 px-4 py-1 text-sm font-medium text-puce-red">
           Web-first · Mobile coming soon
         </p>
-        <h1 className="text-4xl font-bold tracking-tight text-puce-red md:text-5xl lg:text-6xl">
+        <h1 className="text-3xl font-bold tracking-tight text-puce-red sm:text-4xl md:text-5xl lg:text-6xl">
           Your reading life,{" "}
           <span className="text-primary">beautifully bookmarked</span>
         </h1>
@@ -19,10 +19,10 @@ export function HeroSection() {
           Search books, organize shelves, track progress, and share reviews — all in one cozy,
           reader-focused home on the web.
         </p>
-        <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+        <div className="mt-10 flex w-full max-w-md flex-col items-stretch justify-center gap-3 sm:mx-auto sm:max-w-none sm:flex-row sm:items-center sm:gap-4">
           <Link
             href="/signup"
-            className={cn(btnBase, "bg-royal-orange text-white hover:opacity-90")}
+            className={cn(btnBase, "w-full bg-royal-orange text-white hover:opacity-90 sm:w-auto")}
           >
             Get started free
           </Link>
@@ -30,7 +30,7 @@ export function HeroSection() {
             href="/login"
             className={cn(
               btnBase,
-              "border-2 border-primary text-primary bg-transparent hover:bg-primary/10"
+              "w-full border-2 border-primary bg-transparent text-puce-red hover:bg-primary/10 sm:w-auto"
             )}
           >
             Log in

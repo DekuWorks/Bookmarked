@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils/cn";
 
 export function PreviewDashboardSection() {
   return (
-    <section className="bg-gradient-to-b from-background to-primary/10 px-4 py-16 md:px-8 md:py-20">
-      <div className="mx-auto max-w-6xl">
+    <section className="bg-gradient-to-b from-background to-primary/10 px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-20">
+      <div className="mx-auto max-w-7xl">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <h2 className="text-3xl font-bold text-puce-red">Preview your dashboard</h2>
@@ -18,7 +18,7 @@ export function PreviewDashboardSection() {
           <Link
             href="/signup"
             className={cn(
-              "inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2.5 font-semibold text-white hover:opacity-90"
+              "inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-primary px-4 py-2.5 font-semibold text-puce-red hover:opacity-90 sm:w-auto"
             )}
           >
             Start reading

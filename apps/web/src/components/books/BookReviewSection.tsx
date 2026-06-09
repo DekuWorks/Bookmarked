@@ -35,8 +35,9 @@ function StarRating({
           type="button"
           role="radio"
           aria-checked={value === star}
+          aria-label={`${star} star${star === 1 ? "" : "s"}`}
           onClick={() => onChange(star)}
-          className={`text-2xl transition ${star <= value ? "text-royal-orange" : "text-border"}`}
+          className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center text-2xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange rounded-lg ${star <= value ? "text-royal-orange" : "text-border"}`}
         >
           ★
         </button>

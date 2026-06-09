@@ -19,7 +19,7 @@ export function SearchForm() {
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <Input
           label="Search books"
           name="q"
@@ -28,7 +28,7 @@ export function SearchForm() {
           onChange={(e) => setQ(e.target.value)}
         />
       </div>
-      <Button type="submit" variant="secondary" className="sm:mb-4">
+      <Button type="submit" variant="secondary" className="w-full sm:mb-4 sm:w-auto">
         Search
       </Button>
     </form>

@@ -44,7 +44,8 @@ export function ShelfSelectMenu({
                 disabled={loading || isCurrent}
                 onClick={() => onSelectShelf(status)}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-lg border px-4 py-3 text-left transition disabled:opacity-50",
+                  "flex min-h-[44px] w-full items-center gap-3 rounded-lg border px-4 py-3 text-left transition disabled:opacity-50",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange",
                   isCurrent
                     ? "border-primary bg-primary/10"
                     : "border-border bg-background hover:border-primary hover:bg-primary/5"
