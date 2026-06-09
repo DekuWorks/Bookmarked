@@ -1,9 +1,13 @@
-const SUPABASE_ENV_KEYS = [
-  "NEXT_PUBLIC_SUPABASE_URL",
-  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-] as const;
+/**
+ * Use static process.env.* references so Next.js inlines values at build time.
+ * Dynamic access (process.env[key]) is NOT replaced in static exports.
+ */
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ?? "";
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() ?? "";
 
-export type SupabaseEnvKey = (typeof SUPABASE_ENV_KEYS)[number];
+export type SupabaseEnvKey =
+  | "NEXT_PUBLIC_SUPABASE_URL"
+  | "NEXT_PUBLIC_SUPABASE_ANON_KEY";
 
 export type SupabaseEnv = {
   url: string;
@@ -14,23 +18,17 @@ export type EnvValidationResult =
   | { ok: true; env: SupabaseEnv }
   | { ok: false; missing: SupabaseEnvKey[] };
 
-function readEnv(key: SupabaseEnvKey): string {
-  return process.env[key]?.trim() ?? "";
-}
-
 export function getSupabaseEnv(): EnvValidationResult {
-  const url = readEnv("NEXT_PUBLIC_SUPABASE_URL");
-  const anonKey = readEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
   const missing: SupabaseEnvKey[] = [];
 
-  if (!url) missing.push("NEXT_PUBLIC_SUPABASE_URL");
-  if (!anonKey) missing.push("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  if (!SUPABASE_URL) missing.push("NEXT_PUBLIC_SUPABASE_URL");
+  if (!SUPABASE_ANON_KEY) missing.push("NEXT_PUBLIC_SUPABASE_ANON_KEY");
 
   if (missing.length > 0) {
     return { ok: false, missing };
   }
 
-  return { ok: true, env: { url, anonKey } };
+  return { ok: true, env: { url: SUPABASE_URL, anonKey: SUPABASE_ANON_KEY } };
 }
 
 export function formatMissingEnvError(missing: SupabaseEnvKey[]): string {

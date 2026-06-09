@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { isSupabaseConfigured } from "@/lib/env";
 import { LoadingState } from "@/components/ui/LoadingState";
 
 type Props = {
@@ -15,6 +16,8 @@ export function ClientAuthGuard({ children }: Props) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+
     const supabase = createClient();
 
     void supabase.auth.getSession().then(({ data: { session } }) => {
