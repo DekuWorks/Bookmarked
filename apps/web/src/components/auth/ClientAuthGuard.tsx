@@ -40,10 +40,6 @@ export function ClientAuthGuard({ children }: Props) {
             router.replace("/profile/setup");
             return;
           }
-          if (hasProfile && onSetup) {
-            router.replace("/dashboard");
-            return;
-          }
           setReady(true);
         });
     });

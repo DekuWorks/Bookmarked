@@ -99,5 +99,8 @@ export async function saveProfile(
     return { error: error.message };
   }
 
-  return { redirect: "/dashboard" };
+  const redirectTo = String(formData.get("redirect") ?? "").trim();
+  return {
+    redirect: redirectTo.startsWith("/") ? redirectTo : "/dashboard",
+  };
 }
