@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BookCover } from "@/components/books/BookCover";
+import { bookDetailsPath } from "@/lib/routes/book";
 import type { LibraryBookRow } from "@/lib/services/library";
 
 type Props = {
@@ -29,11 +30,12 @@ export function BookMiniGrid({ items, emptyMessage, emptyAction }: Props) {
     <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
       {items.map((ub) => {
         const book = ub.books;
-        const href = book?.id ? `/book/${book.id}` : undefined;
+        const href = book?.id ? bookDetailsPath(book.id) : undefined;
         const inner = (
           <>
             <BookCover
               title={book?.title ?? "Untitled"}
+              author={book?.author}
               coverUrl={book?.cover_url}
               className="w-full"
               sizes="120px"

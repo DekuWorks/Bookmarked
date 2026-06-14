@@ -47,6 +47,17 @@ The mobile app (React Native + Expo + TypeScript) is Phase 3. It will:
 | **Dashboard** | Overview of current reads, quick actions to shelves and search |
 | **Responsive UI** | Mobile-first layout that scales to desktop |
 
+## Book metadata & covers
+
+Book search and catalog metadata come primarily from **[Open Library](https://openlibrary.org/)**. Cover images use this order:
+
+1. Open Library cover ID (`cover_i`) when available  
+2. Open Library ISBN cover URL when an ISBN is known  
+3. **Google Books API** as a fallback for newer titles without Open Library art  
+4. A branded **Bookmarked placeholder** (title, author, purple/orange styling) when no cover is found  
+
+Some newer books may not have covers in Open Library immediately; fallback handling keeps the library looking polished rather than showing broken images.
+
 ## Future Features
 
 - Animated shelf transitions and drag-and-drop book movement

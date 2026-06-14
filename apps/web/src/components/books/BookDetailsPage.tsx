@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { getBookDetails } from "@/lib/services/bookDetails";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { BookCover } from "@/components/books/BookCover";
@@ -11,18 +11,34 @@ import { ReadingProgressPanel } from "@/components/books/ReadingProgressPanel";
 import { BookReviewSection } from "@/components/books/BookReviewSection";
 import { ShelfBadge } from "@/components/shelves/ShelfBadge";
 import { LoadingState } from "@/components/ui/LoadingState";
+import { ButtonLink } from "@/components/ui/ButtonLink";
 import type { BookDetailsData } from "@/lib/services/bookDetails";
 import type { ShelfStatus } from "@/types";
 
-export default function BookDetailsPage() {
-  const params = useParams<{ id: string }>();
+function BookDetailsContent() {
+  const searchParams = useSearchParams();
+  const bookId = searchParams.get("id")?.trim() ?? "";
   const user = useAuthUser();
   const [data, setData] = useState<BookDetailsData | null | undefined>(undefined);
 
   useEffect(() => {
-    if (!user || !params.id) return;
-    void getBookDetails(params.id, user.id).then(setData);
-  }, [user, params.id]);
+    if (!user || !bookId) {
+      if (user !== undefined) setData(null);
+      return;
+    }
+    void getBookDetails(bookId, user.id).then(setData);
+  }, [user, bookId]);
+
+  if (!bookId) {
+    return (
+      <div className="space-y-4 text-center">
+        <p className="text-text-muted">No book selected.</p>
+        <ButtonLink href="/search" variant="primary">
+          Search for books
+        </ButtonLink>
+      </div>
+    );
+  }
 
   if (user === undefined || data === undefined) {
     return <LoadingState message="Loading book…" />;
@@ -51,6 +67,7 @@ export default function BookDetailsPage() {
       <div className="grid gap-8 lg:grid-cols-[220px_1fr]">
         <BookCover
           title={book.title}
+          author={book.author}
           coverUrl={book.cover_url}
           className="mx-auto max-w-[220px] shadow-sm"
           priority
@@ -146,5 +163,13 @@ export default function BookDetailsPage() {
 
       <BookReviewSection bookId={book.id} ownReview={ownReview} reviews={reviews} />
     </div>
+  );
+}
+
+export default function BookDetailsPage() {
+  return (
+    <Suspense fallback={<LoadingState message="Loading book…" />}>
+      <BookDetailsContent />
+    </Suspense>
   );
 }

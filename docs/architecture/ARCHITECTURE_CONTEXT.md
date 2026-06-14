@@ -90,7 +90,7 @@ Row Level Security (RLS) and policies are defined in migrations.
 
 | Route | Handler |
 |-------|---------|
-| `/book/[id]` | Canonical book details (progress, shelf, reviews) |
+| `/book?id={id}` | Canonical book details (progress, shelf, reviews) |
 | `/library`, `/library/[shelf]` | Library views and shelf detail |
 | `/reading-room` | Personalized reading space (Phase 1.5) |
 | `/dashboard` | Activity feed + analytics widgets |
@@ -152,9 +152,10 @@ Export TypeScript interfaces used by web and mobile.
 
 | API | Use |
 |-----|-----|
-| **Open Library** | Book search and metadata (web MVP) |
+| **Open Library** | Book search, metadata, and primary cover images |
+| **Google Books** | Optional cover fallback when Open Library has no art |
 
-Book records are cached in `books` when added to a user's library.
+Book records are cached in `books` when added to a user's library. Missing covers show a branded Bookmarked placeholder in the UI.
 
 ---
 

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BookCover } from "@/components/books/BookCover";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { ButtonLink } from "@/components/ui/ButtonLink";
+import { bookDetailsPath } from "@/lib/routes/book";
 import type { LibraryBookRow } from "@/lib/services/library";
 
 type Props = {
@@ -37,6 +38,7 @@ export function CurrentlyReadingRow({ items }: Props) {
           >
             <BookCover
               title={book?.title ?? "Untitled"}
+              author={book?.author}
               coverUrl={book?.cover_url}
               className="w-20 flex-shrink-0"
               sizes="80px"
@@ -55,7 +57,7 @@ export function CurrentlyReadingRow({ items }: Props) {
               </div>
               {book?.id ? (
                 <ButtonLink
-                  href={`/book/${book.id}`}
+                  href={bookDetailsPath(book.id)}
                   variant="secondary"
                   size="sm"
                   className="mt-3 self-start"

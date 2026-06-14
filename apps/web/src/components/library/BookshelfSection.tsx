@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BookSpine } from "@/components/library/BookSpine";
 import { EmptyShelfMessage } from "@/components/library/EmptyShelfMessage";
+import { bookDetailsPath } from "@/lib/routes/book";
 import type { LibraryBookRow } from "@/lib/services/library";
 import type { ShelfStatus } from "@/types";
 
@@ -52,7 +53,7 @@ export function BookshelfSection({
                   title={book?.title ?? "Untitled"}
                   author={book?.author}
                   coverUrl={book?.cover_url}
-                  href={book?.id ? `/book/${book.id}` : undefined}
+                  href={book?.id ? bookDetailsPath(book.id) : undefined}
                 />
               );
             })}

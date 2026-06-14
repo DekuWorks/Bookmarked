@@ -1,5 +1,6 @@
 import { BookCard } from "@/components/books/BookCard";
 import { EmptyShelfMessage } from "@/components/library/EmptyShelfMessage";
+import { bookDetailsPath } from "@/lib/routes/book";
 import type { ShelfGroup } from "@/lib/services/library";
 
 type Props = {
@@ -29,7 +30,7 @@ export function LibraryGridView({ shelves }: Props) {
                     coverUrl={book?.cover_url}
                     shelfStatus={shelf.status}
                     progressPercent={Number(ub.progress_percent) || 0}
-                    href={book?.id ? `/book/${book.id}` : undefined}
+                    href={book?.id ? bookDetailsPath(book.id) : undefined}
                   />
                 );
               })}

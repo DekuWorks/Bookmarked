@@ -57,7 +57,7 @@ The deploy workflow fails fast with a clear error if either secret is missing.
 1. GitHub → Settings → Pages → Source: **GitHub Actions**; Custom domain: `bookmarked.online`; enforce HTTPS after DNS propagates
 2. GoDaddy DNS: A records `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`; CNAME `www` → `DekuWorks.github.io`
 
-**Static hosting notes:** The production build is a static SPA. Auth and data run client-side via Supabase. Direct navigation to dynamic URLs (e.g. `/book/{uuid}`) relies on GitHub Pages `404.html` fallback; client-side routing handles the rest after load.
+**Static hosting notes:** Book details use `/book?id={uuid}` (static-safe query route). Auth and data run client-side via Supabase.
 
 ### Key routes
 
@@ -65,7 +65,7 @@ The deploy workflow fails fast with a clear error if either secret is missing.
 |-------|-------------|
 | `/` | Landing page |
 | `/search` | Open Library search |
-| `/book/[id]` | Book details, progress, reviews |
+| `/book?id={id}` | Book details, progress, reviews |
 | `/library` | Full library (bookshelf / grid) |
 | `/library/want-to-read` | Want to read shelf |
 | `/library/reading` | Currently reading shelf |
@@ -89,7 +89,7 @@ Apply migrations in order via Supabase SQL Editor or `supabase db push`:
 Manual checklist (requires Supabase env configured):
 
 1. Open site → sign up → log in → complete profile
-2. Search a book → open `/book/[id]`
+2. Search a book → open `/book?id=…`
 3. Add to Want to Read → move to Currently Reading
 4. Update progress → mark as finished
 5. Write a review with spoiler toggle

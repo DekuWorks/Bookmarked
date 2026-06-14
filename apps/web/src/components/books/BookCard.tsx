@@ -34,7 +34,7 @@ export function BookCard({
         className
       )}
     >
-      <BookCover title={title} coverUrl={coverUrl} className="rounded-none border-0" />
+      <BookCover title={title} author={author} coverUrl={coverUrl} className="rounded-none border-0" />
       <div className="flex flex-1 flex-col gap-2 p-4">
         {shelfStatus ? <ShelfBadge status={shelfStatus} /> : null}
         <h3 className="line-clamp-2 font-semibold text-text">{title}</h3>

@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { getShelfLabel, isShelfStatus } from "@/lib/constants/shelfLabels";
 import { activityMetadata, recordActivity } from "@/lib/services/activity";
-import { openLibraryCoverUrl } from "@/lib/services/openLibrary";
+import { resolveBookCoverUrl } from "@/lib/services/covers";
 import type { ShelfStatus } from "@/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -19,28 +19,37 @@ type OpenLibraryBookInput = {
   external_id: string;
   cover_i: string;
   page_count: string;
+  isbn?: string;
 };
 
 async function upsertOpenLibraryCatalogBook(
   supabase: SupabaseClient,
   input: OpenLibraryBookInput
 ): Promise<{ bookId?: string; error?: string }> {
-  const { title, author, external_id, cover_i, page_count } = input;
+  const { title, author, external_id, cover_i, page_count, isbn } = input;
 
   if (!title || !external_id) {
     return { error: "Invalid book data." };
   }
 
-  const cover_url = cover_i ? openLibraryCoverUrl(Number(cover_i)) : null;
+  const cover_url = await resolveBookCoverUrl({
+    coverId: cover_i ? Number(cover_i) : null,
+    isbn: isbn ?? null,
+    title,
+    author,
+  });
 
   const { data: existing } = await supabase
     .from("books")
-    .select("id")
+    .select("id, cover_url")
     .eq("external_source", "open_library")
     .eq("external_id", external_id)
     .maybeSingle();
 
   if (existing?.id) {
+    if (!existing.cover_url && cover_url) {
+      await supabase.from("books").update({ cover_url }).eq("id", existing.id);
+    }
     return { bookId: existing.id };
   }
 
@@ -52,6 +61,7 @@ async function upsertOpenLibraryCatalogBook(
       title,
       author,
       cover_url,
+      isbn: isbn?.trim() || null,
       page_count: page_count ? Number(page_count) : null,
     })
     .select("id")
@@ -106,6 +116,7 @@ export async function addOpenLibraryBookToShelf(
     external_id: String(formData.get("external_id") ?? "").trim(),
     cover_i: String(formData.get("cover_i") ?? ""),
     page_count: String(formData.get("page_count") ?? ""),
+    isbn: String(formData.get("isbn") ?? "").trim() || undefined,
   };
 
   const catalog = await upsertOpenLibraryCatalogBook(supabase, input);

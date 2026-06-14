@@ -2,14 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import Image from "next/image";
 import { Button } from "@/components/ui/Button";
+import { BookCover } from "@/components/books/BookCover";
 import { ShelfSelectMenu } from "@/components/shelves/ShelfSelectMenu";
 import { useToast } from "@/components/ui/Toast";
 import {
   addOpenLibraryBookToShelf,
   ensureOpenLibraryBook,
 } from "@/lib/services/books";
+import { bookDetailsPath } from "@/lib/routes/book";
 import { cn } from "@/lib/utils/cn";
 import type { ShelfStatus } from "@/types";
 
@@ -20,6 +21,7 @@ type Props = {
   coverUrl: string | null;
   cover_i: string;
   page_count: string;
+  isbn?: string;
 };
 
 function ResultActions({
@@ -68,6 +70,7 @@ export function SearchResultCard({
   coverUrl,
   cover_i,
   page_count,
+  isbn = "",
 }: Props) {
   const router = useRouter();
   const toast = useToast();
@@ -75,7 +78,7 @@ export function SearchResultCard({
   const [saving, setSaving] = useState(false);
   const [viewDetailsLoading, setViewDetailsLoading] = useState(false);
 
-  const bookPayload = { title, author, external_id, cover_i, page_count };
+  const bookPayload = { title, author, external_id, cover_i, page_count, isbn };
 
   async function handleViewDetails() {
     setViewDetailsLoading(true);
@@ -85,7 +88,7 @@ export function SearchResultCard({
         toast.error(result.error ?? "Could not open book details.");
         return;
       }
-      router.push(`/book/${result.bookId}`);
+      router.push(bookDetailsPath(result.bookId));
     } finally {
       setViewDetailsLoading(false);
     }
@@ -103,6 +106,7 @@ export function SearchResultCard({
     formData.set("external_id", external_id);
     formData.set("cover_i", cover_i);
     formData.set("page_count", page_count);
+    formData.set("isbn", isbn);
     formData.set("shelf_status", shelfStatus);
 
     try {
@@ -126,23 +130,15 @@ export function SearchResultCard({
         tabIndex={0}
         className="group flex h-full flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-within:ring-2 focus-within:ring-primary/40 focus:outline-none"
       >
-        <div className="relative aspect-[2/3] w-full bg-background">
-          {coverUrl ? (
-            <Image
-              src={coverUrl}
-              alt={`Cover of ${title}`}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 50vw, 200px"
-              unoptimized
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center p-4 text-center text-sm text-text-muted">
-              No cover
-            </div>
-          )}
+        <div className="relative aspect-[2/3] w-full">
+          <BookCover
+            title={title}
+            author={author}
+            coverUrl={coverUrl}
+            className="rounded-none border-0"
+            sizes="(max-width: 768px) 50vw, 200px"
+          />
 
-          {/* Desktop hover overlay */}
           <div
             className="absolute inset-0 hidden flex-col items-stretch justify-end bg-puce-red/75 p-4 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 md:flex"
             aria-hidden={false}
@@ -163,7 +159,6 @@ export function SearchResultCard({
           ) : null}
         </div>
 
-        {/* Mobile actions — always visible */}
         <div className="flex flex-col gap-2 border-t border-border px-4 pb-4 pt-3 md:hidden">
           <ResultActions
             onViewDetails={handleViewDetails}

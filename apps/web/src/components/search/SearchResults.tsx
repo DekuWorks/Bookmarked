@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import { SearchResultCard } from "@/components/search/SearchResultCard";
 import {
-  openLibraryCoverUrl,
   openLibraryWorkId,
   searchOpenLibrary,
   type OpenLibrarySearchResult,
 } from "@/lib/services/openLibrary";
+import { resolveDisplayCoverUrl } from "@/lib/services/covers";
 import { LoadingState } from "@/components/ui/LoadingState";
 
 type Props = {
@@ -50,7 +50,11 @@ export function SearchResults({ query }: Props) {
         {results.docs.map((doc) => {
           const workId = openLibraryWorkId(doc.key);
           if (!workId || !doc.title) return null;
-          const coverUrl = doc.cover_i ? openLibraryCoverUrl(doc.cover_i) : null;
+          const isbn = doc.isbn?.[0] ?? "";
+          const coverUrl = resolveDisplayCoverUrl({
+            coverId: doc.cover_i,
+            isbn,
+          });
           const author = doc.author_name?.[0] ?? null;
 
           return (
@@ -64,6 +68,7 @@ export function SearchResults({ query }: Props) {
                 page_count={
                   doc.number_of_pages_median ? String(doc.number_of_pages_median) : ""
                 }
+                isbn={isbn}
               />
             </li>
           );

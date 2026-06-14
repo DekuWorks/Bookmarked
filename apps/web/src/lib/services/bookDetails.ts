@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import { fetchOpenLibraryWorkDetails } from "@/lib/services/openLibrary";
+import { resolveBookCoverUrl } from "@/lib/services/covers";
 import type { Book, Review, UserBook } from "@/types";
 
 export type BookDetailsData = {
@@ -49,6 +50,24 @@ export async function getBookDetails(
           .single();
         if (updated) enriched = updated as Book;
       }
+    }
+  }
+
+  if (!enriched.cover_url) {
+    const resolved = await resolveBookCoverUrl({
+      coverUrl: enriched.cover_url,
+      isbn: enriched.isbn,
+      title: enriched.title,
+      author: enriched.author,
+    });
+    if (resolved) {
+      const { data: updated } = await supabase
+        .from("books")
+        .update({ cover_url: resolved })
+        .eq("id", bookId)
+        .select("*")
+        .single();
+      if (updated) enriched = updated as Book;
     }
   }
 
