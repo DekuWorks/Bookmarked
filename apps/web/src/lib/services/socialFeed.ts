@@ -35,21 +35,39 @@ type RawFeedRow = {
   profiles: FeedItem["profiles"];
 };
 
-type ProfileSnippet = FeedItem["profiles"];
+type ActivityRow = Omit<RawFeedRow, "profiles">;
 
-type SupabaseFeedRow = Omit<RawFeedRow, "profiles"> & {
-  profiles: ProfileSnippet | ProfileSnippet[] | null;
-};
+const ACTIVITY_SELECT =
+  "id, user_id, event_type, entity_id, metadata_json, created_at, visibility";
 
-function normalizeFeedRows(rows: SupabaseFeedRow[]): RawFeedRow[] {
+async function attachProfiles(rows: ActivityRow[]): Promise<RawFeedRow[]> {
+  if (!rows.length) return [];
+
+  const userIds = [...new Set(rows.map((row) => row.user_id))];
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, username, display_name, avatar_url")
+    .in("id", userIds);
+
+  if (error) throw error;
+
+  const profilesById = new Map(
+    (data ?? []).map((profile) => [
+      profile.id,
+      {
+        username: profile.username as string | null,
+        display_name: profile.display_name as string | null,
+        avatar_url: profile.avatar_url as string | null,
+      },
+    ])
+  );
+
   return rows.map((row) => ({
     ...row,
-    profiles: Array.isArray(row.profiles) ? (row.profiles[0] ?? null) : row.profiles,
+    profiles: profilesById.get(row.user_id) ?? null,
   }));
 }
-
-const FEED_SELECT =
-  "id, user_id, event_type, entity_id, metadata_json, created_at, visibility, profiles(username, display_name, avatar_url)";
 
 function enrichFeedRow(row: RawFeedRow): FeedItem {
   const metadata = row.metadata_json;
@@ -106,7 +124,7 @@ export async function fetchFollowingFeed(
   const supabase = createClient();
   const { data, error } = await supabase
     .from("activity_events")
-    .select(FEED_SELECT)
+    .select(ACTIVITY_SELECT)
     .in("user_id", followingIds)
     .neq("visibility", "private")
     .order("created_at", { ascending: false })
@@ -115,11 +133,8 @@ export async function fetchFollowingFeed(
   if (error) throw error;
 
   const followingSet = new Set(followingIds);
-  const visible = filterVisibleRows(
-    normalizeFeedRows((data ?? []) as SupabaseFeedRow[]),
-    viewerId,
-    followingSet
-  );
+  const withProfiles = await attachProfiles((data ?? []) as ActivityRow[]);
+  const visible = filterVisibleRows(withProfiles, viewerId, followingSet);
 
   return visible.slice(0, limit).map(enrichFeedRow);
 }
@@ -172,18 +187,15 @@ export async function fetchForYouFeed(
 
   const { data, error } = await supabase
     .from("activity_events")
-    .select(FEED_SELECT)
+    .select(ACTIVITY_SELECT)
     .eq("visibility", "public")
     .order("created_at", { ascending: false })
     .limit(80);
 
   if (error) throw error;
 
-  const visible = filterVisibleRows(
-    normalizeFeedRows((data ?? []) as SupabaseFeedRow[]),
-    viewerId,
-    followingSet
-  )
+  const withProfiles = await attachProfiles((data ?? []) as ActivityRow[]);
+  const visible = filterVisibleRows(withProfiles, viewerId, followingSet)
     .map((row) => ({
       row,
       score: scoreForYouItem(row, viewerId, followingSet, genres),
@@ -206,7 +218,7 @@ export async function fetchReaderActivity(
   const supabase = createClient();
   const { data, error } = await supabase
     .from("activity_events")
-    .select(FEED_SELECT)
+    .select(ACTIVITY_SELECT)
     .eq("user_id", readerId)
     .neq("visibility", "private")
     .order("created_at", { ascending: false })
@@ -214,10 +226,7 @@ export async function fetchReaderActivity(
 
   if (error) throw error;
 
-  const visible = filterVisibleRows(
-    normalizeFeedRows((data ?? []) as SupabaseFeedRow[]),
-    viewerId,
-    followingSet
-  );
+  const withProfiles = await attachProfiles((data ?? []) as ActivityRow[]);
+  const visible = filterVisibleRows(withProfiles, viewerId, followingSet);
   return visible.slice(0, limit).map(enrichFeedRow);
 }
