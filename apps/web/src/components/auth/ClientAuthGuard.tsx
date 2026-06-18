@@ -23,7 +23,7 @@ export function ClientAuthGuard({ children }: Props) {
     void supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
         const redirect = encodeURIComponent(pathname);
-        router.replace(`/login?redirect=${redirect}`);
+        router.replace(`/login/?redirect=${redirect}`);
         return;
       }
 
