@@ -1,88 +1,145 @@
 # Bookmarked — Progress Tracker
 
+Aligned with **Bookmarked_BuildPlan.pdf** (web-first build plan).
+
+**Live:** https://bookmarked.online  
+**Current focus:** Phase 1 — Web Platform First (completion sprint)
+
 ---
 
-## PHASE 0 — SETUP
+## PHASE 0 — PLANNING & ARCHITECTURE
 
-- [x] All setup tasks complete
+- [x] Features and user flows defined
+- [x] Database schema + RLS (Supabase migrations `001`–`004`)
+- [x] GitHub repo + docs structure
+- [x] Supabase backend configured
+- [x] Next.js app scaffold (`apps/web`)
+
+**Outcome:** Technical foundation ready for development — **complete**
 
 ---
 
-## PHASE 1 — CORE WEB APP MVP
+## PHASE 1 — WEB PLATFORM FIRST
 
-- [x] **Task 1** — Hydration fixes (NavbarPublicAuth, ButtonLink, date suppressHydrationWarning)
-- [x] **Task 2** — Book details page (`/book/[id]` — metadata, shelf, progress, reviews)
-- [x] **Task 3** — Shelf selector modal (choose shelf before save, move/update, toast feedback)
-- [x] **Task 4** — Reading progress (pages, %, dates, mark finished, full-page suggestion)
-- [x] **Task 5** — Reviews (rating, body, spoiler, edit/delete, one per user per book)
-- [x] **Task 6** — Activity feed (5 event types, dashboard display)
-- [x] **Task 7** — Empty / loading / error states across major flows
-- [x] **Task 8** — Responsive QA (desktop, tablet, mobile)
-- [x] **Task 9** — Database audit (tables, FKs, indexes, RLS — see ARCHITECTURE_CONTEXT)
-- [x] **Task 10** — Documentation updated
-- [x] **Task 11** — Phase 1 smoke test criteria met (18-step journey)
+**Goal:** Users can fully use Bookmarked in the browser (accounts, search, shelves, progress, reviews).
 
-### Phase 1 user capabilities
+### Build order (PDF steps 1–8)
+
+| Step | Item | Status |
+|------|------|--------|
+| 1 | Supabase backend | Done |
+| 2 | Next.js web app | Done |
+| 3 | Authentication + profiles | Done |
+| 4 | Book search (Open Library) | Done |
+| 5 | Shelves / library | Done |
+| 6 | Reading progress | Done |
+| 7 | Reviews + ratings | Done |
+| 8 | Web dashboard | Done |
+
+### Phase 1 completion sprint
+
+| # | Task | Status | Notes |
+|---|------|--------|-------|
+| 1 | Book details routing | Done | Static route `/book/?id={uuid}` — GitHub Pages safe |
+| 2 | Continue Reading routing | Done | Dashboard uses `bookDetailsPath()` |
+| 3 | Reading progress tracking | Done | `ReadingProgressPanel` on book page |
+| 4 | Reviews and ratings | Done | `BookReviewSection` — 1–5 stars, spoiler, edit/delete |
+| 5 | Activity feed | Done | `ActivityFeed` on dashboard |
+| 6 | Cover fallback system | Done | Open Library → ISBN → Google Books → placeholder |
+| 7 | Final production QA | Done | Deploy, env vars, domain, client 404/cover fixes |
+| 8 | Documentation updates | Done | README, architecture, project overview |
+
+### Core routes
 
 | Capability | Route / component |
 |------------|-------------------|
-| Auth | `/login`, `/signup`, `proxy.ts` |
+| Auth | `/login`, `/signup`, `ClientAuthGuard` |
 | Profile | `/profile`, `/profile/setup` |
 | Search | `/search` + Open Library |
-| Book details | `/book/[id]` |
+| Book details | `/book/?id={id}` |
 | Shelves | `ShelfSelectMenu`, `BookShelfActions` |
+| Library | `/library`, `/library/want-to-read`, `/library/reading`, `/library/read` |
+| Views | Bookshelf + grid (`LibraryViewShell`) |
 | Progress | `ReadingProgressPanel` |
 | Reviews | `BookReviewSection` |
 | Activity | `ActivityFeed` on `/dashboard` |
+| Dashboard | `/dashboard` |
+
+### Deployment (static export)
+
+- GitHub Actions → GitHub Pages → `bookmarked.online`
+- Client-side Supabase (no server actions at runtime)
+- `NEXT_PUBLIC_SUPABASE_*` secrets required at build time
+
+**Phase 1 outcome:** Users can fully use Bookmarked without the mobile app — **complete**
 
 ---
 
-## PHASE 1.5 — DIFFERENTIATION
+## PHASE 2 — WEBSITE POLISH & PUBLIC PAGES (Build Plan)
 
-- [x] Interactive Bookshelf (bookshelf / grid toggle)
-- [x] Shelf detail pages + search + sort
-- [x] Reading Analytics
+*Do not confuse with old internal “Phase 2 social” — see deferred section below.*
+
+| Item | Status |
+|------|--------|
+| Landing page | Done |
+| About (on landing `#about`) | Done |
+| Features (on landing `#features`) | Done |
+| Contact / waitlist UI | Done (UI only — no backend) |
+| Privacy policy `/privacy` | Done |
+| Terms `/terms` | Done |
+| Responsive layouts | Done |
+| Public launch (domain + HTTPS) | Done |
+
+**Build order step 9:** Public website pages — **~90%** (waitlist backend optional)
+
+---
+
+## PHASE 3 — MOBILE APP FOUNDATION (Build Plan)
+
+- [ ] Expo app auth + navigation parity with web
+- [ ] Same Supabase account across web and mobile
+
+`apps/mobile/` scaffold exists (partial auth only).
+
+**Do not start until Phase 2 sign-off.**
+
+---
+
+## PHASE 4 — MOBILE APP CORE FEATURES (Build Plan)
+
+- [ ] Mobile shelves, search, progress, reviews, dashboard
+
+**Not started.**
+
+---
+
+## PHASE 5 — SYNC, TESTING & FINAL DELIVERY (Build Plan)
+
+- [x] Web deployment + production fixes
+- [ ] Cross-platform sync testing
+- [ ] App store readiness
+
+---
+
+## DEFERRED (not in Build Plan PDF — built early, keep)
+
+These were implemented before mobile; **not required for Phase 1 PDF** but live on production:
+
 - [x] Reading Room (`/reading-room`)
-- [x] Profile expansion
-- [x] Dashboard expansion
-- [x] Visual polish
-
-### Post–Phase 1.5 enhancements
-
-- [x] Reading goal (yearly target, progress on dashboard / reading room / profile)
-- [x] Favorite genre analytics (read-book subjects + profile fallback)
-- [x] Reading streak tracking (activity events, current + best streak)
+- [x] Shelf analytics + sort
+- [x] Reading goal (yearly)
+- [x] Favorite genre + reading streak
+- [x] Responsive & accessibility sprint
 - [ ] Badges & achievements
 
----
+## DEFERRED — SOCIAL (old internal Phase 2)
 
-## RESPONSIVE & ACCESSIBILITY SPRINT
+- [ ] Follow users, likes, comments, book clubs
 
-- [x] Responsive audit (landing, auth, app pages — 360px–1440px)
-- [x] Global layout tokens (`lib/constants/layout.ts`, `max-w-7xl`)
-- [x] Mobile hamburger navbar (`NavbarMenu` — drawer, escape, focus trap)
-- [x] Landing page mobile polish (hero CTAs stack, section spacing)
-- [x] Auth pages (full-width forms/buttons on mobile, skip link)
-- [x] Dashboard / search / library / book details responsive pass
-- [x] Modal accessibility (focus trap, scroll, 44px close target)
-- [x] Color contrast (primary buttons, footer brand)
-- [x] Touch targets (44px minimum on buttons and nav)
-- [x] Design system + progress tracker updated
+**Do not start until Build Plan Phases 3–5 are scoped.**
 
 ---
 
-## PHASE 2 — SOCIAL (DO NOT START)
+## Last updated
 
-- [ ] Follow users, likes, comments, communities, book clubs
-
----
-
-## PHASE 3 — MOBILE APP (DO NOT START)
-
-- [ ] Align Expo app with web MVP
-
----
-
-## Last Updated
-
-Responsive & accessibility sprint complete. Ready for domain connect / public launch polish.
+Phase 1 completion sprint closed. Production live at bookmarked.online. Next per Build Plan: Phase 2 waitlist backend (optional) or Phase 3 mobile foundation.
