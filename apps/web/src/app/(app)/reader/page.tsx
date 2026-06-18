@@ -24,7 +24,7 @@ type ReaderData = {
 
 function ReaderProfileContent() {
   const searchParams = useSearchParams();
-  const username = searchParams.get("username")?.trim().toLowerCase() ?? "";
+  const username = searchParams.get("username")?.trim() ?? "";
   const user = useAuthUser();
   const [data, setData] = useState<ReaderData | null | undefined>(undefined);
 

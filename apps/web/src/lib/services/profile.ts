@@ -16,11 +16,14 @@ export async function getProfile(userId: string): Promise<Profile | null> {
 export async function getProfileByUsername(
   username: string
 ): Promise<Profile | null> {
+  const normalized = username.trim();
+  if (!normalized) return null;
+
   const supabase = createClient();
   const { data, error } = await supabase
     .from("profiles")
     .select("*")
-    .eq("username", username)
+    .ilike("username", normalized)
     .maybeSingle();
 
   if (error) throw error;
