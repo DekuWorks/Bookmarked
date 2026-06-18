@@ -8,10 +8,11 @@ export type ActivityEventType =
   | "review_created"
   | "review_updated"
   | "book_removed"
-  // legacy aliases still in DB
   | "reading_started"
   | "reading_finished"
   | "review_added";
+
+export type ActivityVisibility = "public" | "followers" | "private";
 
 type ActivityInput = {
   user_id: string;
@@ -19,18 +20,50 @@ type ActivityInput = {
   entity_type?: string | null;
   entity_id?: string | null;
   metadata_json?: Record<string, unknown> | null;
+  visibility?: ActivityVisibility;
 };
+
+const FEED_EVENT_TYPES = new Set<string>([
+  "book_added",
+  "shelf_updated",
+  "book_finished",
+  "reading_finished",
+  "reading_started",
+  "review_created",
+  "review_added",
+  "review_updated",
+]);
+
+export function isFeedEligibleEvent(eventType: string): boolean {
+  return FEED_EVENT_TYPES.has(eventType);
+}
+
+function defaultVisibility(eventType: ActivityEventType): ActivityVisibility {
+  switch (eventType) {
+    case "book_removed":
+    case "progress_updated":
+      return "private";
+    case "shelf_updated":
+    case "reading_started":
+      return "followers";
+    default:
+      return "public";
+  }
+}
 
 export async function recordActivity(
   supabase: SupabaseClient,
   input: ActivityInput
 ): Promise<void> {
+  const visibility = input.visibility ?? defaultVisibility(input.event_type);
+
   await supabase.from("activity_events").insert({
     user_id: input.user_id,
     event_type: input.event_type,
     entity_type: input.entity_type ?? null,
     entity_id: input.entity_id ?? null,
     metadata_json: input.metadata_json ?? null,
+    visibility,
   });
 }
 
@@ -47,10 +80,17 @@ function shelfLabel(metadata: Record<string, unknown> | null): string | null {
   return raw.replace(/_/g, " ");
 }
 
-/** Personal dashboard copy — always second person. */
-export function formatActivityMessage(
+function displayName(
+  profile: { display_name?: string | null; username?: string | null } | null | undefined,
+  fallback = "Someone"
+): string {
+  return profile?.display_name?.trim() || profile?.username?.trim() || fallback;
+}
+
+function formatWithSubject(
   event_type: string,
-  metadata: Record<string, unknown> | null
+  metadata: Record<string, unknown> | null,
+  subject: string
 ): string {
   const title = bookTitle(metadata);
   const shelf = shelfLabel(metadata);
@@ -58,40 +98,98 @@ export function formatActivityMessage(
     typeof metadata?.progress_percent === "number"
       ? metadata.progress_percent
       : null;
+  const rating = typeof metadata?.rating === "number" ? metadata.rating : null;
 
   switch (event_type) {
     case "book_added":
       return shelf
-        ? `You added ${title} to ${shelf}`
-        : `You added ${title}`;
+        ? `${subject} added ${title} to ${shelf}`
+        : `${subject} added ${title}`;
     case "shelf_updated":
       return shelf
-        ? `You moved ${title} to ${shelf}`
-        : `You updated ${title}`;
+        ? `${subject} moved ${title} to ${shelf}`
+        : `${subject} updated ${title}`;
     case "progress_updated":
       return percent != null
-        ? `You updated progress on ${title} (${percent}%)`
-        : `You updated progress on ${title}`;
+        ? `${subject} updated progress on ${title} (${percent}%)`
+        : `${subject} updated progress on ${title}`;
     case "book_finished":
     case "reading_finished":
-      return `You finished ${title}`;
+      return `${subject} finished ${title}`;
     case "reading_started":
-      return `You started reading ${title}`;
+      return `${subject} started reading ${title}`;
     case "review_created":
     case "review_added":
-      return `You reviewed ${title}`;
+      return rating != null
+        ? `${subject} reviewed ${title} (${rating}★)`
+        : `${subject} reviewed ${title}`;
     case "review_updated":
-      return `You updated your review of ${title}`;
+      return `${subject} updated their review of ${title}`;
     case "book_removed":
-      return `You removed ${title} from your library`;
+      return `${subject} removed ${title} from their library`;
     default:
-      return `You updated your library`;
+      return `${subject} updated their library`;
   }
 }
 
+/** Personal dashboard copy — always second person. */
+export function formatActivityMessage(
+  event_type: string,
+  metadata: Record<string, unknown> | null
+): string {
+  return formatWithSubject(event_type, metadata, "You");
+}
+
+/** Social feed copy — third person with reader name. */
+export function formatSocialActivityMessage(
+  event_type: string,
+  metadata: Record<string, unknown> | null,
+  profile: { display_name?: string | null; username?: string | null } | null
+): string {
+  return formatWithSubject(event_type, metadata, displayName(profile));
+}
+
+type BookActivityContext = {
+  book_id?: string;
+  cover_url?: string | null;
+  subjects?: string[] | null;
+};
+
 export function activityMetadata(
   title: string,
-  extra?: Record<string, unknown>
+  extra?: Record<string, unknown> & BookActivityContext
 ): Record<string, unknown> {
-  return { title, book_title: title, ...extra };
+  const { book_id, cover_url, subjects, ...rest } = extra ?? {};
+  return {
+    title,
+    book_title: title,
+    ...(book_id ? { book_id } : {}),
+    ...(cover_url ? { cover_url } : {}),
+    ...(subjects?.length ? { subjects } : {}),
+    ...rest,
+  };
+}
+
+export function bookActivityContext(book: {
+  id: string;
+  cover_url?: string | null;
+  subjects?: string[] | null;
+}): BookActivityContext {
+  return {
+    book_id: book.id,
+    cover_url: book.cover_url ?? null,
+    subjects: book.subjects ?? null,
+  };
+}
+
+export function canViewerSeeActivity(
+  visibility: ActivityVisibility,
+  viewerId: string,
+  authorId: string,
+  isFollowingAuthor: boolean
+): boolean {
+  if (viewerId === authorId) return true;
+  if (visibility === "private") return false;
+  if (visibility === "followers") return isFollowingAuthor;
+  return true;
 }

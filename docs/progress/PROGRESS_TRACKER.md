@@ -132,14 +132,22 @@ These were implemented before mobile; **not required for Phase 1 PDF** but live 
 - [x] Responsive & accessibility sprint
 - [ ] Badges & achievements
 
-## DEFERRED — SOCIAL (old internal Phase 2)
+## SOCIAL FEED (beyond Build Plan PDF)
 
-- [ ] Follow users, likes, comments, book clubs
+- [x] Follow / unfollow users (`follows` table, migration `005`)
+- [x] Following feed + For You feed (`/feed`)
+- [x] Public reader profiles (`/reader/?username=`)
+- [x] Activity visibility (public / followers / private)
+- [ ] Likes, comments, book clubs
 
-**Do not start until Build Plan Phases 3–5 are scoped.**
+## DEFERRED — SOCIAL (extended)
+
+- [ ] Likes, comments, book clubs
+
+**Core follow + feed shipped; extended social deferred.**
 
 ---
 
 ## Last updated
 
-Phase 1 completion sprint closed. Production live at bookmarked.online. Next per Build Plan: Phase 2 waitlist backend (optional) or Phase 3 mobile foundation.
+Phase 1 completion sprint closed. Social follow + dual feed (`/feed`, `/reader`) added. Production live at bookmarked.online. Apply migration `005_social_follows_and_feed.sql` to Supabase before using follows in production.

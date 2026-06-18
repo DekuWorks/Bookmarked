@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import { getShelfLabel, isShelfStatus } from "@/lib/constants/shelfLabels";
-import { activityMetadata, recordActivity } from "@/lib/services/activity";
+import { activityMetadata, bookActivityContext, recordActivity } from "@/lib/services/activity";
 import { resolveBookCoverUrl } from "@/lib/services/covers";
 import type { ShelfStatus } from "@/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -157,12 +157,19 @@ export async function addOpenLibraryBookToShelf(
 
   const event_type = existingUserBook ? "shelf_updated" : "book_added";
 
+  const { data: bookRow } = await supabase
+    .from("books")
+    .select("id, cover_url, subjects")
+    .eq("id", bookId)
+    .maybeSingle();
+
   await recordActivity(supabase, {
     user_id: user.id,
     event_type,
     entity_type: "user_book",
     entity_id: userBook?.id ?? null,
     metadata_json: activityMetadata(input.title, {
+      ...bookActivityContext(bookRow ?? { id: bookId }),
       shelf_status,
       external_source: "open_library",
       external_id: input.external_id,

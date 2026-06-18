@@ -11,6 +11,7 @@ type Props = {
 
 const APP_LINKS: NavLinkItem[] = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/feed", label: "Feed" },
   {
     href: "/reading-room",
     label: "Reading Room",

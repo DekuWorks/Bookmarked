@@ -1,5 +1,9 @@
 import { createClient } from "@/lib/supabase/client";
-import { activityMetadata, recordActivity } from "@/lib/services/activity";
+import {
+  activityMetadata,
+  bookActivityContext,
+  recordActivity,
+} from "@/lib/services/activity";
 import { getShelfLabel, isShelfStatus } from "@/lib/constants/shelfLabels";
 import type { ShelfStatus } from "@/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -24,7 +28,13 @@ type AuthBookContext =
       ok: true;
       supabase: SupabaseClient;
       user: { id: string };
-      book: { id: string; title: string; page_count: number | null };
+      book: {
+        id: string;
+        title: string;
+        page_count: number | null;
+        cover_url: string | null;
+        subjects: string[] | null;
+      };
       userBook: UserBookRow | null;
     };
 
@@ -37,7 +47,7 @@ async function getAuthUserBook(bookId: string): Promise<AuthBookContext> {
 
   const { data: book } = await supabase
     .from("books")
-    .select("id, title, page_count")
+    .select("id, title, page_count, cover_url, subjects")
     .eq("id", bookId)
     .maybeSingle();
 
@@ -99,6 +109,7 @@ export async function setBookShelfStatus(
     entity_type: "user_book",
     entity_id: saved.id,
     metadata_json: activityMetadata(book.title, {
+      ...bookActivityContext(book),
       shelf_status,
       previous_shelf_status: userBook?.shelf_status ?? null,
     }),
@@ -167,7 +178,10 @@ export async function updateReadingProgress(
       updates.shelf_status === "read" ? "book_finished" : "progress_updated",
     entity_type: "user_book",
     entity_id: userBook.id,
-    metadata_json: activityMetadata(book.title, { progress_percent }),
+    metadata_json: activityMetadata(book.title, {
+      ...bookActivityContext(book),
+      progress_percent,
+    }),
   });
 
   return {
@@ -213,7 +227,7 @@ export async function markBookFinished(
     event_type: "book_finished",
     entity_type: "user_book",
     entity_id: userBook.id,
-    metadata_json: activityMetadata(book.title),
+    metadata_json: activityMetadata(book.title, bookActivityContext(book)),
   });
 
   return { success: "Marked as finished!" };
@@ -291,7 +305,10 @@ export async function saveReview(
     event_type: existing ? "review_updated" : "review_created",
     entity_type: "review",
     entity_id: saved.id,
-    metadata_json: activityMetadata(book.title, { rating }),
+    metadata_json: activityMetadata(book.title, {
+      ...bookActivityContext(book),
+      rating,
+    }),
   });
 
   return { success: existing ? "Review updated." : "Review published." };

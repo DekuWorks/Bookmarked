@@ -15,6 +15,8 @@ import { BookMiniGrid } from "@/components/reading-room/BookMiniGrid";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { getFollowCounts } from "@/lib/services/follows";
+import { readerProfilePath } from "@/lib/routes/reader";
 import type { Profile } from "@/types";
 import type { LibraryBookRow } from "@/lib/services/library";
 import type { ReadingAnalytics } from "@/lib/services/analytics";
@@ -27,6 +29,7 @@ type ProfileData = {
   readingGoal: ReadingGoalStatus;
   recentlyFinished: LibraryBookRow[];
   favorites: LibraryBookRow[];
+  followCounts: { followers: number; following: number };
 };
 
 export default function ProfilePage() {
@@ -40,11 +43,12 @@ export default function ProfilePage() {
       getProfile(user.id),
       getUserLibraryBooks(user.id),
       fetchReadingStreakTimestamps(user.id),
+      getFollowCounts(user.id),
       supabase
         .from("reviews")
         .select("id", { count: "exact", head: true })
         .eq("user_id", user.id),
-    ]).then(([profile, books, streakTimestamps, reviewResult]) => {
+    ]).then(([profile, books, streakTimestamps, followCounts, reviewResult]) => {
       const analytics = computeReadingAnalytics({
         books,
         reviewsWritten: reviewResult.count ?? 0,
@@ -68,6 +72,7 @@ export default function ProfilePage() {
         readingGoal: computeReadingGoal(books, profile?.yearly_reading_goal ?? null),
         recentlyFinished,
         favorites,
+        followCounts,
       });
     });
   }, [user]);
@@ -78,7 +83,8 @@ export default function ProfilePage() {
 
   if (!user || !data) return null;
 
-  const { profile, email, analytics, readingGoal, recentlyFinished, favorites } = data;
+  const { profile, email, analytics, readingGoal, recentlyFinished, favorites, followCounts } =
+    data;
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
@@ -94,6 +100,16 @@ export default function ProfilePage() {
         {profile?.username ? (
           <p className="text-text-muted">@{profile.username}</p>
         ) : null}
+        <dl className="mt-3 flex gap-6 text-sm">
+          <div>
+            <dt className="text-text-muted">Followers</dt>
+            <dd className="font-semibold text-text">{followCounts.followers}</dd>
+          </div>
+          <div>
+            <dt className="text-text-muted">Following</dt>
+            <dd className="font-semibold text-text">{followCounts.following}</dd>
+          </div>
+        </dl>
         {profile?.bio ? (
           <p className="mt-4 leading-relaxed text-text">{profile.bio}</p>
         ) : null}
@@ -110,6 +126,11 @@ export default function ProfilePage() {
           </div>
         ) : null}
         <div className="mt-6 flex flex-wrap gap-3">
+          {profile?.username ? (
+            <ButtonLink href={readerProfilePath(profile.username)} variant="secondary" size="sm">
+              Public profile
+            </ButtonLink>
+          ) : null}
           <ButtonLink href="/profile/setup" variant="outline" size="sm">
             Edit profile
           </ButtonLink>
