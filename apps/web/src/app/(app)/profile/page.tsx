@@ -15,7 +15,8 @@ import { BookMiniGrid } from "@/components/reading-room/BookMiniGrid";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
-import { getFollowCounts } from "@/lib/services/follows";
+import { FollowStats } from "@/components/social/FollowStats";
+import { getFollowCounts, type FollowCounts } from "@/lib/services/follows";
 import { readerProfilePath } from "@/lib/routes/reader";
 import type { Profile } from "@/types";
 import type { LibraryBookRow } from "@/lib/services/library";
@@ -29,7 +30,7 @@ type ProfileData = {
   readingGoal: ReadingGoalStatus;
   recentlyFinished: LibraryBookRow[];
   favorites: LibraryBookRow[];
-  followCounts: { followers: number; following: number };
+  followCounts: FollowCounts;
 };
 
 export default function ProfilePage() {
@@ -100,16 +101,13 @@ export default function ProfilePage() {
         {profile?.username ? (
           <p className="text-text-muted">@{profile.username}</p>
         ) : null}
-        <dl className="mt-3 flex gap-6 text-sm">
-          <div>
-            <dt className="text-text-muted">Followers</dt>
-            <dd className="font-semibold text-text">{followCounts.followers}</dd>
-          </div>
-          <div>
-            <dt className="text-text-muted">Following</dt>
-            <dd className="font-semibold text-text">{followCounts.following}</dd>
-          </div>
-        </dl>
+        <FollowStats
+          profileUserId={user.id}
+          viewerId={user.id}
+          profileName={profile?.display_name || profile?.username || "Reader"}
+          counts={followCounts}
+          className="mt-3"
+        />
         {profile?.bio ? (
           <p className="mt-4 leading-relaxed text-text">{profile.bio}</p>
         ) : null}

@@ -8,12 +8,12 @@ import { FeedCard } from "@/components/social/FeedCard";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
-import { getFollowCounts, isFollowing } from "@/lib/services/follows";
+import { getFollowCounts, isFollowing, type FollowCounts } from "@/lib/services/follows";
 import { getProfileByUsername } from "@/lib/services/profile";
 import { fetchReaderActivity } from "@/lib/services/socialFeed";
 import type { FeedItem } from "@/lib/services/socialFeed";
 import type { Profile } from "@/types";
-import type { FollowCounts } from "@/lib/services/follows";
+import { FollowStats } from "@/components/social/FollowStats";
 
 type ReaderData = {
   profile: Profile;
@@ -118,16 +118,14 @@ function ReaderProfileContent() {
           </div>
         ) : null}
 
-        <dl className="mt-6 flex gap-6 text-sm">
-          <div>
-            <dt className="text-text-muted">Followers</dt>
-            <dd className="text-lg font-semibold text-text">{counts.followers}</dd>
-          </div>
-          <div>
-            <dt className="text-text-muted">Following</dt>
-            <dd className="text-lg font-semibold text-text">{counts.following}</dd>
-          </div>
-        </dl>
+        <FollowStats
+          profileUserId={profile.id}
+          viewerId={user.id}
+          profileName={displayName}
+          counts={counts}
+          className="mt-6"
+          size="md"
+        />
       </header>
 
       <section className="space-y-4">
