@@ -252,7 +252,7 @@ export async function removeFromShelf(
     event_type: "book_removed",
     entity_type: "user_book",
     entity_id: userBook.id,
-    metadata_json: activityMetadata(book.title),
+    metadata_json: activityMetadata(book.title, bookActivityContext(book)),
   });
 
   return { success: "Removed from your library." };

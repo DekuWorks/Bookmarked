@@ -16,6 +16,8 @@ import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { FollowStats } from "@/components/social/FollowStats";
+import { ProfileShelfPreview } from "@/components/profile/ProfileShelfPreview";
+import { ShelfPrivacyPanel } from "@/components/profile/ShelfPrivacyPanel";
 import { getFollowCounts, type FollowCounts } from "@/lib/services/follows";
 import { readerProfilePath } from "@/lib/routes/reader";
 import type { Profile } from "@/types";
@@ -134,6 +136,17 @@ export default function ProfilePage() {
           </ButtonLink>
           <LogoutButton />
         </div>
+      </section>
+
+      {profile ? <ShelfPrivacyPanel profile={profile} /> : null}
+
+      <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
+        <h2 className="mb-4 text-lg font-semibold text-puce-red">Shelves</h2>
+        <ProfileShelfPreview
+          ownerId={user.id}
+          username={profile?.username ?? null}
+          isOwnProfile
+        />
       </section>
 
       <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">

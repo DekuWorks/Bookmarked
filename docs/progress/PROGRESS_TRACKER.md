@@ -3,14 +3,14 @@
 Aligned with **Bookmarked_BuildPlan.pdf** (web-first build plan).
 
 **Live:** https://bookmarked.online  
-**Current focus:** Phase 1 — Web Platform First (completion sprint)
+**Current focus:** Social discovery + public profiles (beyond Phase 1 PDF)
 
 ---
 
 ## PHASE 0 — PLANNING & ARCHITECTURE
 
 - [x] Features and user flows defined
-- [x] Database schema + RLS (Supabase migrations `001`–`004`)
+- [x] Database schema + RLS (Supabase migrations `001`–`007`)
 - [x] GitHub repo + docs structure
 - [x] Supabase backend configured
 - [x] Next.js app scaffold (`apps/web`)
@@ -77,8 +77,6 @@ Aligned with **Bookmarked_BuildPlan.pdf** (web-first build plan).
 
 ## PHASE 2 — WEBSITE POLISH & PUBLIC PAGES (Build Plan)
 
-*Do not confuse with old internal “Phase 2 social” — see deferred section below.*
-
 | Item | Status |
 |------|--------|
 | Landing page | Done |
@@ -91,6 +89,69 @@ Aligned with **Bookmarked_BuildPlan.pdf** (web-first build plan).
 | Public launch (domain + HTTPS) | Done |
 
 **Build order step 9:** Public website pages — **~90%** (waitlist backend optional)
+
+---
+
+## SOCIAL & DISCOVERY (beyond Build Plan PDF)
+
+### Follow graph & feeds
+
+| Feature | Status | Route / notes |
+|---------|--------|----------------|
+| Follow / unfollow | Done | `follows` table — migration `005` |
+| Following feed | Done | `/feed` → Following tab |
+| For You feed | Done | `/feed` → ranked by genres, recency, follows |
+| Activity visibility | Done | `public` / `followers` / `private` on `activity_events` |
+| Feed book covers | Done | Hydrated from metadata + `books` catalog; all shelf/review events |
+| Feed search | Done | Readers, catalog books, posts — debounced on `/feed` |
+| Feed search → profile | Done | `ReaderSearchCard` links to `/reader/?username=` |
+
+### Public profiles & library
+
+| Feature | Status | Route / notes |
+|---------|--------|----------------|
+| Public reader profile | Done | `/reader/?username=` (case-insensitive lookup) |
+| Follower / following counts | Done | Clickable on `/profile` and `/reader` |
+| Follower / following lists | Done | `FollowListModal` — mutuals + “you both follow” |
+| Profile shelf preview | Done | First 3 shelves, 4 books each — `/profile` + `/reader` |
+| Full public library | Done | `/reader-library/?username=` |
+| See more → library | Done | Own profile → `/reading-room`; others → reader library |
+| Shelf privacy controls | Done | Per-shelf: Public / Followers only / Private — migration `007` |
+| Shelf privacy UI | Done | `ShelfPrivacyPanel` on `/profile` |
+
+### Supabase migrations (social)
+
+| Migration | Purpose |
+|-----------|---------|
+| `005_social_follows_and_feed.sql` | `follows` table; `activity_events.visibility` |
+| `006_profiles_fk_for_embeds.sql` | Profile FKs for PostgREST embeds |
+| `007_shelf_visibility.sql` | Per-shelf visibility columns + `user_books` RLS |
+
+### Social routes summary
+
+| Route | Purpose |
+|-------|---------|
+| `/feed` | For You + Following tabs + search |
+| `/reader/?username=` | Public profile, shelves preview, activity, follow |
+| `/reader-library/?username=` | Full public bookshelf for a reader |
+
+### Deferred social
+
+- [ ] Likes, comments, book clubs
+- [ ] Badges & achievements
+
+---
+
+## DEFERRED (not in Build Plan PDF — built early, keep)
+
+| Feature | Status |
+|---------|--------|
+| Reading Room (`/reading-room`) | Done |
+| Shelf analytics + sort | Done |
+| Reading goal (yearly) | Done |
+| Favorite genre + reading streak | Done |
+| Responsive & accessibility sprint | Done |
+| Badges & achievements | Not started |
 
 ---
 
@@ -121,33 +182,6 @@ Aligned with **Bookmarked_BuildPlan.pdf** (web-first build plan).
 
 ---
 
-## DEFERRED (not in Build Plan PDF — built early, keep)
-
-These were implemented before mobile; **not required for Phase 1 PDF** but live on production:
-
-- [x] Reading Room (`/reading-room`)
-- [x] Shelf analytics + sort
-- [x] Reading goal (yearly)
-- [x] Favorite genre + reading streak
-- [x] Responsive & accessibility sprint
-- [ ] Badges & achievements
-
-## SOCIAL FEED (beyond Build Plan PDF)
-
-- [x] Follow / unfollow users (`follows` table, migration `005`)
-- [x] Following feed + For You feed (`/feed`)
-- [x] Public reader profiles (`/reader/?username=`)
-- [x] Activity visibility (public / followers / private)
-- [ ] Likes, comments, book clubs
-
-## DEFERRED — SOCIAL (extended)
-
-- [ ] Likes, comments, book clubs
-
-**Core follow + feed shipped; extended social deferred.**
-
----
-
 ## Last updated
 
-Phase 1 completion sprint closed. Social follow + dual feed (`/feed`, `/reader`) added. Production live at bookmarked.online. Apply migration `005_social_follows_and_feed.sql` to Supabase before using follows in production.
+June 2026 — Social layer complete on production: dual feed with covers and search, public reader profiles with clickable follower/following lists (mutuals), shelf previews with per-shelf privacy, and reader library room. Migrations `005`–`007` applied to Supabase. Live at https://bookmarked.online.

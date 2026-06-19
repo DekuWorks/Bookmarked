@@ -13,6 +13,7 @@ import { getProfileByUsername } from "@/lib/services/profile";
 import { fetchReaderActivity } from "@/lib/services/socialFeed";
 import type { FeedItem } from "@/lib/services/socialFeed";
 import type { Profile } from "@/types";
+import { ProfileShelfPreview } from "@/components/profile/ProfileShelfPreview";
 import { FollowStats } from "@/components/social/FollowStats";
 
 type ReaderData = {
@@ -127,6 +128,15 @@ function ReaderProfileContent() {
           size="md"
         />
       </header>
+
+      <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
+        <h2 className="mb-4 text-lg font-semibold text-puce-red">Shelves</h2>
+        <ProfileShelfPreview
+          ownerId={profile.id}
+          username={profile.username}
+          isOwnProfile={isSelf}
+        />
+      </section>
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-puce-red">Recent activity</h2>

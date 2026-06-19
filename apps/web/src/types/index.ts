@@ -2,6 +2,7 @@ export type {
   ShelfStatus,
   LibraryViewMode,
   ReviewVisibility,
+  ShelfVisibility,
   Profile,
   Book,
 } from "../../../../packages/types";

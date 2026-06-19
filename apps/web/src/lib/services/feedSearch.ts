@@ -8,6 +8,8 @@ import { getFollowingIds } from "@/lib/services/follows";
 import {
   attachProfilesToActivity,
   enrichFeedRow,
+  hydrateFeedItems,
+  type ActivityRow,
   type FeedItem,
 } from "@/lib/services/socialFeed";
 import type { Profile } from "@/types";
@@ -90,15 +92,6 @@ export async function searchCatalogBooks(
   return (data ?? []) as BookSearchResult[];
 }
 
-type ActivityRow = {
-  id: string;
-  user_id: string;
-  event_type: string;
-  metadata_json: Record<string, unknown> | null;
-  created_at: string;
-  visibility: ActivityVisibility;
-};
-
 export async function searchFeedPosts(
   query: string,
   viewerId: string,
@@ -110,7 +103,7 @@ export async function searchFeedPosts(
   const supabase = createClient();
   const { data, error } = await supabase
     .from("activity_events")
-    .select("id, user_id, event_type, entity_id, metadata_json, created_at, visibility")
+    .select("id, user_id, event_type, entity_id, entity_type, metadata_json, created_at, visibility")
     .neq("visibility", "private")
     .order("created_at", { ascending: false })
     .limit(120);
@@ -148,8 +141,10 @@ export async function searchFeedPosts(
     );
   });
 
-  const withProfiles = await attachProfilesToActivity(rows.slice(0, limit * 2));
-  return withProfiles.slice(0, limit).map(enrichFeedRow);
+  const filtered = rows.slice(0, limit * 2);
+  const withProfiles = await attachProfilesToActivity(filtered);
+  const enriched = withProfiles.slice(0, limit).map(enrichFeedRow);
+  return hydrateFeedItems(enriched, filtered.slice(0, limit));
 }
 
 export async function searchFeed(

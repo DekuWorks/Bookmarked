@@ -4,6 +4,8 @@ export type LibraryViewMode = "bookshelf" | "grid" | "reading_room";
 
 export type ReviewVisibility = "public" | "followers" | "private";
 
+export type ShelfVisibility = "public" | "followers" | "private";
+
 export interface Profile {
   id: string;
   username: string | null;
@@ -13,6 +15,9 @@ export interface Profile {
   favorite_genres: string[] | null;
   preferred_library_view: LibraryViewMode;
   yearly_reading_goal: number | null;
+  shelf_visibility_want_to_read: ShelfVisibility;
+  shelf_visibility_currently_reading: ShelfVisibility;
+  shelf_visibility_read: ShelfVisibility;
   created_at: string;
   updated_at: string;
 }

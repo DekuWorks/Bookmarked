@@ -15,35 +15,50 @@ export function ReaderSearchCard({ reader }: Props) {
   const displayName =
     reader.display_name?.trim() || reader.username?.trim() || "Reader";
   const username = reader.username?.trim();
+  const profileHref = username ? readerProfilePath(username) : null;
+
+  const profileBody = (
+    <>
+      <p className="font-semibold text-puce-red group-hover:underline">{displayName}</p>
+      {username ? <p className="text-sm text-text-muted">@{username}</p> : null}
+      {reader.bio ? (
+        <p className="mt-1 line-clamp-2 text-sm text-text-muted">{reader.bio}</p>
+      ) : null}
+      {reader.favorite_genres?.length ? (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {reader.favorite_genres.slice(0, 3).map((genre) => (
+            <span
+              key={genre}
+              className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-medium text-puce-red"
+            >
+              {genre}
+            </span>
+          ))}
+        </div>
+      ) : null}
+    </>
+  );
 
   return (
     <article className="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface px-4 py-3 shadow-sm">
-      <div className="min-w-0">
-        {username ? (
+      <div className="min-w-0 flex-1">
+        {profileHref ? (
           <Link
-            href={readerProfilePath(username)}
-            className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange rounded-sm"
+            href={profileHref}
+            className="group block rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
           >
-            <p className="font-semibold text-puce-red hover:underline">{displayName}</p>
-            <p className="text-sm text-text-muted">@{username}</p>
+            {profileBody}
           </Link>
         ) : (
-          <p className="font-semibold text-puce-red">{displayName}</p>
+          profileBody
         )}
-        {reader.bio ? (
-          <p className="mt-1 line-clamp-2 text-sm text-text-muted">{reader.bio}</p>
-        ) : null}
-        {reader.favorite_genres?.length ? (
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {reader.favorite_genres.slice(0, 3).map((genre) => (
-              <span
-                key={genre}
-                className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-medium text-puce-red"
-              >
-                {genre}
-              </span>
-            ))}
-          </div>
+        {profileHref ? (
+          <Link
+            href={profileHref}
+            className="mt-2 inline-block text-xs font-medium text-primary hover:underline"
+          >
+            View profile
+          </Link>
         ) : null}
       </div>
 
