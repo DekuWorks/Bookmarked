@@ -40,7 +40,7 @@ type ActivityRow = Omit<RawFeedRow, "profiles">;
 const ACTIVITY_SELECT =
   "id, user_id, event_type, entity_id, metadata_json, created_at, visibility";
 
-async function attachProfiles(rows: ActivityRow[]): Promise<RawFeedRow[]> {
+export async function attachProfilesToActivity(rows: ActivityRow[]): Promise<RawFeedRow[]> {
   if (!rows.length) return [];
 
   const userIds = [...new Set(rows.map((row) => row.user_id))];
@@ -69,7 +69,7 @@ async function attachProfiles(rows: ActivityRow[]): Promise<RawFeedRow[]> {
   }));
 }
 
-function enrichFeedRow(row: RawFeedRow): FeedItem {
+export function enrichFeedRow(row: RawFeedRow): FeedItem {
   const metadata = row.metadata_json;
   const bookId =
     typeof metadata?.book_id === "string"
@@ -133,7 +133,7 @@ export async function fetchFollowingFeed(
   if (error) throw error;
 
   const followingSet = new Set(followingIds);
-  const withProfiles = await attachProfiles((data ?? []) as ActivityRow[]);
+  const withProfiles = await attachProfilesToActivity((data ?? []) as ActivityRow[]);
   const visible = filterVisibleRows(withProfiles, viewerId, followingSet);
 
   return visible.slice(0, limit).map(enrichFeedRow);
@@ -194,7 +194,7 @@ export async function fetchForYouFeed(
 
   if (error) throw error;
 
-  const withProfiles = await attachProfiles((data ?? []) as ActivityRow[]);
+  const withProfiles = await attachProfilesToActivity((data ?? []) as ActivityRow[]);
   const visible = filterVisibleRows(withProfiles, viewerId, followingSet)
     .map((row) => ({
       row,
@@ -226,7 +226,7 @@ export async function fetchReaderActivity(
 
   if (error) throw error;
 
-  const withProfiles = await attachProfiles((data ?? []) as ActivityRow[]);
+  const withProfiles = await attachProfilesToActivity((data ?? []) as ActivityRow[]);
   const visible = filterVisibleRows(withProfiles, viewerId, followingSet);
   return visible.slice(0, limit).map(enrichFeedRow);
 }
