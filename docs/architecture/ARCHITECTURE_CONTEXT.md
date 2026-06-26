@@ -68,7 +68,9 @@ apps/web/
 supabase/migrations/
 ```
 
-Tables: `profiles`, `books`, `user_books`, `reviews`, `activity_events`
+Tables: `profiles`, `books`, `user_books`, `reviews`, `activity_events`, `follows`, `conversations`, `conversation_participants`, `messages`
+
+**Messaging:** Direct and group conversations (Twitter/X-style DMs). Book clubs are future scope — not part of the messaging MVP.
 
 Row Level Security (RLS) and policies are defined in migrations.
 
@@ -81,6 +83,9 @@ Row Level Security (RLS) and policies are defined in migrations.
 | `user_books` | `user_id`, `book_id` | `(user_id, book_id)` | `user_id`, `book_id` | Owner CRUD only |
 | `reviews` | `user_id`, `book_id` | `(user_id, book_id)` via migration 003 | `book_id`, `user_id` | Owner write; authenticated read |
 | `activity_events` | `user_id` | — | `user_id`, `created_at desc` | Owner read/insert only |
+| `conversations` | `created_by` → `auth.users` | — | `updated_at desc` | Participants only |
+| `conversation_participants` | `conversation_id`, `user_id` | `(conversation_id, user_id)` | `user_id`, `conversation_id` | Members read; creator can add; self leave |
+| `messages` | `conversation_id`, `sender_id` | — | `conversation_id`, `created_at` | Participants read/write; sender soft-delete |
 
 **Auth:** Supabase email/password; `ClientAuthGuard` protects `(app)` routes client-side and redirects unauthenticated users to `/login`.
 
@@ -103,6 +108,7 @@ Row Level Security (RLS) and policies are defined in migrations.
 | `lib/services/bookDetails.ts` | Book + user_book + reviews fetch; Open Library enrich |
 | `lib/services/activity.ts` | Records `activity_events` on user actions |
 | `lib/services/books.ts` | Open Library search → `books` cache + shelf add |
+| `lib/services/messages.ts` | Direct + group messaging, inbox, threads |
 | `components/auth/ClientAuthGuard.tsx` | Client-side session + profile setup gate for `(app)` routes |
 
 ---

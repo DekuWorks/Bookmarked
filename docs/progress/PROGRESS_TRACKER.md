@@ -156,6 +156,47 @@ See [Master Task List — Section 4](../project/MASTER_TASK_LIST.md#section-4--p
 
 ---
 
+## MESSAGING MVP
+
+| Feature | Status | Route / notes |
+|---------|--------|---------------|
+| Direct messages | Done | `/messages/` inbox + `/messages/thread/?id=` |
+| Group chats | Done | New message modal → group tab |
+| Message button on profiles | Done | `/reader/?username=` — hidden on own profile |
+| Inbox + conversation UI | Done | Responsive; realtime optional via Supabase |
+| Soft delete own messages | Done | `deleted_at` on `messages` |
+| RLS participant scoping | Done | Migration `009` |
+
+### Supabase migrations (messaging)
+
+| Migration | Purpose |
+|-----------|---------|
+| `009_messaging.sql` | `conversations`, `conversation_participants`, `messages` + RLS |
+
+### Messaging routes
+
+| Route | Purpose |
+|-------|---------|
+| `/messages` | Inbox — conversation list, new message / group |
+| `/messages/thread?id=` | Thread view + composer (GitHub Pages safe) |
+
+### Messaging smoke test
+
+1. User A opens User B profile → **Message**
+2. Direct thread opens → send message
+3. User B sees conversation in `/messages` inbox
+4. User B replies; User A sees update (refresh or realtime)
+5. User A creates group with 2+ other readers
+6. Group messages show sender names
+7. User cannot access threads they are not in (RLS)
+8. User can soft-delete own message
+
+### Future mobile nav (Phase 3 — not built)
+
+- Feed · Search · Library · **Messages** · Profile
+
+---
+
 ## DEFERRED (not in Build Plan PDF — built early, keep)
 
 | Feature | Status |
@@ -198,4 +239,4 @@ See [Master Task List — Section 4](../project/MASTER_TASK_LIST.md#section-4--p
 
 ## Last updated
 
-June 2026 — Master Task List added; Phases 0–2 complete. Social layer live on production. Live at https://bookmarked.online.
+June 2026 — Messaging MVP added (migration `009`). Social layer live on production. Live at https://bookmarked.online.

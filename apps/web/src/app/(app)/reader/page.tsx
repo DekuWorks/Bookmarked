@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { FollowButton } from "@/components/social/FollowButton";
+import { ProfileMessageButton } from "@/components/messages/ProfileMessageButton";
 import { FeedCard } from "@/components/social/FeedCard";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -98,7 +99,10 @@ function ReaderProfileContent() {
               Edit profile
             </ButtonLink>
           ) : (
-            <FollowButton targetUserId={profile.id} initialFollowing={following} />
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <ProfileMessageButton targetUserId={profile.id} />
+              <FollowButton targetUserId={profile.id} initialFollowing={following} />
+            </div>
           )}
         </div>
 

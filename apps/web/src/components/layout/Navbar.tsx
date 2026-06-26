@@ -19,6 +19,7 @@ const APP_LINKS: NavLinkItem[] = [
   },
   { href: "/library", label: "Library" },
   { href: "/search", label: "Search" },
+  { href: "/messages", label: "Messages" },
   { href: "/profile", label: "Profile" },
 ];
 

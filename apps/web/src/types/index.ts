@@ -5,6 +5,16 @@ export type {
   ShelfVisibility,
   Profile,
   Book,
+  ConversationType,
+  ConversationParticipantRole,
+  MessageProfile,
+  Conversation,
+  ConversationParticipant,
+  Message,
+  ConversationParticipantWithProfile,
+  ConversationWithParticipants,
+  MessageWithSender,
+  ConversationPreview,
 } from "../../../../packages/types";
 
 export interface UserBook {

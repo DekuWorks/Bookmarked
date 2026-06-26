@@ -1,6 +1,6 @@
 # Bookmarked
 
-Bookmarked is a **web-first** reading platform where users can create accounts, search books, manage shelves, track progress, write reviews, and explore their collection through interactive bookshelves and **My Reading Room**.
+Bookmarked is a **web-first** reading platform where users can create accounts, search books, manage shelves, track progress, write reviews, follow readers, send **direct messages and group chats**, and explore their collection through interactive bookshelves and **My Reading Room**.
 
 ## Structure
 
@@ -72,6 +72,10 @@ The deploy workflow fails fast with a clear error if either secret is missing.
 | `/library/read` | Read shelf |
 | `/dashboard` | Home + analytics + activity feed |
 | `/reading-room` | Personalized reading space (signature feature) |
+| `/messages` | Inbox — direct and group conversations |
+| `/messages/thread?id=` | Conversation thread (static-safe query route) |
+| `/feed` | Social feed + reader discovery |
+| `/reader/?username=` | Public reader profile + Message button |
 
 ## Database
 
@@ -86,6 +90,8 @@ Apply migrations in order via Supabase SQL Editor or `supabase db push`:
 | `005_social_follows_and_feed.sql` | Follow graph and activity visibility |
 | `006_profiles_fk_for_embeds.sql` | Profile FKs for PostgREST embeds |
 | `007_shelf_visibility.sql` | Per-shelf visibility + RLS |
+| `008_books_catalog_update.sql` | Books catalog update policy |
+| `009_messaging.sql` | Direct + group messaging tables and RLS |
 
 ## Phase 2 smoke test
 

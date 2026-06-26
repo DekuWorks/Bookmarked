@@ -37,3 +37,60 @@ export interface Book {
   subjects: string[] | null;
   created_at: string;
 }
+
+export type ConversationType = "direct" | "group";
+
+export type ConversationParticipantRole = "owner" | "member";
+
+export interface MessageProfile {
+  id: string;
+  username: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
+}
+
+export interface Conversation {
+  id: string;
+  type: ConversationType;
+  title: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ConversationParticipant {
+  id: string;
+  conversation_id: string;
+  user_id: string;
+  role: ConversationParticipantRole;
+  joined_at: string;
+  last_read_at: string | null;
+}
+
+export interface Message {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  body: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export type ConversationParticipantWithProfile = ConversationParticipant & {
+  profile: MessageProfile;
+};
+
+export type ConversationWithParticipants = Conversation & {
+  participants: ConversationParticipantWithProfile[];
+};
+
+export type MessageWithSender = Message & {
+  sender: MessageProfile;
+};
+
+export type ConversationPreview = Conversation & {
+  participants: ConversationParticipantWithProfile[];
+  latestMessage: Message | null;
+  unreadCount: number;
+};
