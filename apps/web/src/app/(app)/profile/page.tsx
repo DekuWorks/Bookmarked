@@ -35,6 +35,8 @@ type ProfileData = {
   followCounts: FollowCounts;
 };
 
+import { layout } from "@/lib/constants/layout";
+
 export default function ProfilePage() {
   const user = useAuthUser();
   const [data, setData] = useState<ProfileData | null>(null);
@@ -90,9 +92,9 @@ export default function ProfilePage() {
     data;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
-      <header>
-        <h1 className="text-3xl font-bold text-puce-red">Profile</h1>
+    <div className={layout.pageStack}>
+      <header className={layout.pageHeader}>
+        <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Profile</h1>
         <p className="mt-1 text-text-muted">{email}</p>
       </header>
 

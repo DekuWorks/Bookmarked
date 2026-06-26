@@ -27,14 +27,14 @@ export function CurrentlyReadingRow({ items }: Props) {
   }
 
   return (
-    <ul className="grid gap-4 sm:grid-cols-2">
+    <ul className="mx-auto grid max-w-4xl justify-items-center gap-4 sm:grid-cols-2">
       {items.map((ub) => {
         const book = ub.books;
         const percent = Number(ub.progress_percent) || 0;
         return (
           <li
             key={ub.id}
-            className="flex gap-4 rounded-xl border border-border bg-background p-4 transition hover:shadow-md"
+            className="flex w-full max-w-md flex-col gap-4 rounded-xl border border-border bg-background p-4 text-center transition hover:shadow-md sm:flex-row sm:text-left"
           >
             <BookCover
               title={book?.title ?? "Untitled"}
@@ -60,7 +60,7 @@ export function CurrentlyReadingRow({ items }: Props) {
                   href={bookDetailsPath(book.id)}
                   variant="secondary"
                   size="sm"
-                  className="mt-3 self-start"
+                  className="mt-3 self-center sm:self-start"
                 >
                   Continue reading
                 </ButtonLink>

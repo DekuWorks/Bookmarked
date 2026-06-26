@@ -4,7 +4,7 @@ type Props = {
 
 export function RememberMeField({ defaultChecked = true }: Props) {
   return (
-    <label className="mb-4 flex min-h-[44px] cursor-pointer items-start gap-3 text-left text-sm text-text">
+    <label className="mb-4 flex min-h-[44px] cursor-pointer items-start justify-center gap-3 text-left text-sm text-text sm:items-center">
       <input
         type="checkbox"
         name="remember"

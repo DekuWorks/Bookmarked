@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
+import { CONTACT_EMAIL } from "@/lib/constants/contact";
 
 const btnBase =
   "inline-flex items-center justify-center rounded-lg font-semibold transition-opacity min-h-[44px] px-6 py-2.5";
@@ -13,10 +14,10 @@ export function ContactSection() {
           Questions, feedback, or ideas? We would love to hear from you.
         </p>
         <a
-          href="mailto:hello@bookmarked.app"
+          href={`mailto:${CONTACT_EMAIL}`}
           className="mt-4 inline-block text-lg font-medium text-puce-red underline hover:no-underline"
         >
-          hello@bookmarked.app
+          {CONTACT_EMAIL}
         </a>
         <div className="mx-auto mt-8 flex w-full max-w-sm flex-col gap-3 sm:max-w-none sm:flex-row sm:justify-center">
           <Link

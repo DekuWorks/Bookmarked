@@ -59,30 +59,29 @@ function BookDetailsContent() {
   const currentShelf = (userBook?.shelf_status as ShelfStatus | undefined) ?? null;
 
   return (
-    <div className="space-y-10 overflow-x-hidden">
-      <Link href="/library" className="text-sm font-medium text-primary hover:underline">
+    <div className="mx-auto max-w-2xl space-y-10 overflow-x-hidden text-center">
+      <Link href="/library" className="inline-block text-sm font-medium text-primary hover:underline">
         ← Back to library
       </Link>
 
-      <div className="grid gap-8 lg:grid-cols-[220px_1fr]">
-        <BookCover
-          title={book.title}
-          author={book.author}
-          coverUrl={book.cover_url}
-          className="mx-auto max-w-[220px] shadow-sm"
-          priority
-        />
+      <BookCover
+        title={book.title}
+        author={book.author}
+        coverUrl={book.cover_url}
+        className="mx-auto max-w-[220px] shadow-sm"
+        priority
+      />
 
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-bold text-puce-red sm:text-3xl">{book.title}</h1>
-            {currentShelf ? <ShelfBadge status={currentShelf} /> : null}
-          </div>
-          {book.author ? (
-            <p className="mt-2 text-lg text-text-muted">{book.author}</p>
-          ) : null}
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <h1 className="text-2xl font-bold text-puce-red sm:text-3xl">{book.title}</h1>
+          {currentShelf ? <ShelfBadge status={currentShelf} /> : null}
+        </div>
+        {book.author ? (
+          <p className="mt-2 text-lg text-text-muted">{book.author}</p>
+        ) : null}
 
-          <dl className="mt-6 grid gap-3 text-sm sm:grid-cols-2">
+        <dl className="mx-auto mt-6 grid max-w-md gap-3 text-sm sm:grid-cols-2">
             {book.published_date ? (
               <div>
                 <dt className="font-medium text-text-muted">Published</dt>
@@ -110,7 +109,7 @@ function BookDetailsContent() {
           </dl>
 
           {book.subjects && book.subjects.length > 0 ? (
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
               {book.subjects.slice(0, 8).map((subject) => (
                 <span
                   key={subject}
@@ -127,7 +126,9 @@ function BookDetailsContent() {
               About this book
             </h2>
             {book.description ? (
-              <p className="mt-3 text-pretty leading-relaxed text-text">{book.description}</p>
+              <p className="mx-auto mt-3 max-w-prose text-pretty leading-relaxed text-text">
+                {book.description}
+              </p>
             ) : (
               <p className="mt-3 text-text-muted">
                 No description available yet. Metadata is filled in from Open Library when
@@ -135,10 +136,9 @@ function BookDetailsContent() {
               </p>
             )}
           </section>
-        </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="mx-auto grid max-w-4xl gap-6 lg:grid-cols-2">
         <BookShelfActions
           bookId={book.id}
           bookTitle={book.title}

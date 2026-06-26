@@ -24,7 +24,7 @@ export function BookshelfSection({
 }: Props) {
   return (
     <section className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+      <div className="flex flex-col items-center justify-center gap-2 border-b border-border px-4 py-3 text-center sm:flex-row sm:justify-between">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-puce-red">
           <span aria-hidden>{emoji}</span>
           {title}

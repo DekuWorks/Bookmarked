@@ -17,6 +17,8 @@ import { cn } from "@/lib/utils/cn";
 
 type FeedTab = "for-you" | "following";
 
+import { layout } from "@/lib/constants/layout";
+
 function FeedContent() {
   const user = useAuthUser();
   const searchParams = useSearchParams();
@@ -88,10 +90,10 @@ function FeedContent() {
   if (!user) return null;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <header>
-        <h1 className="text-3xl font-bold text-puce-red">Feed</h1>
-        <p className="mt-1 text-text-muted">
+    <div className={layout.pageStack}>
+      <header className={layout.pageHeader}>
+        <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Feed</h1>
+        <p className="mx-auto mt-1 max-w-xl text-pretty text-text-muted">
           Discover readers and see what people you follow are reading.
         </p>
       </header>

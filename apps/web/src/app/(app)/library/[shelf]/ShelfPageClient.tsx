@@ -14,6 +14,7 @@ import { ShelfStatsPanel } from "@/components/library/ShelfStatsPanel";
 import { ShelfSearchFilter } from "@/components/library/ShelfSearchFilter";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
+import { layout } from "@/lib/constants/layout";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import type { LibraryViewMode } from "@/types";
 import type { ShelfGroup } from "@/lib/services/library";
@@ -58,20 +59,20 @@ export default function ShelfPageClient() {
   if (!user || !stats || !shelfGroup) return null;
 
   return (
-    <div className="space-y-10">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div className={layout.pageStackWide}>
+      <header className="flex flex-col items-center gap-4 text-center">
         <div>
           <Link
             href="/library"
-            className="text-sm font-medium text-primary hover:underline"
+            className="inline-block text-sm font-medium text-primary hover:underline"
           >
             ← Back to library
           </Link>
-          <h1 className="mt-2 flex items-center gap-2 text-3xl font-bold text-puce-red">
+          <h1 className="mt-2 flex items-center justify-center gap-2 text-3xl font-bold text-puce-red sm:text-4xl">
             <span aria-hidden>{config.emoji}</span>
             {config.title}
           </h1>
-          <p className="mt-1 text-text-muted">{config.description}</p>
+          <p className="mx-auto mt-1 max-w-xl text-pretty text-text-muted">{config.description}</p>
           <p className="mt-2 text-sm font-medium text-text">
             {stats.totalBooks} {stats.totalBooks === 1 ? "book" : "books"}
           </p>

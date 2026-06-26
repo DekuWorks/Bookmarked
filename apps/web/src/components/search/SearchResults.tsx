@@ -42,11 +42,11 @@ export function SearchResults({ query }: Props) {
   }
 
   return (
-    <div>
+    <div className="text-center">
       <p className="mb-4 text-sm text-text-muted">
         {results.numFound.toLocaleString()} results — showing {results.docs.length}
       </p>
-      <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <ul className="mx-auto grid max-w-6xl grid-cols-1 justify-items-center gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {results.docs.map((doc) => {
           const workId = openLibraryWorkId(doc.key);
           if (!workId || !doc.title) return null;
@@ -58,7 +58,7 @@ export function SearchResults({ query }: Props) {
           const author = doc.author_name?.[0] ?? null;
 
           return (
-            <li key={doc.key}>
+            <li key={doc.key} className="w-full max-w-sm">
               <SearchResultCard
                 title={doc.title}
                 author={author}

@@ -18,6 +18,8 @@ type LibraryData = {
   userId: string;
 };
 
+import { layout } from "@/lib/constants/layout";
+
 export default function LibraryPage() {
   const user = useAuthUser();
   const [data, setData] = useState<LibraryData | null>(null);
@@ -49,11 +51,11 @@ export default function LibraryPage() {
   const isEmpty = books.length === 0;
 
   return (
-    <div className="space-y-10">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div className={layout.pageStackWide}>
+      <header className="flex flex-col items-center gap-4 text-center">
         <div>
-          <h1 className="text-3xl font-bold text-puce-red">Library</h1>
-          <p className="mt-1 text-text-muted">
+          <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Library</h1>
+          <p className="mx-auto mt-1 max-w-2xl text-pretty text-text-muted">
             Your digital home library — browse shelves, track progress, and explore your collection.
           </p>
         </div>

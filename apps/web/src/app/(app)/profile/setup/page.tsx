@@ -6,6 +6,7 @@ import { ProfileSetupForm } from "@/components/auth/ProfileSetupForm";
 import { createClient } from "@/lib/supabase/client";
 import { getProfile } from "@/lib/services/profile";
 import { LoadingState } from "@/components/ui/LoadingState";
+import { layout } from "@/lib/constants/layout";
 
 export default function ProfileSetupPage() {
   const [isEditing, setIsEditing] = useState<boolean | null>(null);
@@ -28,21 +29,21 @@ export default function ProfileSetupPage() {
   }
 
   return (
-    <div className="mx-auto max-w-lg">
+    <div className={`${layout.pageStack} max-w-lg`}>
       {isEditing ? (
-        <Link href="/profile" className="text-sm font-medium text-primary hover:underline">
+        <Link href="/profile" className="inline-block text-sm font-medium text-primary hover:underline">
           ← Back to profile
         </Link>
       ) : null}
-      <h1 className="mt-2 text-3xl font-bold text-puce-red">
+      <h1 className="mt-2 text-3xl font-bold text-puce-red sm:text-4xl">
         {isEditing ? "Edit your profile" : "Set up your profile"}
       </h1>
-      <p className="mt-2 text-text-muted">
+      <p className="mx-auto mt-2 max-w-md text-pretty text-text-muted">
         {isEditing
           ? "Update how you appear to other readers on Bookmarked."
           : "Tell other readers a bit about you. You can change this anytime."}
       </p>
-      <div className="mt-8">
+      <div className="mx-auto mt-8 max-w-md text-left">
         <ProfileSetupForm />
       </div>
     </div>

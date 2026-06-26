@@ -34,6 +34,8 @@ type DashboardData = {
   userId: string;
 };
 
+import { layout } from "@/lib/constants/layout";
+
 export default function DashboardPage() {
   const user = useAuthUser();
   const [data, setData] = useState<DashboardData | null>(null);
@@ -76,10 +78,10 @@ export default function DashboardPage() {
   const currentlyReading = books.filter((b) => b.shelf_status === "currently_reading");
 
   return (
-    <div className="space-y-8">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div className={layout.pageStackWide}>
+      <header className="flex flex-col items-center gap-4 text-center">
         <div>
-          <h1 className="text-3xl font-bold text-puce-red">
+          <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">
             Hello{profile?.display_name ? `, ${profile.display_name}` : ""}
           </h1>
           <p className="mt-1 text-text-muted">@{profile?.username}</p>
@@ -99,7 +101,7 @@ export default function DashboardPage() {
         </DashboardCard>
 
         <DashboardCard title="Quick actions">
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap justify-center gap-2">
             {QUICK_SHELVES.map((status) => (
               <Link
                 key={status}
@@ -110,7 +112,7 @@ export default function DashboardPage() {
               </Link>
             ))}
           </div>
-          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+          <div className="mx-auto mt-4 grid max-w-md gap-2 sm:grid-cols-2">
             <ButtonLink href="/search" variant="secondary" size="sm">
               Search books
             </ButtonLink>

@@ -84,11 +84,11 @@ function ReaderProfileContent() {
   const displayName = profile.display_name?.trim() || profile.username || "Reader";
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
-      <header className="rounded-xl border border-border bg-surface p-6 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="mx-auto max-w-2xl space-y-8 text-center">
+      <header className="rounded-xl border border-border bg-surface p-6 text-center shadow-sm">
+        <div className="flex flex-col items-center justify-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-puce-red">{displayName}</h1>
+            <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">{displayName}</h1>
             {profile.username ? (
               <p className="text-text-muted">@{profile.username}</p>
             ) : null}
@@ -107,7 +107,7 @@ function ReaderProfileContent() {
         ) : null}
 
         {profile.favorite_genres?.length ? (
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
             {profile.favorite_genres.map((genre) => (
               <span
                 key={genre}

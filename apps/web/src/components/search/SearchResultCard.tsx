@@ -163,7 +163,7 @@ export function SearchResultCard({
           </div>
         </div>
 
-        <div className="flex flex-1 flex-col gap-2 p-4">
+        <div className="flex flex-1 flex-col gap-2 p-4 text-center">
           <h3 className="line-clamp-2 font-semibold text-text">{title}</h3>
           {author ? (
             <p className="line-clamp-1 text-sm text-text-muted">{author}</p>

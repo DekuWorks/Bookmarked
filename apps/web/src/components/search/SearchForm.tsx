@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
+
 export function SearchForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -18,8 +19,11 @@ export function SearchForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-      <div className="min-w-0 flex-1">
+    <form
+      onSubmit={onSubmit}
+      className="mx-auto flex w-full max-w-xl flex-col items-center gap-3 sm:flex-row sm:items-end sm:justify-center"
+    >
+      <div className="min-w-0 w-full flex-1 sm:max-w-md">
         <Input
           label="Search books"
           name="q"

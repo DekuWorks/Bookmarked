@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { layout } from "@/lib/constants/layout";
+import { CONTACT_EMAIL } from "@/lib/constants/contact";
 
 export const metadata = { title: "Terms of Service" };
 
@@ -8,11 +10,11 @@ export default function TermsPage() {
   return (
     <>
       <Navbar variant="public" />
-      <main id="main-content" className="mx-auto max-w-3xl flex-1 px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-        <h1 className="text-3xl font-bold text-puce-red">Terms of Service</h1>
+      <main id="main-content" className={layout.prose}>
+        <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Terms of Service</h1>
         <p className="mt-4 text-sm text-text-muted">Last updated: June 2026</p>
 
-        <div className="mt-8 space-y-6 leading-relaxed text-text-muted">
+        <div className="mx-auto mt-8 max-w-2xl space-y-6 text-pretty leading-relaxed text-text-muted">
           <section>
             <h2 className="text-lg font-semibold text-puce-red">Using Bookmarked</h2>
             <p className="mt-2">
@@ -53,8 +55,8 @@ export default function TermsPage() {
             <h2 className="text-lg font-semibold text-puce-red">Contact</h2>
             <p className="mt-2">
               Questions about these terms? Email{" "}
-              <a href="mailto:hello@bookmarked.app" className="text-puce-red underline hover:no-underline">
-                hello@bookmarked.app
+              <a href={`mailto:${CONTACT_EMAIL}`} className="text-puce-red underline hover:no-underline">
+                {CONTACT_EMAIL}
               </a>{" "}
               or read our{" "}
               <Link href="/privacy" className="text-puce-red underline hover:no-underline">

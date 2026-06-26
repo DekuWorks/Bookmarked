@@ -103,7 +103,7 @@ export function AnalyticsGrid({
         <div
           key={s.label}
           className={cn(
-            "rounded-xl border border-border bg-surface px-3 py-3 shadow-sm transition hover:shadow-md",
+            "rounded-xl border border-border bg-surface px-3 py-3 text-center shadow-sm transition hover:shadow-md",
             s.comingSoon && "border-dashed opacity-80"
           )}
         >

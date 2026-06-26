@@ -11,7 +11,7 @@ export default function HomePage() {
   return (
     <>
       <Navbar variant="public" />
-      <main id="main-content" className="overflow-x-hidden">
+      <main id="main-content" className="overflow-x-hidden text-center">
         <HeroSection />
         <AboutSection />
         <FeaturesSection />

@@ -37,8 +37,9 @@ export function LibraryViewShell({ initialView, shelves }: Props) {
 
   return (
     <div className="space-y-8">
-      <div
-        className="flex w-full max-w-full rounded-lg border border-border bg-surface p-1 shadow-sm sm:inline-flex sm:w-auto"
+      <div className="flex justify-center">
+        <div
+          className="flex w-full max-w-full rounded-lg border border-border bg-surface p-1 shadow-sm sm:inline-flex sm:w-auto"
         role="tablist"
         aria-label="Library view mode"
       >
@@ -61,6 +62,7 @@ export function LibraryViewShell({ initialView, shelves }: Props) {
             {label}
           </button>
         ))}
+        </div>
       </div>
 
       {view === "bookshelf" ? (
@@ -92,8 +94,9 @@ export function ShelfViewShell({
 
   return (
     <div className="space-y-8">
-      <div
-        className="flex w-full max-w-full rounded-lg border border-border bg-surface p-1 shadow-sm sm:inline-flex sm:w-auto"
+      <div className="flex justify-center">
+        <div
+          className="flex w-full max-w-full rounded-lg border border-border bg-surface p-1 shadow-sm sm:inline-flex sm:w-auto"
         role="tablist"
         aria-label="Shelf view mode"
       >
@@ -116,6 +119,7 @@ export function ShelfViewShell({
             {label}
           </button>
         ))}
+        </div>
       </div>
 
       {view === "bookshelf" ? (

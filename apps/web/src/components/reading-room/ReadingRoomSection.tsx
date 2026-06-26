@@ -23,8 +23,8 @@ export function ReadingRoomSection({
         className
       )}
     >
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="flex items-center gap-2 text-lg font-semibold text-puce-red md:text-xl">
+      <div className="mb-4 flex flex-col items-center justify-center gap-3 text-center sm:flex-row sm:flex-wrap">
+        <h2 className="flex items-center justify-center gap-2 text-lg font-semibold text-puce-red md:text-xl">
           {emoji ? <span aria-hidden>{emoji}</span> : null}
           {title}
         </h2>

@@ -46,20 +46,16 @@ export function ActivityFeed({ userId }: { userId: string }) {
 
   return (
     <DashboardCard title="Recent activity">
-      <ul className="space-y-3">
+      <ul className="mx-auto max-w-2xl space-y-3">
         {events.map((event, i) => (
           <li
             key={`${event.created_at}-${i}`}
-            className="flex items-start gap-3 rounded-lg border border-border bg-background px-4 py-3 text-sm"
+            className="rounded-lg border border-border bg-background px-4 py-3 text-center text-sm"
           >
-            <span className="mt-0.5 text-royal-orange" aria-hidden>
-              •
-            </span>
-            <div>
-              <p className="text-text">
-                {formatActivityMessage(event.event_type, event.metadata_json)}
-              </p>
-              <p className="mt-0.5 text-xs text-text-muted">
+            <p className="text-text">
+              {formatActivityMessage(event.event_type, event.metadata_json)}
+            </p>
+            <p className="mt-0.5 text-xs text-text-muted">
                 <time suppressHydrationWarning dateTime={event.created_at}>
                   {new Date(event.created_at).toLocaleDateString(undefined, {
                     month: "short",
@@ -67,7 +63,6 @@ export function ActivityFeed({ userId }: { userId: string }) {
                   })}
                 </time>
               </p>
-            </div>
           </li>
         ))}
       </ul>

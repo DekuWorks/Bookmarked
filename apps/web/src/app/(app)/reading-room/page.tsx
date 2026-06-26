@@ -43,14 +43,14 @@ export default function ReadingRoomPage() {
 
   return (
     <div className="reading-room-bg -mx-4 space-y-8 overflow-x-hidden px-4 py-2 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-      <header className="animate-fade-in text-center md:text-left">
+      <header className="animate-fade-in text-center">
         <p className="text-sm font-medium uppercase tracking-widest text-primary">
           Your space
         </p>
         <h1 className="mt-1 text-3xl font-bold text-puce-red md:text-4xl">
           {displayName}&apos;s Reading Room
         </h1>
-        <p className="mx-auto mt-2 max-w-2xl text-text-muted md:mx-0">
+        <p className="mx-auto mt-2 max-w-2xl text-pretty text-text-muted">
           A cozy corner for what you&apos;re reading now, what you&apos;ve finished, and the
           shelves that make up your library.
         </p>
@@ -111,7 +111,7 @@ export default function ReadingRoomPage() {
         ) : (
           <BookshelfView shelves={data.shelves} />
         )}
-        <div className="mt-6 flex flex-wrap gap-2">
+        <div className="mt-6 flex flex-wrap justify-center gap-2">
           {SHELF_CONFIG.map((shelf) => (
             <ButtonLink
               key={shelf.slug}
