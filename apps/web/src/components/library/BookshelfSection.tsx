@@ -40,11 +40,11 @@ export function BookshelfSection({
         ) : null}
       </div>
 
-      <div className="bookshelf-back px-4 pb-0 pt-6">
+      <div className="bookshelf-back px-4 pb-0 pt-5">
         {items.length === 0 ? (
           <EmptyShelfMessage className="pb-6" />
         ) : (
-          <div className="bookshelf-row flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
+          <div className="bookshelf-row scrollbar-thin">
             {items.map((ub) => {
               const book = ub.books;
               return (
@@ -53,6 +53,7 @@ export function BookshelfSection({
                   title={book?.title ?? "Untitled"}
                   author={book?.author}
                   coverUrl={book?.cover_url}
+                  pageCount={book?.page_count}
                   href={book?.id ? bookDetailsPath(book.id) : undefined}
                 />
               );
@@ -60,7 +61,7 @@ export function BookshelfSection({
           </div>
         )}
       </div>
-      <div className="bookshelf-board h-4 rounded-b-xl" aria-hidden />
+      <div className="bookshelf-board h-5 rounded-b-xl" aria-hidden />
     </section>
   );
 }

@@ -9,14 +9,22 @@ export function useAuthUser() {
 
   useEffect(() => {
     const supabase = createClient();
+    let cancelled = false;
+
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!cancelled) setUser(session?.user ?? null);
+    });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      if (!cancelled) setUser(session?.user ?? null);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   return user;

@@ -26,19 +26,26 @@ export default function ShelfPageClient() {
   const [shelfGroup, setShelfGroup] = useState<ShelfGroup | null>(null);
   const [stats, setStats] = useState<ReturnType<typeof computeShelfStats> | null>(null);
   const [preferredView, setPreferredView] = useState<LibraryViewMode>("bookshelf");
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (user === undefined) return;
     if (!user || !config) return;
-    void Promise.all([getProfile(user.id), getUserLibraryBooks(user.id)]).then(
-      ([profile, books]) => {
+
+    setLoadError(null);
+    void Promise.all([getProfile(user.id), getUserLibraryBooks(user.id)])
+      .then(([profile, books]) => {
         const allShelves = groupBooksByShelf(books);
         const group = allShelves.find((s) => s.status === config.status)!;
         setShelfGroup(group);
         setStats(computeShelfStats(books, config.status));
         const rawView = profile?.preferred_library_view ?? "bookshelf";
         setPreferredView(rawView === "reading_room" ? "bookshelf" : rawView);
-      }
-    );
+      })
+      .catch((error) => {
+        console.error("[shelf] failed to load:", error);
+        setLoadError("Could not load this shelf. Please refresh and try again.");
+      });
   }, [user, config]);
 
   if (!config) {
@@ -52,8 +59,19 @@ export default function ShelfPageClient() {
     );
   }
 
-  if (user === undefined || (user && !shelfGroup)) {
+  if (user === undefined || (user && !shelfGroup && !loadError)) {
     return <LoadingState message="Loading shelf…" />;
+  }
+
+  if (loadError) {
+    return (
+      <div className="text-center">
+        <p className="text-rust">{loadError}</p>
+        <Link href="/library" className="mt-4 inline-block text-sm text-primary hover:underline">
+          ← Back to library
+        </Link>
+      </div>
+    );
   }
 
   if (!user || !stats || !shelfGroup) return null;

@@ -23,11 +23,20 @@ import { layout } from "@/lib/constants/layout";
 export default function LibraryPage() {
   const user = useAuthUser();
   const [data, setData] = useState<LibraryData | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) return;
-    void Promise.all([getProfile(user.id), getUserLibraryBooks(user.id)]).then(
-      ([profile, books]) => {
+    if (user === undefined) return;
+
+    if (!user) {
+      setData(null);
+      setLoadError(null);
+      return;
+    }
+
+    setLoadError(null);
+    void Promise.all([getProfile(user.id), getUserLibraryBooks(user.id)])
+      .then(([profile, books]) => {
         const rawView = profile?.preferred_library_view ?? "bookshelf";
         const preferredView: LibraryViewMode =
           rawView === "reading_room" ? "bookshelf" : rawView;
@@ -37,12 +46,23 @@ export default function LibraryPage() {
           preferredView,
           userId: user.id,
         });
-      }
-    );
+      })
+      .catch((error) => {
+        console.error("[library] failed to load:", error);
+        setLoadError("Could not load your library. Please refresh and try again.");
+      });
   }, [user]);
 
-  if (user === undefined || (user && !data)) {
+  if (user === undefined || (user && !data && !loadError)) {
     return <LoadingState message="Loading library…" />;
+  }
+
+  if (loadError) {
+    return (
+      <div className={`${layout.pageStackWide} text-center`}>
+        <p className="text-rust">{loadError}</p>
+      </div>
+    );
   }
 
   if (!user || !data) return null;
