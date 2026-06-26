@@ -1,7 +1,7 @@
 "use client";
 
 import { AppNavLink } from "@/components/layout/AppNavLink";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BellIcon } from "@/components/notifications/BellIcon";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { createClient } from "@/lib/supabase/client";
@@ -15,33 +15,43 @@ import { cn } from "@/lib/utils/cn";
 export function NotificationBell() {
   const user = useAuthUser();
   const [unreadCount, setUnreadCount] = useState(0);
+  const userId = user?.id;
 
   const refreshCount = useCallback(() => {
-    if (!user) return;
-    void getUnreadNotificationCount(user.id).then(setUnreadCount);
-  }, [user]);
+    if (!userId) return;
+    void getUnreadNotificationCount(userId).then(setUnreadCount);
+  }, [userId]);
+
+  const refreshCountRef = useRef(refreshCount);
+
+  useEffect(() => {
+    refreshCountRef.current = refreshCount;
+  }, [refreshCount]);
 
   useEffect(() => {
     refreshCount();
   }, [refreshCount]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
 
     const supabase = createClient();
+    let cancelled = false;
 
     const channel = supabase
-      .channel(`notifications:${user.id}`)
+      .channel(`notifications:${userId}`)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
           table: "notifications",
-          filter: `user_id=eq.${user.id}`,
+          filter: `user_id=eq.${userId}`,
         },
         (payload) => {
-          refreshCount();
+          if (cancelled) return;
+
+          refreshCountRef.current();
 
           const row = payload.new as {
             title?: string;
@@ -55,7 +65,7 @@ export function NotificationBell() {
           void supabase
             .from("profiles")
             .select("notify_browser")
-            .eq("id", user.id)
+            .eq("id", userId)
             .maybeSingle()
             .then(({ data }) => {
               if (!data?.notify_browser) return;
@@ -73,18 +83,20 @@ export function NotificationBell() {
           event: "UPDATE",
           schema: "public",
           table: "notifications",
-          filter: `user_id=eq.${user.id}`,
+          filter: `user_id=eq.${userId}`,
         },
         () => {
-          refreshCount();
+          if (cancelled) return;
+          refreshCountRef.current();
         }
       )
       .subscribe();
 
     return () => {
+      cancelled = true;
       void supabase.removeChannel(channel);
     };
-  }, [user, refreshCount]);
+  }, [userId]);
 
   if (!user) return null;
 

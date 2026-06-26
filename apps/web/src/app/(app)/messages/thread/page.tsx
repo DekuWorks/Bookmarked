@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ConversationHeader } from "@/components/messages/ConversationHeader";
@@ -50,6 +50,12 @@ function MessageThreadContent() {
     await markConversationRead(conversationId);
   }, [conversationId, user]);
 
+  const loadThreadRef = useRef(loadThread);
+
+  useEffect(() => {
+    loadThreadRef.current = loadThread;
+  }, [loadThread]);
+
   useEffect(() => {
     if (!user || !conversationId) return;
 
@@ -64,9 +70,10 @@ function MessageThreadContent() {
   }, [user, conversationId, loadThread]);
 
   useEffect(() => {
-    if (!user || !conversationId) return;
+    if (!user?.id || !conversationId) return;
 
     const supabase = createClient();
+    let cancelled = false;
 
     const channel = supabase
       .channel(`messages:${conversationId}`)
@@ -79,7 +86,8 @@ function MessageThreadContent() {
           filter: `conversation_id=eq.${conversationId}`,
         },
         () => {
-          void loadThread();
+          if (cancelled) return;
+          void loadThreadRef.current();
         }
       )
       .on(
@@ -91,15 +99,17 @@ function MessageThreadContent() {
           filter: `conversation_id=eq.${conversationId}`,
         },
         () => {
-          void loadThread();
+          if (cancelled) return;
+          void loadThreadRef.current();
         }
       )
       .subscribe();
 
     return () => {
+      cancelled = true;
       void supabase.removeChannel(channel);
     };
-  }, [user, conversationId, loadThread]);
+  }, [user?.id, conversationId]);
 
   async function handleSend(body: string) {
     if (!conversationId) return { error: "Missing conversation." };
