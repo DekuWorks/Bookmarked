@@ -147,7 +147,15 @@ function MessageThreadContent() {
 
   return (
     <div className="mx-auto flex min-h-[calc(100vh-8rem)] max-w-3xl flex-col rounded-xl border border-border bg-background shadow-sm">
-      <ConversationHeader conversation={conversation} currentUserId={user.id} />
+      <ConversationHeader
+        conversation={conversation}
+        currentUserId={user.id}
+        onPinChange={(pinnedAt) =>
+          setConversation((current) =>
+            current ? { ...current, viewerPinnedAt: pinnedAt } : current
+          )
+        }
+      />
 
       <MessageList
         messages={messages}

@@ -9,6 +9,8 @@ import type {
 
 const PROFILE_SELECT = "id, username, display_name, avatar_url";
 
+export const MAX_PINNED_CONVERSATIONS = 3;
+
 type ParticipantRow = {
   id: string;
   conversation_id: string;
@@ -16,6 +18,7 @@ type ParticipantRow = {
   role: "owner" | "member";
   joined_at: string;
   last_read_at: string | null;
+  pinned_at: string | null;
   profiles: MessageProfile | null;
 };
 
@@ -39,6 +42,7 @@ function mapParticipant(row: ParticipantRow) {
     role: row.role,
     joined_at: row.joined_at,
     last_read_at: row.last_read_at,
+    pinned_at: row.pinned_at,
     profile: row.profiles ?? {
       id: row.user_id,
       username: null,
@@ -57,7 +61,7 @@ async function fetchParticipantsForConversations(
   const { data, error } = await supabase
     .from("conversation_participants")
     .select(
-      `id, conversation_id, user_id, role, joined_at, last_read_at, profiles!conversation_participants_user_id_profiles_fkey (${PROFILE_SELECT})`
+      `id, conversation_id, user_id, role, joined_at, last_read_at, pinned_at, profiles!conversation_participants_user_id_profiles_fkey (${PROFILE_SELECT})`
     )
     .in("conversation_id", conversationIds);
 
@@ -128,6 +132,20 @@ function countUnread(
   }).length;
 }
 
+function sortConversations(conversations: ConversationPreview[]): ConversationPreview[] {
+  return [...conversations].sort((a, b) => {
+    const aPinned = a.pinnedAt ? 1 : 0;
+    const bPinned = b.pinnedAt ? 1 : 0;
+    if (aPinned !== bPinned) return bPinned - aPinned;
+
+    if (a.pinnedAt && b.pinnedAt) {
+      return new Date(b.pinnedAt).getTime() - new Date(a.pinnedAt).getTime();
+    }
+
+    return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+  });
+}
+
 export async function searchProfilesForMessaging(
   query: string,
   excludeUserId: string
@@ -154,7 +172,7 @@ export async function getConversations(userId: string): Promise<ConversationPrev
 
   const { data: memberships, error: membershipError } = await supabase
     .from("conversation_participants")
-    .select("conversation_id, last_read_at")
+    .select("conversation_id, last_read_at, pinned_at")
     .eq("user_id", userId);
 
   if (membershipError) throw membershipError;
@@ -164,6 +182,9 @@ export async function getConversations(userId: string): Promise<ConversationPrev
 
   const lastReadByConversation = new Map(
     (memberships ?? []).map((row) => [row.conversation_id, row.last_read_at])
+  );
+  const pinnedByConversation = new Map(
+    (memberships ?? []).map((row) => [row.conversation_id, row.pinned_at])
   );
 
   const { data: conversations, error: conversationsError } = await supabase
@@ -199,23 +220,26 @@ export async function getConversations(userId: string): Promise<ConversationPrev
     messagesByConversation.set(message.conversation_id, list);
   }
 
-  return ((conversations ?? []) as ConversationPreview[]).map((conversation) => {
-    const participants = participantsByConversation.get(conversation.id) ?? [];
-    const latestMessage = latestByConversation.get(conversation.id) ?? null;
-    const lastReadAt = lastReadByConversation.get(conversation.id) ?? null;
-    const unreadCount = countUnread(
-      messagesByConversation.get(conversation.id) ?? [],
-      lastReadAt,
-      userId
-    );
+  return sortConversations(
+    ((conversations ?? []) as ConversationPreview[]).map((conversation) => {
+      const participants = participantsByConversation.get(conversation.id) ?? [];
+      const latestMessage = latestByConversation.get(conversation.id) ?? null;
+      const lastReadAt = lastReadByConversation.get(conversation.id) ?? null;
+      const unreadCount = countUnread(
+        messagesByConversation.get(conversation.id) ?? [],
+        lastReadAt,
+        userId
+      );
 
-    return {
-      ...conversation,
-      participants,
-      latestMessage,
-      unreadCount,
-    };
-  });
+      return {
+        ...conversation,
+        participants,
+        latestMessage,
+        unreadCount,
+        pinnedAt: pinnedByConversation.get(conversation.id) ?? null,
+      };
+    })
+  );
 }
 
 export async function getConversation(
@@ -226,7 +250,7 @@ export async function getConversation(
 
   const { data: membership, error: membershipError } = await supabase
     .from("conversation_participants")
-    .select("id")
+    .select("id, pinned_at")
     .eq("conversation_id", conversationId)
     .eq("user_id", userId)
     .maybeSingle();
@@ -250,6 +274,7 @@ export async function getConversation(
   return {
     ...(conversation as ConversationWithParticipants),
     participants: participantsByConversation.get(conversationId) ?? [],
+    viewerPinnedAt: membership.pinned_at ?? null,
   };
 }
 
@@ -358,6 +383,69 @@ export async function markConversationRead(conversationId: string): Promise<void
     .update({ last_read_at: new Date().toISOString() })
     .eq("conversation_id", conversationId)
     .eq("user_id", user.id);
+}
+
+export async function pinConversation(
+  conversationId: string
+): Promise<{ error?: string }> {
+  try {
+    const { supabase, user } = await requireUser();
+
+    const { data: membership, error: membershipError } = await supabase
+      .from("conversation_participants")
+      .select("id, pinned_at")
+      .eq("conversation_id", conversationId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (membershipError) return { error: membershipError.message };
+    if (!membership) return { error: "You are not part of this conversation." };
+    if (membership.pinned_at) return {};
+
+    const { count, error: countError } = await supabase
+      .from("conversation_participants")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .not("pinned_at", "is", null);
+
+    if (countError) return { error: countError.message };
+    if ((count ?? 0) >= MAX_PINNED_CONVERSATIONS) {
+      return { error: `You can pin up to ${MAX_PINNED_CONVERSATIONS} conversations.` };
+    }
+
+    const { error } = await supabase
+      .from("conversation_participants")
+      .update({ pinned_at: new Date().toISOString() })
+      .eq("id", membership.id);
+
+    if (error) return { error: error.message };
+    return {};
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not pin conversation.",
+    };
+  }
+}
+
+export async function unpinConversation(
+  conversationId: string
+): Promise<{ error?: string }> {
+  try {
+    const { supabase, user } = await requireUser();
+
+    const { error } = await supabase
+      .from("conversation_participants")
+      .update({ pinned_at: null })
+      .eq("conversation_id", conversationId)
+      .eq("user_id", user.id);
+
+    if (error) return { error: error.message };
+    return {};
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not unpin conversation.",
+    };
+  }
 }
 
 export async function createDirectConversation(

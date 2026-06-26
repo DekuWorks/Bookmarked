@@ -19,6 +19,11 @@ function MessagesInboxContent() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
+  const reloadConversations = () => {
+    if (!user) return;
+    void getConversations(user.id).then(setConversations);
+  };
+
   useEffect(() => {
     if (searchParams.get("new") === "1") {
       setModalOpen(true);
@@ -64,7 +69,11 @@ function MessagesInboxContent() {
       {conversations.length === 0 ? (
         <EmptyInboxState onNewMessage={() => setModalOpen(true)} />
       ) : (
-        <ConversationList conversations={conversations} currentUserId={user.id} />
+        <ConversationList
+          conversations={conversations}
+          currentUserId={user.id}
+          onPinChange={reloadConversations}
+        />
       )}
 
       <NewMessageModal

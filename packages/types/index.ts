@@ -65,6 +65,7 @@ export interface ConversationParticipant {
   role: ConversationParticipantRole;
   joined_at: string;
   last_read_at: string | null;
+  pinned_at: string | null;
 }
 
 export interface Message {
@@ -83,6 +84,7 @@ export type ConversationParticipantWithProfile = ConversationParticipant & {
 
 export type ConversationWithParticipants = Conversation & {
   participants: ConversationParticipantWithProfile[];
+  viewerPinnedAt?: string | null;
 };
 
 export type MessageWithSender = Message & {
@@ -93,4 +95,5 @@ export type ConversationPreview = Conversation & {
   participants: ConversationParticipantWithProfile[];
   latestMessage: Message | null;
   unreadCount: number;
+  pinnedAt: string | null;
 };
