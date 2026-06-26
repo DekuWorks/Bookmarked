@@ -62,14 +62,15 @@ Some newer books may not have covers in Open Library immediately; fallback handl
 
 - Animated shelf transitions and drag-and-drop book movement
 - Horizontal shelf scrolling enhancements
-- Social feed and following other readers
-- Book clubs and group reads
-- Reading streaks and goals
+- Likes, comments, and book clubs (social v2)
+- Badges and achievements
 - Recommendations based on shelves and genres
 - Supabase Storage for avatars and cover uploads
 - Push notifications (mobile)
 - Import from Goodreads / CSV
-- Public profile pages and shareable lists
+- ISBNdb integration for richer metadata
+
+Social feed, following, and public reader profiles are **live** — see [Master Task List](docs/project/MASTER_TASK_LIST.md).
 
 ## Summary
 

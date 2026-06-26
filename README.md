@@ -110,6 +110,7 @@ Manual checklist (requires Supabase env configured):
 ## Documentation
 
 - [Project overview](docs/project/PROJECT_OVERVIEW.md)
+- [Master task list](docs/project/MASTER_TASK_LIST.md)
 - [Architecture](docs/architecture/ARCHITECTURE_CONTEXT.md)
 - [Design system](docs/ui/DESIGN_SYSTEM.md)
 - [Progress tracker](docs/progress/PROGRESS_TRACKER.md)

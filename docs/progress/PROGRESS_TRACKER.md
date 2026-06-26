@@ -1,5 +1,9 @@
 # Bookmarked — Progress Tracker
 
+Technical progress detail: routes, migrations, and smoke tests.
+
+**Canonical status summary:** [Master Task List](../project/MASTER_TASK_LIST.md)
+
 Aligned with **Bookmarked_BuildPlan.pdf** (web-first build plan).
 
 **Live:** https://bookmarked.online  
@@ -192,4 +196,4 @@ Aligned with **Bookmarked_BuildPlan.pdf** (web-first build plan).
 
 ## Last updated
 
-June 2026 — Phase 2 complete: public landing, contact, privacy/terms, and About nav. Waitlist removed. Social layer live on production. Live at https://bookmarked.online.
+June 2026 — Master Task List added; Phases 0–2 complete. Social layer live on production. Live at https://bookmarked.online.

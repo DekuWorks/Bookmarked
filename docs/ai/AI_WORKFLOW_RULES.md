@@ -32,9 +32,9 @@ Rules for AI assistants and developers working on Bookmarked. Follow these on ev
 
 ## Phase Discipline
 
-- **Follow the current phase only** — See `docs/progress/PROGRESS_TRACKER.md`
-- **Do not add future features unless requested** — No social graph, clubs, or mobile-specific work during web MVP unless asked
-- **Build web app first before mobile app** — Web is Phase 1; mobile is Phase 3
+- **Follow the current phase only** — See [Master Task List](../project/MASTER_TASK_LIST.md) and [Progress Tracker](../progress/PROGRESS_TRACKER.md)
+- **Do not add unrequested future features** — No messaging, AI, premium, or social v2 unless asked
+- **Build web app first before mobile app** — Phases 0–2 complete; Phase 3 (mobile foundation) is next
 
 ---
 
