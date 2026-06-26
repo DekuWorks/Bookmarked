@@ -1,10 +1,15 @@
 import { createBrowserClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getAuthStorage } from "@/lib/auth/rememberMe";
 import { assertSupabaseEnv } from "@/lib/env";
 
+let browserClient: SupabaseClient | undefined;
+
 export function createClient() {
+  if (browserClient) return browserClient;
+
   const { url, anonKey } = assertSupabaseEnv();
-  return createBrowserClient(url, anonKey, {
+  browserClient = createBrowserClient(url, anonKey, {
     auth: {
       storage: getAuthStorage(),
       persistSession: true,
@@ -12,4 +17,6 @@ export function createClient() {
       detectSessionInUrl: true,
     },
   });
+
+  return browserClient;
 }

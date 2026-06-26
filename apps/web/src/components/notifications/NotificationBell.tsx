@@ -12,6 +12,15 @@ import {
 } from "@/lib/utils/browserNotifications";
 import { cn } from "@/lib/utils/cn";
 
+function removeNotificationChannel(supabase: ReturnType<typeof createClient>, userId: string) {
+  const topic = `notifications:${userId}`;
+  for (const channel of supabase.getChannels()) {
+    if (channel.topic === `realtime:${topic}`) {
+      void supabase.removeChannel(channel);
+    }
+  }
+}
+
 export function NotificationBell() {
   const user = useAuthUser();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -38,12 +47,14 @@ export function NotificationBell() {
     const supabase = createClient();
     let cancelled = false;
 
+    removeNotificationChannel(supabase, userId);
+
     const channel = supabase
       .channel(`notifications:${userId}`)
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "*",
           schema: "public",
           table: "notifications",
           filter: `user_id=eq.${userId}`,
@@ -53,14 +64,15 @@ export function NotificationBell() {
 
           refreshCountRef.current();
 
+          if (payload.eventType !== "INSERT") return;
+          if (getBrowserNotificationPermission() !== "granted") return;
+
           const row = payload.new as {
             title?: string;
             body?: string;
             link_url?: string | null;
             id?: string;
           };
-
-          if (getBrowserNotificationPermission() !== "granted") return;
 
           void supabase
             .from("profiles")
@@ -75,19 +87,6 @@ export function NotificationBell() {
                 url: row.link_url ?? "/notifications/",
               });
             });
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${userId}`,
-        },
-        () => {
-          if (cancelled) return;
-          refreshCountRef.current();
         }
       )
       .subscribe();

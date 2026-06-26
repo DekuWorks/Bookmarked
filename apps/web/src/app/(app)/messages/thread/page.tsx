@@ -74,26 +74,20 @@ function MessageThreadContent() {
 
     const supabase = createClient();
     let cancelled = false;
+    const topic = `messages:${conversationId}`;
+
+    for (const existing of supabase.getChannels()) {
+      if (existing.topic === `realtime:${topic}`) {
+        void supabase.removeChannel(existing);
+      }
+    }
 
     const channel = supabase
-      .channel(`messages:${conversationId}`)
+      .channel(topic)
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        () => {
-          if (cancelled) return;
-          void loadThreadRef.current();
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
+          event: "*",
           schema: "public",
           table: "messages",
           filter: `conversation_id=eq.${conversationId}`,

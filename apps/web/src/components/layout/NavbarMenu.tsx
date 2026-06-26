@@ -179,17 +179,16 @@ export function NavbarMenu({ links, actions, footer, useAppNavLinks = false }: P
             {link.label}
           </NavItem>
         ))}
-        {actions ? <div className="ml-1 flex items-center">{actions}</div> : null}
         {footer ? <div className="ml-2 flex items-center gap-2">{footer}</div> : null}
       </div>
 
-      {/* Mobile header actions + menu button */}
-      <div className="relative z-[110] flex items-center gap-1 md:hidden">
+      {/* Shared actions (e.g. notification bell) + mobile menu */}
+      <div className="relative z-[110] flex items-center gap-1">
         {actions ? <div className="flex items-center">{actions}</div> : null}
         <button
           type="button"
           className={cn(
-            "inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-border bg-surface text-puce-red",
+            "inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-border bg-surface text-puce-red md:hidden",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2"
           )}
           aria-expanded={open}
