@@ -69,6 +69,9 @@ export function SearchResults({ query }: Props) {
                   doc.number_of_pages_median ? String(doc.number_of_pages_median) : ""
                 }
                 isbn={isbn}
+                first_publish_year={
+                  doc.first_publish_year ? String(doc.first_publish_year) : ""
+                }
               />
             </li>
           );

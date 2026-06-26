@@ -49,46 +49,78 @@ export type OpenLibraryWorkDetails = {
 };
 
 function normalizeWorkPath(externalId: string): string {
-  if (externalId.startsWith("/works/") || externalId.startsWith("/books/")) {
-    return externalId;
+  const trimmed = externalId.trim();
+  if (trimmed.startsWith("/works/") || trimmed.startsWith("/books/")) {
+    return trimmed;
   }
-  return `/works/${externalId}`;
+  return `/works/${trimmed}`;
+}
+
+async function fetchOpenLibraryJson<T>(path: string): Promise<T | null> {
+  const res = await fetch(`https://openlibrary.org${path}`, {
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!res.ok) return null;
+  return (await res.json()) as T;
 }
 
 function parseOpenLibraryDescription(
   value: string | { value?: string } | undefined
 ): string | null {
   if (!value) return null;
-  if (typeof value === "string") return value;
-  return value.value ?? null;
+  const raw = typeof value === "string" ? value : (value.value ?? null);
+  if (!raw) return null;
+  return raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() || null;
+}
+
+async function resolveWorkPath(externalId: string): Promise<string | null> {
+  let path = normalizeWorkPath(externalId);
+
+  if (path.startsWith("/works/")) {
+    return path;
+  }
+
+  const edition = await fetchOpenLibraryJson<{ works?: { key?: string }[] }>(`${path}.json`);
+  const workKey = edition?.works?.[0]?.key;
+  if (workKey) return workKey;
+
+  if (path.startsWith("/books/")) {
+    return null;
+  }
+
+  return `/works/${externalId.replace(/^\/works\//, "")}`;
 }
 
 export async function fetchOpenLibraryWorkDetails(
   externalId: string
 ): Promise<OpenLibraryWorkDetails | null> {
-  const path = normalizeWorkPath(externalId);
-  const res = await fetch(`https://openlibrary.org${path}.json`, {
-    signal: AbortSignal.timeout(8000),
-  });
+  const workPath = await resolveWorkPath(externalId);
+  if (!workPath) return null;
 
-  if (!res.ok) return null;
-
-  const data = (await res.json()) as {
+  const data = await fetchOpenLibraryJson<{
     description?: string | { value?: string };
     subjects?: string[];
     subject_places?: string[];
     first_publish_date?: string;
     publishers?: string[];
     number_of_pages?: number;
-  };
+  }>(`${workPath}.json`);
 
-  const subjects = [
-    ...(data.subjects ?? []),
-    ...(data.subject_places ?? []),
-  ].slice(0, 12);
+  if (!data) return null;
+
+  let description = parseOpenLibraryDescription(data.description);
+
+  if (!description) {
+    const descPayload = await fetchOpenLibraryJson<string | { value?: string }>(
+      `${workPath}/description.json`
+    );
+    description = parseOpenLibraryDescription(descPayload ?? undefined);
+  }
+
+  const subjects = [...(data.subjects ?? []), ...(data.subject_places ?? [])].slice(0, 12);
 
   return {
-    description: parseOpenLibraryDescription(data.description),
+    description,
     subjects,
     published_date: data.first_publish_date ?? null,
     publisher: data.publishers?.[0] ?? null,

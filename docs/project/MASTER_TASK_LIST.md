@@ -746,6 +746,190 @@ Build features that can grow with the product rather than solving only today's r
 
 ---
 
+# SECTION 4 — Phase 1 Completion Sprint
+
+**Status: ✅ Complete** (signed off — live at https://bookmarked.online)
+
+## Phase Goal
+
+Finish the Bookmarked web application so users can complete their entire reading journey directly from the browser.
+
+By the end of Phase 1, a user should be able to:
+
+Create an account → Login → Search for books → Add books to shelves → View book details → Track reading progress → Write reviews → View activity → Manage their personal library
+
+Phase 1 represents a complete MVP.
+
+---
+
+## Task 1 — Complete Book Details ✅
+
+**Goal:** Create a complete details page for every book — the central hub for each book.
+
+**Display:** Cover, title, author, description, publish year, page count, ISBN, current shelf, reading progress, reviews
+
+**Actions:** Add to Want To Read / Reading / Read, update progress, write review
+
+**Entry points:** Search, Library, Dashboard, Bookshelf View, Grid View
+
+**Implementation:** `/book?id={uuid}` · `BookDetailsPage` · `BookShelfActions` · `ReadingProgressPanel` · `BookReviewSection`
+
+**Done when:** Every book opens a complete details page. ✅
+
+---
+
+## Task 2 — Fix Continue Reading ✅
+
+**Goal:** Continue Reading always routes correctly.
+
+**Behavior:**
+
+- If user has a current reading book → open Book Details
+- If user has no current book → guide to Search (no broken links)
+
+**Implementation:** `CurrentlyReadingRow` on dashboard — `bookDetailsPath()` for active reads; empty state links to `/search` and want-to-read shelf
+
+**Done when:** Continue Reading always works. ✅
+
+---
+
+## Task 3 — Reading Progress System ✅
+
+**Goal:** Users can track reading progress end-to-end.
+
+**Features:** Current page, total pages, progress %, progress bar, started date, finished date
+
+**Behavior:**
+
+- Moved to Reading → set `started_at`
+- Finished → move to Read, set `finished_at`, progress 100%
+
+**Implementation:** `ReadingProgressPanel` · `updateReadingProgress` / finish actions · `user_books` columns
+
+**Done when:** Users can completely track reading progress. ✅
+
+---
+
+## Task 4 — Shelf Workflow Improvements ✅
+
+**Goal:** Seamless shelf management without duplicates.
+
+**Shelves:** Want To Read, Currently Reading, Read
+
+**Behavior:** Choose shelf on add; update existing row instead of duplicating (`unique (user_id, book_id)`)
+
+**Implementation:** `BookShelfActions` · `ShelfSelectMenu` · shelf pages under `/library/[shelf]`
+
+**Done when:** Shelf management feels seamless. ✅
+
+---
+
+## Task 5 — Reviews ✅
+
+**Goal:** Users can review books throughout the app.
+
+**Build:** 1–5 star rating, review body, spoiler toggle, edit, delete
+
+**Rules:** One review per user per book; spoilers hidden by default; users edit own review only
+
+**Implementation:** `BookReviewSection` · migration `003` unique constraint
+
+**Done when:** Reviews work throughout the application. ✅
+
+---
+
+## Task 6 — Activity Feed ✅
+
+**Goal:** Dashboard reflects user activity.
+
+**Track:** Book added, shelf changed, progress updated, book finished, review added
+
+**Implementation:** `ActivityFeed` on `/dashboard` · `activity_events` table
+
+**Done when:** Dashboard reflects user activity. ✅
+
+---
+
+## Task 7 — Book Cover Improvements ✅
+
+**Goal:** No broken book covers.
+
+**Current chain:**
+
+1. Open Library cover ID
+2. Open Library ISBN URL
+3. Google Books fallback
+4. Branded Bookmarked placeholder
+
+**Future (not required for Phase 1):** ISBNdb metadata
+
+**Implementation:** `BookCover` component · cover resolution in search/catalog services
+
+**Done when:** No broken book covers appear. ✅
+
+---
+
+## Task 8 — Empty States ✅
+
+**Goal:** Every major page provides loading, empty, error, and success feedback.
+
+**Examples:** Empty library, no search results, no reviews, no progress, no currently-reading books
+
+**Implementation:** `LoadingState` · `BookMiniGrid` empty messages · dashed-border empty blocks · toast success/error on actions
+
+**Done when:** Every page provides user feedback. ✅
+
+---
+
+## Task 9 — Responsive QA ✅
+
+**Goal:** Entire web app works across desktop, laptop, tablet, and mobile.
+
+**Verified areas:** Dashboard, Library, Search, Book Details, Reviews, Profile, Navigation, Bookshelf View, Grid View
+
+**Requirements:** No horizontal scrolling, tappable buttons, cards resize correctly
+
+**Implementation:** Mobile-first Tailwind · `NavbarMenu` · responsive grids · landing page centering sprint
+
+**Done when:** Entire web app works across devices. ✅
+
+---
+
+## Task 10 — Production QA ✅
+
+**Goal:** Full user flow works in production with data persistence.
+
+**Flow tested:** Sign up → login → search → details → add to shelf → move to reading → update progress → finish → review → logout → login → verify persistence
+
+**Implementation:** GitHub Pages deploy · Supabase production · static export routing fixes · env secrets in CI
+
+**Done when:** No critical bugs remain in the core loop. ✅
+
+---
+
+## Phase 1 Completion Checklist
+
+| Item | Status |
+|------|--------|
+| Authentication | ✅ Complete |
+| Profiles | ✅ Complete |
+| Book Search | ✅ Complete |
+| Library | ✅ Complete |
+| Shelves | ✅ Complete |
+| Book Details | ✅ Complete |
+| Reading Progress | ✅ Complete |
+| Reviews | ✅ Complete |
+| Activity Feed | ✅ Complete |
+| Responsive QA | ✅ Complete |
+| Production QA | ✅ Complete |
+| Deployment | ✅ Complete |
+
+**Phase 1 is officially finished.**
+
+Next: [Phase 2](../progress/PROGRESS_TRACKER.md#phase-2--website-polish--public-pages-build-plan) (complete) → [Phase 3 — Mobile foundation](../progress/PROGRESS_TRACKER.md#phase-3--mobile-app-foundation-build-plan) (current focus).
+
+---
+
 ## Related docs
 
 - [Progress Tracker](../progress/PROGRESS_TRACKER.md) — routes, migrations, smoke tests

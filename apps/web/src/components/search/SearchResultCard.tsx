@@ -22,6 +22,7 @@ type Props = {
   cover_i: string;
   page_count: string;
   isbn?: string;
+  first_publish_year?: string;
 };
 
 function ResultActions({
@@ -71,6 +72,7 @@ export function SearchResultCard({
   cover_i,
   page_count,
   isbn = "",
+  first_publish_year = "",
 }: Props) {
   const router = useRouter();
   const toast = useToast();
@@ -78,7 +80,15 @@ export function SearchResultCard({
   const [saving, setSaving] = useState(false);
   const [viewDetailsLoading, setViewDetailsLoading] = useState(false);
 
-  const bookPayload = { title, author, external_id, cover_i, page_count, isbn };
+  const bookPayload = {
+    title,
+    author,
+    external_id,
+    cover_i,
+    page_count,
+    isbn,
+    first_publish_year,
+  };
 
   async function handleViewDetails() {
     setViewDetailsLoading(true);
@@ -107,6 +117,7 @@ export function SearchResultCard({
     formData.set("cover_i", cover_i);
     formData.set("page_count", page_count);
     formData.set("isbn", isbn);
+    formData.set("first_publish_year", first_publish_year);
     formData.set("shelf_status", shelfStatus);
 
     try {

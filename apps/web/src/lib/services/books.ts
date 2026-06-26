@@ -1,8 +1,9 @@
 import { createClient } from "@/lib/supabase/client";
 import { getShelfLabel, isShelfStatus } from "@/lib/constants/shelfLabels";
 import { activityMetadata, bookActivityContext, recordActivity } from "@/lib/services/activity";
+import { enrichBookFromOpenLibrary } from "@/lib/services/bookMetadata";
 import { resolveBookCoverUrl } from "@/lib/services/covers";
-import type { ShelfStatus } from "@/types";
+import type { Book, ShelfStatus } from "@/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 const ADD_BOOK_ERROR = "Could not add book. Please try again.";
@@ -20,17 +21,20 @@ type OpenLibraryBookInput = {
   cover_i: string;
   page_count: string;
   isbn?: string;
+  first_publish_year?: string;
 };
 
 async function upsertOpenLibraryCatalogBook(
   supabase: SupabaseClient,
   input: OpenLibraryBookInput
 ): Promise<{ bookId?: string; error?: string }> {
-  const { title, author, external_id, cover_i, page_count, isbn } = input;
+  const { title, author, external_id, cover_i, page_count, isbn, first_publish_year } = input;
 
   if (!title || !external_id) {
     return { error: "Invalid book data." };
   }
+
+  const publishedDate = first_publish_year?.trim() || null;
 
   const cover_url = await resolveBookCoverUrl({
     coverId: cover_i ? Number(cover_i) : null,
@@ -47,9 +51,18 @@ async function upsertOpenLibraryCatalogBook(
     .maybeSingle();
 
   if (existing?.id) {
-    if (!existing.cover_url && cover_url) {
-      await supabase.from("books").update({ cover_url }).eq("id", existing.id);
+    const patch: Record<string, unknown> = {};
+    if (!existing.cover_url && cover_url) patch.cover_url = cover_url;
+
+    if (Object.keys(patch).length > 0) {
+      await supabase.from("books").update(patch).eq("id", existing.id);
     }
+
+    const { data: row } = await supabase.from("books").select("*").eq("id", existing.id).single();
+    if (row) {
+      await enrichBookFromOpenLibrary(supabase, row as Book);
+    }
+
     return { bookId: existing.id };
   }
 
@@ -63,13 +76,16 @@ async function upsertOpenLibraryCatalogBook(
       cover_url,
       isbn: isbn?.trim() || null,
       page_count: page_count ? Number(page_count) : null,
+      published_date: publishedDate,
     })
-    .select("id")
+    .select("*")
     .single();
 
   if (bookError) {
     return { error: bookError.message };
   }
+
+  await enrichBookFromOpenLibrary(supabase, inserted as Book);
 
   return { bookId: inserted.id };
 }
@@ -117,6 +133,7 @@ export async function addOpenLibraryBookToShelf(
     cover_i: String(formData.get("cover_i") ?? ""),
     page_count: String(formData.get("page_count") ?? ""),
     isbn: String(formData.get("isbn") ?? "").trim() || undefined,
+    first_publish_year: String(formData.get("first_publish_year") ?? "").trim() || undefined,
   };
 
   const catalog = await upsertOpenLibraryCatalogBook(supabase, input);

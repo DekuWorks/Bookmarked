@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
-import { fetchOpenLibraryWorkDetails } from "@/lib/services/openLibrary";
+import { enrichBookFromOpenLibrary } from "@/lib/services/bookMetadata";
 import { resolveBookCoverUrl } from "@/lib/services/covers";
 import type { Book, Review, UserBook } from "@/types";
 
@@ -25,33 +25,7 @@ export async function getBookDetails(
   if (error) throw error;
   if (!book) return null;
 
-  let enriched = book as Book;
-
-  if (
-    book.external_source === "open_library" &&
-    book.external_id &&
-    (!book.description || !book.subjects?.length)
-  ) {
-    const ol = await fetchOpenLibraryWorkDetails(book.external_id);
-    if (ol) {
-      const updates: Partial<Book> = {};
-      if (!book.description && ol.description) updates.description = ol.description;
-      if (!book.subjects?.length && ol.subjects.length) updates.subjects = ol.subjects;
-      if (!book.published_date && ol.published_date) updates.published_date = ol.published_date;
-      if (!book.publisher && ol.publisher) updates.publisher = ol.publisher;
-      if (!book.page_count && ol.page_count) updates.page_count = ol.page_count;
-
-      if (Object.keys(updates).length > 0) {
-        const { data: updated } = await supabase
-          .from("books")
-          .update(updates)
-          .eq("id", bookId)
-          .select("*")
-          .single();
-        if (updated) enriched = updated as Book;
-      }
-    }
-  }
+  let enriched = await enrichBookFromOpenLibrary(supabase, book as Book);
 
   if (!enriched.cover_url) {
     const resolved = await resolveBookCoverUrl({

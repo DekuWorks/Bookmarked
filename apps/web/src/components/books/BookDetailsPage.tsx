@@ -83,12 +83,6 @@ function BookDetailsContent() {
           ) : null}
 
           <dl className="mt-6 grid gap-3 text-sm sm:grid-cols-2">
-            {book.publisher ? (
-              <div>
-                <dt className="font-medium text-text-muted">Publisher</dt>
-                <dd className="text-text">{book.publisher}</dd>
-              </div>
-            ) : null}
             {book.published_date ? (
               <div>
                 <dt className="font-medium text-text-muted">Published</dt>
@@ -107,17 +101,10 @@ function BookDetailsContent() {
                 <dd className="break-all text-text">{book.isbn}</dd>
               </div>
             ) : null}
-            {book.external_source ? (
+            {book.publisher ? (
               <div>
-                <dt className="font-medium text-text-muted">Source</dt>
-                <dd className="capitalize text-text">
-                  {book.external_source.replace(/_/g, " ")}
-                  {book.external_id ? (
-                    <span className="mt-0.5 block text-xs text-text-muted">
-                      {book.external_id}
-                    </span>
-                  ) : null}
-                </dd>
+                <dt className="font-medium text-text-muted">Publisher</dt>
+                <dd className="text-text">{book.publisher}</dd>
               </div>
             ) : null}
           </dl>
@@ -135,11 +122,19 @@ function BookDetailsContent() {
             </div>
           ) : null}
 
-          {book.description ? (
-            <p className="mt-6 leading-relaxed text-text">{book.description}</p>
-          ) : (
-            <p className="mt-6 text-text-muted">No description available.</p>
-          )}
+          <section className="mt-8" aria-labelledby="book-description-heading">
+            <h2 id="book-description-heading" className="text-lg font-semibold text-puce-red">
+              About this book
+            </h2>
+            {book.description ? (
+              <p className="mt-3 text-pretty leading-relaxed text-text">{book.description}</p>
+            ) : (
+              <p className="mt-3 text-text-muted">
+                No description available yet. Metadata is filled in from Open Library when
+                possible.
+              </p>
+            )}
+          </section>
         </div>
       </div>
 

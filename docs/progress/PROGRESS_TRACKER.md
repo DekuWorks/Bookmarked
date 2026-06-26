@@ -42,6 +42,8 @@ Aligned with **Bookmarked_BuildPlan.pdf** (web-first build plan).
 
 ### Phase 1 completion sprint
 
+See [Master Task List — Section 4](../project/MASTER_TASK_LIST.md#section-4--phase-1-completion-sprint) for the full sprint task breakdown.
+
 | # | Task | Status | Notes |
 |---|------|--------|-------|
 | 1 | Book details routing | Done | Static route `/book/?id={uuid}` — GitHub Pages safe |
