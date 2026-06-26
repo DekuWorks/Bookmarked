@@ -1,7 +1,7 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { ConversationList } from "@/components/messages/ConversationList";
 import { EmptyInboxState } from "@/components/messages/EmptyInboxState";
 import { NewMessageButton } from "@/components/messages/NewMessageButton";
@@ -15,7 +15,6 @@ import type { ConversationPreview } from "@/types";
 function MessagesInboxContent() {
   const user = useAuthUser();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [conversations, setConversations] = useState<ConversationPreview[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -30,10 +29,16 @@ function MessagesInboxContent() {
   }, [pathname]);
 
   useEffect(() => {
-    if (searchParams.get("new") === "1") {
-      setModalOpen(true);
-    }
-  }, [searchParams]);
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("new") !== "1") return;
+
+    setModalOpen(true);
+
+    params.delete("new");
+    const query = params.toString();
+    const nextUrl = query ? `${pathname}?${query}` : pathname;
+    window.history.replaceState(null, "", nextUrl);
+  }, [pathname]);
 
   useEffect(() => {
     if (!user) return;
@@ -101,9 +106,5 @@ function MessagesInboxContent() {
 }
 
 export default function MessagesPage() {
-  return (
-    <Suspense fallback={<LoadingState message="Loading messages…" />}>
-      <MessagesInboxContent />
-    </Suspense>
-  );
+  return <MessagesInboxContent />;
 }

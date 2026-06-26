@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { StaticNavLink } from "@/components/layout/StaticNavLink";
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
@@ -54,7 +54,7 @@ export function NavbarMenu({ links, actions, footer }: Props) {
       {/* Desktop navigation */}
       <div className="hidden items-center gap-1 md:flex lg:gap-2">
         {links.map((link) => (
-          <Link
+          <StaticNavLink
             key={link.href}
             href={link.href}
             className={cn(
@@ -64,7 +64,7 @@ export function NavbarMenu({ links, actions, footer }: Props) {
             )}
           >
             {link.label}
-          </Link>
+          </StaticNavLink>
         ))}
         {actions ? <div className="ml-1 flex items-center">{actions}</div> : null}
         {footer ? <div className="ml-2 flex items-center gap-2">{footer}</div> : null}
@@ -127,7 +127,7 @@ export function NavbarMenu({ links, actions, footer }: Props) {
                 </div>
               ) : null}
               {links.map((link) => (
-                <Link
+                <StaticNavLink
                   key={link.href}
                   href={link.href}
                   onClick={close}
@@ -138,7 +138,7 @@ export function NavbarMenu({ links, actions, footer }: Props) {
                   )}
                 >
                   {link.label}
-                </Link>
+                </StaticNavLink>
               ))}
               {footer ? (
                 <div className="mt-3 flex flex-col gap-2 border-t border-border pt-4">

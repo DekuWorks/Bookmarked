@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { StaticNavLink } from "@/components/layout/StaticNavLink";
 import { NavbarPublicAuth } from "@/components/layout/NavbarPublicAuth";
 import { NavbarMenu, type NavLinkItem } from "@/components/layout/NavbarMenu";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
@@ -39,12 +39,12 @@ export function Navbar({ variant = "public" }: Props) {
         className={cn(layout.container, "flex items-center justify-between gap-4 py-3")}
         aria-label="Main navigation"
       >
-        <Link
+        <StaticNavLink
           href={isApp ? "/dashboard/" : "/"}
           className="shrink-0 text-xl font-bold tracking-tight text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2 rounded-sm"
         >
           Bookmarked
-        </Link>
+        </StaticNavLink>
 
         <NavbarMenu
           links={isApp ? APP_LINKS : PUBLIC_LINKS}

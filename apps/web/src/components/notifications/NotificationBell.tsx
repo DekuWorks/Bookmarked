@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { StaticNavLink } from "@/components/layout/StaticNavLink";
 import { useCallback, useEffect, useState } from "react";
 import { BellIcon } from "@/components/notifications/BellIcon";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
@@ -89,7 +89,7 @@ export function NotificationBell() {
   if (!user) return null;
 
   return (
-    <Link
+    <StaticNavLink
       href="/notifications/"
       className={cn(
         "relative inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg",
@@ -108,6 +108,6 @@ export function NotificationBell() {
           {unreadCount > 9 ? "9+" : unreadCount}
         </span>
       ) : null}
-    </Link>
+    </StaticNavLink>
   );
 }
