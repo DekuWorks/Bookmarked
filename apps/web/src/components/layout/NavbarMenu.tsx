@@ -1,6 +1,6 @@
 "use client";
 
-import { StaticNavLink } from "@/components/layout/StaticNavLink";
+import Link from "next/link";
 import {
   useCallback,
   useEffect,
@@ -31,47 +31,6 @@ const linkBase =
   "flex min-h-[44px] items-center rounded-lg px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2";
 
 const APP_HEADER_ID = "app-header";
-
-function normalizePath(path: string): string {
-  return path.endsWith("/") ? path : `${path}/`;
-}
-
-function MobileNavAnchor({
-  href,
-  className,
-  onClick,
-  children,
-}: {
-  href: string;
-  className?: string;
-  onClick?: () => void;
-  children: ReactNode;
-}) {
-  const pathname = usePathname();
-
-  return (
-    <a
-      href={href}
-      className={className}
-      onClick={(event) => {
-        onClick?.();
-
-        if (href.includes("#")) return;
-
-        const targetPath = normalizePath(new URL(href, window.location.origin).pathname);
-        const currentPath = normalizePath(pathname);
-
-        event.preventDefault();
-
-        if (targetPath === currentPath) return;
-
-        window.location.assign(href);
-      }}
-    >
-      {children}
-    </a>
-  );
-}
 
 export function NavbarMenu({ links, actions, footer }: Props) {
   const [open, setOpen] = useState(false);
@@ -146,9 +105,10 @@ export function NavbarMenu({ links, actions, footer }: Props) {
             >
               <nav className={cn(layout.container, "flex flex-col gap-1 py-4")}>
                 {links.map((link) => (
-                  <MobileNavAnchor
+                  <Link
                     key={link.href}
                     href={link.href}
+                    prefetch={false}
                     onClick={close}
                     className={cn(
                       linkBase,
@@ -157,7 +117,7 @@ export function NavbarMenu({ links, actions, footer }: Props) {
                     )}
                   >
                     {link.label}
-                  </MobileNavAnchor>
+                  </Link>
                 ))}
                 {footer ? (
                   <div className="mt-3 flex flex-col gap-2 border-t border-border pt-4">
@@ -176,9 +136,10 @@ export function NavbarMenu({ links, actions, footer }: Props) {
       {/* Desktop navigation */}
       <div className="hidden items-center gap-1 md:flex lg:gap-2">
         {links.map((link) => (
-          <StaticNavLink
+          <Link
             key={link.href}
             href={link.href}
+            prefetch={false}
             className={cn(
               linkBase,
               "text-puce-red hover:bg-primary/10 hover:text-rust",
@@ -186,7 +147,7 @@ export function NavbarMenu({ links, actions, footer }: Props) {
             )}
           >
             {link.label}
-          </StaticNavLink>
+          </Link>
         ))}
         {actions ? <div className="ml-1 flex items-center">{actions}</div> : null}
         {footer ? <div className="ml-2 flex items-center gap-2">{footer}</div> : null}

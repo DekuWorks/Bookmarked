@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/env";
@@ -14,12 +14,7 @@ type Props = {
 export function ClientAuthGuard({ children }: Props) {
   const router = useRouter();
   const pathname = usePathname();
-  const pathnameRef = useRef(pathname);
   const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    pathnameRef.current = pathname;
-  }, [pathname]);
 
   useEffect(() => {
     if (!isSupabaseConfigured()) {
@@ -34,7 +29,7 @@ export function ClientAuthGuard({ children }: Props) {
       if (cancelled) return;
 
       if (!session?.user) {
-        const redirect = encodeURIComponent(pathnameRef.current);
+        const redirect = encodeURIComponent(pathname);
         router.replace(`/login/?redirect=${redirect}`);
         return;
       }
@@ -48,7 +43,7 @@ export function ClientAuthGuard({ children }: Props) {
       if (cancelled) return;
 
       const hasProfile = Boolean(profile?.username?.trim());
-      const onSetup = pathnameRef.current.startsWith("/profile/setup");
+      const onSetup = pathname.startsWith("/profile/setup");
 
       if (!hasProfile && !onSetup) {
         router.replace("/profile/setup");
@@ -69,7 +64,7 @@ export function ClientAuthGuard({ children }: Props) {
 
       if (event === "SIGNED_OUT") {
         setReady(false);
-        const redirect = encodeURIComponent(pathnameRef.current);
+        const redirect = encodeURIComponent(pathname);
         router.replace(`/login/?redirect=${redirect}`);
         return;
       }
@@ -83,7 +78,7 @@ export function ClientAuthGuard({ children }: Props) {
       cancelled = true;
       subscription.unsubscribe();
     };
-  }, [router]);
+  }, [pathname, router]);
 
   if (!ready) {
     return <LoadingState message="Loading your library…" />;

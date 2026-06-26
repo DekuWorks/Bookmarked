@@ -62,7 +62,7 @@ function MessagesInboxContent() {
     };
   }, [user]);
 
-  if (user === undefined || (user && conversations === null && !loadError)) {
+  if (user === undefined || user === null || (conversations === null && !loadError)) {
     return <LoadingState message="Loading messages…" />;
   }
 
@@ -74,7 +74,9 @@ function MessagesInboxContent() {
     );
   }
 
-  if (!user || !conversations) return null;
+  if (!conversations) {
+    return <LoadingState message="Loading messages…" />;
+  }
 
   return (
     <div className={layout.pageStackWide}>
