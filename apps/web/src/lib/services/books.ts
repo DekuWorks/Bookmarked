@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { getShelfLabel, isShelfStatus } from "@/lib/constants/shelfLabels";
 import { activityMetadata, bookActivityContext, recordActivity } from "@/lib/services/activity";
-import { enrichBookFromOpenLibrary } from "@/lib/services/bookMetadata";
+import { enrichBookCatalogEntry } from "@/lib/services/bookMetadata";
 import { resolveBookCoverUrl } from "@/lib/services/covers";
 import type { Book, ShelfStatus } from "@/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -22,13 +22,20 @@ type OpenLibraryBookInput = {
   page_count: string;
   isbn?: string;
   first_publish_year?: string;
+  first_sentence?: string;
 };
+
+function seedDescriptionFromSearch(firstSentence?: string): string | null {
+  const trimmed = firstSentence?.trim();
+  return trimmed || null;
+}
 
 async function upsertOpenLibraryCatalogBook(
   supabase: SupabaseClient,
   input: OpenLibraryBookInput
 ): Promise<{ bookId?: string; error?: string }> {
-  const { title, author, external_id, cover_i, page_count, isbn, first_publish_year } = input;
+  const { title, author, external_id, cover_i, page_count, isbn, first_publish_year, first_sentence } =
+    input;
 
   if (!title || !external_id) {
     return { error: "Invalid book data." };
@@ -60,11 +67,13 @@ async function upsertOpenLibraryCatalogBook(
 
     const { data: row } = await supabase.from("books").select("*").eq("id", existing.id).single();
     if (row) {
-      await enrichBookFromOpenLibrary(supabase, row as Book);
+      await enrichBookCatalogEntry(supabase, row as Book);
     }
 
     return { bookId: existing.id };
   }
+
+  const seedDescription = seedDescriptionFromSearch(first_sentence);
 
   const { data: inserted, error: bookError } = await supabase
     .from("books")
@@ -77,6 +86,7 @@ async function upsertOpenLibraryCatalogBook(
       isbn: isbn?.trim() || null,
       page_count: page_count ? Number(page_count) : null,
       published_date: publishedDate,
+      description: seedDescription,
     })
     .select("*")
     .single();
@@ -85,7 +95,7 @@ async function upsertOpenLibraryCatalogBook(
     return { error: bookError.message };
   }
 
-  await enrichBookFromOpenLibrary(supabase, inserted as Book);
+  await enrichBookCatalogEntry(supabase, inserted as Book);
 
   return { bookId: inserted.id };
 }
@@ -134,6 +144,7 @@ export async function addOpenLibraryBookToShelf(
     page_count: String(formData.get("page_count") ?? ""),
     isbn: String(formData.get("isbn") ?? "").trim() || undefined,
     first_publish_year: String(formData.get("first_publish_year") ?? "").trim() || undefined,
+    first_sentence: String(formData.get("first_sentence") ?? "").trim() || undefined,
   };
 
   const catalog = await upsertOpenLibraryCatalogBook(supabase, input);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { BookCover } from "@/components/books/BookCover";
 import { ShelfSelectMenu } from "@/components/shelves/ShelfSelectMenu";
@@ -10,6 +10,7 @@ import {
   addOpenLibraryBookToShelf,
   ensureOpenLibraryBook,
 } from "@/lib/services/books";
+import { resolveBookCoverUrl } from "@/lib/services/covers";
 import { bookDetailsPath } from "@/lib/routes/book";
 import { cn } from "@/lib/utils/cn";
 import type { ShelfStatus } from "@/types";
@@ -23,6 +24,7 @@ type Props = {
   page_count: string;
   isbn?: string;
   first_publish_year?: string;
+  first_sentence?: string;
 };
 
 function ResultActions({
@@ -73,12 +75,36 @@ export function SearchResultCard({
   page_count,
   isbn = "",
   first_publish_year = "",
+  first_sentence = "",
 }: Props) {
   const router = useRouter();
   const toast = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [viewDetailsLoading, setViewDetailsLoading] = useState(false);
+  const [resolvedCoverUrl, setResolvedCoverUrl] = useState<string | null>(coverUrl);
+
+  useEffect(() => {
+    setResolvedCoverUrl(coverUrl);
+  }, [coverUrl]);
+
+  useEffect(() => {
+    if (resolvedCoverUrl) return;
+
+    let cancelled = false;
+    void resolveBookCoverUrl({
+      coverUrl,
+      isbn,
+      title,
+      author,
+    }).then((url) => {
+      if (!cancelled && url) setResolvedCoverUrl(url);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [coverUrl, isbn, title, author, resolvedCoverUrl]);
 
   const bookPayload = {
     title,
@@ -88,6 +114,7 @@ export function SearchResultCard({
     page_count,
     isbn,
     first_publish_year,
+    first_sentence,
   };
 
   async function handleViewDetails() {
@@ -118,6 +145,7 @@ export function SearchResultCard({
     formData.set("page_count", page_count);
     formData.set("isbn", isbn);
     formData.set("first_publish_year", first_publish_year);
+    formData.set("first_sentence", first_sentence);
     formData.set("shelf_status", shelfStatus);
 
     try {
@@ -145,7 +173,7 @@ export function SearchResultCard({
           <BookCover
             title={title}
             author={author}
-            coverUrl={coverUrl}
+            coverUrl={resolvedCoverUrl}
             className="rounded-none border-0"
             sizes="(max-width: 768px) 50vw, 200px"
           />

@@ -44,7 +44,7 @@ export function BookshelfSection({
         {items.length === 0 ? (
           <EmptyShelfMessage className="pb-6" />
         ) : (
-          <div className="flex items-end gap-2 overflow-x-auto pb-1 scrollbar-thin">
+          <div className="bookshelf-row flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
             {items.map((ub) => {
               const book = ub.books;
               return (

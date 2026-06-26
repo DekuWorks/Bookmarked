@@ -14,7 +14,8 @@ export async function searchOpenLibrary(
   const params = new URLSearchParams({
     q: query.trim(),
     limit: String(limit),
-    fields: "key,title,author_name,cover_i,first_publish_year,isbn,number_of_pages_median",
+    fields:
+      "key,title,author_name,cover_i,first_publish_year,isbn,number_of_pages_median,first_sentence,subject,publisher",
   });
 
   const res = await fetch(`${SEARCH_URL}?${params}`);
@@ -91,6 +92,40 @@ async function resolveWorkPath(externalId: string): Promise<string | null> {
   return `/works/${externalId.replace(/^\/works\//, "")}`;
 }
 
+async function fetchEditionFallbackDetails(
+  workPath: string
+): Promise<Partial<OpenLibraryWorkDetails>> {
+  const list = await fetchOpenLibraryJson<{
+    entries?: Array<{ key?: string }>;
+  }>(`${workPath}/editions.json?limit=3`);
+
+  for (const entry of list?.entries ?? []) {
+    if (!entry.key) continue;
+
+    const edition = await fetchOpenLibraryJson<{
+      description?: string | { value?: string };
+      number_of_pages?: number;
+      publishers?: string[];
+      publish_date?: string;
+    }>(`${entry.key}.json`);
+
+    if (!edition) continue;
+
+    const description = parseOpenLibraryDescription(edition.description);
+    if (description || edition.number_of_pages || edition.publishers?.length) {
+      return {
+        description: description ?? null,
+        subjects: [],
+        published_date: edition.publish_date ?? null,
+        publisher: edition.publishers?.[0] ?? null,
+        page_count: edition.number_of_pages ?? null,
+      };
+    }
+  }
+
+  return {};
+}
+
 export async function fetchOpenLibraryWorkDetails(
   externalId: string
 ): Promise<OpenLibraryWorkDetails | null> {
@@ -119,11 +154,31 @@ export async function fetchOpenLibraryWorkDetails(
 
   const subjects = [...(data.subjects ?? []), ...(data.subject_places ?? [])].slice(0, 12);
 
+  let published_date = data.first_publish_date ?? null;
+  let publisher = data.publishers?.[0] ?? null;
+  let page_count = data.number_of_pages ?? null;
+
+  if (!description || !page_count || !publisher) {
+    const editionFallback = await fetchEditionFallbackDetails(workPath);
+    if (!description && editionFallback.description) {
+      description = editionFallback.description;
+    }
+    if (!published_date && editionFallback.published_date) {
+      published_date = editionFallback.published_date;
+    }
+    if (!publisher && editionFallback.publisher) {
+      publisher = editionFallback.publisher;
+    }
+    if (!page_count && editionFallback.page_count) {
+      page_count = editionFallback.page_count;
+    }
+  }
+
   return {
     description,
     subjects,
-    published_date: data.first_publish_date ?? null,
-    publisher: data.publishers?.[0] ?? null,
-    page_count: data.number_of_pages ?? null,
+    published_date,
+    publisher,
+    page_count,
   };
 }

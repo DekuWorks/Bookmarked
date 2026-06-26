@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils/cn";
@@ -27,44 +29,51 @@ function hashTitle(title: string): number {
 }
 
 export function BookSpine({ title, author, coverUrl, href, className }: Props) {
-  const spineColor = SPINE_COLORS[hashTitle(title) % SPINE_COLORS.length];
+  const hash = hashTitle(title);
+  const spineColor = SPINE_COLORS[hash % SPINE_COLORS.length];
+  const lean = -4 + (hash % 9);
 
   const content = (
     <div
-      className={cn(
-        "group relative flex h-44 w-11 flex-shrink-0 flex-col overflow-hidden rounded-t-sm transition-transform duration-200 hover:-translate-y-1 hover:scale-[1.02]",
-        "book-spine-shadow",
-        className
-      )}
+      className={cn("book-spine-wrapper flex-shrink-0", className)}
+      style={{
+        transform: `rotate(${lean}deg)`,
+        transformOrigin: "bottom center",
+      }}
       title={author ? `${title} — ${author}` : title}
     >
-      {coverUrl ? (
-        <Image
-          src={coverUrl}
-          alt={`Cover of ${title}`}
-          fill
-          className="object-cover"
-          sizes="44px"
-          unoptimized
-        />
-      ) : (
-        <div
-          className={cn(
-            "flex h-full w-full items-center justify-center px-0.5",
-            spineColor
-          )}
-        >
-          <span
-            className="max-h-[160px] overflow-hidden text-[10px] font-bold uppercase leading-tight tracking-wide text-white/95 sm:text-[9px]"
-            style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
-            aria-label={title}
-          >
+      <div
+        className={cn(
+          "book-spine group relative flex h-44 w-11 flex-col overflow-hidden rounded-t-sm transition-transform duration-200 hover:-translate-y-1",
+          "book-spine-shadow"
+        )}
+      >
+        {coverUrl ? (
+          <>
+            <Image
+              src={coverUrl}
+              alt=""
+              fill
+              className="object-cover"
+              sizes="44px"
+              unoptimized
+              aria-hidden
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/35 to-black/15" />
+          </>
+        ) : (
+          <div className={cn("h-full w-full", spineColor)} />
+        )}
+
+        <div className="absolute inset-0 flex items-center justify-center px-0.5">
+          <span className="book-spine-title" aria-label={title}>
             {title}
           </span>
         </div>
-      )}
-      <div className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-black/10" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 w-0.5 bg-white/20" />
+
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-black/15" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-0.5 bg-white/25" />
+      </div>
     </div>
   );
 

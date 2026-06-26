@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
-import { enrichBookFromOpenLibrary } from "@/lib/services/bookMetadata";
-import { resolveBookCoverUrl } from "@/lib/services/covers";
+import { enrichBookCatalogEntry } from "@/lib/services/bookMetadata";
 import type { Book, Review, UserBook } from "@/types";
 
 export type BookDetailsData = {
@@ -25,25 +24,7 @@ export async function getBookDetails(
   if (error) throw error;
   if (!book) return null;
 
-  let enriched = await enrichBookFromOpenLibrary(supabase, book as Book);
-
-  if (!enriched.cover_url) {
-    const resolved = await resolveBookCoverUrl({
-      coverUrl: enriched.cover_url,
-      isbn: enriched.isbn,
-      title: enriched.title,
-      author: enriched.author,
-    });
-    if (resolved) {
-      const { data: updated } = await supabase
-        .from("books")
-        .update({ cover_url: resolved })
-        .eq("id", bookId)
-        .select("*")
-        .single();
-      if (updated) enriched = updated as Book;
-    }
-  }
+  const enriched = await enrichBookCatalogEntry(supabase, book as Book);
 
   const { data: userBook } = await supabase
     .from("user_books")

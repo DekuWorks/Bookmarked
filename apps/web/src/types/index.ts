@@ -54,4 +54,7 @@ export interface OpenLibraryDoc {
   first_publish_year?: number;
   isbn?: string[];
   number_of_pages_median?: number;
+  first_sentence?: string[];
+  subject?: string[];
+  publisher?: string[];
 }

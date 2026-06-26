@@ -72,6 +72,7 @@ export function SearchResults({ query }: Props) {
                 first_publish_year={
                   doc.first_publish_year ? String(doc.first_publish_year) : ""
                 }
+                first_sentence={doc.first_sentence?.[0] ?? ""}
               />
             </li>
           );

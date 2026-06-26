@@ -8,6 +8,14 @@ export type CoverInput = {
   author?: string | null;
 };
 
+export type GoogleBooksVolume = {
+  coverUrl: string | null;
+  description: string | null;
+  pageCount: number | null;
+  publisher: string | null;
+  publishedDate: string | null;
+};
+
 export function openLibraryIsbnCoverUrl(isbn: string): string | null {
   const clean = isbn.replace(/[-\s]/g, "");
   if (!clean) return null;
@@ -30,20 +38,25 @@ export function resolveDisplayCoverUrl(input: CoverInput): string | null {
   return null;
 }
 
-export async function fetchGoogleBooksCoverUrl(
-  input: Pick<CoverInput, "isbn" | "title" | "author">
-): Promise<string | null> {
-  const params = new URLSearchParams({ maxResults: "1" });
-
+function buildGoogleBooksQuery(input: Pick<CoverInput, "isbn" | "title" | "author">): string | null {
   if (input.isbn?.trim()) {
-    params.set("q", `isbn:${input.isbn.replace(/[-\s]/g, "")}`);
-  } else if (input.title?.trim()) {
+    return `isbn:${input.isbn.replace(/[-\s]/g, "")}`;
+  }
+  if (input.title?.trim()) {
     let q = `intitle:${input.title.trim()}`;
     if (input.author?.trim()) q += ` inauthor:${input.author.trim()}`;
-    params.set("q", q);
-  } else {
-    return null;
+    return q;
   }
+  return null;
+}
+
+export async function fetchGoogleBooksVolume(
+  input: Pick<CoverInput, "isbn" | "title" | "author">
+): Promise<GoogleBooksVolume | null> {
+  const q = buildGoogleBooksQuery(input);
+  if (!q) return null;
+
+  const params = new URLSearchParams({ q, maxResults: "1" });
 
   try {
     const res = await fetch(
@@ -55,17 +68,30 @@ export async function fetchGoogleBooksCoverUrl(
     const json = (await res.json()) as {
       items?: Array<{
         volumeInfo?: {
+          description?: string;
+          pageCount?: number;
+          publisher?: string;
+          publishedDate?: string;
           imageLinks?: { thumbnail?: string; smallThumbnail?: string };
         };
       }>;
     };
 
-    const raw =
-      json.items?.[0]?.volumeInfo?.imageLinks?.thumbnail ??
-      json.items?.[0]?.volumeInfo?.imageLinks?.smallThumbnail;
+    const info = json.items?.[0]?.volumeInfo;
+    if (!info) return null;
 
-    if (!raw) return null;
-    return raw.replace(/^http:/, "https:").replace(/zoom=\d+/, "zoom=1");
+    const rawCover =
+      info.imageLinks?.thumbnail ?? info.imageLinks?.smallThumbnail ?? null;
+
+    return {
+      coverUrl: rawCover
+        ? rawCover.replace(/^http:/, "https:").replace(/zoom=\d+/, "zoom=1")
+        : null,
+      description: info.description?.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() || null,
+      pageCount: info.pageCount ?? null,
+      publisher: info.publisher ?? null,
+      publishedDate: info.publishedDate ?? null,
+    };
   } catch {
     return null;
   }
@@ -76,9 +102,11 @@ export async function resolveBookCoverUrl(input: CoverInput): Promise<string | n
   const immediate = resolveDisplayCoverUrl(input);
   if (immediate) return immediate;
 
-  return fetchGoogleBooksCoverUrl({
+  const google = await fetchGoogleBooksVolume({
     isbn: input.isbn,
     title: input.title,
     author: input.author,
   });
+
+  return google?.coverUrl ?? null;
 }
