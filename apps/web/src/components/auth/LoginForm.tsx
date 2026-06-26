@@ -3,6 +3,7 @@
 import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { login, type AuthActionState } from "@/lib/auth/actions";
+import { RememberMeField } from "@/components/auth/RememberMeField";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import Link from "next/link";
@@ -32,6 +33,7 @@ export function LoginForm({ redirect }: Props) {
         autoComplete="current-password"
         required
       />
+      <RememberMeField />
       {state.error ? (
         <p className="mb-4 text-sm text-rust" role="alert">
           {state.error}

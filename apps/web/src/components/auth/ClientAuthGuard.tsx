@@ -19,30 +19,46 @@ export function ClientAuthGuard({ children }: Props) {
     if (!isSupabaseConfigured()) return;
 
     const supabase = createClient();
+    let cancelled = false;
 
-    void supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        const redirect = encodeURIComponent(pathname);
-        router.replace(`/login/?redirect=${redirect}`);
-        return;
-      }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (cancelled) return;
 
-      void supabase
-        .from("profiles")
-        .select("username")
-        .eq("id", session.user.id)
-        .maybeSingle()
-        .then(({ data: profile }) => {
-          const hasProfile = Boolean(profile?.username?.trim());
-          const onSetup = pathname.startsWith("/profile/setup");
-
-          if (!hasProfile && !onSetup) {
-            router.replace("/profile/setup");
-            return;
+      if (event === "INITIAL_SESSION" || event === "SIGNED_IN") {
+        if (!session) {
+          if (event === "INITIAL_SESSION") {
+            const redirect = encodeURIComponent(pathname);
+            router.replace(`/login/?redirect=${redirect}`);
           }
-          setReady(true);
-        });
+          return;
+        }
+
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("username")
+          .eq("id", session.user.id)
+          .maybeSingle();
+
+        if (cancelled) return;
+
+        const hasProfile = Boolean(profile?.username?.trim());
+        const onSetup = pathname.startsWith("/profile/setup");
+
+        if (!hasProfile && !onSetup) {
+          router.replace("/profile/setup");
+          return;
+        }
+
+        setReady(true);
+      }
     });
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, [pathname, router]);
 
   if (!ready) {

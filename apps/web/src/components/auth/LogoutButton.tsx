@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { clearSupabaseAuthStorage } from "@/lib/auth/rememberMe";
 import { Button } from "@/components/ui/Button";
 
 export function LogoutButton() {
@@ -14,6 +15,7 @@ export function LogoutButton() {
     try {
       const supabase = createClient();
       await supabase.auth.signOut();
+      clearSupabaseAuthStorage();
       router.push("/");
       router.refresh();
     } finally {

@@ -1,4 +1,8 @@
 import { createClient } from "@/lib/supabase/client";
+import {
+  applyRememberMePreference,
+  parseRememberMeFromForm,
+} from "@/lib/auth/rememberMe";
 
 export type AuthActionState = {
   error?: string;
@@ -16,6 +20,8 @@ export async function login(
   if (!email || !password) {
     return { error: "Email and password are required." };
   }
+
+  applyRememberMePreference(parseRememberMeFromForm(formData));
 
   const supabase = createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -40,6 +46,8 @@ export async function signup(
   if (!email || !password) {
     return { error: "Email and password are required." };
   }
+
+  applyRememberMePreference(parseRememberMeFromForm(formData));
 
   const supabase = createClient();
   const { data, error } = await supabase.auth.signUp({ email, password });
