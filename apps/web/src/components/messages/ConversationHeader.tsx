@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { UserAvatar } from "@/components/messages/UserAvatar";
+import { PinIcon } from "@/components/messages/PinIcon";
 import {
   conversationDisplayName,
   pinConversation,
@@ -82,11 +83,12 @@ export function ConversationHeader({
           aria-pressed={isPinned}
           aria-label={isPinned ? "Unpin conversation" : "Pin conversation"}
           className={cn(
-            "shrink-0 rounded-md px-2 py-1 text-xs font-medium transition",
+            "flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition",
             "text-text-muted hover:bg-background hover:text-royal-orange",
             isPinned && "text-royal-orange"
           )}
         >
+          <PinIcon filled={isPinned} className="h-3.5 w-3.5" />
           {isPinned ? "Unpin" : "Pin"}
         </button>
 

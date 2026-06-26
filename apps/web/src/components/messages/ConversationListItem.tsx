@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { UserAvatar } from "@/components/messages/UserAvatar";
+import { PinIcon } from "@/components/messages/PinIcon";
 import {
   conversationDisplayName,
   formatMessageTimestamp,
@@ -125,11 +126,12 @@ export function ConversationListItem({
         aria-label={isPinned ? "Unpin conversation" : "Pin conversation"}
         title={isPinned ? "Unpin" : "Pin to top"}
         className={cn(
-          "flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-r-xl px-3 text-sm transition",
+          "flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-r-xl px-3 text-sm transition",
           "text-text-muted hover:bg-background hover:text-royal-orange",
           isPinned && "text-royal-orange"
         )}
       >
+        <PinIcon filled={isPinned} />
         {isPinned ? "Unpin" : "Pin"}
       </button>
     </div>

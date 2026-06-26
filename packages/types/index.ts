@@ -18,6 +18,10 @@ export interface Profile {
   shelf_visibility_want_to_read: ShelfVisibility;
   shelf_visibility_currently_reading: ShelfVisibility;
   shelf_visibility_read: ShelfVisibility;
+  notify_messages: boolean;
+  notify_follows: boolean;
+  notify_feed: boolean;
+  notify_browser: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -96,4 +100,30 @@ export type ConversationPreview = Conversation & {
   latestMessage: Message | null;
   unreadCount: number;
   pinnedAt: string | null;
+};
+
+export type NotificationType = "message" | "follow" | "feed";
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  actor_id: string | null;
+  link_url: string | null;
+  metadata_json: Record<string, unknown> | null;
+  read_at: string | null;
+  created_at: string;
+}
+
+export type NotificationWithActor = Notification & {
+  actor: MessageProfile | null;
+};
+
+export type NotificationPreferences = {
+  notify_messages: boolean;
+  notify_follows: boolean;
+  notify_feed: boolean;
+  notify_browser: boolean;
 };

@@ -15,6 +15,10 @@ export type {
   ConversationWithParticipants,
   MessageWithSender,
   ConversationPreview,
+  NotificationType,
+  Notification,
+  NotificationWithActor,
+  NotificationPreferences,
 } from "../../../../packages/types";
 
 export interface UserBook {

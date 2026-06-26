@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { createFollowNotification } from "@/lib/services/notifications";
 
 export type FollowCounts = {
   followers: number;
@@ -237,6 +238,24 @@ export async function followUser(followingId: string): Promise<{ error?: string 
     if (error.code === "23505") return {};
     return { error: error.message };
   }
+
+  const { data: actorProfile } = await supabase
+    .from("profiles")
+    .select("username, display_name")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const actorDisplayName =
+    actorProfile?.display_name?.trim() ||
+    actorProfile?.username?.trim() ||
+    "A reader";
+
+  void createFollowNotification({
+    recipientId: followingId,
+    actorId: user.id,
+    actorDisplayName,
+    actorUsername: actorProfile?.username ?? null,
+  });
 
   return {};
 }

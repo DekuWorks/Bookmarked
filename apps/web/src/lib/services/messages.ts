@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { createMessageNotifications } from "@/lib/services/notifications";
 import type {
   ConversationPreview,
   ConversationWithParticipants,
@@ -347,6 +348,32 @@ export async function sendMessage(
       .update({ last_read_at: new Date().toISOString() })
       .eq("conversation_id", conversationId)
       .eq("user_id", user.id);
+
+    const [{ data: recipients }, { data: senderProfile }] = await Promise.all([
+      supabase
+        .from("conversation_participants")
+        .select("user_id")
+        .eq("conversation_id", conversationId)
+        .neq("user_id", user.id),
+      supabase
+        .from("profiles")
+        .select("username, display_name")
+        .eq("id", user.id)
+        .maybeSingle(),
+    ]);
+
+    const senderDisplayName =
+      senderProfile?.display_name?.trim() ||
+      senderProfile?.username?.trim() ||
+      "A reader";
+
+    void createMessageNotifications({
+      conversationId,
+      senderId: user.id,
+      senderDisplayName,
+      recipientIds: (recipients ?? []).map((row) => row.user_id),
+      preview: trimmed,
+    });
 
     return { message: message as Message };
   } catch (error) {

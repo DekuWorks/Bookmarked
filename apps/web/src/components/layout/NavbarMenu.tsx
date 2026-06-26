@@ -15,13 +15,14 @@ export type NavLinkItem = {
 
 type Props = {
   links: NavLinkItem[];
+  actions?: ReactNode;
   footer?: ReactNode;
 };
 
 const linkBase =
   "flex min-h-[44px] items-center rounded-lg px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2";
 
-export function NavbarMenu({ links, footer }: Props) {
+export function NavbarMenu({ links, actions, footer }: Props) {
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
@@ -65,6 +66,7 @@ export function NavbarMenu({ links, footer }: Props) {
             {link.label}
           </Link>
         ))}
+        {actions ? <div className="ml-1 flex items-center">{actions}</div> : null}
         {footer ? <div className="ml-2 flex items-center gap-2">{footer}</div> : null}
       </div>
 
@@ -115,6 +117,12 @@ export function NavbarMenu({ links, footer }: Props) {
             className="absolute inset-x-0 top-[53px] max-h-[calc(100vh-53px)] overflow-y-auto border-b border-border bg-surface shadow-lg"
           >
             <nav className={cn(layout.container, "flex flex-col gap-1 py-4")}>
+              {actions ? (
+                <div className="mb-2 flex items-center justify-between border-b border-border pb-3">
+                  <span className="text-sm font-medium text-text-muted">Notifications</span>
+                  {actions}
+                </div>
+              ) : null}
               {links.map((link) => (
                 <Link
                   key={link.href}

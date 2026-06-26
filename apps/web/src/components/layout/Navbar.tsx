@@ -2,6 +2,7 @@ import Link from "next/link";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { NavbarPublicAuth } from "@/components/layout/NavbarPublicAuth";
 import { NavbarMenu, type NavLinkItem } from "@/components/layout/NavbarMenu";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { layout } from "@/lib/constants/layout";
 import { cn } from "@/lib/utils/cn";
 
@@ -47,6 +48,7 @@ export function Navbar({ variant = "public" }: Props) {
 
         <NavbarMenu
           links={isApp ? APP_LINKS : PUBLIC_LINKS}
+          actions={isApp ? <NotificationBell /> : null}
           footer={
             isApp ? (
               <LogoutButton />
