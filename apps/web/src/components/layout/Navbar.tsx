@@ -34,7 +34,10 @@ export function Navbar({ variant = "public" }: Props) {
   const isApp = variant === "app";
 
   return (
-    <header className="sticky top-0 z-[100] border-b border-border bg-surface/95 backdrop-blur">
+    <header
+      id="app-header"
+      className="sticky top-0 z-[100] border-b border-border bg-surface/95 backdrop-blur"
+    >
       <nav
         className={cn(layout.container, "flex items-center justify-between gap-4 py-3")}
         aria-label="Main navigation"

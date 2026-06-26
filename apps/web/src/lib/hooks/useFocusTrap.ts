@@ -20,8 +20,8 @@ export function useFocusTrap(
         (el) => !el.hasAttribute("disabled") && el.offsetParent !== null
       );
 
-    const focusables = getFocusable();
-    focusables[0]?.focus();
+    container.tabIndex = -1;
+    container.focus({ preventScroll: true });
 
     function onKeyDown(e: KeyboardEvent) {
       if (e.key !== "Tab") return;

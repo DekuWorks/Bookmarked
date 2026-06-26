@@ -1,7 +1,15 @@
 "use client";
 
 import { StaticNavLink } from "@/components/layout/StaticNavLink";
-import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import { layout } from "@/lib/constants/layout";
@@ -22,8 +30,53 @@ type Props = {
 const linkBase =
   "flex min-h-[44px] items-center rounded-lg px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2";
 
+const APP_HEADER_ID = "app-header";
+
+function normalizePath(path: string): string {
+  return path.endsWith("/") ? path : `${path}/`;
+}
+
+function MobileNavAnchor({
+  href,
+  className,
+  onClick,
+  children,
+}: {
+  href: string;
+  className?: string;
+  onClick?: () => void;
+  children: ReactNode;
+}) {
+  const pathname = usePathname();
+
+  return (
+    <a
+      href={href}
+      className={className}
+      onClick={(event) => {
+        onClick?.();
+
+        if (href.includes("#")) return;
+
+        const targetPath = normalizePath(new URL(href, window.location.origin).pathname);
+        const currentPath = normalizePath(pathname);
+
+        event.preventDefault();
+
+        if (targetPath === currentPath) return;
+
+        window.location.assign(href);
+      }}
+    >
+      {children}
+    </a>
+  );
+}
+
 export function NavbarMenu({ links, actions, footer }: Props) {
   const [open, setOpen] = useState(false);
+  const [headerHeight, setHeaderHeight] = useState(56);
+  const [mounted, setMounted] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
   const pathname = usePathname();
@@ -33,21 +86,90 @@ export function NavbarMenu({ links, actions, footer }: Props) {
   useFocusTrap(panelRef, open);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
     close();
   }, [pathname, close]);
 
   useEffect(() => {
+    function measureHeader() {
+      const header = document.getElementById(APP_HEADER_ID);
+      if (!header) return;
+      setHeaderHeight(Math.ceil(header.getBoundingClientRect().height));
+    }
+
+    measureHeader();
+    window.addEventListener("resize", measureHeader);
+    return () => window.removeEventListener("resize", measureHeader);
+  }, []);
+
+  useEffect(() => {
     if (!open) return;
+
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") close();
     };
+
     document.body.style.overflow = "hidden";
     document.addEventListener("keydown", onKey);
+
     return () => {
       document.body.style.overflow = "";
       document.removeEventListener("keydown", onKey);
     };
   }, [open, close]);
+
+  const mobileDrawer =
+    open && mounted
+      ? createPortal(
+          <div
+            className="fixed inset-x-0 bottom-0 z-[90] md:hidden"
+            style={{ top: headerHeight }}
+            role="presentation"
+          >
+            <button
+              type="button"
+              className="absolute inset-0 bg-puce-red/30"
+              aria-label="Close navigation menu"
+              onClick={close}
+            />
+            <div
+              id={menuId}
+              ref={panelRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Navigation menu"
+              tabIndex={-1}
+              className="relative max-h-full overflow-y-auto border-b border-border bg-surface shadow-lg outline-none"
+            >
+              <nav className={cn(layout.container, "flex flex-col gap-1 py-4")}>
+                {links.map((link) => (
+                  <MobileNavAnchor
+                    key={link.href}
+                    href={link.href}
+                    onClick={close}
+                    className={cn(
+                      linkBase,
+                      "text-base text-puce-red hover:bg-primary/10",
+                      link.className
+                    )}
+                  >
+                    {link.label}
+                  </MobileNavAnchor>
+                ))}
+                {footer ? (
+                  <div className="mt-3 flex flex-col gap-2 border-t border-border pt-4">
+                    {footer}
+                  </div>
+                ) : null}
+              </nav>
+            </div>
+          </div>,
+          document.body
+        )
+      : null;
 
   return (
     <>
@@ -70,85 +192,42 @@ export function NavbarMenu({ links, actions, footer }: Props) {
         {footer ? <div className="ml-2 flex items-center gap-2">{footer}</div> : null}
       </div>
 
-      {/* Mobile menu button */}
-      <button
-        type="button"
-        className={cn(
-          "inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-border bg-surface text-puce-red md:hidden",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2"
-        )}
-        aria-expanded={open}
-        aria-controls={menuId}
-        aria-label={open ? "Close navigation menu" : "Open navigation menu"}
-        onClick={() => setOpen((v) => !v)}
-      >
-        <span className="sr-only">{open ? "Close menu" : "Open menu"}</span>
-        <svg
-          aria-hidden
-          className="h-6 w-6"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          {open ? (
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          ) : (
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+      {/* Mobile header actions + menu button */}
+      <div className="relative z-[110] flex items-center gap-1 md:hidden">
+        {actions ? <div className="flex items-center">{actions}</div> : null}
+        <button
+          type="button"
+          className={cn(
+            "inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-border bg-surface text-puce-red",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2"
           )}
-        </svg>
-      </button>
-
-      {/* Mobile drawer */}
-      {open ? (
-        <div
-          className="fixed inset-x-0 top-[53px] bottom-0 z-40 md:hidden"
-          role="presentation"
+          aria-expanded={open}
+          aria-controls={menuId}
+          aria-label={open ? "Close navigation menu" : "Open navigation menu"}
+          onClick={(event) => {
+            event.stopPropagation();
+            setOpen((value) => !value);
+          }}
         >
-          <button
-            type="button"
-            className="absolute inset-0 bg-puce-red/30"
-            aria-label="Close navigation menu"
-            onClick={close}
-          />
-          <div
-            id={menuId}
-            ref={panelRef}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Navigation menu"
-            className="relative max-h-full overflow-y-auto border-b border-border bg-surface shadow-lg"
+          <span className="sr-only">{open ? "Close menu" : "Open menu"}</span>
+          <svg
+            aria-hidden
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
           >
-            <nav className={cn(layout.container, "flex flex-col gap-1 py-4")}>
-              {actions ? (
-                <div className="mb-2 flex items-center justify-between border-b border-border pb-3">
-                  <span className="text-sm font-medium text-text-muted">Notifications</span>
-                  {actions}
-                </div>
-              ) : null}
-              {links.map((link) => (
-                <StaticNavLink
-                  key={link.href}
-                  href={link.href}
-                  onClick={close}
-                  className={cn(
-                    linkBase,
-                    "text-base text-puce-red hover:bg-primary/10",
-                    link.className
-                  )}
-                >
-                  {link.label}
-                </StaticNavLink>
-              ))}
-              {footer ? (
-                <div className="mt-3 flex flex-col gap-2 border-t border-border pt-4">
-                  {footer}
-                </div>
-              ) : null}
-            </nav>
-          </div>
-        </div>
-      ) : null}
+            {open ? (
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            )}
+          </svg>
+        </button>
+      </div>
+
+      {mobileDrawer}
     </>
   );
 }
