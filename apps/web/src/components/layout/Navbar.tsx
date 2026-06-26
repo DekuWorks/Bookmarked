@@ -23,6 +23,7 @@ const APP_LINKS: NavLinkItem[] = [
 ];
 
 const PUBLIC_LINKS: NavLinkItem[] = [
+  { href: "/#about", label: "About" },
   { href: "/#features", label: "Features" },
   { href: "/#contact", label: "Contact" },
 ];

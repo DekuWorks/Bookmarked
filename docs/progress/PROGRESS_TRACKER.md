@@ -3,7 +3,7 @@
 Aligned with **Bookmarked_BuildPlan.pdf** (web-first build plan).
 
 **Live:** https://bookmarked.online  
-**Current focus:** Social discovery + public profiles (beyond Phase 1 PDF)
+**Current focus:** Phase 3 — Mobile app foundation
 
 ---
 
@@ -82,13 +82,21 @@ Aligned with **Bookmarked_BuildPlan.pdf** (web-first build plan).
 | Landing page | Done |
 | About (on landing `#about`) | Done |
 | Features (on landing `#features`) | Done |
-| Contact / waitlist UI | Done (UI only — no backend) |
+| Contact | Done | `#contact` — mailto + signup / login CTAs |
 | Privacy policy `/privacy` | Done |
 | Terms `/terms` | Done |
 | Responsive layouts | Done |
 | Public launch (domain + HTTPS) | Done |
 
-**Build order step 9:** Public website pages — **~90%** (waitlist backend optional)
+**Build order step 9:** Public website pages — **complete**
+
+### Phase 2 smoke test
+
+1. Open `/` logged out → hero, About, Features, and Contact sections render
+2. Public nav links scroll to `#about`, `#features`, `#contact`
+3. Contact section shows mailto link and signup / login buttons
+4. `/privacy` and `/terms` load from footer links
+5. Resize to mobile width → landing and legal pages remain usable
 
 ---
 
@@ -162,7 +170,7 @@ Aligned with **Bookmarked_BuildPlan.pdf** (web-first build plan).
 
 `apps/mobile/` scaffold exists (partial auth only).
 
-**Do not start until Phase 2 sign-off.**
+**Phase 2 signed off — ready to start.**
 
 ---
 
@@ -184,4 +192,4 @@ Aligned with **Bookmarked_BuildPlan.pdf** (web-first build plan).
 
 ## Last updated
 
-June 2026 — Social layer complete on production: dual feed with covers and search, public reader profiles with clickable follower/following lists (mutuals), shelf previews with per-shelf privacy, and reader library room. Migrations `005`–`007` applied to Supabase. Live at https://bookmarked.online.
+June 2026 — Phase 2 complete: public landing, contact, privacy/terms, and About nav. Waitlist removed. Social layer live on production. Live at https://bookmarked.online.

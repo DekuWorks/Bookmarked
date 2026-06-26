@@ -83,6 +83,17 @@ Apply migrations in order via Supabase SQL Editor or `supabase db push`:
 | `002_preferred_library_view.sql` | `profiles.preferred_library_view` (bookshelf / grid) |
 | `003_book_metadata_and_reviews_unique.sql` | Book publisher/subjects; one review per user per book |
 | `004_yearly_reading_goal.sql` | `profiles.yearly_reading_goal` for yearly book targets |
+| `005_social_follows_and_feed.sql` | Follow graph and activity visibility |
+| `006_profiles_fk_for_embeds.sql` | Profile FKs for PostgREST embeds |
+| `007_shelf_visibility.sql` | Per-shelf visibility + RLS |
+
+## Phase 2 smoke test
+
+Public pages (no account required):
+
+1. Open `/` → About, Features, and Contact sections
+2. Contact section links to email and signup / login
+3. Open `/privacy` and `/terms` from footer links
 
 ## Phase 1 smoke test
 
