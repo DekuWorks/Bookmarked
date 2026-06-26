@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AppNavLink } from "@/components/layout/AppNavLink";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { NavbarPublicAuth } from "@/components/layout/NavbarPublicAuth";
 import { NavbarMenu, type NavLinkItem } from "@/components/layout/NavbarMenu";
@@ -42,13 +43,21 @@ export function Navbar({ variant = "public" }: Props) {
         className={cn(layout.container, "flex items-center justify-between gap-4 py-3")}
         aria-label="Main navigation"
       >
-        <Link
-          href={isApp ? "/dashboard/" : "/"}
-          prefetch={false}
-          className="shrink-0 text-xl font-bold tracking-tight text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2 rounded-sm"
-        >
-          Bookmarked
-        </Link>
+        {isApp ? (
+          <AppNavLink
+            href="/dashboard/"
+            className="shrink-0 text-xl font-bold tracking-tight text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2 rounded-sm"
+          >
+            Bookmarked
+          </AppNavLink>
+        ) : (
+          <Link
+            href="/"
+            className="shrink-0 text-xl font-bold tracking-tight text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2 rounded-sm"
+          >
+            Bookmarked
+          </Link>
+        )}
 
         <NavbarMenu
           links={isApp ? APP_LINKS : PUBLIC_LINKS}
@@ -60,6 +69,7 @@ export function Navbar({ variant = "public" }: Props) {
               <NavbarPublicAuth layout="menu" />
             )
           }
+          useAppNavLinks={isApp}
         />
       </nav>
     </header>

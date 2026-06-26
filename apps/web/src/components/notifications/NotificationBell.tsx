@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { AppNavLink } from "@/components/layout/AppNavLink";
 import { useCallback, useEffect, useState } from "react";
 import { BellIcon } from "@/components/notifications/BellIcon";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
@@ -89,9 +89,8 @@ export function NotificationBell() {
   if (!user) return null;
 
   return (
-    <Link
+    <AppNavLink
       href="/notifications/"
-      prefetch={false}
       className={cn(
         "relative inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg",
         "text-puce-red transition hover:bg-primary/10 hover:text-rust",
@@ -109,6 +108,6 @@ export function NotificationBell() {
           {unreadCount > 9 ? "9+" : unreadCount}
         </span>
       ) : null}
-    </Link>
+    </AppNavLink>
   );
 }

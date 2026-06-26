@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AppNavLink } from "@/components/layout/AppNavLink";
 import {
   useCallback,
   useEffect,
@@ -25,6 +26,7 @@ type Props = {
   links: NavLinkItem[];
   actions?: ReactNode;
   footer?: ReactNode;
+  useAppNavLinks?: boolean;
 };
 
 const linkBase =
@@ -32,7 +34,35 @@ const linkBase =
 
 const APP_HEADER_ID = "app-header";
 
-export function NavbarMenu({ links, actions, footer }: Props) {
+function NavItem({
+  href,
+  className,
+  onClick,
+  children,
+  useAppNavLinks,
+}: {
+  href: string;
+  className?: string;
+  onClick?: () => void;
+  children: ReactNode;
+  useAppNavLinks: boolean;
+}) {
+  if (useAppNavLinks) {
+    return (
+      <AppNavLink href={href} className={className} onClick={onClick}>
+        {children}
+      </AppNavLink>
+    );
+  }
+
+  return (
+    <Link href={href} className={className} onClick={onClick}>
+      {children}
+    </Link>
+  );
+}
+
+export function NavbarMenu({ links, actions, footer, useAppNavLinks = false }: Props) {
   const [open, setOpen] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(56);
   const [mounted, setMounted] = useState(false);
@@ -105,10 +135,10 @@ export function NavbarMenu({ links, actions, footer }: Props) {
             >
               <nav className={cn(layout.container, "flex flex-col gap-1 py-4")}>
                 {links.map((link) => (
-                  <Link
+                  <NavItem
                     key={link.href}
                     href={link.href}
-                    prefetch={false}
+                    useAppNavLinks={useAppNavLinks}
                     onClick={close}
                     className={cn(
                       linkBase,
@@ -117,7 +147,7 @@ export function NavbarMenu({ links, actions, footer }: Props) {
                     )}
                   >
                     {link.label}
-                  </Link>
+                  </NavItem>
                 ))}
                 {footer ? (
                   <div className="mt-3 flex flex-col gap-2 border-t border-border pt-4">
@@ -136,10 +166,10 @@ export function NavbarMenu({ links, actions, footer }: Props) {
       {/* Desktop navigation */}
       <div className="hidden items-center gap-1 md:flex lg:gap-2">
         {links.map((link) => (
-          <Link
+          <NavItem
             key={link.href}
             href={link.href}
-            prefetch={false}
+            useAppNavLinks={useAppNavLinks}
             className={cn(
               linkBase,
               "text-puce-red hover:bg-primary/10 hover:text-rust",
@@ -147,7 +177,7 @@ export function NavbarMenu({ links, actions, footer }: Props) {
             )}
           >
             {link.label}
-          </Link>
+          </NavItem>
         ))}
         {actions ? <div className="ml-1 flex items-center">{actions}</div> : null}
         {footer ? <div className="ml-2 flex items-center gap-2">{footer}</div> : null}
