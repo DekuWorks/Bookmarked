@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/env";
+import { staticRedirect } from "@/lib/navigation/staticRedirect";
 import { LoadingState } from "@/components/ui/LoadingState";
 import type { Session } from "@supabase/supabase-js";
 
@@ -12,7 +13,6 @@ type Props = {
 };
 
 export function ClientAuthGuard({ children }: Props) {
-  const router = useRouter();
   const pathname = usePathname();
   const pathnameRef = useRef(pathname);
   const [ready, setReady] = useState(false);
@@ -30,12 +30,14 @@ export function ClientAuthGuard({ children }: Props) {
     const supabase = createClient();
     let cancelled = false;
 
-    async function verifyAccess(session: Session | null) {
+    async function verifyAccess(session: Session | null, redirectIfMissing: boolean) {
       if (cancelled) return;
 
       if (!session?.user) {
-        const redirect = encodeURIComponent(pathnameRef.current);
-        router.replace(`/login/?redirect=${redirect}`);
+        if (redirectIfMissing) {
+          const redirect = encodeURIComponent(pathnameRef.current);
+          staticRedirect(`/login/?redirect=${redirect}`);
+        }
         return;
       }
 
@@ -51,7 +53,7 @@ export function ClientAuthGuard({ children }: Props) {
       const onSetup = pathnameRef.current.startsWith("/profile/setup");
 
       if (!hasProfile && !onSetup) {
-        router.replace("/profile/setup");
+        staticRedirect("/profile/setup/");
         return;
       }
 
@@ -59,7 +61,9 @@ export function ClientAuthGuard({ children }: Props) {
     }
 
     void supabase.auth.getSession().then(({ data: { session } }) => {
-      void verifyAccess(session);
+      if (session) {
+        void verifyAccess(session, false);
+      }
     });
 
     const {
@@ -67,15 +71,15 @@ export function ClientAuthGuard({ children }: Props) {
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (cancelled) return;
 
-      if (event === "SIGNED_OUT") {
-        setReady(false);
-        const redirect = encodeURIComponent(pathnameRef.current);
-        router.replace(`/login/?redirect=${redirect}`);
+      if (event === "INITIAL_SESSION" || event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+        void verifyAccess(session, event === "INITIAL_SESSION");
         return;
       }
 
-      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-        void verifyAccess(session);
+      if (event === "SIGNED_OUT") {
+        setReady(false);
+        const redirect = encodeURIComponent(pathnameRef.current);
+        staticRedirect(`/login/?redirect=${redirect}`);
       }
     });
 
@@ -83,8 +87,6 @@ export function ClientAuthGuard({ children }: Props) {
       cancelled = true;
       subscription.unsubscribe();
     };
-    // Auth bootstrap runs once per full page load. Navbar uses full-page navigation.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!ready) {

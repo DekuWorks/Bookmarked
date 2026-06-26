@@ -39,9 +39,20 @@ import { layout } from "@/lib/constants/layout";
 export default function DashboardPage() {
   const user = useAuthUser();
   const [data, setData] = useState<DashboardData | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (user === undefined) return;
+
+    if (!user) {
+      setData(null);
+      setLoadError(null);
+      return;
+    }
+
+    setLoadError(null);
+    setData(null);
+
     const supabase = createClient();
     void Promise.all([
       getProfile(user.id),
@@ -51,28 +62,43 @@ export default function DashboardPage() {
         .from("reviews")
         .select("id", { count: "exact", head: true })
         .eq("user_id", user.id),
-    ]).then(([profile, books, streakTimestamps, reviewResult]) => {
-      const analytics = computeReadingAnalytics({
-        books,
-        reviewsWritten: reviewResult.count ?? 0,
-        streakTimestamps,
-        profileGenres: profile?.favorite_genres,
+    ])
+      .then(([profile, books, streakTimestamps, reviewResult]) => {
+        const analytics = computeReadingAnalytics({
+          books,
+          reviewsWritten: reviewResult.count ?? 0,
+          streakTimestamps,
+          profileGenres: profile?.favorite_genres,
+        });
+        setData({
+          profile,
+          books,
+          analytics,
+          readingGoal: computeReadingGoal(books, profile?.yearly_reading_goal ?? null),
+          userId: user.id,
+        });
+      })
+      .catch((error) => {
+        console.error("[dashboard] load failed:", error);
+        setLoadError("Could not load your dashboard. Please refresh and try again.");
       });
-      setData({
-        profile,
-        books,
-        analytics,
-        readingGoal: computeReadingGoal(books, profile?.yearly_reading_goal ?? null),
-        userId: user.id,
-      });
-    });
   }, [user]);
 
-  if (user === undefined || (user && !data)) {
+  if (user === undefined || user === null || (data === null && !loadError)) {
     return <LoadingState message="Loading dashboard…" />;
   }
 
-  if (!user || !data) return null;
+  if (loadError) {
+    return (
+      <div className={`${layout.pageStackWide} text-center`}>
+        <p className="text-rust">{loadError}</p>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return <LoadingState message="Loading dashboard…" />;
+  }
 
   const { profile, books, analytics, readingGoal, userId } = data;
   const currentlyReading = books.filter((b) => b.shelf_status === "currently_reading");
