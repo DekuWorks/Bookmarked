@@ -11,17 +11,17 @@ type Props = {
 };
 
 const APP_LINKS: NavLinkItem[] = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/feed", label: "Feed" },
+  { href: "/dashboard/", label: "Dashboard" },
+  { href: "/feed/", label: "Feed" },
   {
-    href: "/reading-room",
+    href: "/reading-room/",
     label: "Reading Room",
     className: "font-semibold text-royal-orange hover:text-rust",
   },
-  { href: "/library", label: "Library" },
-  { href: "/search", label: "Search" },
-  { href: "/messages", label: "Messages" },
-  { href: "/profile", label: "Profile" },
+  { href: "/library/", label: "Library" },
+  { href: "/search/", label: "Search" },
+  { href: "/messages/", label: "Messages" },
+  { href: "/profile/", label: "Profile" },
 ];
 
 const PUBLIC_LINKS: NavLinkItem[] = [
@@ -34,13 +34,13 @@ export function Navbar({ variant = "public" }: Props) {
   const isApp = variant === "app";
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-surface/95 backdrop-blur">
+    <header className="sticky top-0 z-[100] border-b border-border bg-surface/95 backdrop-blur">
       <nav
         className={cn(layout.container, "flex items-center justify-between gap-4 py-3")}
         aria-label="Main navigation"
       >
         <Link
-          href={isApp ? "/dashboard" : "/"}
+          href={isApp ? "/dashboard/" : "/"}
           className="shrink-0 text-xl font-bold tracking-tight text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2 rounded-sm"
         >
           Bookmarked

@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { ConversationList } from "@/components/messages/ConversationList";
 import { EmptyInboxState } from "@/components/messages/EmptyInboxState";
 import { NewMessageButton } from "@/components/messages/NewMessageButton";
@@ -14,6 +14,7 @@ import type { ConversationPreview } from "@/types";
 
 function MessagesInboxContent() {
   const user = useAuthUser();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const [conversations, setConversations] = useState<ConversationPreview[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -25,6 +26,10 @@ function MessagesInboxContent() {
   };
 
   useEffect(() => {
+    setModalOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
     if (searchParams.get("new") === "1") {
       setModalOpen(true);
     }
@@ -33,13 +38,23 @@ function MessagesInboxContent() {
   useEffect(() => {
     if (!user) return;
 
+    let cancelled = false;
     setLoadError(null);
+    setConversations(null);
+
     void getConversations(user.id)
-      .then(setConversations)
+      .then((rows) => {
+        if (!cancelled) setConversations(rows);
+      })
       .catch((error) => {
+        if (cancelled) return;
         console.error("[messages] inbox load failed:", error);
         setLoadError("Could not load messages. Please refresh and try again.");
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   if (user === undefined || (user && conversations === null && !loadError)) {

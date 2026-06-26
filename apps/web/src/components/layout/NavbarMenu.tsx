@@ -101,7 +101,10 @@ export function NavbarMenu({ links, actions, footer }: Props) {
 
       {/* Mobile drawer */}
       {open ? (
-        <div className="fixed inset-0 z-40 md:hidden" role="presentation">
+        <div
+          className="fixed inset-x-0 top-[53px] bottom-0 z-40 md:hidden"
+          role="presentation"
+        >
           <button
             type="button"
             className="absolute inset-0 bg-puce-red/30"
@@ -114,7 +117,7 @@ export function NavbarMenu({ links, actions, footer }: Props) {
             role="dialog"
             aria-modal="true"
             aria-label="Navigation menu"
-            className="absolute inset-x-0 top-[53px] max-h-[calc(100vh-53px)] overflow-y-auto border-b border-border bg-surface shadow-lg"
+            className="relative max-h-full overflow-y-auto border-b border-border bg-surface shadow-lg"
           >
             <nav className={cn(layout.container, "flex flex-col gap-1 py-4")}>
               {actions ? (
