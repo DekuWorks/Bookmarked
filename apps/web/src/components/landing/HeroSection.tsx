@@ -12,8 +12,8 @@ export function HeroSection() {
           Web-first · Mobile coming soon
         </p>
         <h1 className="text-3xl font-bold tracking-tight text-puce-red sm:text-4xl md:text-5xl lg:text-6xl">
-          Your reading life,{" "}
-          <span className="text-primary">beautifully bookmarked</span>
+          We believe every reader{" "}
+          <span className="text-primary">deserves a home</span>
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-lg text-text-muted md:text-xl">
           Search books, organize shelves, track progress, and share reviews — all in one cozy,
