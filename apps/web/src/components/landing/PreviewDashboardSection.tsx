@@ -7,25 +7,25 @@ import { cn } from "@/lib/utils/cn";
 export function PreviewDashboardSection() {
   return (
     <section className="bg-gradient-to-b from-background to-primary/10 px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-20">
-      <div className="mx-auto max-w-7xl">
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+      <div className="mx-auto max-w-7xl text-center">
+        <div className="flex flex-col items-center gap-4">
           <div>
-            <h2 className="text-3xl font-bold text-puce-red">Preview your dashboard</h2>
-            <p className="mt-2 max-w-xl text-text-muted">
+            <h2 className="text-3xl font-bold text-puce-red sm:text-4xl">Preview your dashboard</h2>
+            <p className="mx-auto mt-2 max-w-xl text-pretty text-text-muted">
               A calm home for what you are reading now and what is up next.
             </p>
           </div>
           <Link
             href="/signup"
             className={cn(
-              "inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-primary px-4 py-2.5 font-semibold text-puce-red hover:opacity-90 sm:w-auto"
+              "inline-flex min-h-[44px] w-full max-w-xs items-center justify-center rounded-lg bg-primary px-4 py-2.5 font-semibold text-puce-red hover:opacity-90 sm:w-auto"
             )}
           >
             Start reading
           </Link>
         </div>
 
-        <div className="mt-10 grid gap-6 lg:grid-cols-3">
+        <div className="mt-10 grid gap-6 text-left lg:grid-cols-3">
           <DashboardCard title="Currently reading" className="lg:col-span-2">
             <div className="grid gap-4 sm:grid-cols-2">
               <BookCard

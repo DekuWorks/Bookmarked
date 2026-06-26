@@ -7,9 +7,9 @@ const btnBase =
 export function ContactSection() {
   return (
     <section id="contact" className="px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-20">
-      <div className="mx-auto max-w-xl rounded-2xl border border-border bg-surface p-8 text-center shadow-sm md:p-10">
-        <h2 className="text-2xl font-bold text-puce-red">Get in touch</h2>
-        <p className="mt-2 text-text-muted">
+      <div className="mx-auto max-w-xl rounded-2xl border border-border bg-surface p-6 text-center shadow-sm sm:p-8 md:p-10">
+        <h2 className="text-2xl font-bold text-puce-red sm:text-3xl">Get in touch</h2>
+        <p className="mx-auto mt-2 max-w-md text-pretty text-text-muted">
           Questions, feedback, or ideas? We would love to hear from you.
         </p>
         <a
@@ -18,10 +18,10 @@ export function ContactSection() {
         >
           hello@bookmarked.app
         </a>
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+        <div className="mx-auto mt-8 flex w-full max-w-sm flex-col gap-3 sm:max-w-none sm:flex-row sm:justify-center">
           <Link
             href="/signup"
-            className={cn(btnBase, "bg-royal-orange text-white hover:opacity-90")}
+            className={cn(btnBase, "w-full bg-royal-orange text-white hover:opacity-90 sm:w-auto")}
           >
             Create a free account
           </Link>
@@ -29,7 +29,7 @@ export function ContactSection() {
             href="/login"
             className={cn(
               btnBase,
-              "border-2 border-primary bg-transparent text-puce-red hover:bg-primary/10"
+              "w-full border-2 border-primary bg-transparent text-puce-red hover:bg-primary/10 sm:w-auto"
             )}
           >
             Log in

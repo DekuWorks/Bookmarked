@@ -24,9 +24,9 @@ const features = [
 export function FeaturesSection() {
   return (
     <section id="features" className="bg-surface px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-20">
-      <div className="mx-auto max-w-7xl">
-        <h2 className="text-3xl font-bold text-puce-red">Features</h2>
-        <p className="mt-2 max-w-2xl text-text-muted">
+      <div className="mx-auto max-w-7xl text-center">
+        <h2 className="text-3xl font-bold text-puce-red sm:text-4xl">Features</h2>
+        <p className="mx-auto mt-2 max-w-2xl text-pretty text-text-muted">
           Everything you need for a focused reading habit, designed mobile-first and ready for
           desktop.
         </p>
@@ -34,14 +34,14 @@ export function FeaturesSection() {
           {features.map((f) => (
             <li
               key={f.title}
-              className="rounded-xl border border-border bg-background p-6 shadow-sm"
+              className="rounded-xl border border-border bg-background p-6 text-center shadow-sm"
             >
               <span
                 className={`inline-block rounded-lg px-3 py-1 text-xs font-semibold uppercase tracking-wide ${f.accent}`}
               >
                 {f.title}
               </span>
-              <p className="mt-4 text-text-muted">{f.description}</p>
+              <p className="mx-auto mt-4 max-w-sm text-pretty text-text-muted">{f.description}</p>
             </li>
           ))}
         </ul>
