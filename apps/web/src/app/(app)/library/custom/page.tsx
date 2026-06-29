@@ -6,9 +6,11 @@ import { useSearchParams } from "next/navigation";
 import { BookSpine } from "@/components/library/BookSpine";
 import { EmptyShelfMessage } from "@/components/library/EmptyShelfMessage";
 import { ButtonLink } from "@/components/ui/ButtonLink";
+import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { layout } from "@/lib/constants/layout";
 import { bookDetailsPath } from "@/lib/routes/book";
+import { customShelfPath } from "@/lib/routes/customShelf";
 import {
   getCustomShelfBySlug,
   removeBookFromCustomShelf,
@@ -114,6 +116,9 @@ function CustomShelfContent() {
           <p className="mt-2 text-sm font-medium text-text">
             {shelf.items.length} {shelf.items.length === 1 ? "book" : "books"}
           </p>
+          <div className="mt-3 flex justify-center">
+            <CopyLinkButton path={customShelfPath(shelf.slug)} label="Copy shelf link" variant="outline" />
+          </div>
         </div>
         <ButtonLink href="/search" variant="secondary">
           Add books

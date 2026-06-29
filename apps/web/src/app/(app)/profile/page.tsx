@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getProfile } from "@/lib/services/profile";
 import { getUserLibraryBooks } from "@/lib/services/library";
@@ -15,6 +15,7 @@ import { BookMiniGrid } from "@/components/reading-room/BookMiniGrid";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { useUserBooksRealtime } from "@/lib/hooks/useUserBooksRealtime";
 import { FollowStats } from "@/components/social/FollowStats";
 import { AvatarUpload } from "@/components/profile/AvatarUpload";
 import { ProfileShelfPreview } from "@/components/profile/ProfileShelfPreview";
@@ -22,6 +23,7 @@ import { ShelfPrivacyPanel } from "@/components/profile/ShelfPrivacyPanel";
 import { NotificationPreferencesPanel } from "@/components/notifications/NotificationPreferencesPanel";
 import { getFollowCounts, type FollowCounts } from "@/lib/services/follows";
 import { readerProfilePath } from "@/lib/routes/reader";
+import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import type { Profile } from "@/types";
 import type { LibraryBookRow } from "@/lib/services/library";
 import type { ReadingAnalytics } from "@/lib/services/analytics";
@@ -43,10 +45,11 @@ export default function ProfilePage() {
   const user = useAuthUser();
   const [data, setData] = useState<ProfileData | null>(null);
 
-  useEffect(() => {
+  const loadProfile = useCallback(async () => {
     if (!user) return;
+
     const supabase = createClient();
-    void Promise.all([
+    const [profile, books, streakTimestamps, followCounts, reviewResult] = await Promise.all([
       getProfile(user.id),
       getUserLibraryBooks(user.id),
       fetchReadingStreakTimestamps(user.id),
@@ -55,34 +58,41 @@ export default function ProfilePage() {
         .from("reviews")
         .select("id", { count: "exact", head: true })
         .eq("user_id", user.id),
-    ]).then(([profile, books, streakTimestamps, followCounts, reviewResult]) => {
-      const analytics = computeReadingAnalytics({
-        books,
-        reviewsWritten: reviewResult.count ?? 0,
-        streakTimestamps,
-        profileGenres: profile?.favorite_genres,
-      });
-      const recentlyFinished = books
-        .filter((b) => b.shelf_status === "read")
-        .sort((a, b) => {
-          const aDate = a.finished_at ? new Date(a.finished_at).getTime() : 0;
-          const bDate = b.finished_at ? new Date(b.finished_at).getTime() : 0;
-          return bDate - aDate;
-        })
-        .slice(0, 4);
-      const favorites = books.filter((b) => b.is_favorite).slice(0, 4);
+    ]);
 
-      setData({
-        profile,
-        email: user.email ?? "",
-        analytics,
-        readingGoal: computeReadingGoal(books, profile?.yearly_reading_goal ?? null),
-        recentlyFinished,
-        favorites,
-        followCounts,
-      });
+    const analytics = computeReadingAnalytics({
+      books,
+      reviewsWritten: reviewResult.count ?? 0,
+      streakTimestamps,
+      profileGenres: profile?.favorite_genres,
+    });
+    const recentlyFinished = books
+      .filter((b) => b.shelf_status === "read")
+      .sort((a, b) => {
+        const aDate = a.finished_at ? new Date(a.finished_at).getTime() : 0;
+        const bDate = b.finished_at ? new Date(b.finished_at).getTime() : 0;
+        return bDate - aDate;
+      })
+      .slice(0, 4);
+    const favorites = books.filter((b) => b.is_favorite).slice(0, 4);
+
+    setData({
+      profile,
+      email: user.email ?? "",
+      analytics,
+      readingGoal: computeReadingGoal(books, profile?.yearly_reading_goal ?? null),
+      recentlyFinished,
+      favorites,
+      followCounts,
     });
   }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    void loadProfile();
+  }, [user, loadProfile]);
+
+  useUserBooksRealtime(user?.id, loadProfile);
 
   if (user === undefined || (user && !data)) {
     return <LoadingState message="Loading profile…" />;
@@ -148,9 +158,16 @@ export default function ProfilePage() {
         ) : null}
         <div className="mt-6 flex flex-wrap gap-3">
           {profile?.username ? (
-            <ButtonLink href={readerProfilePath(profile.username)} variant="secondary" size="sm">
-              Public profile
-            </ButtonLink>
+            <>
+              <ButtonLink href={readerProfilePath(profile.username)} variant="secondary" size="sm">
+                Public profile
+              </ButtonLink>
+              <CopyLinkButton
+                path={readerProfilePath(profile.username)}
+                label="Copy profile link"
+                variant="outline"
+              />
+            </>
           ) : null}
           <ButtonLink href="/profile/setup" variant="outline" size="sm">
             Edit profile

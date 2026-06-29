@@ -1,8 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/Button";
-
 type Props = {
   displayName: string;
   rating?: number | null;
@@ -18,8 +15,6 @@ export function ReviewCard({
   hasSpoilers,
   createdAt,
 }: Props) {
-  const [revealed, setRevealed] = useState(!hasSpoilers);
-
   return (
     <article className="rounded-xl border border-border bg-surface p-4">
       <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -38,19 +33,17 @@ export function ReviewCard({
       </div>
 
       {reviewBody ? (
-        hasSpoilers && !revealed ? (
-          <div className="space-y-2">
-            <p className="text-sm text-text-muted italic">
-              This review contains spoilers.
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setRevealed(true)}
+        hasSpoilers ? (
+          <div className="group relative">
+            <p
+              className="cursor-default select-none text-sm leading-relaxed text-text blur-md transition-[filter] duration-200 group-hover:blur-none group-focus-within:blur-none"
+              tabIndex={0}
             >
-              Reveal spoiler review
-            </Button>
+              {reviewBody}
+            </p>
+            <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-xs font-medium text-text-muted opacity-100 transition-opacity group-hover:opacity-0 group-focus-within:opacity-0">
+              Hover to reveal spoilers
+            </p>
           </div>
         ) : (
           <p className="text-sm leading-relaxed text-text">{reviewBody}</p>

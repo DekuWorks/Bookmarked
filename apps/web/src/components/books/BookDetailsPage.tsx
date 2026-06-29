@@ -12,6 +12,8 @@ import { BookReviewSection } from "@/components/books/BookReviewSection";
 import { ShelfBadge } from "@/components/shelves/ShelfBadge";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ButtonLink } from "@/components/ui/ButtonLink";
+import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
+import { bookDetailsPath } from "@/lib/routes/book";
 import type { BookDetailsData } from "@/lib/services/bookDetails";
 import type { ShelfStatus } from "@/types";
 
@@ -60,9 +62,12 @@ function BookDetailsContent() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-10 overflow-x-hidden text-center">
-      <Link href="/library" className="inline-block text-sm font-medium text-primary hover:underline">
-        ← Back to library
-      </Link>
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        <Link href="/library" className="text-sm font-medium text-primary hover:underline">
+          ← Back to library
+        </Link>
+        <CopyLinkButton path={bookDetailsPath(book.id)} label="Copy link" variant="outline" />
+      </div>
 
       <BookCover
         title={book.title}
@@ -78,7 +83,14 @@ function BookDetailsContent() {
           {currentShelf ? <ShelfBadge status={currentShelf} /> : null}
         </div>
         {book.author ? (
-          <p className="mt-2 text-lg text-text-muted">{book.author}</p>
+          <p className="mt-2 text-lg text-text-muted">
+            <Link
+              href={`/search/?q=${encodeURIComponent(book.author)}`}
+              className="hover:text-primary hover:underline"
+            >
+              {book.author}
+            </Link>
+          </p>
         ) : null}
 
         <dl className="mx-auto mt-6 grid max-w-md gap-3 text-sm sm:grid-cols-2">

@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { Input, Textarea } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Input";
 import { ReviewCard } from "@/components/reviews/ReviewCard";
 import { useToast } from "@/components/ui/Toast";
 import {
@@ -11,8 +11,11 @@ import {
   type BookActionState,
 } from "@/lib/actions/book";
 import type { Review } from "@/types";
+import { cn } from "@/lib/utils/cn";
 
 const initial: BookActionState = {};
+
+type ReviewTab = "all" | "spoilers";
 
 type Props = {
   bookId: string;
@@ -51,6 +54,7 @@ export function BookReviewSection({ bookId, ownReview, reviews }: Props) {
   const [state, formAction, pending] = useActionState(saveReview, initial);
   const [deleteState, deleteAction, deleting] = useActionState(deleteReview, initial);
   const [rating, setRating] = useState(ownReview?.rating ? Number(ownReview.rating) : 0);
+  const [reviewTab, setReviewTab] = useState<ReviewTab>("all");
 
   useEffect(() => {
     if (state.error) toast.error(state.error);
@@ -63,6 +67,16 @@ export function BookReviewSection({ bookId, ownReview, reviews }: Props) {
   }, [deleteState, toast]);
 
   const others = reviews.filter((r) => r.id !== ownReview?.id);
+  const spoilerReviews = others.filter((r) => r.has_spoilers);
+  const visibleReviews = useMemo(() => {
+    if (reviewTab === "spoilers") return spoilerReviews;
+    return others;
+  }, [others, reviewTab, spoilerReviews]);
+
+  const REVIEW_TABS: { id: ReviewTab; label: string; count: number }[] = [
+    { id: "all", label: "All reviews", count: others.length },
+    { id: "spoilers", label: "Contains spoilers", count: spoilerReviews.length },
+  ];
 
   return (
     <section className="space-y-6">
@@ -116,10 +130,39 @@ export function BookReviewSection({ bookId, ownReview, reviews }: Props) {
       </div>
 
       <div>
-        <h3 className="mb-3 text-lg font-semibold text-puce-red">Community reviews</h3>
-        {others.length > 0 ? (
+        <div className="mb-4 flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+          <h3 className="text-lg font-semibold text-puce-red">Community reviews</h3>
+          {others.length > 0 ? (
+            <div
+              className="flex w-full max-w-full rounded-lg border border-border bg-surface p-1 shadow-sm sm:w-auto"
+              role="tablist"
+              aria-label="Community review filters"
+            >
+              {REVIEW_TABS.map(({ id, label, count }) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  aria-selected={reviewTab === id}
+                  onClick={() => setReviewTab(id)}
+                  className={cn(
+                    "min-h-[40px] flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition sm:flex-none",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange",
+                    reviewTab === id
+                      ? "bg-puce-red text-white shadow-sm"
+                      : "text-text-muted hover:bg-background hover:text-text"
+                  )}
+                >
+                  {label} ({count})
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        {visibleReviews.length > 0 ? (
           <ul className="space-y-3">
-            {others.map((review) => (
+            {visibleReviews.map((review) => (
               <li key={review.id}>
                 <ReviewCard
                   displayName={
@@ -135,6 +178,10 @@ export function BookReviewSection({ bookId, ownReview, reviews }: Props) {
               </li>
             ))}
           </ul>
+        ) : reviewTab === "spoilers" ? (
+          <p className="rounded-lg border border-dashed border-border bg-background px-4 py-6 text-center text-sm text-text-muted">
+            No spoiler-tagged reviews yet.
+          </p>
         ) : (
           <p className="rounded-lg border border-dashed border-border bg-background px-4 py-6 text-center text-sm text-text-muted">
             No reviews from other readers yet.

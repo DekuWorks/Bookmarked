@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getProfile } from "@/lib/services/profile";
 import { getUserLibraryBooks } from "@/lib/services/library";
@@ -18,6 +18,7 @@ import { ShelfBadge } from "@/components/shelves/ShelfBadge";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { shelfStatusToSlug } from "@/lib/constants/shelves";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { useUserBooksRealtime } from "@/lib/hooks/useUserBooksRealtime";
 import type { Profile } from "@/types";
 import type { LibraryBookRow } from "@/lib/services/library";
 import type { ReadingAnalytics } from "@/lib/services/analytics";
@@ -41,6 +42,42 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  const loadDashboard = useCallback(async () => {
+    if (!user) return;
+
+    setLoadError(null);
+
+    const supabase = createClient();
+    try {
+      const [profile, books, streakTimestamps, reviewResult] = await Promise.all([
+        getProfile(user.id),
+        getUserLibraryBooks(user.id),
+        fetchReadingStreakTimestamps(user.id),
+        supabase
+          .from("reviews")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id),
+      ]);
+
+      const analytics = computeReadingAnalytics({
+        books,
+        reviewsWritten: reviewResult.count ?? 0,
+        streakTimestamps,
+        profileGenres: profile?.favorite_genres,
+      });
+      setData({
+        profile,
+        books,
+        analytics,
+        readingGoal: computeReadingGoal(books, profile?.yearly_reading_goal ?? null),
+        userId: user.id,
+      });
+    } catch (error) {
+      console.error("[dashboard] load failed:", error);
+      setLoadError("Could not load your dashboard. Please refresh and try again.");
+    }
+  }, [user]);
+
   useEffect(() => {
     if (user === undefined) return;
 
@@ -50,39 +87,11 @@ export default function DashboardPage() {
       return;
     }
 
-    setLoadError(null);
     setData(null);
+    void loadDashboard();
+  }, [user, loadDashboard]);
 
-    const supabase = createClient();
-    void Promise.all([
-      getProfile(user.id),
-      getUserLibraryBooks(user.id),
-      fetchReadingStreakTimestamps(user.id),
-      supabase
-        .from("reviews")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id),
-    ])
-      .then(([profile, books, streakTimestamps, reviewResult]) => {
-        const analytics = computeReadingAnalytics({
-          books,
-          reviewsWritten: reviewResult.count ?? 0,
-          streakTimestamps,
-          profileGenres: profile?.favorite_genres,
-        });
-        setData({
-          profile,
-          books,
-          analytics,
-          readingGoal: computeReadingGoal(books, profile?.yearly_reading_goal ?? null),
-          userId: user.id,
-        });
-      })
-      .catch((error) => {
-        console.error("[dashboard] load failed:", error);
-        setLoadError("Could not load your dashboard. Please refresh and try again.");
-      });
-  }, [user]);
+  useUserBooksRealtime(user?.id, loadDashboard);
 
   if (user === undefined || user === null || (data === null && !loadError)) {
     return <LoadingState message="Loading dashboard…" />;
@@ -118,7 +127,7 @@ export default function DashboardPage() {
       </header>
 
       <DashboardCard title="Currently reading">
-        <CurrentlyReadingRow items={currentlyReading} />
+        <CurrentlyReadingRow items={currentlyReading} onItemsChange={loadDashboard} />
       </DashboardCard>
 
       <div className="grid gap-6 lg:grid-cols-2">

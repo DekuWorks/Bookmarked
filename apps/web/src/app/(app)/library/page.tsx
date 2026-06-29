@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getProfile } from "@/lib/services/profile";
 import { getUserLibraryBooks, groupBooksByShelf } from "@/lib/services/library";
 import { LibraryViewShell } from "@/components/library/LibraryViewShell";
@@ -9,6 +9,7 @@ import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LibraryAnalyticsPanel } from "@/components/library/LibraryAnalyticsPanel";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { useUserBooksRealtime } from "@/lib/hooks/useUserBooksRealtime";
 import type { LibraryViewMode } from "@/types";
 import type { LibraryBookRow, ShelfGroup } from "@/lib/services/library";
 
@@ -26,6 +27,30 @@ export default function LibraryPage() {
   const [data, setData] = useState<LibraryData | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  const loadLibrary = useCallback(async () => {
+    if (!user) return;
+
+    setLoadError(null);
+    try {
+      const [profile, books] = await Promise.all([
+        getProfile(user.id),
+        getUserLibraryBooks(user.id),
+      ]);
+      const rawView = profile?.preferred_library_view ?? "bookshelf";
+      const preferredView: LibraryViewMode =
+        rawView === "reading_room" ? "bookshelf" : rawView;
+      setData({
+        books,
+        shelves: groupBooksByShelf(books),
+        preferredView,
+        userId: user.id,
+      });
+    } catch (error) {
+      console.error("[library] failed to load:", error);
+      setLoadError("Could not load your library. Please refresh and try again.");
+    }
+  }, [user]);
+
   useEffect(() => {
     if (user === undefined) return;
 
@@ -35,24 +60,11 @@ export default function LibraryPage() {
       return;
     }
 
-    setLoadError(null);
-    void Promise.all([getProfile(user.id), getUserLibraryBooks(user.id)])
-      .then(([profile, books]) => {
-        const rawView = profile?.preferred_library_view ?? "bookshelf";
-        const preferredView: LibraryViewMode =
-          rawView === "reading_room" ? "bookshelf" : rawView;
-        setData({
-          books,
-          shelves: groupBooksByShelf(books),
-          preferredView,
-          userId: user.id,
-        });
-      })
-      .catch((error) => {
-        console.error("[library] failed to load:", error);
-        setLoadError("Could not load your library. Please refresh and try again.");
-      });
-  }, [user]);
+    setData(null);
+    void loadLibrary();
+  }, [user, loadLibrary]);
+
+  useUserBooksRealtime(user?.id, loadLibrary);
 
   if (user === undefined || (user && !data && !loadError)) {
     return <LoadingState message="Loading library…" />;

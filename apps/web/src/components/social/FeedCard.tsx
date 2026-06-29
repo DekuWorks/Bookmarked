@@ -4,6 +4,7 @@ import Link from "next/link";
 import { BookCover } from "@/components/books/BookCover";
 import { readerProfilePath } from "@/lib/routes/reader";
 import { bookDetailsPath } from "@/lib/routes/book";
+import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import { isFeedEligibleEvent } from "@/lib/services/activity";
 import type { FeedItem } from "@/lib/services/socialFeed";
 
@@ -81,6 +82,16 @@ export function FeedCard({ item }: Props) {
             })}
           </time>
         </p>
+        {item.bookId ? (
+          <div className="mt-2">
+            <CopyLinkButton
+              path={bookDetailsPath(item.bookId)}
+              label="Copy link"
+              variant="ghost"
+              size="sm"
+            />
+          </div>
+        ) : null}
       </div>
     </article>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getProfile } from "@/lib/services/profile";
 import { getReadingRoomData } from "@/lib/services/readingRoom";
 import type { ReadingRoomData } from "@/lib/services/readingRoom";
@@ -16,25 +16,32 @@ import { SHELF_CONFIG } from "@/lib/constants/shelves";
 import { ReadingGoalPanel } from "@/components/reading-goal/ReadingGoalPanel";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { useUserBooksRealtime } from "@/lib/hooks/useUserBooksRealtime";
 
 export default function ReadingRoomPage() {
   const user = useAuthUser();
   const [data, setData] = useState<ReadingRoomData | null>(null);
   const [displayName, setDisplayName] = useState("Reader");
 
+  const loadReadingRoom = useCallback(async () => {
+    if (!user) return;
+
+    const profile = await getProfile(user.id);
+    setDisplayName(profile?.display_name || profile?.username || "Reader");
+    const room = await getReadingRoomData(
+      user.id,
+      profile?.yearly_reading_goal ?? null,
+      profile?.favorite_genres
+    );
+    setData(room);
+  }, [user]);
+
   useEffect(() => {
     if (!user) return;
-    void getProfile(user.id).then((profile) => {
-      setDisplayName(profile?.display_name || profile?.username || "Reader");
-      return getReadingRoomData(
-        user.id,
-        profile?.yearly_reading_goal ?? null,
-        profile?.favorite_genres
-      );
-    }).then((room) => {
-      if (room) setData(room);
-    });
-  }, [user]);
+    void loadReadingRoom();
+  }, [user, loadReadingRoom]);
+
+  useUserBooksRealtime(user?.id, loadReadingRoom);
 
   if (user === undefined || (user && !data)) {
     return <LoadingState message="Loading reading room…" />;
@@ -58,7 +65,7 @@ export default function ReadingRoomPage() {
       </header>
 
       <ReadingRoomSection title="Currently reading" emoji="📖">
-        <CurrentlyReadingRow items={data.currentlyReading} />
+        <CurrentlyReadingRow items={data.currentlyReading} onItemsChange={loadReadingRoom} />
       </ReadingRoomSection>
 
       <div className="grid gap-6 lg:grid-cols-2">
