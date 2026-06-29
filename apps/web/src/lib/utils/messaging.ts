@@ -1,10 +1,12 @@
 import type { MessageProfile } from "@/types";
 
-export function profileDisplayName(profile: MessageProfile): string {
+type ProfileNameFields = Pick<MessageProfile, "display_name" | "username">;
+
+export function profileDisplayName(profile: ProfileNameFields): string {
   return profile.display_name?.trim() || profile.username?.trim() || "Reader";
 }
 
-export function profileInitials(profile: MessageProfile): string {
+export function profileInitials(profile: ProfileNameFields): string {
   const name = profileDisplayName(profile);
   const parts = name.split(/\s+/).filter(Boolean);
   if (parts.length >= 2) {

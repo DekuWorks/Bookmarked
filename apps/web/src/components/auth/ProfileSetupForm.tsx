@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { saveProfile, type AuthActionState } from "@/lib/auth/actions";
 import { getProfile } from "@/lib/services/profile";
 import { createClient } from "@/lib/supabase/client";
+import { AvatarUpload } from "@/components/profile/AvatarUpload";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -17,6 +18,7 @@ export function ProfileSetupForm() {
   const router = useRouter();
   const [state, formAction, pending] = useActionState(saveProfile, initial);
   const [profile, setProfile] = useState<Profile | null | undefined>(undefined);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -25,7 +27,10 @@ export function ProfileSetupForm() {
         setProfile(null);
         return;
       }
-      void getProfile(user.id).then(setProfile);
+      void getProfile(user.id).then((loaded) => {
+        setProfile(loaded);
+        setUserId(user.id);
+      });
     });
   }, []);
 
@@ -42,6 +47,16 @@ export function ProfileSetupForm() {
 
   return (
     <form action={formAction} className="w-full max-w-lg">
+      {userId && profile ? (
+        <AvatarUpload
+          userId={userId}
+          profile={profile}
+          onAvatarChange={(avatarUrl) =>
+            setProfile((current) => (current ? { ...current, avatar_url: avatarUrl } : current))
+          }
+          className="mb-6"
+        />
+      ) : null}
       <input
         type="hidden"
         name="redirect"

@@ -14,6 +14,7 @@ import { getProfileByUsername } from "@/lib/services/profile";
 import { fetchReaderActivity } from "@/lib/services/socialFeed";
 import type { FeedItem } from "@/lib/services/socialFeed";
 import type { Profile } from "@/types";
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { ProfileShelfPreview } from "@/components/profile/ProfileShelfPreview";
 import { FollowStats } from "@/components/social/FollowStats";
 
@@ -88,6 +89,7 @@ function ReaderProfileContent() {
     <div className="mx-auto max-w-2xl space-y-8 text-center">
       <header className="rounded-xl border border-border bg-surface p-6 text-center shadow-sm">
         <div className="flex flex-col items-center justify-center gap-4">
+          <ProfileAvatar profile={profile} size="xl" />
           <div>
             <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">{displayName}</h1>
             {profile.username ? (

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { FollowButton } from "@/components/social/FollowButton";
 import { readerProfilePath } from "@/lib/routes/reader";
 import type { FollowListUser } from "@/lib/services/follows";
@@ -19,7 +20,8 @@ export function FollowListRow({ user, viewerId, onNavigate }: Props) {
   const isSelf = user.id === viewerId;
 
   return (
-    <li className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background px-3 py-3">
+    <li className="flex items-center gap-3 rounded-lg border border-border bg-background px-3 py-3">
+      <ProfileAvatar profile={user} size="md" className="shrink-0" />
       <div className="min-w-0 flex-1">
         {username ? (
           <Link

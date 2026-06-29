@@ -16,6 +16,7 @@ import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { FollowStats } from "@/components/social/FollowStats";
+import { AvatarUpload } from "@/components/profile/AvatarUpload";
 import { ProfileShelfPreview } from "@/components/profile/ProfileShelfPreview";
 import { ShelfPrivacyPanel } from "@/components/profile/ShelfPrivacyPanel";
 import { NotificationPreferencesPanel } from "@/components/notifications/NotificationPreferencesPanel";
@@ -100,19 +101,36 @@ export default function ProfilePage() {
       </header>
 
       <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
-        <p className="text-2xl font-semibold text-text">
-          {profile?.display_name || profile?.username || "Reader"}
-        </p>
-        {profile?.username ? (
-          <p className="text-text-muted">@{profile.username}</p>
-        ) : null}
-        <FollowStats
-          profileUserId={user.id}
-          viewerId={user.id}
-          profileName={profile?.display_name || profile?.username || "Reader"}
-          counts={followCounts}
-          className="mt-3"
-        />
+        <div className="flex flex-col items-center gap-6">
+          {profile ? (
+            <AvatarUpload
+              userId={user.id}
+              profile={profile}
+              onAvatarChange={(avatarUrl) =>
+                setData((current) =>
+                  current && current.profile
+                    ? { ...current, profile: { ...current.profile, avatar_url: avatarUrl } }
+                    : current
+                )
+              }
+            />
+          ) : null}
+          <div className="w-full text-center">
+            <p className="text-2xl font-semibold text-text">
+              {profile?.display_name || profile?.username || "Reader"}
+            </p>
+            {profile?.username ? (
+              <p className="text-text-muted">@{profile.username}</p>
+            ) : null}
+            <FollowStats
+              profileUserId={user.id}
+              viewerId={user.id}
+              profileName={profile?.display_name || profile?.username || "Reader"}
+              counts={followCounts}
+              className="mt-3"
+            />
+          </div>
+        </div>
         {profile?.bio ? (
           <p className="mt-4 leading-relaxed text-text">{profile.bio}</p>
         ) : null}
