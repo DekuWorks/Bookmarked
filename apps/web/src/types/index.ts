@@ -3,6 +3,7 @@ export type {
   LibraryViewMode,
   ReviewVisibility,
   ShelfVisibility,
+  UserShelf,
   Profile,
   Book,
   ConversationType,

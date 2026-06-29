@@ -10,6 +10,7 @@ import { CurrentlyReadingRow } from "@/components/reading-room/CurrentlyReadingR
 import { BookMiniGrid } from "@/components/reading-room/BookMiniGrid";
 import { AnalyticsGrid } from "@/components/analytics/AnalyticsGrid";
 import { BookshelfView } from "@/components/library/BookshelfView";
+import { CustomShelfCollectionsPanel } from "@/components/library/CustomShelfCollectionsPanel";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { SHELF_CONFIG } from "@/lib/constants/shelves";
 import { ReadingGoalPanel } from "@/components/reading-goal/ReadingGoalPanel";
@@ -123,6 +124,13 @@ export default function ReadingRoomPage() {
             </ButtonLink>
           ))}
         </div>
+
+        <CustomShelfCollectionsPanel
+          userId={user.id}
+          title="Custom collections"
+          description="Organize books into named shelves with optional genre labels."
+          className="mt-10 border-t border-border pt-8"
+        />
       </ReadingRoomSection>
     </div>
   );

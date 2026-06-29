@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { ShelfSelectMenu } from "@/components/shelves/ShelfSelectMenu";
+import { AddToCustomShelfMenu } from "@/components/shelves/AddToCustomShelfMenu";
 import { useToast } from "@/components/ui/Toast";
 import {
   removeFromShelf,
@@ -11,7 +12,9 @@ import {
   type BookActionState,
 } from "@/lib/actions/book";
 import { SHELF_CONFIG } from "@/lib/constants/shelves";
+import { listCustomShelfIdsForBook } from "@/lib/services/customShelves";
 import { ShelfBadge } from "@/components/shelves/ShelfBadge";
+import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import type { ShelfStatus } from "@/types";
 
 const initial: BookActionState = {};
@@ -29,11 +32,21 @@ export function BookShelfActions({
   currentShelf,
   isFavorite = false,
 }: Props) {
+  const user = useAuthUser();
   const toast = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [customMenuOpen, setCustomMenuOpen] = useState(false);
   const [pending, setPending] = useState(false);
+  const [memberShelfIds, setMemberShelfIds] = useState<string[]>([]);
   const [removeState, removeAction, removing] = useActionState(removeFromShelf, initial);
   const [favState, favAction, favoriting] = useActionState(toggleFavorite, initial);
+
+  useEffect(() => {
+    if (!user) return;
+    void listCustomShelfIdsForBook(user.id, bookId)
+      .then(setMemberShelfIds)
+      .catch((error) => console.error("[custom-shelf] membership load failed:", error));
+  }, [user, bookId]);
 
   useEffect(() => {
     if (removeState.error) toast.error(removeState.error);
@@ -80,6 +93,14 @@ export function BookShelfActions({
           >
             Move shelf
           </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setCustomMenuOpen(true)}
+          >
+            Add to collection
+          </Button>
           <form action={favAction} className="inline">
             <input type="hidden" name="book_id" value={bookId} />
             <Button type="submit" variant="ghost" size="sm" loading={favoriting}>
@@ -109,6 +130,14 @@ export function BookShelfActions({
                 {title}
               </Button>
             ))}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setCustomMenuOpen(true)}
+            >
+              Add to collection
+            </Button>
           </div>
         </div>
       )}
@@ -123,6 +152,15 @@ export function BookShelfActions({
         onClose={() => {
           if (!pending) setMenuOpen(false);
         }}
+      />
+
+      <AddToCustomShelfMenu
+        bookId={bookId}
+        bookTitle={bookTitle}
+        open={customMenuOpen}
+        memberShelfIds={memberShelfIds}
+        onAdded={(shelfId) => setMemberShelfIds((prev) => [...prev, shelfId])}
+        onClose={() => setCustomMenuOpen(false)}
       />
     </section>
   );

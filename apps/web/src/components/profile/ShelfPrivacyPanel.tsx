@@ -1,14 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { SHELF_CONFIG } from "@/lib/constants/shelves";
 import { createClient } from "@/lib/supabase/client";
 import {
   SHELF_VISIBILITY_OPTIONS,
   shelfVisibilityLabel,
 } from "@/lib/services/shelfVisibility";
+import {
+  listUserCustomShelves,
+  updateCustomShelfVisibility,
+} from "@/lib/services/customShelves";
+import { CreateShelfButton } from "@/components/shelves/CreateShelfButton";
 import { Button } from "@/components/ui/Button";
-import type { Profile, ShelfStatus, ShelfVisibility } from "@/types";
+import type { Profile, ShelfStatus, ShelfVisibility, UserShelf } from "@/types";
 import { cn } from "@/lib/utils/cn";
 
 type Props = {
@@ -32,9 +37,25 @@ export function ShelfPrivacyPanel({ profile }: Props) {
     currently_reading: visibilityForProfile(profile, "currently_reading"),
     read: visibilityForProfile(profile, "read"),
   }));
+  const [customShelves, setCustomShelves] = useState<UserShelf[]>([]);
+  const [customValues, setCustomValues] = useState<Record<string, ShelfVisibility>>({});
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const refreshCustomShelves = useCallback(async () => {
+    const shelves = await listUserCustomShelves(profile.id);
+    setCustomShelves(shelves);
+    setCustomValues(
+      Object.fromEntries(shelves.map((shelf) => [shelf.id, shelf.visibility]))
+    );
+  }, [profile.id]);
+
+  useEffect(() => {
+    void refreshCustomShelves().catch((err) => {
+      console.error("[shelf-privacy] custom shelves load failed:", err);
+    });
+  }, [refreshCustomShelves]);
 
   async function save() {
     setSaving(true);
@@ -52,22 +73,52 @@ export function ShelfPrivacyPanel({ profile }: Props) {
       })
       .eq("id", profile.id);
 
-    setSaving(false);
-
     if (saveError) {
+      setSaving(false);
       setError(saveError.message);
       return;
     }
 
+    const customUpdates = customShelves.map((shelf) => {
+      const visibility = customValues[shelf.id] ?? shelf.visibility;
+      if (visibility === shelf.visibility) return Promise.resolve({ error: undefined });
+      return updateCustomShelfVisibility(shelf.id, visibility);
+    });
+
+    const results = await Promise.all(customUpdates);
+    const customError = results.find((r) => r.error)?.error;
+
+    setSaving(false);
+
+    if (customError) {
+      setError(customError);
+      return;
+    }
+
+    await refreshCustomShelves();
     setMessage("Shelf privacy saved.");
+  }
+
+  function handleCustomShelfCreated(shelf: UserShelf) {
+    setCustomShelves((prev) => [...prev, shelf]);
+    setCustomValues((prev) => ({ ...prev, [shelf.id]: shelf.visibility }));
   }
 
   return (
     <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
-      <h2 className="text-lg font-semibold text-puce-red">Shelf privacy</h2>
-      <p className="mt-1 text-sm text-text-muted">
-        Choose who can see each shelf on your public profile and library room.
-      </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-puce-red">Shelf privacy</h2>
+          <p className="mt-1 text-sm text-text-muted">
+            Choose who can see each shelf on your public profile and library room.
+          </p>
+        </div>
+        <CreateShelfButton
+          userId={profile.id}
+          onCreated={handleCustomShelfCreated}
+          variant="outline"
+        />
+      </div>
 
       <ul className="mt-5 space-y-4">
         {SHELF_CONFIG.map((shelf) => (
@@ -103,13 +154,60 @@ export function ShelfPrivacyPanel({ profile }: Props) {
             </select>
           </li>
         ))}
+
+        {customShelves.map((shelf) => (
+          <li
+            key={shelf.id}
+            className="flex flex-col gap-2 rounded-lg border border-border bg-background px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div>
+              <p className="font-medium text-text">📚 {shelf.name}</p>
+              {shelf.genre ? (
+                <p className="text-xs text-text-muted">Genre: {shelf.genre}</p>
+              ) : (
+                <p className="text-xs text-text-muted">Custom collection</p>
+              )}
+            </div>
+            <select
+              value={customValues[shelf.id] ?? shelf.visibility}
+              onChange={(e) =>
+                setCustomValues((prev) => ({
+                  ...prev,
+                  [shelf.id]: e.target.value as ShelfVisibility,
+                }))
+              }
+              className={cn(
+                "min-h-[44px] rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text",
+                "focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+              )}
+              aria-label={`${shelf.name} visibility`}
+            >
+              {SHELF_VISIBILITY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </li>
+        ))}
       </ul>
+
+      {customShelves.length === 0 ? (
+        <p className="mt-3 text-xs text-text-muted">
+          Create a custom shelf above to set its privacy here.
+        </p>
+      ) : null}
 
       <p className="mt-3 text-xs text-text-muted">
         Current:{" "}
         {SHELF_CONFIG.map((shelf) => (
           <span key={shelf.status}>
             {shelf.title} ({shelfVisibilityLabel(values[shelf.status])}){" "}
+          </span>
+        ))}
+        {customShelves.map((shelf) => (
+          <span key={shelf.id}>
+            {shelf.name} ({shelfVisibilityLabel(customValues[shelf.id] ?? shelf.visibility)}){" "}
           </span>
         ))}
       </p>
