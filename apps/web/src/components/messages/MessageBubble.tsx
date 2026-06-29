@@ -101,7 +101,28 @@ export function MessageBubble({ message, isOwn, showSenderName, onDelete, onEdit
               deleted && "italic opacity-70"
             )}
           >
-            {deleted ? "Message deleted" : message.body}
+            {deleted ? (
+              "Message deleted"
+            ) : (
+              <div className="space-y-2">
+                {message.attachment_url ? (
+                  <a
+                    href={message.attachment_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={message.attachment_url}
+                      alt="Message attachment"
+                      className="max-h-64 max-w-full rounded-lg object-cover"
+                    />
+                  </a>
+                ) : null}
+                {message.body ? <p>{message.body}</p> : null}
+              </div>
+            )}
           </div>
         )}
 

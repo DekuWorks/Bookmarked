@@ -89,6 +89,7 @@ export interface Message {
   conversation_id: string;
   sender_id: string;
   body: string;
+  attachment_url: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;

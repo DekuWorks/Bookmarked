@@ -10,6 +10,15 @@ import type {
 
 const PROFILE_SELECT = "id, username, display_name, avatar_url";
 
+const MESSAGE_ATTACHMENT_BUCKET = "message-attachments";
+const MAX_MESSAGE_ATTACHMENT_BYTES = 5 * 1024 * 1024;
+const MESSAGE_ATTACHMENT_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+]);
+
 export const MAX_PINNED_CONVERSATIONS = 3;
 
 type ParticipantRow = {
@@ -295,6 +304,7 @@ export async function getMessages(conversationId: string): Promise<MessageWithSe
     conversation_id: row.conversation_id,
     sender_id: row.sender_id,
     body: row.body,
+    attachment_url: row.attachment_url ?? null,
     created_at: row.created_at,
     updated_at: row.updated_at,
     deleted_at: row.deleted_at,
@@ -307,12 +317,76 @@ export async function getMessages(conversationId: string): Promise<MessageWithSe
   }));
 }
 
+export function validateMessageAttachmentFile(file: File): string | null {
+  if (!MESSAGE_ATTACHMENT_TYPES.has(file.type)) {
+    return "Please choose a JPEG, PNG, WebP, or GIF image.";
+  }
+  if (file.size > MAX_MESSAGE_ATTACHMENT_BYTES) {
+    return "Image must be 5 MB or smaller.";
+  }
+  return null;
+}
+
+function messageAttachmentExtension(mime: string): string {
+  switch (mime) {
+    case "image/jpeg":
+      return "jpg";
+    case "image/png":
+      return "png";
+    case "image/webp":
+      return "webp";
+    case "image/gif":
+      return "gif";
+    default:
+      return "jpg";
+  }
+}
+
+export async function uploadMessageAttachment(
+  conversationId: string,
+  file: File
+): Promise<{ url?: string; error?: string }> {
+  const validationError = validateMessageAttachmentFile(file);
+  if (validationError) return { error: validationError };
+
+  try {
+    const { supabase, user } = await requireUser();
+
+    const { data: membership } = await supabase
+      .from("conversation_participants")
+      .select("id")
+      .eq("conversation_id", conversationId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!membership) return { error: "You are not part of this conversation." };
+
+    const fileId = crypto.randomUUID();
+    const path = `${conversationId}/${user.id}/${fileId}.${messageAttachmentExtension(file.type)}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from(MESSAGE_ATTACHMENT_BUCKET)
+      .upload(path, file, { upsert: false, contentType: file.type });
+
+    if (uploadError) return { error: uploadError.message };
+
+    const { data } = supabase.storage.from(MESSAGE_ATTACHMENT_BUCKET).getPublicUrl(path);
+    return { url: data.publicUrl };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not upload image.",
+    };
+  }
+}
+
 export async function sendMessage(
   conversationId: string,
-  body: string
+  body: string,
+  attachmentUrl?: string | null
 ): Promise<{ message?: Message; error?: string }> {
   const trimmed = body.trim();
-  if (!trimmed) return { error: "Message cannot be empty." };
+  const attachment = attachmentUrl?.trim() || null;
+  if (!trimmed && !attachment) return { error: "Message cannot be empty." };
 
   try {
     const { supabase, user } = await requireUser();
@@ -332,6 +406,7 @@ export async function sendMessage(
         conversation_id: conversationId,
         sender_id: user.id,
         body: trimmed,
+        attachment_url: attachment,
       })
       .select("*")
       .single();
@@ -372,7 +447,7 @@ export async function sendMessage(
       senderId: user.id,
       senderDisplayName,
       recipientIds: (recipients ?? []).map((row) => row.user_id),
-      preview: trimmed,
+      preview: trimmed || "Sent an image",
     });
 
     return { message: message as Message };

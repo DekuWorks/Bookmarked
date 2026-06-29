@@ -106,10 +106,10 @@ function MessageThreadContent() {
     };
   }, [user?.id, conversationId]);
 
-  async function handleSend(body: string) {
+  async function handleSend(body: string, attachmentUrl?: string | null) {
     if (!conversationId) return { error: "Missing conversation." };
 
-    const result = await sendMessage(conversationId, body);
+    const result = await sendMessage(conversationId, body, attachmentUrl);
     if (result.error) return { error: result.error };
 
     await loadThread();
@@ -177,7 +177,7 @@ function MessageThreadContent() {
         onEditMessage={handleEditMessage}
       />
 
-      <MessageComposer onSend={handleSend} />
+      <MessageComposer conversationId={conversationId} onSend={handleSend} />
     </div>
   );
 }
