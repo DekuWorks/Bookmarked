@@ -1,4 +1,6 @@
 import type { OpenLibraryDoc } from "@/types";
+import { formatIsbnForSearch, isIsbnQuery } from "@/lib/utils/isbn";
+import { SEARCH_PAGE_SIZE } from "@/lib/constants/searchFilters";
 
 const SEARCH_URL = "https://openlibrary.org/search.json";
 
@@ -7,16 +9,52 @@ export type OpenLibrarySearchResult = {
   numFound: number;
 };
 
+export type OpenLibrarySearchOptions = {
+  limit?: number;
+  offset?: number;
+  language?: string;
+  yearFrom?: number;
+  yearTo?: number;
+  sort?: string;
+};
+
+function buildSearchQuery(rawQuery: string, options: OpenLibrarySearchOptions): string {
+  let q = isIsbnQuery(rawQuery) ? formatIsbnForSearch(rawQuery) : rawQuery.trim();
+
+  if (options.yearFrom != null && options.yearTo != null) {
+    q += ` first_publish_year:[${options.yearFrom} TO ${options.yearTo}]`;
+  } else if (options.yearFrom != null) {
+    q += ` first_publish_year:[${options.yearFrom} TO *]`;
+  } else if (options.yearTo != null) {
+    q += ` first_publish_year:[* TO ${options.yearTo}]`;
+  }
+
+  return q.trim();
+}
+
 export async function searchOpenLibrary(
   query: string,
-  limit = 12
+  options: OpenLibrarySearchOptions = {}
 ): Promise<OpenLibrarySearchResult> {
+  const limit = options.limit ?? SEARCH_PAGE_SIZE;
+  const offset = options.offset ?? 0;
+  const q = buildSearchQuery(query, options);
+
   const params = new URLSearchParams({
-    q: query.trim(),
+    q,
     limit: String(limit),
+    offset: String(offset),
     fields:
-      "key,title,author_name,cover_i,first_publish_year,isbn,number_of_pages_median,first_sentence,subject,publisher",
+      "key,title,author_name,cover_i,first_publish_year,isbn,number_of_pages_median,first_sentence,subject,publisher,language",
   });
+
+  if (options.language) {
+    params.set("language", options.language);
+  }
+
+  if (options.sort) {
+    params.set("sort", options.sort);
+  }
 
   const res = await fetch(`${SEARCH_URL}?${params}`);
 
@@ -29,6 +67,61 @@ export async function searchOpenLibrary(
     docs: json.docs ?? [],
     numFound: json.numFound ?? 0,
   };
+}
+
+export type OpenLibraryEditionSummary = {
+  editionKey: string;
+  title: string;
+  isbn: string | null;
+  publisher: string | null;
+  publishDate: string | null;
+  pageCount: number | null;
+  coverId: number | null;
+};
+
+export async function fetchWorkEditions(
+  workId: string,
+  limit = 20
+): Promise<OpenLibraryEditionSummary[]> {
+  const workPath = workId.startsWith("/works/") ? workId : `/works/${workId}`;
+  const list = await fetchOpenLibraryJson<{
+    entries?: Array<{ key?: string; title?: string }>;
+  }>(`${workPath}/editions.json?limit=${limit}`);
+
+  const entries = list?.entries ?? [];
+  if (entries.length === 0) return [];
+
+  const details = await Promise.all(
+    entries.slice(0, limit).map(async (entry) => {
+      if (!entry.key) return null;
+
+      const edition = await fetchOpenLibraryJson<{
+        title?: string;
+        isbn_10?: string[];
+        isbn_13?: string[];
+        publishers?: string[];
+        publish_date?: string;
+        number_of_pages?: number;
+        covers?: number[];
+      }>(`${entry.key}.json`);
+
+      if (!edition) return null;
+
+      const isbn = edition.isbn_13?.[0] ?? edition.isbn_10?.[0] ?? null;
+
+      return {
+        editionKey: entry.key,
+        title: edition.title ?? entry.title ?? "Untitled",
+        isbn,
+        publisher: edition.publishers?.[0] ?? null,
+        publishDate: edition.publish_date ?? null,
+        pageCount: edition.number_of_pages ?? null,
+        coverId: edition.covers?.[0] ?? null,
+      } satisfies OpenLibraryEditionSummary;
+    })
+  );
+
+  return details.filter((d): d is OpenLibraryEditionSummary => d !== null);
 }
 
 export function openLibraryCoverUrl(coverId?: number): string | null {

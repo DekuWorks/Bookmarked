@@ -5,6 +5,7 @@ import { getProfile } from "@/lib/services/profile";
 import { getUserLibraryBooks, groupBooksByShelf } from "@/lib/services/library";
 import { LibraryViewShell } from "@/components/library/LibraryViewShell";
 import { CustomShelfCollectionsPanel } from "@/components/library/CustomShelfCollectionsPanel";
+import { SuggestedShelvesPanel } from "@/components/shelves/SuggestedShelvesPanel";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LibraryAnalyticsPanel } from "@/components/library/LibraryAnalyticsPanel";
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -112,6 +113,8 @@ export default function LibraryPage() {
       ) : (
         <LibraryViewShell initialView={preferredView} shelves={shelves} />
       )}
+
+      <SuggestedShelvesPanel userId={userId} className="pt-2" />
 
       <CustomShelfCollectionsPanel userId={userId} className="pt-4" />
     </div>

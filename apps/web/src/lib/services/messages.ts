@@ -402,6 +402,37 @@ export async function deleteMessage(messageId: string): Promise<{ error?: string
   }
 }
 
+export async function updateMessage(
+  messageId: string,
+  body: string
+): Promise<{ message?: Message; error?: string }> {
+  const trimmed = body.trim();
+  if (!trimmed) return { error: "Message cannot be empty." };
+
+  try {
+    const { supabase, user } = await requireUser();
+
+    const { data: message, error } = await supabase
+      .from("messages")
+      .update({
+        body: trimmed,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", messageId)
+      .eq("sender_id", user.id)
+      .is("deleted_at", null)
+      .select("*")
+      .single();
+
+    if (error) return { error: error.message };
+    return { message: message as Message };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not update message.",
+    };
+  }
+}
+
 export async function markConversationRead(conversationId: string): Promise<void> {
   const { supabase, user } = await requireUser();
 

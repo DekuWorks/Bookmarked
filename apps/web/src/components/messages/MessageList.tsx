@@ -9,6 +9,7 @@ type Props = {
   currentUserId: string;
   isGroup: boolean;
   onDeleteMessage?: (messageId: string) => void;
+  onEditMessage?: (messageId: string, body: string) => Promise<{ error?: string }>;
 };
 
 export function MessageList({
@@ -16,6 +17,7 @@ export function MessageList({
   currentUserId,
   isGroup,
   onDeleteMessage,
+  onEditMessage,
 }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -40,6 +42,7 @@ export function MessageList({
           isOwn={message.sender_id === currentUserId}
           showSenderName={isGroup}
           onDelete={onDeleteMessage}
+          onEdit={onEditMessage}
         />
       ))}
       <div ref={bottomRef} />

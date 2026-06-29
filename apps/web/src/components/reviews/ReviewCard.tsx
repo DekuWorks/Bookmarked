@@ -1,12 +1,54 @@
 "use client";
 
+import { useActionState, useEffect, useState } from "react";
+import { Button } from "@/components/ui/Button";
+import { Textarea } from "@/components/ui/Input";
+import { useToast } from "@/components/ui/Toast";
+import {
+  deleteReview,
+  saveReview,
+  type BookActionState,
+} from "@/lib/actions/book";
+
+const initial: BookActionState = {};
+
 type Props = {
   displayName: string;
   rating?: number | null;
   reviewBody?: string | null;
   hasSpoilers?: boolean;
   createdAt?: string;
+  isOwnReview?: boolean;
+  bookId?: string;
+  reviewId?: string;
+  onReviewChange?: () => void;
 };
+
+function StarRating({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (n: number) => void;
+}) {
+  return (
+    <div className="flex gap-1" role="radiogroup" aria-label="Rating">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          role="radio"
+          aria-checked={value === star}
+          aria-label={`${star} star${star === 1 ? "" : "s"}`}
+          onClick={() => onChange(star)}
+          className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center text-2xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange rounded-lg ${star <= value ? "text-royal-orange" : "text-border"}`}
+        >
+          ★
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export function ReviewCard({
   displayName,
@@ -14,25 +56,140 @@ export function ReviewCard({
   reviewBody,
   hasSpoilers,
   createdAt,
+  isOwnReview = false,
+  bookId,
+  reviewId,
+  onReviewChange,
 }: Props) {
+  const toast = useToast();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editRating, setEditRating] = useState(rating ? Number(rating) : 0);
+  const [editBody, setEditBody] = useState(reviewBody ?? "");
+  const [editSpoilers, setEditSpoilers] = useState(Boolean(hasSpoilers));
+  const [saveState, saveAction, saving] = useActionState(saveReview, initial);
+  const [deleteState, deleteAction, deleting] = useActionState(deleteReview, initial);
+
+  useEffect(() => {
+    if (saveState.error) toast.error(saveState.error);
+    if (saveState.success) {
+      toast.success(saveState.success);
+      setIsEditing(false);
+      onReviewChange?.();
+    }
+  }, [saveState, toast, onReviewChange]);
+
+  useEffect(() => {
+    if (deleteState.error) toast.error(deleteState.error);
+    if (deleteState.success) {
+      toast.success(deleteState.success);
+      setIsEditing(false);
+      onReviewChange?.();
+    }
+  }, [deleteState, toast, onReviewChange]);
+
+  useEffect(() => {
+    if (!isEditing) {
+      setEditRating(rating ? Number(rating) : 0);
+      setEditBody(reviewBody ?? "");
+      setEditSpoilers(Boolean(hasSpoilers));
+    }
+  }, [rating, reviewBody, hasSpoilers, isEditing]);
+
+  const canManage = isOwnReview && bookId && reviewId;
+
   return (
     <article className="rounded-xl border border-border bg-surface p-4">
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <span className="font-semibold text-puce-red">{displayName}</span>
-        {rating != null ? (
+        {!isEditing && rating != null ? (
           <span className="text-sm text-royal-orange">
             {"★".repeat(Math.round(rating))}
             {"☆".repeat(5 - Math.round(rating))}
           </span>
         ) : null}
-        {hasSpoilers ? (
+        {!isEditing && hasSpoilers ? (
           <span className="rounded-full bg-rust/15 px-2 py-0.5 text-xs text-rust">
             Spoilers
           </span>
         ) : null}
+        {canManage && !isEditing ? (
+          <span className="ml-auto flex gap-1">
+            <Button type="button" variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
+              Edit
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              loading={deleting}
+              onClick={() => {
+                const fd = new FormData();
+                fd.set("review_id", reviewId);
+                fd.set("book_id", bookId);
+                deleteAction(fd);
+              }}
+            >
+              Delete
+            </Button>
+          </span>
+        ) : null}
       </div>
 
-      {reviewBody ? (
+      {isEditing && canManage ? (
+        <form action={saveAction} className="space-y-3 text-left">
+          <input type="hidden" name="book_id" value={bookId} />
+          <input type="hidden" name="rating" value={editRating || ""} />
+          <div>
+            <p className="mb-1.5 text-sm font-medium text-text">Rating</p>
+            <StarRating value={editRating} onChange={setEditRating} />
+          </div>
+          <Textarea
+            label="Review"
+            name="review_body"
+            value={editBody}
+            onChange={(e) => setEditBody(e.target.value)}
+            placeholder="What did you think?"
+            className="mb-0"
+          />
+          <label className="flex items-center gap-2 text-sm text-text">
+            <input
+              type="checkbox"
+              name="has_spoilers"
+              checked={editSpoilers}
+              onChange={(e) => setEditSpoilers(e.target.checked)}
+              className="rounded border-border"
+            />
+            Contains spoilers
+          </label>
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" variant="primary" size="sm" loading={saving}>
+              Save
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsEditing(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              loading={deleting}
+              onClick={() => {
+                const fd = new FormData();
+                fd.set("review_id", reviewId);
+                fd.set("book_id", bookId);
+                deleteAction(fd);
+              }}
+            >
+              Delete
+            </Button>
+          </div>
+        </form>
+      ) : reviewBody ? (
         hasSpoilers ? (
           <div className="group relative">
             <p
@@ -52,7 +209,7 @@ export function ReviewCard({
         <p className="text-sm text-text-muted italic">Rating only — no written review.</p>
       )}
 
-      {createdAt ? (
+      {createdAt && !isEditing ? (
         <p className="mt-2 text-xs text-text-muted">
           <time suppressHydrationWarning dateTime={createdAt}>
             {new Date(createdAt).toLocaleDateString()}

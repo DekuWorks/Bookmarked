@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -10,15 +10,32 @@ import type { UserShelf } from "@/types";
 type Props = {
   open: boolean;
   userId: string;
+  initialName?: string;
+  initialGenre?: string;
   onClose: () => void;
   onCreated: (shelf: UserShelf) => void;
 };
 
-export function CreateShelfModal({ open, userId, onClose, onCreated }: Props) {
-  const [name, setName] = useState("");
-  const [genre, setGenre] = useState("");
+export function CreateShelfModal({
+  open,
+  userId,
+  initialName = "",
+  initialGenre = "",
+  onClose,
+  onCreated,
+}: Props) {
+  const [name, setName] = useState(initialName);
+  const [genre, setGenre] = useState(initialGenre);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setName(initialName);
+      setGenre(initialGenre);
+      setError(null);
+    }
+  }, [open, initialName, initialGenre]);
 
   function handleClose() {
     if (saving) return;

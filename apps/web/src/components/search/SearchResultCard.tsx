@@ -5,12 +5,16 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { BookCover } from "@/components/books/BookCover";
 import { ShelfSelectMenu } from "@/components/shelves/ShelfSelectMenu";
+import {
+  EditionPickerModal,
+  type OpenLibraryEditionSummary,
+} from "@/components/search/EditionPickerModal";
 import { useToast } from "@/components/ui/Toast";
 import {
   addOpenLibraryBookToShelf,
   ensureOpenLibraryBook,
 } from "@/lib/services/books";
-import { resolveBookCoverUrl } from "@/lib/services/covers";
+import { resolveBookCoverUrl, resolveDisplayCoverUrl } from "@/lib/services/covers";
 import { bookDetailsPath } from "@/lib/routes/book";
 import { cn } from "@/lib/utils/cn";
 import type { ShelfStatus } from "@/types";
@@ -30,14 +34,18 @@ type Props = {
 function ResultActions({
   onViewDetails,
   onAddToShelf,
+  onPickEdition,
   viewDetailsLoading,
   addLoading,
+  editionLabel,
   className,
 }: {
   onViewDetails: () => void;
   onAddToShelf: () => void;
+  onPickEdition: () => void;
   viewDetailsLoading: boolean;
   addLoading: boolean;
+  editionLabel?: string | null;
   className?: string;
 }) {
   return (
@@ -50,6 +58,9 @@ function ResultActions({
         onClick={onViewDetails}
       >
         View details
+      </Button>
+      <Button type="button" variant="outline" size="sm" onClick={onPickEdition}>
+        {editionLabel ? "Change edition" : "Pick edition"}
       </Button>
       <Button
         type="button"
@@ -80,13 +91,29 @@ export function SearchResultCard({
   const router = useRouter();
   const toast = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [editionOpen, setEditionOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [viewDetailsLoading, setViewDetailsLoading] = useState(false);
+  const [selectedEdition, setSelectedEdition] = useState<OpenLibraryEditionSummary | null>(
+    null
+  );
   const [resolvedCoverUrl, setResolvedCoverUrl] = useState<string | null>(coverUrl);
 
+  const effectiveIsbn = selectedEdition?.isbn ?? isbn;
+  const effectivePageCount = selectedEdition?.pageCount
+    ? String(selectedEdition.pageCount)
+    : page_count;
+  const effectiveYear = selectedEdition?.publishDate?.match(/\d{4}/)?.[0] ?? first_publish_year;
+  const effectiveCoverId = selectedEdition?.coverId
+    ? String(selectedEdition.coverId)
+    : cover_i;
+
   useEffect(() => {
-    setResolvedCoverUrl(coverUrl);
-  }, [coverUrl]);
+    const nextCover = selectedEdition?.coverId
+      ? resolveDisplayCoverUrl({ coverId: selectedEdition.coverId, isbn: effectiveIsbn })
+      : coverUrl;
+    setResolvedCoverUrl(nextCover);
+  }, [coverUrl, selectedEdition, effectiveIsbn]);
 
   useEffect(() => {
     if (resolvedCoverUrl) return;
@@ -94,7 +121,7 @@ export function SearchResultCard({
     let cancelled = false;
     void resolveBookCoverUrl({
       coverUrl,
-      isbn,
+      isbn: effectiveIsbn,
       title,
       author,
     }).then((url) => {
@@ -104,16 +131,16 @@ export function SearchResultCard({
     return () => {
       cancelled = true;
     };
-  }, [coverUrl, isbn, title, author, resolvedCoverUrl]);
+  }, [coverUrl, effectiveIsbn, title, author, resolvedCoverUrl]);
 
   const bookPayload = {
-    title,
+    title: selectedEdition?.title ?? title,
     author,
     external_id,
-    cover_i,
-    page_count,
-    isbn,
-    first_publish_year,
+    cover_i: effectiveCoverId,
+    page_count: effectivePageCount,
+    isbn: effectiveIsbn,
+    first_publish_year: effectiveYear,
     first_sentence,
   };
 
@@ -138,13 +165,13 @@ export function SearchResultCard({
   async function handleSelectShelf(shelfStatus: ShelfStatus) {
     setSaving(true);
     const formData = new FormData();
-    formData.set("title", title);
+    formData.set("title", bookPayload.title);
     formData.set("author", author ?? "");
     formData.set("external_id", external_id);
-    formData.set("cover_i", cover_i);
-    formData.set("page_count", page_count);
-    formData.set("isbn", isbn);
-    formData.set("first_publish_year", first_publish_year);
+    formData.set("cover_i", bookPayload.cover_i);
+    formData.set("page_count", bookPayload.page_count);
+    formData.set("isbn", bookPayload.isbn);
+    formData.set("first_publish_year", bookPayload.first_publish_year);
     formData.set("first_sentence", first_sentence);
     formData.set("shelf_status", shelfStatus);
 
@@ -162,6 +189,10 @@ export function SearchResultCard({
       setSaving(false);
     }
   }
+
+  const editionLabel = selectedEdition
+    ? [selectedEdition.publishDate, selectedEdition.publisher].filter(Boolean).join(" · ")
+    : null;
 
   return (
     <>
@@ -185,16 +216,23 @@ export function SearchResultCard({
             <ResultActions
               onViewDetails={handleViewDetails}
               onAddToShelf={openShelfMenu}
+              onPickEdition={() => setEditionOpen(true)}
               viewDetailsLoading={viewDetailsLoading}
               addLoading={saving}
+              editionLabel={editionLabel}
             />
           </div>
         </div>
 
         <div className="flex flex-1 flex-col gap-2 p-4 text-center">
-          <h3 className="line-clamp-2 font-semibold text-text">{title}</h3>
+          <h3 className="line-clamp-2 font-semibold text-text">
+            {selectedEdition?.title ?? title}
+          </h3>
           {author ? (
             <p className="line-clamp-1 text-sm text-text-muted">{author}</p>
+          ) : null}
+          {editionLabel ? (
+            <p className="text-xs text-primary">Edition: {editionLabel}</p>
           ) : null}
         </div>
 
@@ -202,14 +240,27 @@ export function SearchResultCard({
           <ResultActions
             onViewDetails={handleViewDetails}
             onAddToShelf={openShelfMenu}
+            onPickEdition={() => setEditionOpen(true)}
             viewDetailsLoading={viewDetailsLoading}
             addLoading={saving}
+            editionLabel={editionLabel}
           />
         </div>
       </article>
 
+      <EditionPickerModal
+        open={editionOpen}
+        workId={external_id}
+        workTitle={title}
+        onClose={() => setEditionOpen(false)}
+        onSelect={(edition) => {
+          setSelectedEdition(edition);
+          toast.success("Edition selected.");
+        }}
+      />
+
       <ShelfSelectMenu
-        bookTitle={title}
+        bookTitle={bookPayload.title}
         open={menuOpen}
         loading={saving}
         onSelectShelf={handleSelectShelf}

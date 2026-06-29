@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { BookCover } from "@/components/books/BookCover";
+import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
+import { feedItemHref } from "@/lib/routes/activity";
 import { readerProfilePath } from "@/lib/routes/reader";
 import { bookDetailsPath } from "@/lib/routes/book";
-import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import { isFeedEligibleEvent } from "@/lib/services/activity";
 import type { FeedItem } from "@/lib/services/socialFeed";
 
@@ -23,6 +24,7 @@ function readerHref(item: FeedItem): string | null {
 
 export function FeedCard({ item }: Props) {
   const profileHref = readerHref(item);
+  const activityHref = feedItemHref(item);
   const showBookCover =
     isFeedEligibleEvent(item.event_type) || Boolean(item.bookId || item.coverUrl);
 
@@ -35,27 +37,31 @@ export function FeedCard({ item }: Props) {
   );
 
   return (
-    <article className="flex gap-4 rounded-xl border border-border bg-surface p-4 shadow-sm">
+    <article className="flex gap-4 rounded-xl border border-border bg-surface p-4 shadow-sm transition hover:border-primary/30 hover:shadow-md">
       {showBookCover ? (
         item.bookId ? (
           <Link
-            href={bookDetailsPath(item.bookId)}
+            href={activityHref}
             className="relative h-24 w-16 shrink-0 overflow-hidden rounded-md shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
           >
             {cover}
           </Link>
         ) : (
-          <div className="relative h-24 w-16 shrink-0 overflow-hidden rounded-md shadow-sm">
-            {cover}
-          </div>
+          <Link
+            href={activityHref}
+            className="relative flex h-24 w-16 shrink-0 items-center justify-center overflow-hidden rounded-md bg-primary/15 text-2xl shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
+          >
+            📚
+          </Link>
         )
       ) : (
-        <div
-          className="flex h-24 w-16 shrink-0 items-center justify-center rounded-md bg-primary/15 text-2xl"
+        <Link
+          href={activityHref}
+          className="flex h-24 w-16 shrink-0 items-center justify-center rounded-md bg-primary/15 text-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
           aria-hidden
         >
           📚
-        </div>
+        </Link>
       )}
 
       <div className="min-w-0 flex-1">
@@ -70,7 +76,9 @@ export function FeedCard({ item }: Props) {
           ) : (
             <span className="font-semibold text-puce-red">{readerLabel(item)}</span>
           )}{" "}
-          <span>{item.actionMessage}</span>
+          <Link href={activityHref} className="hover:text-primary hover:underline">
+            {item.actionMessage}
+          </Link>
         </p>
         <p className="mt-1 text-xs text-text-muted">
           <time suppressHydrationWarning dateTime={item.created_at}>
@@ -82,16 +90,22 @@ export function FeedCard({ item }: Props) {
             })}
           </time>
         </p>
-        {item.bookId ? (
-          <div className="mt-2">
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <Link
+            href={activityHref}
+            className="text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
+          >
+            View activity
+          </Link>
+          {item.bookId ? (
             <CopyLinkButton
               path={bookDetailsPath(item.bookId)}
               label="Copy link"
               variant="ghost"
               size="sm"
             />
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </div>
     </article>
   );

@@ -1,7 +1,130 @@
 import { createClient } from "@/lib/supabase/client";
+import { activityEventHref } from "@/lib/routes/activity";
+import { messageThreadPath } from "@/lib/routes/messages";
+import { readerProfilePath } from "@/lib/routes/reader";
 import type { NotificationPreferences, NotificationWithActor } from "@/types";
 
 const PROFILE_SELECT = "id, username, display_name, avatar_url";
+
+type ActivityLookupRow = {
+  id: string;
+  event_type: string;
+  entity_type: string | null;
+  entity_id: string | null;
+  metadata_json: Record<string, unknown> | null;
+};
+
+async function resolveBookIdsForActivities(
+  activities: ActivityLookupRow[]
+): Promise<Map<string, string>> {
+  const bookIdByActivityId = new Map<string, string>();
+
+  for (const row of activities) {
+    const metadata = row.metadata_json;
+    if (typeof metadata?.book_id === "string") {
+      bookIdByActivityId.set(row.id, metadata.book_id);
+    }
+  }
+
+  const userBookIds: string[] = [];
+  const reviewIds: string[] = [];
+
+  for (const row of activities) {
+    if (bookIdByActivityId.has(row.id) || !row.entity_id) continue;
+    if (row.entity_type === "user_book") userBookIds.push(row.entity_id);
+    if (row.entity_type === "review") reviewIds.push(row.entity_id);
+  }
+
+  const supabase = createClient();
+
+  if (userBookIds.length) {
+    const { data } = await supabase
+      .from("user_books")
+      .select("id, book_id")
+      .in("id", userBookIds);
+
+    for (const userBook of data ?? []) {
+      for (const row of activities) {
+        if (row.entity_type === "user_book" && row.entity_id === userBook.id) {
+          bookIdByActivityId.set(row.id, userBook.book_id);
+        }
+      }
+    }
+  }
+
+  if (reviewIds.length) {
+    const { data } = await supabase
+      .from("reviews")
+      .select("id, book_id")
+      .in("id", reviewIds);
+
+    for (const review of data ?? []) {
+      for (const row of activities) {
+        if (row.entity_type === "review" && row.entity_id === review.id) {
+          bookIdByActivityId.set(row.id, review.book_id);
+        }
+      }
+    }
+  }
+
+  return bookIdByActivityId;
+}
+
+async function enrichFeedNotificationLinks(
+  notifications: NotificationWithActor[]
+): Promise<NotificationWithActor[]> {
+  const feedNotifications = notifications.filter((notification) => notification.type === "feed");
+  if (!feedNotifications.length) return notifications;
+
+  const activityIds = [
+    ...new Set(
+      feedNotifications
+        .map((notification) => notification.metadata_json?.activity_id)
+        .filter((id): id is string => typeof id === "string")
+    ),
+  ];
+
+  if (!activityIds.length) return notifications;
+
+  const supabase = createClient();
+  const { data: activities, error } = await supabase
+    .from("activity_events")
+    .select("id, event_type, entity_type, entity_id, metadata_json")
+    .in("id", activityIds);
+
+  if (error || !activities?.length) return notifications;
+
+  const activityRows = activities as ActivityLookupRow[];
+  const bookIdByActivityId = await resolveBookIdsForActivities(activityRows);
+  const activityById = new Map(activityRows.map((row) => [row.id, row]));
+
+  return notifications.map((notification) => {
+    if (notification.type !== "feed") return notification;
+
+    const activityId = notification.metadata_json?.activity_id;
+    if (typeof activityId !== "string") return notification;
+
+    const activity = activityById.get(activityId);
+    const bookId = bookIdByActivityId.get(activityId) ?? null;
+    if (!activity || !bookId) return notification;
+
+    const link_url = activityEventHref(
+      activity.event_type,
+      bookId,
+      notification.actor?.username
+    );
+
+    return {
+      ...notification,
+      link_url,
+      metadata_json: {
+        ...notification.metadata_json,
+        book_id: bookId,
+        event_type: activity.event_type,
+      },
+    };
+  });
+}
 
 export async function getNotifications(
   userId: string,
@@ -18,7 +141,7 @@ export async function getNotifications(
 
   if (error) throw error;
 
-  return ((data ?? []) as Array<NotificationWithActor & { actor: NotificationWithActor["actor"] }>).map(
+  const mapped = ((data ?? []) as Array<NotificationWithActor & { actor: NotificationWithActor["actor"] }>).map(
     (row) => ({
       id: row.id,
       user_id: row.user_id,
@@ -33,6 +156,8 @@ export async function getNotifications(
       actor: row.actor ?? null,
     })
   );
+
+  return enrichFeedNotificationLinks(mapped);
 }
 
 export async function getUnreadNotificationCount(userId: string): Promise<number> {
@@ -116,7 +241,7 @@ export async function createFollowNotification(input: {
   const supabase = createClient();
 
   const link = input.actorUsername
-    ? `/reader/?username=${encodeURIComponent(input.actorUsername)}`
+    ? readerProfilePath(input.actorUsername)
     : "/feed/";
 
   await supabase.rpc("create_notification", {
@@ -140,7 +265,7 @@ export async function createMessageNotifications(input: {
   if (!input.recipientIds.length) return;
 
   const supabase = createClient();
-  const link = `/messages/thread/?id=${encodeURIComponent(input.conversationId)}`;
+  const link = messageThreadPath(input.conversationId);
 
   await Promise.all(
     input.recipientIds.map((recipientId) =>

@@ -11,6 +11,7 @@ import { BookMiniGrid } from "@/components/reading-room/BookMiniGrid";
 import { AnalyticsGrid } from "@/components/analytics/AnalyticsGrid";
 import { BookshelfView } from "@/components/library/BookshelfView";
 import { CustomShelfCollectionsPanel } from "@/components/library/CustomShelfCollectionsPanel";
+import { SuggestedShelvesPanel } from "@/components/shelves/SuggestedShelvesPanel";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { SHELF_CONFIG } from "@/lib/constants/shelves";
 import { ReadingGoalPanel } from "@/components/reading-goal/ReadingGoalPanel";
@@ -67,6 +68,8 @@ export default function ReadingRoomPage() {
       <ReadingRoomSection title="Currently reading" emoji="📖">
         <CurrentlyReadingRow items={data.currentlyReading} onItemsChange={loadReadingRoom} />
       </ReadingRoomSection>
+
+      <SuggestedShelvesPanel userId={user.id} className="rounded-xl border border-border bg-surface/80 p-5 shadow-sm" />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <ReadingRoomSection title="Recently finished" emoji="✅">

@@ -10,6 +10,7 @@ import { fetchReadingStreakTimestamps } from "@/lib/services/readingInsights";
 import { computeReadingGoal } from "@/lib/services/readingGoal";
 import { ReadingGoalPanel } from "@/components/reading-goal/ReadingGoalPanel";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
+import { SuggestedShelvesPanel } from "@/components/shelves/SuggestedShelvesPanel";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { AnalyticsGrid } from "@/components/analytics/AnalyticsGrid";
@@ -129,6 +130,8 @@ export default function DashboardPage() {
       <DashboardCard title="Currently reading">
         <CurrentlyReadingRow items={currentlyReading} onItemsChange={loadDashboard} />
       </DashboardCard>
+
+      <SuggestedShelvesPanel userId={userId} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <DashboardCard title="Reading goal">

@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-
+import { isIsbnQuery } from "@/lib/utils/isbn";
 
 export function SearchForm() {
   const router = useRouter();
@@ -15,8 +15,13 @@ export function SearchForm() {
     e.preventDefault();
     const trimmed = q.trim();
     if (!trimmed) return;
-    router.push(`/search?q=${encodeURIComponent(trimmed)}`);
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("q", trimmed);
+    router.push(`/search/?${params.toString()}`);
   }
+
+  const isbnHint = isIsbnQuery(q);
 
   return (
     <form
@@ -31,6 +36,9 @@ export function SearchForm() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
+        {isbnHint ? (
+          <p className="-mt-2 text-xs text-primary">ISBN detected — searching by ISBN</p>
+        ) : null}
       </div>
       <Button type="submit" variant="secondary" className="w-full sm:mb-4 sm:w-auto">
         Search

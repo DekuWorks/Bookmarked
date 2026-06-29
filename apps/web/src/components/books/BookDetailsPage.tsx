@@ -20,16 +20,36 @@ import type { ShelfStatus } from "@/types";
 function BookDetailsContent() {
   const searchParams = useSearchParams();
   const bookId = searchParams.get("id")?.trim() ?? "";
+  const focusSection = searchParams.get("section");
+  const focusReviews = searchParams.get("section") === "reviews";
   const user = useAuthUser();
   const [data, setData] = useState<BookDetailsData | null | undefined>(undefined);
+
+  const loadBookDetails = () => {
+    if (!user || !bookId) return;
+    void getBookDetails(bookId, user.id).then(setData);
+  };
 
   useEffect(() => {
     if (!user || !bookId) {
       if (user !== undefined) setData(null);
       return;
     }
-    void getBookDetails(bookId, user.id).then(setData);
+    loadBookDetails();
   }, [user, bookId]);
+
+  useEffect(() => {
+    if (focusSection !== "reviews" || !data) return;
+    const el = document.getElementById("book-reviews");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [focusSection, data]);
+
+  useEffect(() => {
+    if (!focusReviews || !data) return;
+    document.getElementById("book-reviews")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [focusReviews, data]);
 
   if (!bookId) {
     return (
@@ -168,7 +188,14 @@ function BookDetailsContent() {
         />
       </div>
 
-      <BookReviewSection bookId={book.id} ownReview={ownReview} reviews={reviews} />
+      <div id="book-reviews">
+        <BookReviewSection
+          bookId={book.id}
+          ownReview={ownReview}
+          reviews={reviews}
+          onReviewsChange={loadBookDetails}
+        />
+      </div>
     </div>
   );
 }

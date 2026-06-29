@@ -1,3 +1,8 @@
+"use client";
+
+import { useState } from "react";
+import { Button } from "@/components/ui/Button";
+import { Textarea } from "@/components/ui/Input";
 import { formatMessageTimestamp } from "@/lib/services/messages";
 import { profileDisplayName } from "@/lib/utils/messaging";
 import type { MessageWithSender } from "@/types";
@@ -8,10 +13,47 @@ type Props = {
   isOwn: boolean;
   showSenderName: boolean;
   onDelete?: (messageId: string) => void;
+  onEdit?: (messageId: string, body: string) => Promise<{ error?: string }>;
 };
 
-export function MessageBubble({ message, isOwn, showSenderName, onDelete }: Props) {
+export function MessageBubble({ message, isOwn, showSenderName, onDelete, onEdit }: Props) {
   const deleted = Boolean(message.deleted_at);
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState(message.body);
+  const [saving, setSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const edited =
+    !deleted &&
+    message.updated_at &&
+    message.updated_at !== message.created_at;
+
+  async function handleSave() {
+    if (!onEdit) return;
+
+    const trimmed = draft.trim();
+    if (!trimmed) {
+      setEditError("Message cannot be empty.");
+      return;
+    }
+
+    setSaving(true);
+    setEditError(null);
+    const result = await onEdit(message.id, trimmed);
+    setSaving(false);
+
+    if (result.error) {
+      setEditError(result.error);
+      return;
+    }
+
+    setIsEditing(false);
+  }
+
+  function handleCancelEdit() {
+    setDraft(message.body);
+    setEditError(null);
+    setIsEditing(false);
+  }
 
   return (
     <div className={cn("flex flex-col gap-1", isOwn ? "items-end" : "items-start")}>
@@ -22,34 +64,73 @@ export function MessageBubble({ message, isOwn, showSenderName, onDelete }: Prop
       ) : null}
 
       <div className="group relative max-w-[85%] sm:max-w-[70%]">
-        <div
-          className={cn(
-            "rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm",
-            isOwn
-              ? "rounded-br-md bg-puce-red text-white"
-              : "rounded-bl-md border border-border bg-surface text-text",
-            deleted && "italic opacity-70"
-          )}
-        >
-          {deleted ? "Message deleted" : message.body}
-        </div>
-
-        {isOwn && !deleted && onDelete ? (
-          <button
-            type="button"
-            onClick={() => onDelete(message.id)}
-            className="absolute -bottom-5 right-0 text-[11px] text-text-muted opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100"
+        {isEditing ? (
+          <div
+            className={cn(
+              "space-y-2 rounded-2xl px-4 py-2.5 text-sm shadow-sm",
+              isOwn
+                ? "rounded-br-md bg-puce-red text-white"
+                : "rounded-bl-md border border-border bg-surface text-text"
+            )}
           >
-            Delete
-          </button>
+            <Textarea
+              label="Edit message"
+              name={`edit-${message.id}`}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              rows={3}
+              className="mb-0"
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" size="sm" loading={saving} onClick={() => void handleSave()}>
+                Save
+              </Button>
+              <Button type="button" variant="ghost" size="sm" onClick={handleCancelEdit}>
+                Cancel
+              </Button>
+            </div>
+            {editError ? <p className="text-xs text-rust">{editError}</p> : null}
+          </div>
+        ) : (
+          <div
+            className={cn(
+              "rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm",
+              isOwn
+                ? "rounded-br-md bg-puce-red text-white"
+                : "rounded-bl-md border border-border bg-surface text-text",
+              deleted && "italic opacity-70"
+            )}
+          >
+            {deleted ? "Message deleted" : message.body}
+          </div>
+        )}
+
+        {isOwn && !deleted && !isEditing && (onDelete || onEdit) ? (
+          <div className="absolute -bottom-5 right-0 flex gap-2 text-[11px] text-text-muted opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
+            {onEdit ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setDraft(message.body);
+                  setEditError(null);
+                  setIsEditing(true);
+                }}
+              >
+                Edit
+              </button>
+            ) : null}
+            {onDelete ? (
+              <button type="button" onClick={() => onDelete(message.id)}>
+                Delete
+              </button>
+            ) : null}
+          </div>
         ) : null}
       </div>
 
-      <time
-        dateTime={message.created_at}
-        className="px-1 text-[11px] text-text-muted"
-      >
+      <time dateTime={message.created_at} className="px-1 text-[11px] text-text-muted">
         {formatMessageTimestamp(message.created_at)}
+        {edited ? " · edited" : ""}
       </time>
     </div>
   );

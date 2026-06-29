@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { SearchForm } from "@/components/search/SearchForm";
+import { SearchFiltersBar } from "@/components/search/SearchFiltersBar";
 import { SearchResults } from "@/components/search/SearchResults";
 import { LoadingState } from "@/components/ui/LoadingState";
 
@@ -24,7 +25,10 @@ function SearchContent() {
       <SearchForm />
 
       {q ? (
-        <SearchResults query={q} />
+        <>
+          <SearchFiltersBar />
+          <SearchResults query={q} />
+        </>
       ) : (
         <p className="text-text-muted">Enter a title or author to start searching.</p>
       )}

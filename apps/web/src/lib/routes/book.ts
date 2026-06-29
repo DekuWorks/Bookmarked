@@ -2,3 +2,8 @@
 export function bookDetailsPath(bookId: string): string {
   return `/book/?id=${encodeURIComponent(bookId)}`;
 }
+
+/** Book details with reviews section focused (scroll target on book page). */
+export function bookDetailsReviewsPath(bookId: string): string {
+  return `/book/?id=${encodeURIComponent(bookId)}&section=reviews`;
+}

@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { UserAvatar } from "@/components/messages/UserAvatar";
+import { notificationHref } from "@/lib/routes/activity";
 import { formatNotificationTimestamp } from "@/lib/services/notifications";
 import type { NotificationWithActor } from "@/types";
 import { cn } from "@/lib/utils/cn";
@@ -27,21 +27,19 @@ function notificationTypeLabel(type: NotificationWithActor["type"]): string {
 
 export function NotificationItem({ notification, onRead }: Props) {
   const isUnread = !notification.read_at;
-  const router = useRouter();
+  const href = notificationHref(notification);
 
   function handleClick() {
-    onRead(notification.id, notification.link_url);
-    if (notification.link_url) {
-      router.push(notification.link_url);
-    }
+    onRead(notification.id, href);
   }
 
   return (
-    <button
-      type="button"
+    <Link
+      href={href}
       onClick={handleClick}
       className={cn(
-        "flex w-full min-h-[72px] items-start gap-3 rounded-xl border px-4 py-3 text-left transition",
+        "flex w-full min-h-[72px] items-start gap-3 rounded-xl border px-4 py-3 text-left transition outline-none",
+        "focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2",
         isUnread
           ? "border-primary/40 bg-primary/5 hover:bg-primary/10"
           : "border-border bg-surface hover:border-primary/30 hover:shadow-sm"
@@ -67,7 +65,7 @@ export function NotificationItem({ notification, onRead }: Props) {
           {notificationTypeLabel(notification.type)}
         </span>
       </div>
-    </button>
+    </Link>
   );
 }
 

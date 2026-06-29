@@ -16,6 +16,7 @@ import {
   getMessages,
   markConversationRead,
   sendMessage,
+  updateMessage,
 } from "@/lib/services/messages";
 import { messagesInboxPath } from "@/lib/routes/messages";
 import type { ConversationWithParticipants, MessageWithSender } from "@/types";
@@ -121,6 +122,13 @@ function MessageThreadContent() {
     await loadThread();
   }
 
+  async function handleEditMessage(messageId: string, body: string) {
+    const result = await updateMessage(messageId, body);
+    if (result.error) return { error: result.error };
+    await loadThread();
+    return {};
+  }
+
   if (!conversationId) {
     return (
       <div className="space-y-4 text-center">
@@ -166,6 +174,7 @@ function MessageThreadContent() {
         currentUserId={user.id}
         isGroup={conversation.type === "group"}
         onDeleteMessage={(messageId) => void handleDeleteMessage(messageId)}
+        onEditMessage={handleEditMessage}
       />
 
       <MessageComposer onSend={handleSend} />
