@@ -171,14 +171,27 @@ export async function createCustomShelf(
     return { error: "Genre must be 80 characters or fewer." };
   }
 
-  const baseSlug = slugifyShelfName(trimmedName);
-  const slug = await uniqueSlugForUser(userId, baseSlug);
-
   const supabase = createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { error: "You must be signed in to create a shelf." };
+  }
+
+  if (user.id !== userId) {
+    return { error: "Session mismatch. Please refresh and try again." };
+  }
+
+  const baseSlug = slugifyShelfName(trimmedName);
+  const slug = await uniqueSlugForUser(user.id, baseSlug);
+
   const { data, error } = await supabase
     .from("user_shelves")
     .insert({
-      user_id: userId,
+      user_id: user.id,
       name: trimmedName,
       slug,
       genre,
