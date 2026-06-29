@@ -12,19 +12,11 @@ import {
 } from "@/lib/utils/browserNotifications";
 import { cn } from "@/lib/utils/cn";
 
-function removeNotificationChannel(supabase: ReturnType<typeof createClient>, userId: string) {
-  const topic = `notifications:${userId}`;
-  for (const channel of supabase.getChannels()) {
-    if (channel.topic === `realtime:${topic}`) {
-      void supabase.removeChannel(channel);
-    }
-  }
-}
-
 export function NotificationBell() {
   const user = useAuthUser();
   const [unreadCount, setUnreadCount] = useState(0);
   const userId = user?.id;
+  const shownBrowserNotificationIdsRef = useRef(new Set<string>());
 
   const refreshCount = useCallback(() => {
     if (!userId) return;
@@ -47,14 +39,12 @@ export function NotificationBell() {
     const supabase = createClient();
     let cancelled = false;
 
-    removeNotificationChannel(supabase, userId);
-
     const channel = supabase
       .channel(`notifications:${userId}`)
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "INSERT",
           schema: "public",
           table: "notifications",
           filter: `user_id=eq.${userId}`,
@@ -64,7 +54,6 @@ export function NotificationBell() {
 
           refreshCountRef.current();
 
-          if (payload.eventType !== "INSERT") return;
           if (getBrowserNotificationPermission() !== "granted") return;
 
           const row = payload.new as {
@@ -73,6 +62,11 @@ export function NotificationBell() {
             link_url?: string | null;
             id?: string;
           };
+
+          const notificationId = row.id;
+          if (!notificationId) return;
+          if (shownBrowserNotificationIdsRef.current.has(notificationId)) return;
+          shownBrowserNotificationIdsRef.current.add(notificationId);
 
           void supabase
             .from("profiles")
@@ -83,7 +77,7 @@ export function NotificationBell() {
               if (!data?.notify_browser) return;
               showBrowserNotification(row.title ?? "Bookmarked", {
                 body: row.body,
-                tag: row.id,
+                tag: notificationId,
                 url: row.link_url ?? "/notifications/",
               });
             });

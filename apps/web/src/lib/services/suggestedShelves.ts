@@ -5,9 +5,10 @@ export type SuggestedShelf = {
   name: string;
   genre: string | null;
   reason: string;
+  matchCount: number;
 };
 
-const TEMPLATE_SHELVES: SuggestedShelf[] = [
+const TEMPLATE_SHELVES: Omit<SuggestedShelf, "matchCount">[] = [
   { name: "DNF", genre: null, reason: "Did not finish" },
   { name: "Summer reads", genre: "Seasonal", reason: "Popular collection" },
   { name: "Book club picks", genre: "Book club", reason: "Popular collection" },
@@ -17,6 +18,18 @@ const TEMPLATE_SHELVES: SuggestedShelf[] = [
 
 function normalizeName(name: string): string {
   return name.trim().toLowerCase();
+}
+
+function normalizeToken(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function genreTokens(genre: string | null): string[] {
+  if (!genre) return [];
+  return genre
+    .split(/[,;/&]+/)
+    .map(normalizeToken)
+    .filter(Boolean);
 }
 
 function subjectCounts(books: LibraryBookRow[]): Map<string, number> {
@@ -31,6 +44,40 @@ function subjectCounts(books: LibraryBookRow[]): Map<string, number> {
   return counts;
 }
 
+/** Book IDs from the user's library that overlap the shelf genre/subject tag. */
+export function matchingLibraryBookIds(
+  books: LibraryBookRow[],
+  genre: string | null
+): string[] {
+  const tokens = genreTokens(genre);
+  if (!tokens.length) return [];
+
+  const matched = new Set<string>();
+  for (const row of books) {
+    const bookId = row.books?.id;
+    if (!bookId) continue;
+
+    const subjects = (row.books?.subjects ?? []).map(normalizeToken);
+    const hit = tokens.some((token) =>
+      subjects.some(
+        (subject) =>
+          subject === token || subject.includes(token) || token.includes(subject)
+      )
+    );
+
+    if (hit) matched.add(bookId);
+  }
+
+  return [...matched];
+}
+
+export function countMatchingLibraryBooks(
+  books: LibraryBookRow[],
+  genre: string | null
+): number {
+  return matchingLibraryBookIds(books, genre).length;
+}
+
 export async function getSuggestedShelves(
   userId: string,
   profileGenres: string[] | null | undefined,
@@ -42,11 +89,14 @@ export async function getSuggestedShelves(
   const suggestions: SuggestedShelf[] = [];
   const seen = new Set<string>();
 
-  function add(shelf: SuggestedShelf) {
+  function add(shelf: Omit<SuggestedShelf, "matchCount">) {
     const key = normalizeName(shelf.name);
     if (existingNames.has(key) || seen.has(key)) return;
     seen.add(key);
-    suggestions.push(shelf);
+    suggestions.push({
+      ...shelf,
+      matchCount: countMatchingLibraryBooks(books, shelf.genre),
+    });
   }
 
   for (const genre of profileGenres ?? []) {

@@ -154,22 +154,58 @@ export async function getCustomShelfBySlug(
   };
 }
 
-export async function createCustomShelf(
-  userId: string,
-  input: { name: string; genre?: string | null }
-): Promise<{ shelf?: UserShelf; error?: string }> {
+export type CustomShelfInput = {
+  name: string;
+  genre?: string | null;
+};
+
+export type ValidatedCustomShelfInput = {
+  name: string;
+  genre: string | null;
+};
+
+export function validateCustomShelfInput(
+  input: CustomShelfInput
+): { ok: true; value: ValidatedCustomShelfInput } | { ok: false; error: string } {
   const trimmedName = input.name.trim();
   if (!trimmedName) {
-    return { error: "Shelf name is required." };
+    return { ok: false, error: "Shelf name is required." };
   }
   if (trimmedName.length > 80) {
-    return { error: "Shelf name must be 80 characters or fewer." };
+    return { ok: false, error: "Shelf name must be 80 characters or fewer." };
   }
 
   const genre = input.genre?.trim() || null;
   if (genre && genre.length > 80) {
-    return { error: "Genre must be 80 characters or fewer." };
+    return { ok: false, error: "Genre must be 80 characters or fewer." };
   }
+
+  const baseSlug = slugifyShelfName(trimmedName);
+  if (isReservedShelfSlug(baseSlug)) {
+    return {
+      ok: false,
+      error: "That name matches a built-in shelf. Choose a different name.",
+    };
+  }
+
+  return { ok: true, value: { name: trimmedName, genre } };
+}
+
+export type CreateCustomShelfOptions = {
+  bookIds?: string[];
+};
+
+export async function createCustomShelf(
+  userId: string,
+  input: CustomShelfInput,
+  options?: CreateCustomShelfOptions
+): Promise<{ shelf?: UserShelf; error?: string; booksAdded?: number }> {
+  const validated = validateCustomShelfInput(input);
+  if (!validated.ok) {
+    return { error: validated.error };
+  }
+
+  const { name: trimmedName, genre } = validated.value;
 
   const supabase = createClient();
   const {
@@ -203,7 +239,18 @@ export async function createCustomShelf(
     return { error: error.message };
   }
 
-  return { shelf: data as UserShelf };
+  const shelf = data as UserShelf;
+  const uniqueBookIds = [...new Set(options?.bookIds ?? [])];
+  let booksAdded = 0;
+
+  for (const bookId of uniqueBookIds) {
+    const addResult = await addBookToCustomShelf(shelf.id, user.id, bookId);
+    if (!addResult.error) {
+      booksAdded += 1;
+    }
+  }
+
+  return { shelf, booksAdded };
 }
 
 export async function updateCustomShelfVisibility(

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { activityEventHref } from "@/lib/routes/activity";
 import { messageThreadPath } from "@/lib/routes/messages";
+import { postFeedPath } from "@/lib/routes/posts";
 import { readerProfilePath } from "@/lib/routes/reader";
 import type { NotificationPreferences, NotificationWithActor } from "@/types";
 
@@ -276,10 +277,62 @@ export async function createMessageNotifications(input: {
         p_body: input.preview.slice(0, 160),
         p_actor_id: input.senderId,
         p_link_url: link,
-        p_metadata: { conversation_id: input.conversationId },
+        p_metadata: {
+          conversation_id: input.conversationId,
+          dedup_key: `message:${input.conversationId}:${input.senderId}:${input.preview.slice(0, 80)}`,
+        },
       })
     )
   );
+}
+
+export async function createPostLikeNotification(input: {
+  recipientId: string;
+  actorId: string;
+  actorDisplayName: string;
+  postId: string;
+}): Promise<void> {
+  const supabase = createClient();
+
+  await supabase.rpc("create_notification", {
+    p_user_id: input.recipientId,
+    p_type: "feed",
+    p_title: `${input.actorDisplayName} liked your post`,
+    p_body: "Tap to view the post.",
+    p_actor_id: input.actorId,
+    p_link_url: postFeedPath(input.postId),
+    p_metadata: {
+      post_id: input.postId,
+      notification_kind: "post_like",
+      dedup_key: `post_like:${input.postId}:${input.actorId}`,
+    },
+  });
+}
+
+export async function createPostCommentNotification(input: {
+  recipientId: string;
+  actorId: string;
+  actorDisplayName: string;
+  postId: string;
+  commentId: string;
+  preview: string;
+}): Promise<void> {
+  const supabase = createClient();
+
+  await supabase.rpc("create_notification", {
+    p_user_id: input.recipientId,
+    p_type: "feed",
+    p_title: `${input.actorDisplayName} commented on your post`,
+    p_body: input.preview.slice(0, 160),
+    p_actor_id: input.actorId,
+    p_link_url: postFeedPath(input.postId),
+    p_metadata: {
+      post_id: input.postId,
+      comment_id: input.commentId,
+      notification_kind: "post_comment",
+      dedup_key: `post_comment:${input.commentId}`,
+    },
+  });
 }
 
 export function formatNotificationTimestamp(iso: string): string {

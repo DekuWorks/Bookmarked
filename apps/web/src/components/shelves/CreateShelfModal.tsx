@@ -4,7 +4,10 @@ import { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { createCustomShelf } from "@/lib/services/customShelves";
+import {
+  createCustomShelf,
+  validateCustomShelfInput,
+} from "@/lib/services/customShelves";
 import type { UserShelf } from "@/types";
 
 type Props = {
@@ -12,8 +15,9 @@ type Props = {
   userId: string;
   initialName?: string;
   initialGenre?: string;
+  matchingBookIds?: string[];
   onClose: () => void;
-  onCreated: (shelf: UserShelf) => void;
+  onCreated: (shelf: UserShelf, booksAdded?: number) => void;
 };
 
 export function CreateShelfModal({
@@ -21,6 +25,7 @@ export function CreateShelfModal({
   userId,
   initialName = "",
   initialGenre = "",
+  matchingBookIds = [],
   onClose,
   onCreated,
 }: Props) {
@@ -47,12 +52,21 @@ export function CreateShelfModal({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSaving(true);
     setError(null);
 
-    const result = await createCustomShelf(userId, {
+    const validated = validateCustomShelfInput({
       name,
-      genre: genre.trim() || null,
+      genre: genre || null,
+    });
+    if (!validated.ok) {
+      setError(validated.error);
+      return;
+    }
+
+    setSaving(true);
+
+    const result = await createCustomShelf(userId, validated.value, {
+      bookIds: matchingBookIds,
     });
 
     setSaving(false);
@@ -63,7 +77,7 @@ export function CreateShelfModal({
     }
 
     if (result.shelf) {
-      onCreated(result.shelf);
+      onCreated(result.shelf, result.booksAdded);
       setName("");
       setGenre("");
       setError(null);

@@ -139,3 +139,45 @@ export type NotificationPreferences = {
   notify_feed: boolean;
   notify_browser: boolean;
 };
+
+export type PostAuthor = MessageProfile;
+
+export interface Post {
+  id: string;
+  user_id: string;
+  body: string;
+  image_url: string | null;
+  book_id: string | null;
+  repost_of_post_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PostComment {
+  id: string;
+  post_id: string;
+  user_id: string;
+  body: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type PostCommentWithAuthor = PostComment & {
+  author: PostAuthor;
+};
+
+export type PostWithAuthor = Post & {
+  author: PostAuthor;
+  book?: {
+    id: string;
+    title: string;
+    author: string | null;
+    cover_url: string | null;
+  } | null;
+  repost_of?: PostWithAuthor | null;
+  like_count: number;
+  comment_count: number;
+  viewer_has_liked: boolean;
+  viewer_has_reposted: boolean;
+  comments?: PostCommentWithAuthor[];
+};

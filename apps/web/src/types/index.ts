@@ -20,6 +20,11 @@ export type {
   Notification,
   NotificationWithActor,
   NotificationPreferences,
+  PostAuthor,
+  Post,
+  PostComment,
+  PostCommentWithAuthor,
+  PostWithAuthor,
 } from "../../../../packages/types";
 
 export interface UserBook {
