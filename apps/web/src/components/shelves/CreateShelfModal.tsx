@@ -16,6 +16,7 @@ type Props = {
   initialName?: string;
   initialGenre?: string;
   matchingBookIds?: string[];
+  resolveMatchingBookIds?: (genre: string | null) => string[];
   onClose: () => void;
   onCreated: (shelf: UserShelf, booksAdded?: number) => void;
 };
@@ -26,6 +27,7 @@ export function CreateShelfModal({
   initialName = "",
   initialGenre = "",
   matchingBookIds = [],
+  resolveMatchingBookIds,
   onClose,
   onCreated,
 }: Props) {
@@ -65,8 +67,12 @@ export function CreateShelfModal({
 
     setSaving(true);
 
+    const bookIds = resolveMatchingBookIds
+      ? resolveMatchingBookIds(validated.value.genre)
+      : matchingBookIds;
+
     const result = await createCustomShelf(userId, validated.value, {
-      bookIds: matchingBookIds,
+      bookIds,
     });
 
     setSaving(false);

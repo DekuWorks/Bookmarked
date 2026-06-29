@@ -92,9 +92,7 @@ export function SuggestedShelvesPanel({ userId, className, onShelfCreated }: Pro
     void refresh();
   }, [refresh]);
 
-  useUserBooksRealtime(userId, () => {
-    void reloadSuggestions();
-  });
+  useUserBooksRealtime(userId, reloadSuggestions);
 
   function removeSuggestion(key: string) {
     setSuggestions((prev) => prev.filter((shelf) => suggestionKey(shelf) !== key));
@@ -320,6 +318,7 @@ export function SuggestedShelvesPanel({ userId, className, onShelfCreated }: Pro
         initialName={modalPrefill?.name ?? ""}
         initialGenre={modalPrefill?.genre ?? ""}
         matchingBookIds={modalBookIds}
+        resolveMatchingBookIds={(genre) => matchingLibraryBookIds(libraryBooks, genre)}
         onClose={() => {
           setModalOpen(false);
           setModalPrefill(null);
