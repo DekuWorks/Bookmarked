@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { FollowButton } from "@/components/social/FollowButton";
 import { readerProfilePath } from "@/lib/routes/reader";
 import type { ReaderSearchResult } from "@/lib/services/feedSearch";
@@ -40,7 +41,19 @@ export function ReaderSearchCard({ reader }: Props) {
   );
 
   return (
-    <article className="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface px-4 py-3 shadow-sm">
+    <article className="flex items-center gap-4 rounded-xl border border-border bg-surface px-4 py-3 shadow-sm">
+      {profileHref ? (
+        <Link
+          href={profileHref}
+          className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2"
+          aria-label={`View ${displayName}'s profile`}
+        >
+          <ProfileAvatar profile={reader} size="lg" />
+        </Link>
+      ) : (
+        <ProfileAvatar profile={reader} size="lg" className="shrink-0" />
+      )}
+
       <div className="min-w-0 flex-1">
         {profileHref ? (
           <Link
