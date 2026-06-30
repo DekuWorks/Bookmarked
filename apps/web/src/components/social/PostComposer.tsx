@@ -461,17 +461,6 @@ export function PostComposer({ userId, onPostCreated }: Props) {
         </div>
       ) : null}
 
-      <div className="mb-3 rounded-lg border border-border bg-background/50 px-3 py-3">
-        <p className="mb-3 text-sm font-medium text-text">Add a GIF (optional)</p>
-        <GifSearchPicker
-          gifInput={gifInput}
-          onGifInputChange={setGifInput}
-          onGifInputBlur={() => applyGifUrl(gifInput)}
-          onSelect={selectGif}
-          disabled={submitting}
-        />
-      </div>
-
       <details className="mb-3 rounded-lg border border-border bg-background/50 px-3 py-2">
         <summary className="cursor-pointer text-sm font-medium text-text">
           Attach a book (optional)
@@ -544,6 +533,14 @@ export function PostComposer({ userId, onPostCreated }: Props) {
           >
             Attach image
           </Button>
+          <GifSearchPicker
+            gifInput={gifInput}
+            onGifInputChange={setGifInput}
+            onGifInputBlur={() => applyGifUrl(gifInput)}
+            onSelect={selectGif}
+            hasGif={Boolean(gifUrl)}
+            disabled={submitting}
+          />
           <Button
             type="button"
             variant="ghost"

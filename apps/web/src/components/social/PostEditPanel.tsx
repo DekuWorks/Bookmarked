@@ -260,15 +260,12 @@ export function PostEditPanel({ post, viewerId, onSaved, onCancel }: Props) {
         >
           Attach image
         </Button>
-      </div>
-
-      <div className="rounded-lg border border-border bg-background/50 px-3 py-3">
-        <p className="mb-3 text-sm font-medium text-text">Add a GIF (optional)</p>
         <GifSearchPicker
           gifInput={gifInput}
           onGifInputChange={setGifInput}
           onGifInputBlur={() => applyGifUrl(gifInput)}
           onSelect={selectGif}
+          hasGif={Boolean(gifUrl)}
           disabled={saving}
         />
       </div>

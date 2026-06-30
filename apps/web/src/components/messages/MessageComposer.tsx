@@ -1,8 +1,10 @@
 "use client";
 
-import { useId, useRef, useState, type KeyboardEvent } from "react";
+import { useState, type KeyboardEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Input";
+import { GifSearchPicker } from "@/components/social/GifSearchPicker";
+import { useCommentAttachment } from "@/components/social/CommentAttachmentControls";
 import {
   uploadMessageAttachment,
   validateMessageAttachmentFile,
@@ -15,58 +17,29 @@ type Props = {
 };
 
 export function MessageComposer({ conversationId, onSend, disabled }: Props) {
-  const inputId = useId();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [body, setBody] = useState("");
-  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
-  const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  function clearAttachment() {
-    setAttachmentFile(null);
-    if (attachmentPreview) {
-      URL.revokeObjectURL(attachmentPreview);
-    }
-    setAttachmentPreview(null);
-  }
-
-  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-
-    const validationError = validateMessageAttachmentFile(file);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
-    setError(null);
-    clearAttachment();
-    setAttachmentFile(file);
-    setAttachmentPreview(URL.createObjectURL(file));
-  }
+  const attachment = useCommentAttachment({
+    validateFile: validateMessageAttachmentFile,
+    uploadImage: (file) => uploadMessageAttachment(conversationId, file),
+  });
 
   async function handleSend() {
     const trimmed = body.trim();
-    if ((!trimmed && !attachmentFile) || sending) return;
+    if ((!trimmed && !attachment.hasAttachment) || sending) return;
 
     setSending(true);
     setError(null);
 
-    let attachmentUrl: string | null = null;
-    if (attachmentFile) {
-      const uploadResult = await uploadMessageAttachment(conversationId, attachmentFile);
-      if (uploadResult.error) {
-        setSending(false);
-        setError(uploadResult.error);
-        return;
-      }
-      attachmentUrl = uploadResult.url ?? null;
+    const attachmentResult = await attachment.resolveAttachmentUrl();
+    if (attachmentResult.error) {
+      setSending(false);
+      setError(attachmentResult.error);
+      return;
     }
 
-    const result = await onSend(trimmed, attachmentUrl);
+    const result = await onSend(trimmed, attachmentResult.url);
     setSending(false);
 
     if (result.error) {
@@ -75,7 +48,7 @@ export function MessageComposer({ conversationId, onSend, disabled }: Props) {
     }
 
     setBody("");
-    clearAttachment();
+    attachment.clearAttachment();
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -85,22 +58,23 @@ export function MessageComposer({ conversationId, onSend, disabled }: Props) {
     }
   }
 
-  const canSend = Boolean(body.trim() || attachmentFile);
+  const canSend = Boolean(body.trim() || attachment.hasAttachment);
+  const isDisabled = disabled || sending;
 
   return (
     <div className="sticky bottom-0 border-t border-border bg-surface px-4 py-3">
       <div className="mx-auto flex max-w-3xl flex-col gap-2">
-        {attachmentPreview ? (
+        {attachment.imagePreview ? (
           <div className="relative inline-block w-fit">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={attachmentPreview}
+              src={attachment.imagePreview}
               alt="Attachment preview"
               className="max-h-40 rounded-lg border border-border object-cover"
             />
             <button
               type="button"
-              onClick={clearAttachment}
+              onClick={attachment.clearAttachment}
               className="absolute -right-2 -top-2 rounded-full bg-surface px-2 py-0.5 text-xs shadow-sm ring-1 ring-border"
               aria-label="Remove attachment"
             >
@@ -109,22 +83,41 @@ export function MessageComposer({ conversationId, onSend, disabled }: Props) {
           </div>
         ) : null}
 
+        {attachment.gifUrl && !attachment.imagePreview ? (
+          <div className="relative inline-block w-fit max-w-full">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={attachment.gifUrl}
+              alt="GIF preview"
+              className="max-h-40 rounded-lg border border-border object-contain bg-background"
+            />
+            <button
+              type="button"
+              onClick={attachment.clearAttachment}
+              className="absolute -right-2 -top-2 rounded-full bg-surface px-2 py-0.5 text-xs shadow-sm ring-1 ring-border"
+              aria-label="Remove GIF"
+            >
+              Remove
+            </button>
+          </div>
+        ) : null}
+
         <div className="flex items-end gap-2">
           <input
-            ref={fileInputRef}
-            id={inputId}
+            ref={attachment.fileInputRef}
+            id={attachment.inputId}
             type="file"
             accept="image/jpeg,image/png,image/webp,image/gif"
             className="sr-only"
-            onChange={handleFileChange}
-            disabled={disabled || sending}
+            onChange={attachment.handleFileChange}
+            disabled={isDisabled}
           />
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={disabled || sending}
+            onClick={() => attachment.fileInputRef.current?.click()}
+            disabled={isDisabled || Boolean(attachment.gifUrl)}
             aria-label="Attach image"
           >
             Attach
@@ -137,10 +130,19 @@ export function MessageComposer({ conversationId, onSend, disabled }: Props) {
             onKeyDown={handleKeyDown}
             placeholder="Write a message…"
             rows={2}
-            disabled={disabled || sending}
+            disabled={isDisabled}
             className="min-h-[72px] flex-1 resize-none"
           />
         </div>
+
+        <GifSearchPicker
+          gifInput={attachment.gifInput}
+          onGifInputChange={attachment.setGifInput}
+          onGifInputBlur={() => attachment.applyGifUrl(attachment.gifInput)}
+          onSelect={attachment.selectGif}
+          hasGif={Boolean(attachment.gifUrl)}
+          disabled={isDisabled}
+        />
 
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs text-text-muted">Enter to send · Shift+Enter for new line</p>

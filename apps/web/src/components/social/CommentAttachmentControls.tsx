@@ -8,7 +8,18 @@ import type { GiphySearchResult } from "@/lib/services/giphy";
 import { uploadPostImage, validatePostImageFile } from "@/lib/services/posts";
 import { isAllowedPostImageUrl, resolveGiphyImageUrl } from "@/lib/utils/giphy";
 
-export function useCommentAttachment() {
+type AttachmentUploadResult = { url?: string; error?: string };
+
+type UseCommentAttachmentOptions = {
+  validateFile?: (file: File) => string | null;
+  uploadImage?: (file: File) => Promise<AttachmentUploadResult>;
+};
+
+export function useCommentAttachment(options?: UseCommentAttachmentOptions) {
+  const validateFile = options?.validateFile ?? validatePostImageFile;
+  const uploadImage =
+    options?.uploadImage ??
+    (async (file: File) => uploadPostImage(file));
   const toast = useToast();
   const inputId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -38,7 +49,7 @@ export function useCommentAttachment() {
     event.target.value = "";
     if (!file) return;
 
-    const validationError = validatePostImageFile(file);
+    const validationError = validateFile(file);
     if (validationError) {
       toast.error(validationError);
       return;
@@ -81,7 +92,7 @@ export function useCommentAttachment() {
 
   async function resolveAttachmentUrl(): Promise<{ url: string | null; error?: string }> {
     if (imageFile) {
-      const uploadResult = await uploadPostImage(imageFile);
+      const uploadResult = await uploadImage(imageFile);
       if (uploadResult.error) return { url: null, error: uploadResult.error };
       return { url: uploadResult.url ?? null };
     }
@@ -184,15 +195,12 @@ export function CommentAttachmentControls({
         >
           Attach image
         </Button>
-      </div>
-
-      <div className="rounded-lg border border-border bg-background/50 px-3 py-3">
-        <p className="mb-3 text-sm font-medium text-text">Add a GIF (optional)</p>
         <GifSearchPicker
           gifInput={gifInput}
           onGifInputChange={setGifInput}
           onGifInputBlur={() => applyGifUrl(gifInput)}
           onSelect={selectGif}
+          hasGif={Boolean(gifUrl)}
           disabled={disabled}
         />
       </div>
