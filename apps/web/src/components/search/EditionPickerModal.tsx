@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
+import { EDITION_PAGE_SIZE } from "@/lib/constants/searchFilters";
 import {
   fetchWorkEditions,
   type OpenLibraryEditionSummary,
@@ -19,22 +20,67 @@ type Props = {
 
 export function EditionPickerModal({ open, workId, workTitle, onClose, onSelect }: Props) {
   const [editions, setEditions] = useState<OpenLibraryEditionSummary[] | null>(null);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
+
+  const loadEditions = useCallback(
+    async (offset: number, append: boolean) => {
+      if (append) {
+        setLoadingMore(true);
+        setLoadMoreError(null);
+      } else {
+        setLoading(true);
+        setError(null);
+        setLoadMoreError(null);
+      }
+
+      try {
+        const result = await fetchWorkEditions(workId, {
+          limit: EDITION_PAGE_SIZE,
+          offset,
+        });
+
+        setTotal(result.total);
+        setEditions((prev) => {
+          if (!append) return result.editions;
+          const seen = new Set((prev ?? []).map((edition) => edition.editionKey));
+          const next = result.editions.filter((edition) => !seen.has(edition.editionKey));
+          return [...(prev ?? []), ...next];
+        });
+
+        if (!append && result.editions.length === 0) {
+          setError("No editions found for this work.");
+        }
+      } catch {
+        if (append) {
+          setLoadMoreError("Could not load more editions. Try again.");
+        } else {
+          setEditions(null);
+          setTotal(0);
+          setError("Could not load editions. Try again.");
+        }
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [workId]
+  );
 
   useEffect(() => {
     if (!open || !workId) return;
 
     setEditions(null);
+    setTotal(0);
     setError(null);
-    void fetchWorkEditions(workId)
-      .then((items) => {
-        setEditions(items);
-        if (items.length === 0) {
-          setError("No editions found for this work.");
-        }
-      })
-      .catch(() => setError("Could not load editions. Try again."));
-  }, [open, workId]);
+    setLoadMoreError(null);
+    void loadEditions(0, false);
+  }, [open, workId, loadEditions]);
+
+  const hasMore = editions !== null && editions.length < total;
 
   return (
     <Modal open={open} onClose={onClose} title="Choose an edition" className="max-w-lg">
@@ -43,7 +89,7 @@ export function EditionPickerModal({ open, workId, workTitle, onClose, onSelect 
         before adding to your shelf.
       </p>
 
-      {editions === null && !error ? (
+      {loading && editions === null && !error ? (
         <p className="text-sm text-text-muted">Loading editions…</p>
       ) : null}
 
@@ -54,31 +100,61 @@ export function EditionPickerModal({ open, workId, workTitle, onClose, onSelect 
       ) : null}
 
       {editions && editions.length > 0 ? (
-        <ul className="max-h-[50vh] space-y-2 overflow-y-auto" role="listbox" aria-label="Editions">
-          {editions.map((edition) => (
-            <li key={edition.editionKey}>
-              <button
+        <>
+          <p className="mb-3 text-xs text-text-muted">
+            Showing {editions.length.toLocaleString()} of {total.toLocaleString()} editions
+          </p>
+          <ul className="max-h-[50vh] space-y-2 overflow-y-auto" role="listbox" aria-label="Editions">
+            {editions.map((edition) => (
+              <li key={edition.editionKey}>
+                <button
+                  type="button"
+                  role="option"
+                  onClick={() => {
+                    onSelect(edition);
+                    onClose();
+                  }}
+                  className={cn(
+                    "flex w-full flex-col gap-1 rounded-lg border border-border bg-background px-4 py-3 text-left transition",
+                    "hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
+                  )}
+                >
+                  <span className="font-medium text-text">{edition.title}</span>
+                  <span className="text-xs text-text-muted">
+                    {[
+                      edition.publishDate,
+                      edition.publisher,
+                      edition.pageCount ? `${edition.pageCount} pp` : null,
+                      edition.isbn ? `ISBN ${edition.isbn}` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ") || "Edition details unavailable"}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          {hasMore ? (
+            <div className="mt-3 flex justify-center">
+              <Button
                 type="button"
-                role="option"
-                onClick={() => {
-                  onSelect(edition);
-                  onClose();
-                }}
-                className={cn(
-                  "flex w-full flex-col gap-1 rounded-lg border border-border bg-background px-4 py-3 text-left transition",
-                  "hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
-                )}
+                variant="outline"
+                size="sm"
+                loading={loadingMore}
+                onClick={() => void loadEditions(editions.length, true)}
               >
-                <span className="font-medium text-text">{edition.title}</span>
-                <span className="text-xs text-text-muted">
-                  {[edition.publishDate, edition.publisher, edition.pageCount ? `${edition.pageCount} pp` : null, edition.isbn ? `ISBN ${edition.isbn}` : null]
-                    .filter(Boolean)
-                    .join(" · ") || "Edition details unavailable"}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
+                Load more editions
+              </Button>
+            </div>
+          ) : null}
+
+          {loadMoreError ? (
+            <p className="mt-2 text-center text-sm text-rust" role="alert">
+              {loadMoreError}
+            </p>
+          ) : null}
+        </>
       ) : null}
 
       <div className="mt-4 flex justify-end">

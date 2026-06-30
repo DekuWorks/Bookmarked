@@ -1,4 +1,5 @@
 export const SEARCH_PAGE_SIZE = 12;
+export const EDITION_PAGE_SIZE = 15;
 
 export const SEARCH_LANGUAGE_OPTIONS = [
   { value: "", label: "Any language" },

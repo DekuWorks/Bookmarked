@@ -1,6 +1,6 @@
 import type { OpenLibraryDoc } from "@/types";
 import { formatIsbnForSearch, isIsbnQuery } from "@/lib/utils/isbn";
-import { SEARCH_PAGE_SIZE } from "@/lib/constants/searchFilters";
+import { EDITION_PAGE_SIZE, SEARCH_PAGE_SIZE } from "@/lib/constants/searchFilters";
 
 const SEARCH_URL = "https://openlibrary.org/search.json";
 
@@ -132,49 +132,65 @@ export type OpenLibraryEditionSummary = {
   coverId: number | null;
 };
 
+type OpenLibraryEditionListEntry = {
+  key?: string;
+  title?: string;
+  full_title?: string;
+  isbn_10?: string[];
+  isbn_13?: string[];
+  publishers?: string[];
+  publish_date?: string;
+  number_of_pages?: number;
+  covers?: number[];
+};
+
+export type FetchWorkEditionsOptions = {
+  limit?: number;
+  offset?: number;
+};
+
+export type OpenLibraryEditionsResult = {
+  editions: OpenLibraryEditionSummary[];
+  total: number;
+};
+
+function parseEditionListEntry(entry: OpenLibraryEditionListEntry): OpenLibraryEditionSummary | null {
+  if (!entry.key) return null;
+
+  const isbn = entry.isbn_13?.[0] ?? entry.isbn_10?.[0] ?? null;
+
+  return {
+    editionKey: entry.key,
+    title: entry.title ?? entry.full_title ?? "Untitled",
+    isbn,
+    publisher: entry.publishers?.[0] ?? null,
+    publishDate: entry.publish_date ?? null,
+    pageCount: entry.number_of_pages ?? null,
+    coverId: entry.covers?.[0] ?? null,
+  };
+}
+
 export async function fetchWorkEditions(
   workId: string,
-  limit = 20
-): Promise<OpenLibraryEditionSummary[]> {
+  options: FetchWorkEditionsOptions = {}
+): Promise<OpenLibraryEditionsResult> {
+  const limit = options.limit ?? EDITION_PAGE_SIZE;
+  const offset = options.offset ?? 0;
   const workPath = workId.startsWith("/works/") ? workId : `/works/${workId}`;
   const list = await fetchOpenLibraryJson<{
-    entries?: Array<{ key?: string; title?: string }>;
-  }>(`${workPath}/editions.json?limit=${limit}`);
+    size?: number;
+    entries?: OpenLibraryEditionListEntry[];
+  }>(`${workPath}/editions.json?limit=${limit}&offset=${offset}`);
 
   const entries = list?.entries ?? [];
-  if (entries.length === 0) return [];
+  const editions = entries
+    .map(parseEditionListEntry)
+    .filter((edition): edition is OpenLibraryEditionSummary => edition !== null);
 
-  const details = await Promise.all(
-    entries.slice(0, limit).map(async (entry) => {
-      if (!entry.key) return null;
-
-      const edition = await fetchOpenLibraryJson<{
-        title?: string;
-        isbn_10?: string[];
-        isbn_13?: string[];
-        publishers?: string[];
-        publish_date?: string;
-        number_of_pages?: number;
-        covers?: number[];
-      }>(`${entry.key}.json`);
-
-      if (!edition) return null;
-
-      const isbn = edition.isbn_13?.[0] ?? edition.isbn_10?.[0] ?? null;
-
-      return {
-        editionKey: entry.key,
-        title: edition.title ?? entry.title ?? "Untitled",
-        isbn,
-        publisher: edition.publishers?.[0] ?? null,
-        publishDate: edition.publish_date ?? null,
-        pageCount: edition.number_of_pages ?? null,
-        coverId: edition.covers?.[0] ?? null,
-      } satisfies OpenLibraryEditionSummary;
-    })
-  );
-
-  return details.filter((d): d is OpenLibraryEditionSummary => d !== null);
+  return {
+    editions,
+    total: list?.size ?? editions.length,
+  };
 }
 
 export function openLibraryCoverUrl(coverId?: number): string | null {

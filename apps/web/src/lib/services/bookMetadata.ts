@@ -68,7 +68,7 @@ async function findOpenLibraryEditionCoverId(
   workId: string,
   isbn?: string | null
 ): Promise<number | null> {
-  const editions = await fetchWorkEditions(workId, 20);
+  const { editions } = await fetchWorkEditions(workId, { limit: 20 });
   const targetIsbn = normalizeIsbn(isbn);
 
   if (targetIsbn) {
