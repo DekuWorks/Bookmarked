@@ -4,6 +4,7 @@ import Link from "next/link";
 import { UserAvatar } from "@/components/messages/UserAvatar";
 import { notificationHref } from "@/lib/routes/activity";
 import { formatNotificationTimestamp } from "@/lib/services/notifications";
+import { usePreferredLocale } from "@/lib/hooks/usePreferredLocale";
 import type { NotificationWithActor } from "@/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -26,6 +27,7 @@ function notificationTypeLabel(type: NotificationWithActor["type"]): string {
 }
 
 export function NotificationItem({ notification, onRead }: Props) {
+  const locale = usePreferredLocale();
   const isUnread = !notification.read_at;
   const href = notificationHref(notification);
 
@@ -57,7 +59,7 @@ export function NotificationItem({ notification, onRead }: Props) {
             {notification.title}
           </p>
           <span className="shrink-0 text-xs text-text-muted">
-            {formatNotificationTimestamp(notification.created_at)}
+            {formatNotificationTimestamp(notification.created_at, locale)}
           </span>
         </div>
         <p className="mt-0.5 text-sm text-text-muted">{notification.body}</p>

@@ -716,7 +716,7 @@ export function conversationDisplayName(
   );
 }
 
-export function formatMessageTimestamp(iso: string): string {
+export function formatMessageTimestamp(iso: string, locale?: string): string {
   const date = new Date(iso);
   const now = new Date();
   const sameDay =
@@ -725,10 +725,10 @@ export function formatMessageTimestamp(iso: string): string {
     date.getDate() === now.getDate();
 
   if (sameDay) {
-    return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+    return date.toLocaleTimeString(locale, { hour: "numeric", minute: "2-digit" });
   }
 
-  return date.toLocaleDateString(undefined, {
+  return date.toLocaleDateString(locale, {
     month: "short",
     day: "numeric",
     hour: "numeric",

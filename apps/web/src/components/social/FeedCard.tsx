@@ -9,6 +9,8 @@ import { readerProfilePath } from "@/lib/routes/reader";
 import { bookDetailsPath } from "@/lib/routes/book";
 import { isFeedEligibleEvent } from "@/lib/services/activity";
 import type { FeedItem } from "@/lib/services/socialFeed";
+import { usePreferredLocale } from "@/lib/hooks/usePreferredLocale";
+import { formatFeedTimestamp } from "@/lib/utils/locale";
 
 type Props = {
   item: FeedItem;
@@ -24,6 +26,7 @@ function readerHref(item: FeedItem): string | null {
 }
 
 export function FeedCard({ item }: Props) {
+  const locale = usePreferredLocale();
   const profileHref = readerHref(item);
   const activityHref = feedItemHref(item);
   const showBookCover =
@@ -83,12 +86,7 @@ export function FeedCard({ item }: Props) {
         </p>
         <p className="mt-1 text-xs text-text-muted">
           <time suppressHydrationWarning dateTime={item.created_at}>
-            {new Date(item.created_at).toLocaleString(undefined, {
-              month: "short",
-              day: "numeric",
-              hour: "numeric",
-              minute: "2-digit",
-            })}
+            {formatFeedTimestamp(item.created_at, locale)}
           </time>
         </p>
         {item.bookAuthor ? (

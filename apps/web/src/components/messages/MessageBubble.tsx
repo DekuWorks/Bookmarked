@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Input";
 import { formatMessageTimestamp } from "@/lib/services/messages";
+import { usePreferredLocale } from "@/lib/hooks/usePreferredLocale";
 import { profileDisplayName } from "@/lib/utils/messaging";
 import type { MessageWithSender } from "@/types";
 import { cn } from "@/lib/utils/cn";
@@ -17,6 +18,7 @@ type Props = {
 };
 
 export function MessageBubble({ message, isOwn, showSenderName, onDelete, onEdit }: Props) {
+  const locale = usePreferredLocale();
   const deleted = Boolean(message.deleted_at);
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(message.body);
@@ -150,7 +152,7 @@ export function MessageBubble({ message, isOwn, showSenderName, onDelete, onEdit
       </div>
 
       <time dateTime={message.created_at} className="px-1 text-[11px] text-text-muted">
-        {formatMessageTimestamp(message.created_at)}
+        {formatMessageTimestamp(message.created_at, locale)}
         {edited ? " · edited" : ""}
       </time>
     </div>

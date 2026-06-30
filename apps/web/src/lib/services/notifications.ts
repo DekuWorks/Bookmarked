@@ -470,7 +470,7 @@ export async function createMentionNotification(input: {
   });
 }
 
-export function formatNotificationTimestamp(iso: string): string {
+export function formatNotificationTimestamp(iso: string, locale?: string): string {
   const date = new Date(iso);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -482,5 +482,5 @@ export function formatNotificationTimestamp(iso: string): string {
   const diffHours = Math.floor(diffMins / 60);
   if (diffHours < 24) return `${diffHours}h ago`;
 
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return date.toLocaleDateString(locale, { month: "short", day: "numeric" });
 }

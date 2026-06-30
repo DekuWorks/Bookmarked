@@ -23,6 +23,8 @@ import {
 import type { ReactionCounts } from "@/types";
 import type { ThreadNode } from "@/lib/utils/threadReplies";
 import type { ReviewReplyWithAuthor } from "@/types";
+import { usePreferredLocale } from "@/lib/hooks/usePreferredLocale";
+import { formatReviewDate } from "@/lib/utils/locale";
 
 type ReviewReplyNode = Omit<ReviewReplyWithAuthor, "children">;
 
@@ -80,6 +82,7 @@ export function ReviewCard({
   onReviewChange,
 }: Props) {
   const toast = useToast();
+  const locale = usePreferredLocale();
   const [isEditing, setIsEditing] = useState(false);
   const [editRating, setEditRating] = useState(rating ? Number(rating) : 0);
   const [editBody, setEditBody] = useState(reviewBody ?? "");
@@ -289,7 +292,7 @@ export function ReviewCard({
       {createdAt && !isEditing ? (
         <p className="mt-2 text-xs text-text-muted">
           <time suppressHydrationWarning dateTime={createdAt}>
-            {new Date(createdAt).toLocaleDateString()}
+            {formatReviewDate(createdAt, locale)}
           </time>
         </p>
       ) : null}

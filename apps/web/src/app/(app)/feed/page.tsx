@@ -11,6 +11,7 @@ import { PostComposer } from "@/components/social/PostComposer";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { useActivityFeedRealtime } from "@/lib/hooks/useActivityFeedRealtime";
 import { usePostsRealtime } from "@/lib/hooks/usePostsRealtime";
 import { searchFeed, type FeedSearchResults as FeedSearchData } from "@/lib/services/feedSearch";
 import { getProfile } from "@/lib/services/profile";
@@ -78,10 +79,15 @@ function FeedContent() {
   }, [user, tab]);
 
   const loadPostsRef = useRef(loadPosts);
+  const loadActivityRef = useRef(loadActivity);
 
   useEffect(() => {
     loadPostsRef.current = loadPosts;
   }, [loadPosts]);
+
+  useEffect(() => {
+    loadActivityRef.current = loadActivity;
+  }, [loadActivity]);
 
   useEffect(() => {
     if (!user || isSearching) return;
@@ -106,6 +112,10 @@ function FeedContent() {
 
   usePostsRealtime(user?.id, feedView === "posts" && !isSearching, () => {
     void loadPostsRef.current();
+  });
+
+  useActivityFeedRealtime(user?.id, feedView === "activity" && !isSearching, () => {
+    void loadActivityRef.current();
   });
 
   useEffect(() => {

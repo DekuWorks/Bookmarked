@@ -20,6 +20,9 @@ import {
 } from "@/lib/services/posts";
 import type { PostWithAuthor } from "@/types";
 import { PostCommentSection } from "@/components/social/PostCommentSection";
+import { usePreferredLocale } from "@/lib/hooks/usePreferredLocale";
+import { isGiphyImageUrl } from "@/lib/utils/giphy";
+import { formatFeedTimestamp } from "@/lib/utils/locale";
 import { cn } from "@/lib/utils/cn";
 
 type Props = {
@@ -80,6 +83,7 @@ function RepostPreview({ post }: { post: PostWithAuthor }) {
 
 export function PostCard({ post, viewerId, highlighted = false, onPostChange }: Props) {
   const toast = useToast();
+  const locale = usePreferredLocale();
   const [expanded, setExpanded] = useState(false);
   const [localPost, setLocalPost] = useState(post);
   const [liking, setLiking] = useState(false);
@@ -203,12 +207,7 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
               )}
               <p className="text-xs text-text-muted">
                 <time suppressHydrationWarning dateTime={localPost.created_at}>
-                  {new Date(localPost.created_at).toLocaleString(undefined, {
-                    month: "short",
-                    day: "numeric",
-                    hour: "numeric",
-                    minute: "2-digit",
-                  })}
+                  {formatFeedTimestamp(localPost.created_at, locale)}
                 </time>
               </p>
             </div>
@@ -247,8 +246,13 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={localPost.image_url}
-                alt="Post image"
-                className="max-h-96 w-full object-cover"
+                alt={isGiphyImageUrl(localPost.image_url) ? "Post GIF" : "Post image"}
+                className={cn(
+                  "w-full",
+                  isGiphyImageUrl(localPost.image_url)
+                    ? "max-h-96 object-contain bg-background"
+                    : "max-h-96 object-cover"
+                )}
               />
             </a>
           ) : null}

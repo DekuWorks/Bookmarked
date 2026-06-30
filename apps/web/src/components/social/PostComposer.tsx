@@ -6,6 +6,8 @@ import { Input, Textarea } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { getUserLibraryBooks, type LibraryBookRow } from "@/lib/services/library";
 import { createPost, uploadPostImage, validatePostImageFile } from "@/lib/services/posts";
+import { isGiphySearchConfigured, searchGiphy, type GiphySearchResult } from "@/lib/services/giphy";
+import { isAllowedPostImageUrl, resolveGiphyImageUrl } from "@/lib/utils/giphy";
 
 type Props = {
   userId: string;
@@ -42,6 +44,12 @@ export function PostComposer({ userId, onPostCreated }: Props) {
   const [recentBooks, setRecentBooks] = useState<LibraryBookRow[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [gifUrl, setGifUrl] = useState<string | null>(null);
+  const [gifInput, setGifInput] = useState("");
+  const [gifSearchQuery, setGifSearchQuery] = useState("");
+  const [gifSearchResults, setGifSearchResults] = useState<GiphySearchResult[]>([]);
+  const [gifSearchLoading, setGifSearchLoading] = useState(false);
+  const gifSearchEnabled = isGiphySearchConfigured();
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -50,12 +58,36 @@ export function PostComposer({ userId, onPostCreated }: Props) {
       .catch(() => setRecentBooks([]));
   }, [userId]);
 
+  useEffect(() => {
+    const query = gifSearchQuery.trim();
+    if (!query || !gifSearchEnabled) {
+      setGifSearchResults([]);
+      setGifSearchLoading(false);
+      return;
+    }
+
+    const handle = window.setTimeout(() => {
+      setGifSearchLoading(true);
+      void searchGiphy(query)
+        .then(setGifSearchResults)
+        .catch(() => setGifSearchResults([]))
+        .finally(() => setGifSearchLoading(false));
+    }, 350);
+
+    return () => window.clearTimeout(handle);
+  }, [gifSearchQuery, gifSearchEnabled]);
+
   function clearImage() {
     setImageFile(null);
     if (imagePreview) {
       URL.revokeObjectURL(imagePreview);
     }
     setImagePreview(null);
+  }
+
+  function clearGif() {
+    setGifUrl(null);
+    setGifInput("");
   }
 
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -69,21 +101,53 @@ export function PostComposer({ userId, onPostCreated }: Props) {
       return;
     }
 
+    clearGif();
     clearImage();
     setImageFile(file);
     setImagePreview(URL.createObjectURL(file));
   }
 
+  function applyGifUrl(raw: string) {
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      clearGif();
+      return;
+    }
+
+    if (!isAllowedPostImageUrl(trimmed)) {
+      toast.error("Paste a valid Giphy link (giphy.com or media.giphy.com).");
+      return;
+    }
+
+    const resolved = resolveGiphyImageUrl(trimmed);
+    if (!resolved) {
+      toast.error("Could not read that Giphy link.");
+      return;
+    }
+
+    clearImage();
+    setGifUrl(resolved);
+    setGifInput(trimmed);
+  }
+
+  function selectGif(result: GiphySearchResult) {
+    clearImage();
+    setGifUrl(result.imageUrl);
+    setGifInput(result.imageUrl);
+    setGifSearchQuery("");
+    setGifSearchResults([]);
+  }
+
   async function handleSubmit() {
     const trimmed = body.trim();
-    if (!trimmed && !imageFile) {
-      toast.error("Write something or attach an image before posting.");
+    if (!trimmed && !imageFile && !gifUrl) {
+      toast.error("Write something or attach an image or GIF before posting.");
       return;
     }
 
     setSubmitting(true);
 
-    let imageUrl: string | null = null;
+    let imageUrl: string | null = gifUrl;
     if (imageFile) {
       const uploadResult = await uploadPostImage(imageFile);
       if (uploadResult.error) {
@@ -112,8 +176,13 @@ export function PostComposer({ userId, onPostCreated }: Props) {
     setBookInput("");
     setSelectedBookId(null);
     clearImage();
+    clearGif();
+    setGifSearchQuery("");
+    setGifSearchResults([]);
     onPostCreated?.();
   }
+
+  const hasAttachment = Boolean(imageFile || gifUrl);
 
   return (
     <section className="rounded-xl border border-border bg-surface p-4 shadow-sm">
@@ -144,6 +213,73 @@ export function PostComposer({ userId, onPostCreated }: Props) {
           </button>
         </div>
       ) : null}
+
+      {gifUrl ? (
+        <div className="relative mb-3 inline-block w-fit max-w-full">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={gifUrl}
+            alt="Post GIF preview"
+            className="max-h-48 rounded-lg border border-border object-contain bg-background"
+          />
+          <button
+            type="button"
+            onClick={clearGif}
+            className="absolute -right-2 -top-2 rounded-full bg-surface px-2 py-0.5 text-xs shadow-sm ring-1 ring-border"
+            aria-label="Remove GIF"
+          >
+            Remove
+          </button>
+        </div>
+      ) : null}
+
+      <details className="mb-3 rounded-lg border border-border bg-background/50 px-3 py-2">
+        <summary className="cursor-pointer text-sm font-medium text-text">Add a GIF (optional)</summary>
+        <div className="mt-3 space-y-3">
+          <Input
+            label="Giphy URL"
+            value={gifInput}
+            onChange={(e) => setGifInput(e.target.value)}
+            onBlur={() => applyGifUrl(gifInput)}
+            placeholder="Paste a giphy.com link"
+            className="mb-0"
+          />
+          {gifSearchEnabled ? (
+            <div>
+              <Input
+                label="Search Giphy"
+                value={gifSearchQuery}
+                onChange={(e) => setGifSearchQuery(e.target.value)}
+                placeholder="Search for a GIF"
+                className="mb-0"
+              />
+              {gifSearchLoading ? (
+                <p className="mt-2 text-xs text-text-muted">Searching…</p>
+              ) : gifSearchResults.length > 0 ? (
+                <ul className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                  {gifSearchResults.map((result) => (
+                    <li key={result.id}>
+                      <button
+                        type="button"
+                        onClick={() => selectGif(result)}
+                        className="block w-full overflow-hidden rounded-md border border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
+                        title={result.title}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={result.previewUrl}
+                          alt={result.title}
+                          className="aspect-square w-full object-cover"
+                        />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      </details>
 
       <details className="mb-3 rounded-lg border border-border bg-background/50 px-3 py-2">
         <summary className="cursor-pointer text-sm font-medium text-text">
@@ -209,7 +345,7 @@ export function PostComposer({ userId, onPostCreated }: Props) {
             variant="ghost"
             size="sm"
             onClick={() => fileInputRef.current?.click()}
-            disabled={submitting}
+            disabled={submitting || Boolean(gifUrl)}
             aria-label="Attach image"
           >
             Attach image
@@ -220,7 +356,7 @@ export function PostComposer({ userId, onPostCreated }: Props) {
           variant="primary"
           size="sm"
           loading={submitting}
-          disabled={!body.trim() && !imageFile}
+          disabled={!body.trim() && !hasAttachment}
           onClick={() => void handleSubmit()}
         >
           Post
