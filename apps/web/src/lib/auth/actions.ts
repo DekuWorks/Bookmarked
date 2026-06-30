@@ -3,6 +3,7 @@ import {
   applyRememberMePreference,
   parseRememberMeFromForm,
 } from "@/lib/auth/rememberMe";
+import { parsePreferredLanguage } from "@/lib/constants/languages";
 
 export type AuthActionState = {
   error?: string;
@@ -90,6 +91,9 @@ export async function saveProfile(
     .split(",")
     .map((g) => g.trim())
     .filter(Boolean);
+  const preferred_language = parsePreferredLanguage(
+    String(formData.get("preferred_language") ?? "")
+  );
 
   const { error } = await supabase.from("profiles").upsert(
     {
@@ -98,6 +102,7 @@ export async function saveProfile(
       display_name,
       bio,
       favorite_genres,
+      preferred_language,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "id" }

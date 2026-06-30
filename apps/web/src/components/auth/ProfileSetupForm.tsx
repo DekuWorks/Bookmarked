@@ -7,6 +7,7 @@ import { saveProfile, type AuthActionState } from "@/lib/auth/actions";
 import { getProfile } from "@/lib/services/profile";
 import { createClient } from "@/lib/supabase/client";
 import { AvatarUpload } from "@/components/profile/AvatarUpload";
+import { PREFERRED_LANGUAGES } from "@/lib/constants/languages";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -88,6 +89,24 @@ export function ProfileSetupForm() {
         defaultValue={genresValue}
       />
       <p className="-mt-2 mb-4 text-xs text-text-muted">Separate genres with commas.</p>
+      <div className="mb-4">
+        <label htmlFor="preferred_language" className="mb-1.5 block text-sm font-medium text-text">
+          Preferred language
+        </label>
+        <select
+          id="preferred_language"
+          name="preferred_language"
+          defaultValue={profile?.preferred_language ?? "en"}
+          className="w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+        >
+          {PREFERRED_LANGUAGES.map(({ code, label }) => (
+            <option key={code} value={code}>
+              {label}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1 text-xs text-text-muted">UI translation coming soon.</p>
+      </div>
       {state.error ? (
         <p className="mb-4 text-sm text-rust" role="alert">
           {state.error}

@@ -1,30 +1,47 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { FeedCard } from "@/components/social/FeedCard";
 import { FeedSearchBar } from "@/components/social/FeedSearchBar";
 import { FeedSearchResults } from "@/components/social/FeedSearchResults";
+import { PostCard } from "@/components/social/PostCard";
+import { PostComposer } from "@/components/social/PostComposer";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { usePostsRealtime } from "@/lib/hooks/usePostsRealtime";
 import { searchFeed, type FeedSearchResults as FeedSearchData } from "@/lib/services/feedSearch";
 import { getProfile } from "@/lib/services/profile";
 import { fetchFollowingFeed, fetchForYouFeed } from "@/lib/services/socialFeed";
 import type { FeedItem } from "@/lib/services/socialFeed";
+import { getPostById, listFeedPosts } from "@/lib/services/posts";
+import type { PostWithAuthor } from "@/types";
 import { cn } from "@/lib/utils/cn";
 
+type FeedView = "posts" | "activity";
 type FeedTab = "for-you" | "following";
 
 import { layout } from "@/lib/constants/layout";
 
+function parseFeedView(value: string | null): FeedView {
+  return value === "activity" ? "activity" : "posts";
+}
+
+function parseFeedTab(value: string | null): FeedTab {
+  return value === "following" ? "following" : "for-you";
+}
+
 function FeedContent() {
   const user = useAuthUser();
   const searchParams = useSearchParams();
-  const initialTab = searchParams.get("tab") === "following" ? "following" : "for-you";
-  const [tab, setTab] = useState<FeedTab>(initialTab);
-  const [items, setItems] = useState<FeedItem[] | null>(null);
+  const feedView = parseFeedView(searchParams.get("view"));
+  const tab = parseFeedTab(searchParams.get("tab"));
+  const highlightedPostId = searchParams.get("post")?.trim() ?? null;
+
+  const [activityItems, setActivityItems] = useState<FeedItem[] | null>(null);
+  const [posts, setPosts] = useState<PostWithAuthor[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -42,26 +59,84 @@ function FeedContent() {
     return () => window.clearTimeout(handle);
   }, [searchQuery]);
 
+  const loadActivity = useCallback(async () => {
+    if (!user) return;
+
+    const profile = await getProfile(user.id);
+    const feed =
+      tab === "following"
+        ? await fetchFollowingFeed(user.id)
+        : await fetchForYouFeed(user.id, profile?.favorite_genres);
+    setActivityItems(feed);
+  }, [user, tab]);
+
+  const loadPosts = useCallback(async () => {
+    if (!user) return;
+
+    const feedPosts = await listFeedPosts(user.id, tab);
+    setPosts(feedPosts);
+  }, [user, tab]);
+
+  const loadPostsRef = useRef(loadPosts);
+
+  useEffect(() => {
+    loadPostsRef.current = loadPosts;
+  }, [loadPosts]);
+
   useEffect(() => {
     if (!user || isSearching) return;
 
-    setItems(null);
     setError(null);
 
-    void (async () => {
-      try {
-        const profile = await getProfile(user.id);
-        const feed =
-          tab === "following"
-            ? await fetchFollowingFeed(user.id)
-            : await fetchForYouFeed(user.id, profile?.favorite_genres);
-        setItems(feed);
-      } catch (err) {
+    if (feedView === "activity") {
+      setActivityItems(null);
+      void loadActivity().catch((err) => {
         setError(err instanceof Error ? err.message : "Could not load feed.");
-        setItems([]);
-      }
-    })();
-  }, [user, tab, isSearching]);
+        setActivityItems([]);
+      });
+      return;
+    }
+
+    setPosts(null);
+    void loadPosts().catch((err) => {
+      setError(err instanceof Error ? err.message : "Could not load posts.");
+      setPosts([]);
+    });
+  }, [user, tab, feedView, isSearching, loadActivity, loadPosts]);
+
+  usePostsRealtime(user?.id, feedView === "posts" && !isSearching, () => {
+    void loadPostsRef.current();
+  });
+
+  useEffect(() => {
+    if (!user || !highlightedPostId || feedView !== "posts" || isSearching) return;
+
+    void getPostById(highlightedPostId, user.id)
+      .then((post) => {
+        if (!post) return;
+        setPosts((current) => {
+          if (!current) return [post];
+          if (current.some((item) => item.id === post.id)) return current;
+          return [post, ...current];
+        });
+      })
+      .catch(() => {
+        // Deep-linked post may be unavailable to this viewer.
+      });
+  }, [user, highlightedPostId, feedView, isSearching]);
+
+  useEffect(() => {
+    if (!highlightedPostId || feedView !== "posts") return;
+
+    const handle = window.setTimeout(() => {
+      document.getElementById(`post-${highlightedPostId}`)?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 300);
+
+    return () => window.clearTimeout(handle);
+  }, [highlightedPostId, feedView, posts]);
 
   useEffect(() => {
     if (!user || !isSearching) {
@@ -89,12 +164,37 @@ function FeedContent() {
 
   if (!user) return null;
 
+  const viewOptions: { id: FeedView; label: string }[] = [
+    { id: "posts", label: "Posts" },
+    { id: "activity", label: "Activity" },
+  ];
+
+  const tabOptions: { id: FeedTab; label: string }[] = [
+    { id: "for-you", label: "For You" },
+    { id: "following", label: "Following" },
+  ];
+
+  function viewHref(nextView: FeedView): string {
+    const params = new URLSearchParams();
+    params.set("view", nextView);
+    if (tab !== "for-you") params.set("tab", tab);
+    return `/feed/?${params.toString()}`;
+  }
+
+  function tabHref(nextTab: FeedTab): string {
+    const params = new URLSearchParams();
+    if (feedView !== "posts") params.set("view", feedView);
+    if (nextTab !== "for-you") params.set("tab", nextTab);
+    const query = params.toString();
+    return query ? `/feed/?${query}` : "/feed/";
+  }
+
   return (
     <div className={layout.pageStack}>
       <header className={layout.pageHeader}>
         <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Feed</h1>
         <p className="mx-auto mt-1 max-w-xl text-pretty text-text-muted">
-          Discover readers and see what people you follow are reading.
+          Discover readers, follow posts, and see what people you follow are reading.
         </p>
       </header>
 
@@ -112,29 +212,46 @@ function FeedContent() {
           <div
             className="flex gap-2 rounded-lg border border-border bg-background p-1"
             role="tablist"
+            aria-label="Feed content"
+          >
+            {viewOptions.map((option) => (
+              <Link
+                key={option.id}
+                href={viewHref(option.id)}
+                role="tab"
+                aria-selected={feedView === option.id}
+                className={cn(
+                  "flex-1 rounded-md px-4 py-2 text-center text-sm font-semibold transition-colors",
+                  feedView === option.id
+                    ? "bg-primary text-puce-red shadow-sm"
+                    : "text-text-muted hover:text-text"
+                )}
+              >
+                {option.label}
+              </Link>
+            ))}
+          </div>
+
+          <div
+            className="flex gap-2 rounded-lg border border-border bg-background p-1"
+            role="tablist"
             aria-label="Feed type"
           >
-            {(
-              [
-                { id: "for-you" as const, label: "For You" },
-                { id: "following" as const, label: "Following" },
-              ] as const
-            ).map((option) => (
-              <button
+            {tabOptions.map((option) => (
+              <Link
                 key={option.id}
-                type="button"
+                href={tabHref(option.id)}
                 role="tab"
                 aria-selected={tab === option.id}
                 className={cn(
-                  "flex-1 rounded-md px-4 py-2 text-sm font-semibold transition-colors",
+                  "flex-1 rounded-md px-4 py-2 text-center text-sm font-semibold transition-colors",
                   tab === option.id
                     ? "bg-primary text-puce-red shadow-sm"
                     : "text-text-muted hover:text-text"
                 )}
-                onClick={() => setTab(option.id)}
               >
                 {option.label}
-              </button>
+              </Link>
             ))}
           </div>
 
@@ -144,9 +261,53 @@ function FeedContent() {
             </p>
           ) : null}
 
-          {!items ? (
-            <LoadingState message="Loading posts…" />
-          ) : items.length === 0 ? (
+          {feedView === "posts" ? (
+            <>
+              <PostComposer userId={user.id} onPostCreated={() => void loadPosts()} />
+
+              {!posts ? (
+                <LoadingState message="Loading posts…" />
+              ) : posts.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-border bg-background px-6 py-12 text-center">
+                  {tab === "following" ? (
+                    <>
+                      <p className="font-medium text-puce-red">No posts from people you follow</p>
+                      <p className="mt-2 text-sm text-text-muted">
+                        Follow readers to see their posts here, or share your first post above.
+                      </p>
+                      <div className="mt-6 flex flex-wrap justify-center gap-3">
+                        <ButtonLink href="/feed/?view=posts" variant="primary" size="sm">
+                          Browse For You
+                        </ButtonLink>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-medium text-puce-red">No posts yet</p>
+                      <p className="mt-2 text-sm text-text-muted">
+                        Be the first to share a reading thought, or follow more readers.
+                      </p>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <ul className="space-y-4">
+                  {posts.map((post) => (
+                    <li key={post.id}>
+                      <PostCard
+                        post={post}
+                        viewerId={user.id}
+                        highlighted={post.id === highlightedPostId}
+                        onPostChange={() => void loadPosts()}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          ) : !activityItems ? (
+            <LoadingState message="Loading activity…" />
+          ) : activityItems.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border bg-background px-6 py-12 text-center">
               {tab === "following" ? (
                 <>
@@ -156,7 +317,7 @@ function FeedContent() {
                     Use the search bar above to find people to follow.
                   </p>
                   <div className="mt-6 flex flex-wrap justify-center gap-3">
-                    <ButtonLink href="/feed/?tab=for-you" variant="primary" size="sm">
+                    <ButtonLink href="/feed/?view=activity" variant="primary" size="sm">
                       Browse For You
                     </ButtonLink>
                     <ButtonLink href="/search" variant="outline" size="sm">
@@ -181,7 +342,7 @@ function FeedContent() {
             </div>
           ) : (
             <ul className="space-y-4">
-              {items.map((item) => (
+              {activityItems.map((item) => (
                 <li key={item.id}>
                   <FeedCard item={item} />
                 </li>
@@ -189,7 +350,7 @@ function FeedContent() {
             </ul>
           )}
 
-          {tab === "for-you" && items && items.length > 0 ? (
+          {feedView === "activity" && tab === "for-you" && activityItems && activityItems.length > 0 ? (
             <p className="text-center text-xs text-text-muted">
               For You ranks public activity by recency, your genres, and readers you follow.{" "}
               <Link href="/profile/setup" className="text-primary hover:underline">

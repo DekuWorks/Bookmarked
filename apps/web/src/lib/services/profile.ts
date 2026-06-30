@@ -33,3 +33,20 @@ export async function getProfileByUsername(
 export function profileIsComplete(profile: Profile | null): boolean {
   return Boolean(profile?.username?.trim());
 }
+
+export async function updatePreferredLanguage(
+  userId: string,
+  preferredLanguage: Profile["preferred_language"]
+): Promise<{ error?: string }> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      preferred_language: preferredLanguage,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", userId);
+
+  if (error) return { error: error.message };
+  return {};
+}

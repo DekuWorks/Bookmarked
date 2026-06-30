@@ -20,6 +20,7 @@ import { FollowStats } from "@/components/social/FollowStats";
 import { AvatarUpload } from "@/components/profile/AvatarUpload";
 import { ProfileShelfPreview } from "@/components/profile/ProfileShelfPreview";
 import { ShelfPrivacyPanel } from "@/components/profile/ShelfPrivacyPanel";
+import { LanguagePreferencePanel } from "@/components/profile/LanguagePreferencePanel";
 import { NotificationPreferencesPanel } from "@/components/notifications/NotificationPreferencesPanel";
 import { getFollowCounts, type FollowCounts } from "@/lib/services/follows";
 import { readerProfilePath } from "@/lib/routes/reader";
@@ -177,6 +178,19 @@ export default function ProfilePage() {
       </section>
 
       {profile ? <ShelfPrivacyPanel profile={profile} /> : null}
+
+      {profile ? (
+        <LanguagePreferencePanel
+          profile={profile}
+          onLanguageChange={(preferred_language) =>
+            setData((current) =>
+              current && current.profile
+                ? { ...current, profile: { ...current.profile, preferred_language } }
+                : current
+            )
+          }
+        />
+      ) : null}
 
       {profile ? <NotificationPreferencesPanel profile={profile} /> : null}
 

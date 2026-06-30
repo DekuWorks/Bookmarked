@@ -6,6 +6,8 @@ export type ReviewVisibility = "public" | "followers" | "private";
 
 export type ShelfVisibility = "public" | "followers" | "private";
 
+export type PreferredLanguage = "en" | "es" | "fr" | "de";
+
 export interface UserShelf {
   id: string;
   user_id: string;
@@ -34,6 +36,7 @@ export interface Profile {
   notify_follows: boolean;
   notify_feed: boolean;
   notify_browser: boolean;
+  preferred_language: PreferredLanguage;
   created_at: string;
   updated_at: string;
 }
