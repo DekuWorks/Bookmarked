@@ -23,6 +23,7 @@ export type {
   NotificationPreferences,
   PostAuthor,
   Post,
+  PostDraft,
   PostComment,
   PostCommentWithAuthor,
   PostWithAuthor,

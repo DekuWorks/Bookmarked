@@ -157,6 +157,16 @@ export interface Post {
   updated_at: string;
 }
 
+export interface PostDraft {
+  id: string;
+  user_id: string;
+  body: string;
+  image_url: string | null;
+  book_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface PostComment {
   id: string;
   post_id: string;

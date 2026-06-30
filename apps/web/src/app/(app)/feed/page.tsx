@@ -295,7 +295,8 @@ function FeedContent() {
                     <>
                       <p className="font-medium text-puce-red">No posts yet</p>
                       <p className="mt-2 text-sm text-text-muted">
-                        Be the first to share a reading thought, or follow more readers.
+                        Be the first to share a reading thought in the composer above, save a draft
+                        for later, or follow more readers.
                       </p>
                     </>
                   )}
