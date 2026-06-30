@@ -32,6 +32,59 @@ function buildSearchQuery(rawQuery: string, options: OpenLibrarySearchOptions): 
   return q.trim();
 }
 
+/** Search Open Library for works by a specific author name. */
+export async function searchOpenLibraryByAuthor(
+  authorName: string,
+  options: OpenLibrarySearchOptions = {}
+): Promise<OpenLibrarySearchResult> {
+  const trimmed = authorName.trim();
+  if (!trimmed) {
+    return { docs: [], numFound: 0 };
+  }
+
+  const limit = options.limit ?? SEARCH_PAGE_SIZE;
+  const offset = options.offset ?? 0;
+
+  const params = new URLSearchParams({
+    author: trimmed,
+    limit: String(limit),
+    offset: String(offset),
+    fields:
+      "key,title,author_name,cover_i,first_publish_year,isbn,number_of_pages_median,first_sentence,subject,publisher,language",
+  });
+
+  if (options.language) {
+    params.set("language", options.language);
+  }
+
+  if (options.yearFrom != null && options.yearTo != null) {
+    params.set(
+      "q",
+      `first_publish_year:[${options.yearFrom} TO ${options.yearTo}]`
+    );
+  } else if (options.yearFrom != null) {
+    params.set("q", `first_publish_year:[${options.yearFrom} TO *]`);
+  } else if (options.yearTo != null) {
+    params.set("q", `first_publish_year:[* TO ${options.yearTo}]`);
+  }
+
+  if (options.sort) {
+    params.set("sort", options.sort);
+  }
+
+  const res = await fetch(`${SEARCH_URL}?${params}`);
+
+  if (!res.ok) {
+    throw new Error("Could not load books for this author. Try again.");
+  }
+
+  const json = (await res.json()) as OpenLibrarySearchResult;
+  return {
+    docs: json.docs ?? [],
+    numFound: json.numFound ?? 0,
+  };
+}
+
 export async function searchOpenLibrary(
   query: string,
   options: OpenLibrarySearchOptions = {}

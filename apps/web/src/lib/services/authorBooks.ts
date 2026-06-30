@@ -6,6 +6,7 @@ export type AuthorCatalogBook = {
   title: string;
   author: string | null;
   cover_url: string | null;
+  external_id: string | null;
 };
 
 export type AuthorLibraryBook = AuthorCatalogBook & {
@@ -20,13 +21,19 @@ function authorPattern(name: string): string {
   return `%${escapeIlike(name.trim())}%`;
 }
 
+export type AuthorBooksResult = {
+  libraryBooks: AuthorLibraryBook[];
+  catalogBooks: AuthorCatalogBook[];
+  knownExternalIds: Set<string>;
+};
+
 export async function getBooksByAuthor(
   authorName: string,
   userId: string
-): Promise<{ libraryBooks: AuthorLibraryBook[]; catalogBooks: AuthorCatalogBook[] }> {
+): Promise<AuthorBooksResult> {
   const trimmed = authorName.trim();
   if (!trimmed) {
-    return { libraryBooks: [], catalogBooks: [] };
+    return { libraryBooks: [], catalogBooks: [], knownExternalIds: new Set<string>() };
   }
 
   const pattern = authorPattern(trimmed);
@@ -35,13 +42,13 @@ export async function getBooksByAuthor(
   const [catalogResult, libraryResult] = await Promise.all([
     supabase
       .from("books")
-      .select("id, title, author, cover_url")
+      .select("id, title, author, cover_url, external_id")
       .ilike("author", pattern)
       .order("title", { ascending: true })
       .limit(50),
     supabase
       .from("user_books")
-      .select("shelf_status, books!inner(id, title, author, cover_url)")
+      .select("shelf_status, books!inner(id, title, author, cover_url, external_id)")
       .eq("user_id", userId)
       .ilike("books.author", pattern)
       .order("updated_at", { ascending: false })
@@ -69,5 +76,12 @@ export async function getBooksByAuthor(
     (book) => !libraryIds.has(book.id)
   );
 
-  return { libraryBooks, catalogBooks };
+  const knownExternalIds = new Set<string>();
+  for (const book of [...libraryBooks, ...catalogBooks]) {
+    if (book.external_id?.trim()) {
+      knownExternalIds.add(book.external_id.trim());
+    }
+  }
+
+  return { libraryBooks, catalogBooks, knownExternalIds };
 }

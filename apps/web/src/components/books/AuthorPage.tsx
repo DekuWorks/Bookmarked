@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { BookCard } from "@/components/books/BookCard";
+import { AuthorOpenLibrarySection } from "@/components/books/AuthorOpenLibrarySection";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
@@ -56,8 +57,8 @@ function AuthorPageContent() {
     );
   }
 
-  const { libraryBooks, catalogBooks } = data;
-  const totalCount = libraryBooks.length + catalogBooks.length;
+  const { libraryBooks, catalogBooks, knownExternalIds } = data;
+  const localCount = libraryBooks.length + catalogBooks.length;
 
   return (
     <div className="mx-auto max-w-5xl space-y-10">
@@ -70,9 +71,9 @@ function AuthorPageContent() {
           <CopyLinkButton path={authorPagePath(authorName)} label="Copy link" variant="outline" />
         </div>
         <p className="text-text-muted">
-          {totalCount === 0
-            ? "No books found for this author yet."
-            : `${totalCount} book${totalCount === 1 ? "" : "s"} in your library and catalog`}
+          {localCount === 0
+            ? "No books in your library or catalog yet — discover titles below."
+            : `${localCount} book${localCount === 1 ? "" : "s"} in your library and catalog`}
         </p>
       </header>
 
@@ -115,20 +116,20 @@ function AuthorPageContent() {
         </section>
       ) : null}
 
-      {totalCount === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-background px-6 py-12 text-center">
-          <p className="text-sm text-text-muted">
-            Try searching Open Library to add books by {authorName}.
+      <section className="space-y-4" aria-labelledby="author-open-library-heading">
+        <div className="text-center">
+          <h2 id="author-open-library-heading" className="text-xl font-semibold text-puce-red">
+            Discover on Open Library
+          </h2>
+          <p className="mt-1 text-sm text-text-muted">
+            Find more books by {authorName} and add them to your shelves.
           </p>
-          <ButtonLink
-            href={`/search/?q=${encodeURIComponent(authorName)}`}
-            variant="primary"
-            className="mt-4"
-          >
-            Search for {authorName}
-          </ButtonLink>
         </div>
-      ) : null}
+        <AuthorOpenLibrarySection
+          authorName={authorName}
+          knownExternalIds={knownExternalIds}
+        />
+      </section>
     </div>
   );
 }
