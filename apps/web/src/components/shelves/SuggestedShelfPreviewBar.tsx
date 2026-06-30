@@ -1,22 +1,26 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { BookCover } from "@/components/books/BookCover";
+import { ShelfBadge } from "@/components/shelves/ShelfBadge";
 import { Button } from "@/components/ui/Button";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
-import type { LibraryBookRow } from "@/lib/services/library";
-import type { SuggestedShelf } from "@/lib/services/suggestedShelves";
+import { bookDetailsPath } from "@/lib/routes/book";
+import type { MatchingBook, SuggestedShelf, SuggestionMatchingBooks } from "@/lib/services/suggestedShelves";
 import { cn } from "@/lib/utils/cn";
 
 type Props = {
   open: boolean;
   shelf: SuggestedShelf | null;
-  matchingBooks: LibraryBookRow[];
+  matching: SuggestionMatchingBooks;
   creating?: boolean;
   onClose: () => void;
   onCreate: () => void;
   onCustomize: () => void;
 };
+
+type BookTab = "unread" | "library";
 
 function shelfSubtitle(shelf: SuggestedShelf): string {
   const parts: string[] = [];
@@ -25,17 +29,95 @@ function shelfSubtitle(shelf: SuggestedShelf): string {
   return parts.join(" · ");
 }
 
+function searchHrefForGenre(genre: string | null): string {
+  if (genre?.trim()) {
+    return `/search/?q=${encodeURIComponent(genre.trim())}`;
+  }
+  return "/search";
+}
+
+function MatchingBookCard({ book }: { book: MatchingBook }) {
+  const href = bookDetailsPath(book.id);
+
+  return (
+    <li>
+      <Link
+        href={href}
+        className="flex items-center gap-3 rounded-lg border border-border bg-background p-2 transition hover:bg-primary/5"
+      >
+        <BookCover
+          title={book.title}
+          author={book.author}
+          coverUrl={book.cover}
+          className="h-16 w-11 shrink-0"
+          sizes="44px"
+        />
+        <div className="min-w-0 flex-1">
+          <p className="line-clamp-2 text-sm font-medium text-text">{book.title}</p>
+          {book.author ? (
+            <p className="mt-0.5 line-clamp-1 text-xs text-text-muted">{book.author}</p>
+          ) : null}
+          <ShelfBadge status={book.shelf_status} className="mt-1.5" />
+        </div>
+      </Link>
+    </li>
+  );
+}
+
+function MatchingBookList({
+  books,
+  emptyMessage,
+  emptyAction,
+}: {
+  books: MatchingBook[];
+  emptyMessage: string;
+  emptyAction?: { label: string; href: string };
+}) {
+  if (books.length === 0) {
+    return (
+      <p className="rounded-lg border border-dashed border-border bg-background px-4 py-6 text-center text-sm text-text-muted">
+        {emptyMessage}
+        {emptyAction ? (
+          <>
+            {" "}
+            <Link href={emptyAction.href} className="font-medium text-primary hover:underline">
+              {emptyAction.label}
+            </Link>
+          </>
+        ) : null}
+      </p>
+    );
+  }
+
+  return (
+    <ul className="max-h-56 space-y-2 overflow-y-auto pr-1">
+      {books.map((book) => (
+        <MatchingBookCard key={book.id} book={book} />
+      ))}
+    </ul>
+  );
+}
+
 export function SuggestedShelfPreviewBar({
   open,
   shelf,
-  matchingBooks,
+  matching,
   creating = false,
   onClose,
   onCreate,
   onCustomize,
 }: Props) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [activeTab, setActiveTab] = useState<BookTab>("unread");
   useFocusTrap(panelRef, open);
+
+  useEffect(() => {
+    if (!open) {
+      setExpanded(false);
+      setActiveTab("unread");
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -52,8 +134,18 @@ export function SuggestedShelfPreviewBar({
 
   if (!open || !shelf) return null;
 
+  const { matchingBooks, unreadMatches, currentlyReadingMatches } = matching;
   const previewBooks = matchingBooks.slice(0, 8);
   const overflow = matchingBooks.length - previewBooks.length;
+  const searchHref = searchHrefForGenre(shelf.genre);
+  const genreLabel = shelf.genre?.trim() || "similar";
+
+  const tabBooks = activeTab === "unread" ? unreadMatches : matchingBooks;
+  const unreadEmptyMessage =
+    matchingBooks.length > 0
+      ? "No unread matches in this suggestion — check your full library list."
+      : `No matches yet — add ${genreLabel} books from search`;
+  const libraryEmptyMessage = `No matches yet — add ${genreLabel} books from search`;
 
   return (
     <div
@@ -105,22 +197,24 @@ export function SuggestedShelfPreviewBar({
               <p className="mb-3 text-sm text-text-muted">
                 {matchingBooks.length} book{matchingBooks.length === 1 ? "" : "s"} from your
                 library
+                {unreadMatches.length > 0
+                  ? ` · ${unreadMatches.length} unread`
+                  : null}
               </p>
               <ul className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {previewBooks.map((row) => {
-                  const book = row.books;
-                  return (
-                    <li key={row.id} className="w-14 shrink-0 sm:w-16">
+                {previewBooks.map((book) => (
+                  <li key={book.id} className="w-14 shrink-0 sm:w-16">
+                    <Link href={bookDetailsPath(book.id)} className="block transition hover:opacity-90">
                       <BookCover
-                        title={book?.title ?? "Untitled"}
-                        author={book?.author}
-                        coverUrl={book?.cover_url}
+                        title={book.title}
+                        author={book.author}
+                        coverUrl={book.cover}
                         className="w-full"
                         sizes="64px"
                       />
-                    </li>
-                  );
-                })}
+                    </Link>
+                  </li>
+                ))}
                 {overflow > 0 ? (
                   <li className="flex w-14 shrink-0 items-center justify-center sm:w-16">
                     <span className="rounded-lg border border-dashed border-border bg-background px-2 py-4 text-xs font-medium text-text-muted">
@@ -129,11 +223,84 @@ export function SuggestedShelfPreviewBar({
                   </li>
                 ) : null}
               </ul>
+
+              <button
+                type="button"
+                onClick={() => setExpanded((value) => !value)}
+                className="mt-4 flex min-h-[44px] w-full items-center justify-between rounded-lg border border-border bg-background px-3 text-sm font-medium text-text transition hover:bg-primary/5"
+                aria-expanded={expanded}
+              >
+                <span>
+                  {expanded ? "Hide matching books" : "See all matching books"}
+                  {!expanded ? ` (${matchingBooks.length})` : ""}
+                </span>
+                <span aria-hidden="true">{expanded ? "▲" : "▼"}</span>
+              </button>
+
+              {expanded ? (
+                <div className="mt-3">
+                  <div
+                    role="tablist"
+                    aria-label="Matching book filters"
+                    className="mb-3 flex gap-2"
+                  >
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={activeTab === "unread"}
+                      onClick={() => setActiveTab("unread")}
+                      className={cn(
+                        "min-h-[44px] flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition",
+                        activeTab === "unread"
+                          ? "border-primary bg-primary/10 text-puce-red"
+                          : "border-border bg-background text-text-muted hover:bg-primary/5"
+                      )}
+                    >
+                      Unread ({unreadMatches.length})
+                    </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={activeTab === "library"}
+                      onClick={() => setActiveTab("library")}
+                      className={cn(
+                        "min-h-[44px] flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition",
+                        activeTab === "library"
+                          ? "border-primary bg-primary/10 text-puce-red"
+                          : "border-border bg-background text-text-muted hover:bg-primary/5"
+                      )}
+                    >
+                      In your library ({matchingBooks.length})
+                    </button>
+                  </div>
+
+                  {activeTab === "unread" && currentlyReadingMatches.length > 0 ? (
+                    <p className="mb-2 text-xs text-text-muted">
+                      {currentlyReadingMatches.length} currently reading
+                    </p>
+                  ) : null}
+
+                  <MatchingBookList
+                    books={tabBooks}
+                    emptyMessage={
+                      activeTab === "unread" ? unreadEmptyMessage : libraryEmptyMessage
+                    }
+                    emptyAction={
+                      tabBooks.length === 0
+                        ? { label: "Search for books", href: searchHref }
+                        : undefined
+                    }
+                  />
+                </div>
+              ) : null}
             </>
           ) : (
             <p className="rounded-lg border border-dashed border-border bg-background px-4 py-6 text-center text-sm text-text-muted">
-              No matching books in your library yet — you can still create this shelf and add
-              books later.
+              No matches yet — add {genreLabel} books from{" "}
+              <Link href={searchHref} className="font-medium text-primary hover:underline">
+                search
+              </Link>
+              . You can still create this shelf and add books later.
             </p>
           )}
         </div>

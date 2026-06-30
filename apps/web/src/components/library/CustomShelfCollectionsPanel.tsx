@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { CreateShelfButton } from "@/components/shelves/CreateShelfButton";
 import { CustomShelvesView } from "@/components/library/CustomShelvesView";
+import { useToast } from "@/components/ui/Toast";
 import {
   getCustomShelfGroupsWithBooks,
   type CustomShelfGroup,
@@ -26,6 +27,7 @@ export function CustomShelfCollectionsPanel({
   showQuickLinks = true,
   className,
 }: Props) {
+  const toast = useToast();
   const [shelves, setShelves] = useState<CustomShelfGroup[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -59,6 +61,11 @@ export function CustomShelfCollectionsPanel({
     ]);
   }
 
+  function handleShelfDeleted(shelfId: string) {
+    setShelves((prev) => prev.filter((shelf) => shelf.id !== shelfId));
+    toast.success("Shelf deleted.");
+  }
+
   return (
     <section className={className}>
       <div className="mb-4 flex flex-col items-center gap-3 text-center sm:flex-row sm:justify-between sm:text-left">
@@ -79,7 +86,7 @@ export function CustomShelfCollectionsPanel({
         </div>
       ) : (
         <>
-          <CustomShelvesView shelves={shelves} />
+          <CustomShelvesView shelves={shelves} onShelfDeleted={handleShelfDeleted} />
           {showQuickLinks ? (
             <div className="mt-6 flex flex-wrap justify-center gap-2">
               {shelves.map((shelf) => (

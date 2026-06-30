@@ -304,6 +304,16 @@ export async function removeBookFromCustomShelf(
   return {};
 }
 
+export async function deleteCustomShelf(
+  shelfId: string
+): Promise<{ error?: string }> {
+  const supabase = createClient();
+  const { error } = await supabase.from("user_shelves").delete().eq("id", shelfId);
+
+  if (error) return { error: error.message };
+  return {};
+}
+
 export async function listCustomShelfIdsForBook(
   userId: string,
   bookId: string

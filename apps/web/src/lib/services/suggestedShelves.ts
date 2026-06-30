@@ -1,11 +1,27 @@
 import { listUserCustomShelves } from "@/lib/services/customShelves";
-import type { LibraryBookRow } from "@/lib/services/library";
+import { getUserLibraryBooks, type LibraryBookRow } from "@/lib/services/library";
+import type { ShelfStatus } from "@/types";
 
 export type SuggestedShelf = {
   name: string;
   genre: string | null;
   reason: string;
   matchCount: number;
+};
+
+export type MatchingBook = {
+  id: string;
+  title: string;
+  author: string | null;
+  cover: string | null;
+  shelf_status: ShelfStatus;
+};
+
+export type SuggestionMatchingBooks = {
+  matchingBooks: MatchingBook[];
+  unreadMatches: MatchingBook[];
+  readMatches: MatchingBook[];
+  currentlyReadingMatches: MatchingBook[];
 };
 
 const TEMPLATE_SHELVES: Omit<SuggestedShelf, "matchCount">[] = [
@@ -76,6 +92,49 @@ export function countMatchingLibraryBooks(
   genre: string | null
 ): number {
   return matchingLibraryBookIds(books, genre).length;
+}
+
+function libraryRowToMatchingBook(row: LibraryBookRow): MatchingBook | null {
+  const book = row.books;
+  if (!book?.id) return null;
+  return {
+    id: book.id,
+    title: book.title ?? "Untitled",
+    author: book.author,
+    cover: book.cover_url,
+    shelf_status: row.shelf_status,
+  };
+}
+
+/** Group library rows that match a suggestion by shelf status. */
+export function getMatchingBooksFromLibrary(
+  books: LibraryBookRow[],
+  genre: string | null
+): SuggestionMatchingBooks {
+  const ids = new Set(matchingLibraryBookIds(books, genre));
+  const matchingBooks = books
+    .filter((row) => row.books?.id && ids.has(row.books.id))
+    .map(libraryRowToMatchingBook)
+    .filter((book): book is MatchingBook => book !== null);
+
+  const unreadMatches = matchingBooks.filter(
+    (book) =>
+      book.shelf_status === "want_to_read" || book.shelf_status === "currently_reading"
+  );
+  const readMatches = matchingBooks.filter((book) => book.shelf_status === "read");
+  const currentlyReadingMatches = matchingBooks.filter(
+    (book) => book.shelf_status === "currently_reading"
+  );
+
+  return { matchingBooks, unreadMatches, readMatches, currentlyReadingMatches };
+}
+
+export async function getMatchingBooksForSuggestion(
+  userId: string,
+  suggestion: Pick<SuggestedShelf, "genre">
+): Promise<SuggestionMatchingBooks> {
+  const books = await getUserLibraryBooks(userId);
+  return getMatchingBooksFromLibrary(books, suggestion.genre);
 }
 
 export async function getSuggestedShelves(

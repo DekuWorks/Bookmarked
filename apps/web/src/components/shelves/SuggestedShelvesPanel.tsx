@@ -10,6 +10,7 @@ import {
 } from "@/lib/services/customShelves";
 import {
   getSuggestedShelves,
+  getMatchingBooksFromLibrary,
   matchingLibraryBookIds,
   type SuggestedShelf,
 } from "@/lib/services/suggestedShelves";
@@ -55,14 +56,6 @@ function suggestionSubtitle(shelf: SuggestedShelf): string {
     );
   }
   return parts.join(" · ");
-}
-
-function matchingBooksForShelf(
-  books: LibraryBookRow[],
-  genre: string | null
-): LibraryBookRow[] {
-  const ids = new Set(matchingLibraryBookIds(books, genre));
-  return books.filter((row) => row.books?.id && ids.has(row.books.id));
 }
 
 export function SuggestedShelvesPanel({
@@ -366,8 +359,15 @@ export function SuggestedShelvesPanel({
       <SuggestedShelfPreviewBar
         open={usePreviewBar && previewShelf !== null}
         shelf={previewShelf}
-        matchingBooks={
-          previewShelf ? matchingBooksForShelf(libraryBooks, previewShelf.genre) : []
+        matching={
+          previewShelf
+            ? getMatchingBooksFromLibrary(libraryBooks, previewShelf.genre)
+            : {
+                matchingBooks: [],
+                unreadMatches: [],
+                readMatches: [],
+                currentlyReadingMatches: [],
+              }
         }
         creating={previewShelf ? creatingKey === suggestionKey(previewShelf) : false}
         onClose={closePreview}

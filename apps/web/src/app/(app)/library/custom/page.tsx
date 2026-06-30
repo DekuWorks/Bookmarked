@@ -2,12 +2,15 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { BookSpine } from "@/components/library/BookSpine";
 import { EmptyShelfMessage } from "@/components/library/EmptyShelfMessage";
+import { DeleteCustomShelfModal } from "@/components/shelves/DeleteCustomShelfModal";
+import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import { LoadingState } from "@/components/ui/LoadingState";
+import { useToast } from "@/components/ui/Toast";
 import { layout } from "@/lib/constants/layout";
 import { bookDetailsPath } from "@/lib/routes/book";
 import { customShelfPath } from "@/lib/routes/customShelf";
@@ -19,12 +22,15 @@ import {
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 
 function CustomShelfContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const slug = searchParams.get("slug")?.trim() ?? "";
   const user = useAuthUser();
+  const toast = useToast();
   const [shelf, setShelf] = useState<CustomShelfGroup | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const loadShelf = useCallback(async () => {
     if (!user || !slug) return;
@@ -123,7 +129,26 @@ function CustomShelfContent() {
         <ButtonLink href="/search" variant="secondary">
           Add books
         </ButtonLink>
+        <Button
+          type="button"
+          variant="ghost"
+          className="text-rust hover:bg-rust/10"
+          onClick={() => setDeleteOpen(true)}
+        >
+          Delete shelf
+        </Button>
       </header>
+
+      <DeleteCustomShelfModal
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        shelfId={shelf.id}
+        shelfName={shelf.name}
+        onDeleted={() => {
+          toast.success("Shelf deleted.");
+          router.push("/library");
+        }}
+      />
 
       <section className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
         <div className="bookshelf-back px-4 pb-0 pt-5">
