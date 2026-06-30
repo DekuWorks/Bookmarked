@@ -11,6 +11,8 @@ import {
   uploadPostImage,
   validatePostImageFile,
 } from "@/lib/services/posts";
+import { GifSearchPicker } from "@/components/social/GifSearchPicker";
+import type { GiphySearchResult } from "@/lib/services/giphy";
 import { isAllowedPostImageUrl, isGiphyImageUrl, resolveGiphyImageUrl } from "@/lib/utils/giphy";
 import type { PostWithAuthor } from "@/types";
 import { cn } from "@/lib/utils/cn";
@@ -119,6 +121,16 @@ export function PostEditPanel({ post, viewerId, onSaved, onCancel }: Props) {
     setGifUrl(resolved);
     setGifInput(trimmed);
     setRemoteImageUrl(resolved);
+    setRemoveImage(false);
+  }
+
+  function selectGif(result: GiphySearchResult) {
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImageFile(null);
+    setImagePreview(null);
+    setGifUrl(result.imageUrl);
+    setGifInput(result.imageUrl);
+    setRemoteImageUrl(result.imageUrl);
     setRemoveImage(false);
   }
 
@@ -250,20 +262,16 @@ export function PostEditPanel({ post, viewerId, onSaved, onCancel }: Props) {
         </Button>
       </div>
 
-      <details className="rounded-lg border border-border bg-background/50 px-3 py-2">
-        <summary className="cursor-pointer text-sm font-medium text-text">Add a GIF (optional)</summary>
-        <div className="mt-3">
-          <Input
-            label="Giphy URL"
-            value={gifInput}
-            onChange={(e) => setGifInput(e.target.value)}
-            onBlur={() => applyGifUrl(gifInput)}
-            placeholder="Paste a giphy.com link"
-            className="mb-0"
-            disabled={saving}
-          />
-        </div>
-      </details>
+      <div className="rounded-lg border border-border bg-background/50 px-3 py-3">
+        <p className="mb-3 text-sm font-medium text-text">Add a GIF (optional)</p>
+        <GifSearchPicker
+          gifInput={gifInput}
+          onGifInputChange={setGifInput}
+          onGifInputBlur={() => applyGifUrl(gifInput)}
+          onSelect={selectGif}
+          disabled={saving}
+        />
+      </div>
 
       {!isRepost ? (
         <Input

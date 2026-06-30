@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { GifSearchPicker } from "@/components/social/GifSearchPicker";
 import { useToast } from "@/components/ui/Toast";
-import { isGiphySearchConfigured, searchGiphy, type GiphySearchResult } from "@/lib/services/giphy";
+import type { GiphySearchResult } from "@/lib/services/giphy";
 import { uploadPostImage, validatePostImageFile } from "@/lib/services/posts";
 import { isAllowedPostImageUrl, resolveGiphyImageUrl } from "@/lib/utils/giphy";
 
@@ -16,10 +16,6 @@ export function useCommentAttachment() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [gifUrl, setGifUrl] = useState<string | null>(null);
   const [gifInput, setGifInput] = useState("");
-  const [gifSearchQuery, setGifSearchQuery] = useState("");
-  const [gifSearchResults, setGifSearchResults] = useState<GiphySearchResult[]>([]);
-  const [gifSearchLoading, setGifSearchLoading] = useState(false);
-  const gifSearchEnabled = isGiphySearchConfigured();
 
   function clearImage() {
     setImageFile(null);
@@ -30,8 +26,6 @@ export function useCommentAttachment() {
   function clearGif() {
     setGifUrl(null);
     setGifInput("");
-    setGifSearchQuery("");
-    setGifSearchResults([]);
   }
 
   function clearAttachment() {
@@ -83,8 +77,6 @@ export function useCommentAttachment() {
     clearImage();
     setGifUrl(result.imageUrl);
     setGifInput(result.imageUrl);
-    setGifSearchQuery("");
-    setGifSearchResults([]);
   }
 
   async function resolveAttachmentUrl(): Promise<{ url: string | null; error?: string }> {
@@ -99,25 +91,6 @@ export function useCommentAttachment() {
 
   const hasAttachment = Boolean(imageFile || gifUrl);
 
-  useEffect(() => {
-    const query = gifSearchQuery.trim();
-    if (!query || !gifSearchEnabled) {
-      setGifSearchResults([]);
-      setGifSearchLoading(false);
-      return;
-    }
-
-    const handle = window.setTimeout(() => {
-      setGifSearchLoading(true);
-      void searchGiphy(query)
-        .then(setGifSearchResults)
-        .catch(() => setGifSearchResults([]))
-        .finally(() => setGifSearchLoading(false));
-    }, 350);
-
-    return () => window.clearTimeout(handle);
-  }, [gifSearchQuery, gifSearchEnabled]);
-
   return {
     inputId,
     fileInputRef,
@@ -125,11 +98,6 @@ export function useCommentAttachment() {
     gifUrl,
     gifInput,
     setGifInput,
-    gifSearchQuery,
-    setGifSearchQuery,
-    gifSearchResults,
-    gifSearchLoading,
-    gifSearchEnabled,
     hasAttachment,
     clearAttachment,
     handleFileChange,
@@ -151,11 +119,6 @@ export function CommentAttachmentControls({
   gifUrl,
   gifInput,
   setGifInput,
-  gifSearchQuery,
-  setGifSearchQuery,
-  gifSearchResults,
-  gifSearchLoading,
-  gifSearchEnabled,
   clearAttachment,
   handleFileChange,
   applyGifUrl,
@@ -223,56 +186,16 @@ export function CommentAttachmentControls({
         </Button>
       </div>
 
-      <details className="rounded-lg border border-border bg-background/50 px-3 py-2">
-        <summary className="cursor-pointer text-sm font-medium text-text">Add a GIF (optional)</summary>
-        <div className="mt-3 space-y-3">
-          <Input
-            label="Giphy URL"
-            value={gifInput}
-            onChange={(e) => setGifInput(e.target.value)}
-            onBlur={() => applyGifUrl(gifInput)}
-            placeholder="Paste a giphy.com link"
-            className="mb-0"
-            disabled={disabled}
-          />
-          {gifSearchEnabled ? (
-            <div>
-              <Input
-                label="Search Giphy"
-                value={gifSearchQuery}
-                onChange={(e) => setGifSearchQuery(e.target.value)}
-                placeholder="Search for a GIF"
-                className="mb-0"
-                disabled={disabled}
-              />
-              {gifSearchLoading ? (
-                <p className="mt-2 text-xs text-text-muted">Searching…</p>
-              ) : gifSearchResults.length > 0 ? (
-                <ul className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4">
-                  {gifSearchResults.map((result) => (
-                    <li key={result.id}>
-                      <button
-                        type="button"
-                        onClick={() => selectGif(result)}
-                        className="block w-full overflow-hidden rounded-md border border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
-                        title={result.title}
-                        disabled={disabled}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={result.previewUrl}
-                          alt={result.title}
-                          className="aspect-square w-full object-cover"
-                        />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-      </details>
+      <div className="rounded-lg border border-border bg-background/50 px-3 py-3">
+        <p className="mb-3 text-sm font-medium text-text">Add a GIF (optional)</p>
+        <GifSearchPicker
+          gifInput={gifInput}
+          onGifInputChange={setGifInput}
+          onGifInputBlur={() => applyGifUrl(gifInput)}
+          onSelect={selectGif}
+          disabled={disabled}
+        />
+      </div>
     </div>
   );
 }

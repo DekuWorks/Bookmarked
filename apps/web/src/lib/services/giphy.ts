@@ -19,27 +19,8 @@ export function isGiphySearchConfigured(): boolean {
   return Boolean(process.env.NEXT_PUBLIC_GIPHY_API_KEY?.trim());
 }
 
-export async function searchGiphy(query: string): Promise<GiphySearchResult[]> {
-  const apiKey = process.env.NEXT_PUBLIC_GIPHY_API_KEY?.trim();
-  if (!apiKey) return [];
-
-  const trimmed = query.trim();
-  if (!trimmed) return [];
-
-  const url = new URL("https://api.giphy.com/v1/gifs/search");
-  url.searchParams.set("api_key", apiKey);
-  url.searchParams.set("q", trimmed);
-  url.searchParams.set("limit", "12");
-  url.searchParams.set("rating", "g");
-
-  const response = await fetch(url.toString());
-  if (!response.ok) {
-    throw new Error("GIF search failed.");
-  }
-
-  const payload = (await response.json()) as { data?: GiphyApiGif[] };
-
-  return (payload.data ?? [])
+function mapGiphyResults(gifs: GiphyApiGif[]): GiphySearchResult[] {
+  return gifs
     .map((gif) => ({
       id: gif.id,
       title: gif.title || "GIF",
@@ -51,4 +32,35 @@ export async function searchGiphy(query: string): Promise<GiphySearchResult[]> {
       imageUrl: gif.images.original?.url ?? gif.images.fixed_height?.url ?? "",
     }))
     .filter((item) => item.imageUrl);
+}
+
+async function fetchGiphyEndpoint(path: "search" | "trending", params: Record<string, string>) {
+  const apiKey = process.env.NEXT_PUBLIC_GIPHY_API_KEY?.trim();
+  if (!apiKey) return [];
+
+  const url = new URL(`https://api.giphy.com/v1/gifs/${path}`);
+  url.searchParams.set("api_key", apiKey);
+  url.searchParams.set("limit", "12");
+  url.searchParams.set("rating", "g");
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.set(key, value);
+  }
+
+  const response = await fetch(url.toString());
+  if (!response.ok) {
+    throw new Error("GIF search failed.");
+  }
+
+  const payload = (await response.json()) as { data?: GiphyApiGif[] };
+  return mapGiphyResults(payload.data ?? []);
+}
+
+export async function searchGiphy(query: string): Promise<GiphySearchResult[]> {
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+  return fetchGiphyEndpoint("search", { q: trimmed });
+}
+
+export async function fetchTrendingGiphy(): Promise<GiphySearchResult[]> {
+  return fetchGiphyEndpoint("trending", {});
 }

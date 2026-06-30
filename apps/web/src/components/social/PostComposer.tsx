@@ -16,7 +16,8 @@ import {
   saveDraft,
 } from "@/lib/services/postDrafts";
 import type { PostDraft } from "@/types";
-import { isGiphySearchConfigured, searchGiphy, type GiphySearchResult } from "@/lib/services/giphy";
+import { GifSearchPicker } from "@/components/social/GifSearchPicker";
+import type { GiphySearchResult } from "@/lib/services/giphy";
 import { isAllowedPostImageUrl, resolveGiphyImageUrl } from "@/lib/utils/giphy";
 import { cn } from "@/lib/utils/cn";
 
@@ -67,10 +68,6 @@ export function PostComposer({ userId, onPostCreated }: Props) {
   const [remoteImageUrl, setRemoteImageUrl] = useState<string | null>(null);
   const [gifUrl, setGifUrl] = useState<string | null>(null);
   const [gifInput, setGifInput] = useState("");
-  const [gifSearchQuery, setGifSearchQuery] = useState("");
-  const [gifSearchResults, setGifSearchResults] = useState<GiphySearchResult[]>([]);
-  const [gifSearchLoading, setGifSearchLoading] = useState(false);
-  const gifSearchEnabled = isGiphySearchConfigured();
   const [submitting, setSubmitting] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
   const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
@@ -109,25 +106,6 @@ export function PostComposer({ userId, onPostCreated }: Props) {
     setRemoteImageUrl(saved.remoteImageUrl);
     setActiveDraftId(saved.activeDraftId);
   }, [userId]);
-
-  useEffect(() => {
-    const query = gifSearchQuery.trim();
-    if (!query || !gifSearchEnabled) {
-      setGifSearchResults([]);
-      setGifSearchLoading(false);
-      return;
-    }
-
-    const handle = window.setTimeout(() => {
-      setGifSearchLoading(true);
-      void searchGiphy(query)
-        .then(setGifSearchResults)
-        .catch(() => setGifSearchResults([]))
-        .finally(() => setGifSearchLoading(false));
-    }, 350);
-
-    return () => window.clearTimeout(handle);
-  }, [gifSearchQuery, gifSearchEnabled]);
 
   useEffect(() => {
     return () => {
@@ -174,8 +152,6 @@ export function PostComposer({ userId, onPostCreated }: Props) {
     setSelectedBookId(null);
     clearImage();
     clearGif();
-    setGifSearchQuery("");
-    setGifSearchResults([]);
     setActiveDraftId(null);
     clearComposerAutosave(userId);
   }
@@ -227,8 +203,6 @@ export function PostComposer({ userId, onPostCreated }: Props) {
     clearImage();
     setGifUrl(result.imageUrl);
     setGifInput(result.imageUrl);
-    setGifSearchQuery("");
-    setGifSearchResults([]);
     scheduleAutosave();
   }
 
@@ -487,53 +461,16 @@ export function PostComposer({ userId, onPostCreated }: Props) {
         </div>
       ) : null}
 
-      <details className="mb-3 rounded-lg border border-border bg-background/50 px-3 py-2">
-        <summary className="cursor-pointer text-sm font-medium text-text">Add a GIF (optional)</summary>
-        <div className="mt-3 space-y-3">
-          <Input
-            label="Giphy URL"
-            value={gifInput}
-            onChange={(e) => setGifInput(e.target.value)}
-            onBlur={() => applyGifUrl(gifInput)}
-            placeholder="Paste a giphy.com link"
-            className="mb-0"
-          />
-          {gifSearchEnabled ? (
-            <div>
-              <Input
-                label="Search Giphy"
-                value={gifSearchQuery}
-                onChange={(e) => setGifSearchQuery(e.target.value)}
-                placeholder="Search for a GIF"
-                className="mb-0"
-              />
-              {gifSearchLoading ? (
-                <p className="mt-2 text-xs text-text-muted">Searching…</p>
-              ) : gifSearchResults.length > 0 ? (
-                <ul className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4">
-                  {gifSearchResults.map((result) => (
-                    <li key={result.id}>
-                      <button
-                        type="button"
-                        onClick={() => selectGif(result)}
-                        className="block w-full overflow-hidden rounded-md border border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
-                        title={result.title}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={result.previewUrl}
-                          alt={result.title}
-                          className="aspect-square w-full object-cover"
-                        />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-      </details>
+      <div className="mb-3 rounded-lg border border-border bg-background/50 px-3 py-3">
+        <p className="mb-3 text-sm font-medium text-text">Add a GIF (optional)</p>
+        <GifSearchPicker
+          gifInput={gifInput}
+          onGifInputChange={setGifInput}
+          onGifInputBlur={() => applyGifUrl(gifInput)}
+          onSelect={selectGif}
+          disabled={submitting}
+        />
+      </div>
 
       <details className="mb-3 rounded-lg border border-border bg-background/50 px-3 py-2">
         <summary className="cursor-pointer text-sm font-medium text-text">
