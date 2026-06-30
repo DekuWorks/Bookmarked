@@ -25,6 +25,7 @@ import { NotificationPreferencesPanel } from "@/components/notifications/Notific
 import { getFollowCounts, type FollowCounts } from "@/lib/services/follows";
 import { readerProfilePath } from "@/lib/routes/reader";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
+import { PostComposer } from "@/components/social/PostComposer";
 import type { Profile } from "@/types";
 import type { LibraryBookRow } from "@/lib/services/library";
 import type { ReadingAnalytics } from "@/lib/services/analytics";
@@ -110,6 +111,8 @@ export default function ProfilePage() {
         <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Profile</h1>
         <p className="mt-1 text-text-muted">{email}</p>
       </header>
+
+      <PostComposer userId={user.id} />
 
       <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
         <div className="flex flex-col items-center gap-6">

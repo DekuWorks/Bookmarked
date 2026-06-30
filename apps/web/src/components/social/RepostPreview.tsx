@@ -1,8 +1,12 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { BookCover } from "@/components/books/BookCover";
 import { MentionText } from "@/components/social/MentionText";
 import { bookDetailsPath } from "@/lib/routes/book";
 import { authorPagePath } from "@/lib/routes/author";
+import { postFeedPath } from "@/lib/routes/posts";
 import { readerProfilePath } from "@/lib/routes/reader";
 import type { PostWithAuthor } from "@/types";
 import { isGiphyImageUrl } from "@/lib/utils/giphy";
@@ -12,22 +16,36 @@ function authorLabel(author: PostWithAuthor["author"]): string {
   return author.display_name?.trim() || author.username?.trim() || "Reader";
 }
 
-export function RepostPreview({ post }: { post: PostWithAuthor }) {
+type Props = {
+  post: PostWithAuthor;
+  linkToPost?: boolean;
+};
+
+export function RepostPreview({ post, linkToPost = true }: Props) {
+  const router = useRouter();
   const profileHref = post.author.username
     ? readerProfilePath(post.author.username)
     : null;
+  const postHref = postFeedPath(post.id);
 
-  return (
-    <div className="rounded-lg border border-border bg-background/60 p-3">
-      <p className="mb-1 text-xs text-text-muted">
-        {profileHref ? (
-          <Link href={profileHref} className="font-semibold text-puce-red hover:underline">
-            {authorLabel(post.author)}
+  const content = (
+    <>
+      <div className="mb-1 flex items-start justify-between gap-2">
+        <p className="text-xs text-text-muted">
+          {profileHref ? (
+            <Link href={profileHref} className="font-semibold text-puce-red hover:underline">
+              {authorLabel(post.author)}
+            </Link>
+          ) : (
+            <span className="font-semibold text-puce-red">{authorLabel(post.author)}</span>
+          )}
+        </p>
+        {linkToPost ? (
+          <Link href={postHref} className="shrink-0 text-xs font-medium text-primary hover:underline">
+            View post
           </Link>
-        ) : (
-          <span className="font-semibold text-puce-red">{authorLabel(post.author)}</span>
-        )}
-      </p>
+        ) : null}
+      </div>
       {post.body.trim() ? (
         <p className="text-sm leading-relaxed text-text">
           <MentionText body={post.body} />
@@ -39,6 +57,7 @@ export function RepostPreview({ post }: { post: PostWithAuthor }) {
           target="_blank"
           rel="noopener noreferrer"
           className="mt-2 block overflow-hidden rounded-md border border-border"
+          onClick={(event) => event.stopPropagation()}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -57,6 +76,7 @@ export function RepostPreview({ post }: { post: PostWithAuthor }) {
         <Link
           href={bookDetailsPath(post.book.id)}
           className="mt-2 flex items-center gap-3 rounded-md border border-border p-2 hover:border-primary/40"
+          onClick={(event) => event.stopPropagation()}
         >
           <div className="h-16 w-11 shrink-0 overflow-hidden rounded shadow-sm">
             <BookCover title={post.book.title} coverUrl={post.book.cover_url} className="h-full w-full" />
@@ -75,6 +95,29 @@ export function RepostPreview({ post }: { post: PostWithAuthor }) {
           </div>
         </Link>
       ) : null}
+    </>
+  );
+
+  if (!linkToPost) {
+    return (
+      <div className="rounded-lg border border-border bg-background/60 p-3">{content}</div>
+    );
+  }
+
+  return (
+    <div
+      role="link"
+      tabIndex={0}
+      onClick={() => router.push(postHref)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          router.push(postHref);
+        }
+      }}
+      className="cursor-pointer rounded-lg border border-border bg-background/60 p-3 transition hover:border-primary/40 hover:bg-background"
+    >
+      {content}
     </div>
   );
 }

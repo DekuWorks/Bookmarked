@@ -52,6 +52,22 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
     setLocalPost(post);
   }, [post]);
 
+  useEffect(() => {
+    if (!highlighted) return;
+    setExpanded(true);
+    if (!post.comments) {
+      setLoadingComments(true);
+      void getPostById(post.id, viewerId)
+        .then((updated) => {
+          if (updated) setLocalPost(updated);
+        })
+        .catch(() => {
+          // Deep-linked post may be unavailable.
+        })
+        .finally(() => setLoadingComments(false));
+    }
+  }, [highlighted, post.id, post.comments, viewerId]);
+
   const isOwn = localPost.user_id === viewerId;
   const profileHref = localPost.author.username
     ? readerProfilePath(localPost.author.username)
@@ -156,9 +172,14 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
                 <span className="font-semibold text-puce-red">{authorLabel(localPost.author)}</span>
               )}
               <p className="text-xs text-text-muted">
-                <time suppressHydrationWarning dateTime={localPost.created_at}>
-                  {formatFeedTimestamp(localPost.created_at, locale)}
-                </time>
+                <Link
+                  href={postFeedPath(localPost.id)}
+                  className="hover:text-primary hover:underline"
+                >
+                  <time suppressHydrationWarning dateTime={localPost.created_at}>
+                    {formatFeedTimestamp(localPost.created_at, locale)}
+                  </time>
+                </Link>
               </p>
             </div>
 

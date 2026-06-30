@@ -55,7 +55,7 @@ export function QuoteRepostModal({ open, onClose, post, viewerId, onReposted }: 
 
         <div>
           <p className="mb-2 text-xs font-medium text-text-muted">Reposting</p>
-          <RepostPreview post={post} />
+          <RepostPreview post={post} linkToPost={false} />
         </div>
 
         <div className="flex flex-wrap justify-end gap-2">

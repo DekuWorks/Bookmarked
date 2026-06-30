@@ -7,6 +7,7 @@ import {
   createPostLikeNotification,
 } from "@/lib/services/notifications";
 import { extractMentionUsernames } from "@/lib/utils/mentions";
+import { normalizeCommentAttachmentUrl } from "@/lib/utils/attachments";
 import type {
   Post,
   PostAuthor,
@@ -564,8 +565,13 @@ export async function addComment(
   if (!viewerId) return { error: "You must be signed in." };
 
   const trimmed = trimBody(body);
-  const attachment = attachmentUrl?.trim() || null;
+  const attachment = attachmentUrl
+    ? normalizeCommentAttachmentUrl(attachmentUrl)
+    : null;
   if (!trimmed && !attachment) return { error: "Write a comment or attach an image or GIF." };
+  if (attachmentUrl?.trim() && !attachment) {
+    return { error: "Attachment must be a Giphy link or an uploaded image." };
+  }
 
   const supabase = createClient();
 

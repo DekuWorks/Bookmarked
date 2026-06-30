@@ -5,11 +5,21 @@ import {
   createReviewReactionNotification,
   createReviewReplyNotification,
 } from "@/lib/services/notifications";
+import { uploadPostImage, validatePostImageFile } from "@/lib/services/posts";
 import type { ContentReaction, ReactionCounts, ReviewReplyWithAuthor } from "@/types";
 import { extractMentionUsernames } from "@/lib/utils/mentions";
+import { normalizeCommentAttachmentUrl } from "@/lib/utils/attachments";
 import { buildReplyThread, type ThreadNode } from "@/lib/utils/threadReplies";
 
 const AUTHOR_SELECT = "id, username, display_name, avatar_url";
+
+export { validatePostImageFile as validateCommentAttachmentFile };
+
+export async function uploadCommentAttachment(
+  file: File
+): Promise<{ url?: string; error?: string }> {
+  return uploadPostImage(file);
+}
 
 async function getViewerId(): Promise<string | null> {
   const supabase = createClient();
@@ -206,7 +216,7 @@ export async function listReviewReplies(
   const supabase = createClient();
   const { data, error } = await supabase
     .from("review_replies")
-    .select("id, review_id, user_id, parent_reply_id, body, created_at, updated_at")
+    .select("id, review_id, user_id, parent_reply_id, body, attachment_url, created_at, updated_at")
     .eq("review_id", reviewId)
     .order("created_at", { ascending: true });
 
@@ -222,6 +232,7 @@ export async function listReviewReplies(
     user_id: row.user_id as string,
     parent_reply_id: row.parent_reply_id as string | null,
     body: row.body as string,
+    attachment_url: (row.attachment_url as string | null) ?? null,
     created_at: row.created_at as string,
     updated_at: row.updated_at as string,
     author: authors.get(row.user_id as string) ?? {
@@ -238,13 +249,19 @@ export async function listReviewReplies(
 export async function addReviewReply(
   reviewId: string,
   body: string,
-  parentReplyId?: string | null
+  parentReplyId?: string | null,
+  attachmentUrl?: string | null
 ): Promise<{ error?: string }> {
   const viewerId = await getViewerId();
   if (!viewerId) return { error: "You must be signed in." };
 
   const trimmed = body.trim();
-  if (!trimmed) return { error: "Reply cannot be empty." };
+  const rawAttachment = attachmentUrl?.trim() || null;
+  const attachment = rawAttachment ? normalizeCommentAttachmentUrl(rawAttachment) : null;
+  if (rawAttachment && !attachment) {
+    return { error: "Attachment URL is not allowed." };
+  }
+  if (!trimmed && !attachment) return { error: "Write a reply or attach an image or GIF." };
 
   const supabase = createClient();
 
@@ -264,6 +281,7 @@ export async function addReviewReply(
       user_id: viewerId,
       parent_reply_id: parentReplyId ?? null,
       body: trimmed,
+      attachment_url: attachment,
     })
     .select("id")
     .single();
@@ -289,7 +307,7 @@ export async function addReviewReply(
       reviewId,
       bookId: review.book_id as string,
       replyId: data.id as string,
-      preview: trimmed,
+      preview: trimmed || "Sent an image",
     });
   }
 

@@ -1,0 +1,3 @@
+-- Post comment attachments reuse the post-images storage bucket and policies
+-- from 20260630010000_post_images_storage.sql. Column constraints are in
+-- 20260630030400_comment_attachments.sql.
