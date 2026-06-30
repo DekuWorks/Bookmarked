@@ -491,6 +491,27 @@ export async function listFeedPosts(
   return hydratePosts(ranked, viewerId);
 }
 
+export async function listPostsByUser(
+  profileUserId: string,
+  viewerId: string,
+  limit = 20
+): Promise<PostWithAuthor[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("posts")
+    .select(POST_SELECT)
+    .eq("user_id", profileUserId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+
+  const rows = (data ?? []) as RawPostRow[];
+  if (!rows.length) return [];
+
+  return hydratePosts(rows, viewerId);
+}
+
 export async function getPostById(
   postId: string,
   viewerId: string

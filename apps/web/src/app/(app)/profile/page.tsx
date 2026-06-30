@@ -1,7 +1,7 @@
 "use client";
 
+import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getProfile } from "@/lib/services/profile";
 import { getUserLibraryBooks } from "@/lib/services/library";
@@ -25,7 +25,8 @@ import { NotificationPreferencesPanel } from "@/components/notifications/Notific
 import { getFollowCounts, type FollowCounts } from "@/lib/services/follows";
 import { readerProfilePath } from "@/lib/routes/reader";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
-import { PostComposer } from "@/components/social/PostComposer";
+import { ProfileNotificationsSection } from "@/components/notifications/ProfileNotificationsSection";
+import { ProfileFeedSection } from "@/components/social/ProfileFeedSection";
 import type { Profile } from "@/types";
 import type { LibraryBookRow } from "@/lib/services/library";
 import type { ReadingAnalytics } from "@/lib/services/analytics";
@@ -112,8 +113,6 @@ export default function ProfilePage() {
         <p className="mt-1 text-text-muted">{email}</p>
       </header>
 
-      <PostComposer userId={user.id} />
-
       <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
         <div className="flex flex-col items-center gap-6">
           {profile ? (
@@ -179,6 +178,18 @@ export default function ProfilePage() {
           <LogoutButton />
         </div>
       </section>
+
+      <Suspense fallback={<LoadingState message="Loading feed…" />}>
+        <ProfileFeedSection
+          userId={user.id}
+          className="rounded-xl border border-border bg-surface p-6 shadow-sm"
+        />
+      </Suspense>
+
+      <ProfileNotificationsSection
+        userId={user.id}
+        className="rounded-xl border border-border bg-surface p-6 shadow-sm"
+      />
 
       {profile ? <ShelfPrivacyPanel profile={profile} /> : null}
 
