@@ -326,8 +326,8 @@ export function ReviewCard({
                 <ReplyThread
                   replies={replies}
                   viewerId={viewerId!}
-                  onSubmitReply={(body, parentReplyId) =>
-                    addReviewReply(reviewId!, body, parentReplyId)
+                  onSubmitReply={(body, parentReplyId, attachmentUrl) =>
+                    addReviewReply(reviewId!, body, parentReplyId, attachmentUrl)
                   }
                   onDeleteReply={deleteReviewReply}
                   onRefresh={() => void loadReplies()}

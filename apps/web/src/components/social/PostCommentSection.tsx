@@ -254,8 +254,8 @@ function CommentItem({
                 <ReplyThread
                   replies={replies}
                   viewerId={viewerId}
-                  onSubmitReply={(body, parentReplyId) =>
-                    addPostCommentReply(comment.id, body, parentReplyId)
+                  onSubmitReply={(body, parentReplyId, attachmentUrl) =>
+                    addPostCommentReply(comment.id, body, parentReplyId, attachmentUrl)
                   }
                   onDeleteReply={deletePostCommentReply}
                   onRefresh={() => void loadReplies()}

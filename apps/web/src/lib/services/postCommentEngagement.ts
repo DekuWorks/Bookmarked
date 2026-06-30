@@ -310,7 +310,7 @@ export async function addPostCommentReply(
       postId: comment.post_id as string,
       commentId,
       replyId: data.id as string,
-      preview: trimmed,
+      preview: trimmed || "Sent an image",
     });
   }
 

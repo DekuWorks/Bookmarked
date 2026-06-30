@@ -3,6 +3,11 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { CommentAttachment } from "@/components/social/CommentAttachment";
+import {
+  CommentAttachmentControls,
+  useCommentAttachment,
+} from "@/components/social/CommentAttachmentControls";
 import { MentionComposer } from "@/components/social/MentionComposer";
 import { MentionText } from "@/components/social/MentionText";
 import { useToast } from "@/components/ui/Toast";
@@ -17,6 +22,7 @@ type ReplyNode = {
   id: string;
   user_id: string;
   body: string;
+  attachment_url?: string | null;
   created_at: string;
   parent_reply_id: string | null;
   author: ReplyAuthor;
@@ -25,7 +31,11 @@ type ReplyNode = {
 type Props<T extends ReplyNode> = {
   replies: ThreadNode<T>[];
   viewerId: string;
-  onSubmitReply: (body: string, parentReplyId?: string | null) => Promise<{ error?: string }>;
+  onSubmitReply: (
+    body: string,
+    parentReplyId?: string | null,
+    attachmentUrl?: string | null
+  ) => Promise<{ error?: string }>;
   onDeleteReply: (replyId: string) => Promise<{ error?: string }>;
   onRefresh?: () => void;
   showComposer?: boolean;
@@ -34,6 +44,74 @@ type Props<T extends ReplyNode> = {
 
 function authorLabel(author: ReplyAuthor): string {
   return author.display_name?.trim() || author.username?.trim() || "Reader";
+}
+
+function ReplyComposer({
+  viewerId,
+  placeholder,
+  submitting,
+  onCancel,
+  onSubmit,
+}: {
+  viewerId: string;
+  placeholder: string;
+  submitting: boolean;
+  onCancel?: () => void;
+  onSubmit: (body: string, attachmentUrl: string | null) => Promise<void>;
+}) {
+  const toast = useToast();
+  const [body, setBody] = useState("");
+  const attachment = useCommentAttachment();
+
+  async function handleSubmit() {
+    const trimmed = body.trim();
+    if (!trimmed && !attachment.hasAttachment) {
+      toast.error("Write a reply or attach an image or GIF.");
+      return;
+    }
+
+    const attachmentResult = await attachment.resolveAttachmentUrl();
+    if (attachmentResult.error) {
+      toast.error(attachmentResult.error);
+      return;
+    }
+
+    await onSubmit(trimmed, attachmentResult.url);
+    setBody("");
+    attachment.clearAttachment();
+  }
+
+  const canSubmit = Boolean(body.trim() || attachment.hasAttachment);
+
+  return (
+    <div className="space-y-2">
+      <MentionComposer
+        value={body}
+        onChange={setBody}
+        viewerId={viewerId}
+        placeholder={placeholder}
+        minHeightClassName="min-h-[64px]"
+      />
+      <CommentAttachmentControls {...attachment} disabled={submitting} />
+      <div className="flex justify-end gap-2">
+        {onCancel ? (
+          <Button type="button" variant="ghost" size="sm" onClick={onCancel} disabled={submitting}>
+            Cancel
+          </Button>
+        ) : null}
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          loading={submitting}
+          disabled={!canSubmit}
+          onClick={() => void handleSubmit()}
+        >
+          Reply
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 function ReplyItem<T extends ReplyNode>({
@@ -53,18 +131,14 @@ function ReplyItem<T extends ReplyNode>({
 }) {
   const toast = useToast();
   const [replyOpen, setReplyOpen] = useState(false);
-  const [replyBody, setReplyBody] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const isOwn = reply.user_id === viewerId;
   const profileHref = reply.author.username ? readerProfilePath(reply.author.username) : null;
 
-  async function handleReplySubmit() {
-    const trimmed = replyBody.trim();
-    if (!trimmed) return;
-
+  async function handleReplySubmit(body: string, attachmentUrl: string | null) {
     setSubmitting(true);
-    const result = await onSubmitReply(trimmed, reply.id);
+    const result = await onSubmitReply(body, reply.id, attachmentUrl);
     setSubmitting(false);
 
     if (result.error) {
@@ -72,7 +146,6 @@ function ReplyItem<T extends ReplyNode>({
       return;
     }
 
-    setReplyBody("");
     setReplyOpen(false);
     onRefresh?.();
   }
@@ -113,9 +186,14 @@ function ReplyItem<T extends ReplyNode>({
           ) : null}
         </div>
 
-        <p className="text-sm leading-relaxed text-text">
-          <MentionText body={reply.body} />
-        </p>
+        <div className="space-y-2">
+          {reply.attachment_url ? <CommentAttachment url={reply.attachment_url} /> : null}
+          {reply.body.trim() ? (
+            <p className="text-sm leading-relaxed text-text">
+              <MentionText body={reply.body} />
+            </p>
+          ) : null}
+        </div>
 
         <div className="mt-1 flex flex-wrap items-center gap-2">
           <p className="text-xs text-text-muted">
@@ -134,28 +212,14 @@ function ReplyItem<T extends ReplyNode>({
         </div>
 
         {replyOpen ? (
-          <div className="mt-2 space-y-2">
-            <MentionComposer
-              value={replyBody}
-              onChange={setReplyBody}
+          <div className="mt-2">
+            <ReplyComposer
               viewerId={viewerId}
               placeholder={`Reply to @${reply.author.username ?? "reader"}…`}
-              minHeightClassName="min-h-[64px]"
+              submitting={submitting}
+              onCancel={() => setReplyOpen(false)}
+              onSubmit={handleReplySubmit}
             />
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="ghost" size="sm" onClick={() => setReplyOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                loading={submitting}
-                onClick={() => void handleReplySubmit()}
-              >
-                Reply
-              </Button>
-            </div>
           </div>
         ) : null}
       </div>
@@ -189,15 +253,11 @@ export function ReplyThread<T extends ReplyNode>({
   composerPlaceholder = "Write a reply…",
 }: Props<T>) {
   const toast = useToast();
-  const [body, setBody] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  async function handleTopLevelSubmit() {
-    const trimmed = body.trim();
-    if (!trimmed) return;
-
+  async function handleTopLevelSubmit(body: string, attachmentUrl: string | null) {
     setSubmitting(true);
-    const result = await onSubmitReply(trimmed, null);
+    const result = await onSubmitReply(body, null, attachmentUrl);
     setSubmitting(false);
 
     if (result.error) {
@@ -205,7 +265,6 @@ export function ReplyThread<T extends ReplyNode>({
       return;
     }
 
-    setBody("");
     onRefresh?.();
   }
 
@@ -230,26 +289,12 @@ export function ReplyThread<T extends ReplyNode>({
       )}
 
       {showComposer ? (
-        <div className="space-y-2">
-          <MentionComposer
-            value={body}
-            onChange={setBody}
-            viewerId={viewerId}
-            placeholder={composerPlaceholder}
-            minHeightClassName="min-h-[80px]"
-          />
-          <div className="flex justify-end">
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              loading={submitting}
-              onClick={() => void handleTopLevelSubmit()}
-            >
-              Reply
-            </Button>
-          </div>
-        </div>
+        <ReplyComposer
+          viewerId={viewerId}
+          placeholder={composerPlaceholder}
+          submitting={submitting}
+          onSubmit={handleTopLevelSubmit}
+        />
       ) : null}
     </div>
   );
