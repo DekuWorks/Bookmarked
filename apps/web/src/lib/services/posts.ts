@@ -40,6 +40,12 @@ export type CreatePostInput = {
   imageUrl?: string | null;
 };
 
+export type UpdatePostInput = {
+  body?: string;
+  image_url?: string | null;
+  book_id?: string | null;
+};
+
 function trimBody(body: string): string {
   return body.trim();
 }
@@ -776,6 +782,70 @@ export async function repostPost(
       });
     }
   }
+
+  const [post] = await hydratePosts([data as RawPostRow], viewerId);
+  return { post };
+}
+
+export async function updatePost(
+  postId: string,
+  input: UpdatePostInput
+): Promise<{ post?: PostWithAuthor; error?: string }> {
+  const viewerId = await getViewerId();
+  if (!viewerId) return { error: "You must be signed in." };
+
+  const supabase = createClient();
+
+  const { data: existing, error: existingError } = await supabase
+    .from("posts")
+    .select(POST_SELECT)
+    .eq("id", postId)
+    .eq("user_id", viewerId)
+    .maybeSingle();
+
+  if (existingError) return { error: existingError.message };
+  if (!existing) return { error: "Post not found." };
+
+  const row = existing as RawPostRow;
+  const isRepost = Boolean(row.repost_of_post_id);
+
+  const updates: Partial<Pick<Post, "body" | "image_url" | "book_id">> = {};
+
+  if (input.body !== undefined) {
+    updates.body = trimBody(input.body);
+  }
+
+  if (!isRepost) {
+    if (input.image_url !== undefined) {
+      updates.image_url = input.image_url?.trim() || null;
+    }
+    if (input.book_id !== undefined) {
+      updates.book_id = input.book_id;
+    }
+  }
+
+  const nextBody = updates.body ?? row.body;
+  const nextImageUrl =
+    updates.image_url !== undefined ? updates.image_url : row.image_url;
+
+  if (!isRepost && !nextBody.trim() && !nextImageUrl) {
+    return { error: "Post cannot be empty." };
+  }
+
+  if (!Object.keys(updates).length) {
+    const [post] = await hydratePosts([row], viewerId);
+    return { post };
+  }
+
+  const { data, error } = await supabase
+    .from("posts")
+    .update(updates)
+    .eq("id", postId)
+    .eq("user_id", viewerId)
+    .select(POST_SELECT)
+    .single();
+
+  if (error) return { error: error.message };
 
   const [post] = await hydratePosts([data as RawPostRow], viewerId);
   return { post };

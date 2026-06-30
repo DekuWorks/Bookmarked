@@ -19,6 +19,7 @@ import {
 } from "@/lib/services/posts";
 import type { PostWithAuthor } from "@/types";
 import { PostCommentSection } from "@/components/social/PostCommentSection";
+import { PostEditPanel } from "@/components/social/PostEditPanel";
 import { QuoteRepostModal } from "@/components/social/QuoteRepostModal";
 import { RepostPreview } from "@/components/social/RepostPreview";
 import { MentionText } from "@/components/social/MentionText";
@@ -46,6 +47,7 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
   const [liking, setLiking] = useState(false);
   const [repostModalOpen, setRepostModalOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [loadingComments, setLoadingComments] = useState(false);
 
   useEffect(() => {
@@ -69,6 +71,8 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
   }, [highlighted, post.id, post.comments, viewerId]);
 
   const isOwn = localPost.user_id === viewerId;
+  const edited =
+    localPost.updated_at && localPost.updated_at !== localPost.created_at;
   const profileHref = localPost.author.username
     ? readerProfilePath(localPost.author.username)
     : null;
@@ -178,88 +182,116 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
                 >
                   <time suppressHydrationWarning dateTime={localPost.created_at}>
                     {formatFeedTimestamp(localPost.created_at, locale)}
+                    {edited ? " · edited" : ""}
                   </time>
                 </Link>
               </p>
             </div>
 
             {isOwn ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="ml-auto"
-                loading={deleting}
-                onClick={() => void handleDelete()}
-              >
-                Delete
-              </Button>
+              <span className="ml-auto flex gap-1">
+                {!isEditing ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsEditing(true)}
+                  >
+                    Edit
+                  </Button>
+                ) : null}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  loading={deleting}
+                  disabled={isEditing}
+                  onClick={() => void handleDelete()}
+                >
+                  Delete
+                </Button>
+              </span>
             ) : null}
           </div>
 
-          {localPost.repost_of && !localPost.body.trim() ? (
-            <p className="mt-2 text-xs font-medium text-text-muted">Reposted</p>
-          ) : null}
+          {isEditing ? (
+            <PostEditPanel
+              post={localPost}
+              viewerId={viewerId}
+              onSaved={(updated) => {
+                setLocalPost(updated);
+                setIsEditing(false);
+                onPostChange?.();
+              }}
+              onCancel={() => setIsEditing(false)}
+            />
+          ) : (
+            <>
+              {localPost.repost_of && !localPost.body.trim() ? (
+                <p className="mt-2 text-xs font-medium text-text-muted">Reposted</p>
+              ) : null}
 
-          {localPost.body.trim() ? (
-            <p className="mt-2 text-sm leading-relaxed text-text">
-              <MentionText body={localPost.body} />
-            </p>
-          ) : null}
+              {localPost.body.trim() ? (
+                <p className="mt-2 text-sm leading-relaxed text-text">
+                  <MentionText body={localPost.body} />
+                </p>
+              ) : null}
 
-          {localPost.image_url ? (
-            <a
-              href={localPost.image_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-3 block overflow-hidden rounded-lg border border-border"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={localPost.image_url}
-                alt={isGiphyImageUrl(localPost.image_url) ? "Post GIF" : "Post image"}
-                className={cn(
-                  "w-full",
-                  isGiphyImageUrl(localPost.image_url)
-                    ? "max-h-96 object-contain bg-background"
-                    : "max-h-96 object-cover"
-                )}
-              />
-            </a>
-          ) : null}
+              {localPost.image_url ? (
+                <a
+                  href={localPost.image_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 block overflow-hidden rounded-lg border border-border"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={localPost.image_url}
+                    alt={isGiphyImageUrl(localPost.image_url) ? "Post GIF" : "Post image"}
+                    className={cn(
+                      "w-full",
+                      isGiphyImageUrl(localPost.image_url)
+                        ? "max-h-96 object-contain bg-background"
+                        : "max-h-96 object-cover"
+                    )}
+                  />
+                </a>
+              ) : null}
 
-          {localPost.repost_of ? (
-            <div className="mt-3">
-              <RepostPreview post={localPost.repost_of} />
-            </div>
-          ) : null}
+              {localPost.repost_of ? (
+                <div className="mt-3">
+                  <RepostPreview post={localPost.repost_of} />
+                </div>
+              ) : null}
 
-          {localPost.book ? (
-            <Link
-              href={bookDetailsPath(localPost.book.id)}
-              className="mt-3 flex items-center gap-3 rounded-lg border border-border p-3 hover:border-primary/40"
-            >
-              <div className="h-20 w-14 shrink-0 overflow-hidden rounded-md shadow-sm">
-                <BookCover
-                  title={localPost.book.title}
-                  coverUrl={localPost.book.cover_url}
-                  className="h-full w-full"
-                />
-              </div>
-              <div className="min-w-0">
-                <p className="font-medium text-puce-red">{localPost.book.title}</p>
-                {localPost.book.author ? (
-                  <Link
-                    href={authorPagePath(localPost.book.author)}
-                    className="text-sm text-text-muted hover:text-primary hover:underline"
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    {localPost.book.author}
-                  </Link>
-                ) : null}
-              </div>
-            </Link>
-          ) : null}
+              {localPost.book ? (
+                <Link
+                  href={bookDetailsPath(localPost.book.id)}
+                  className="mt-3 flex items-center gap-3 rounded-lg border border-border p-3 hover:border-primary/40"
+                >
+                  <div className="h-20 w-14 shrink-0 overflow-hidden rounded-md shadow-sm">
+                    <BookCover
+                      title={localPost.book.title}
+                      coverUrl={localPost.book.cover_url}
+                      className="h-full w-full"
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-medium text-puce-red">{localPost.book.title}</p>
+                    {localPost.book.author ? (
+                      <Link
+                        href={authorPagePath(localPost.book.author)}
+                        className="text-sm text-text-muted hover:text-primary hover:underline"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        {localPost.book.author}
+                      </Link>
+                    ) : null}
+                  </div>
+                </Link>
+              ) : null}
+            </>
+          )}
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Button
