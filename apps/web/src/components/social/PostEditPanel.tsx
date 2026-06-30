@@ -142,23 +142,7 @@ export function PostEditPanel({ post, viewerId, onSaved, onCancel }: Props) {
 
   async function handleSave() {
     const trimmed = body.trim();
-
-    if (isRepost) {
-      setSaving(true);
-      const result = await updatePost(post.id, { body: trimmed });
-      setSaving(false);
-
-      if (result.error) {
-        toast.error(result.error);
-        return;
-      }
-
-      if (result.post) {
-        toast.success("Post updated.");
-        onSaved(result.post);
-      }
-      return;
-    }
+    const hadQuoteContent = Boolean(post.body.trim() || post.image_url);
 
     setSaving(true);
     const imageResult = await resolveImageUrl();
@@ -169,17 +153,23 @@ export function PostEditPanel({ post, viewerId, onSaved, onCancel }: Props) {
     }
 
     const imageUrl = imageResult.url;
-    if (!trimmed && !imageUrl) {
+
+    if (isRepost) {
+      if (hadQuoteContent && !trimmed && !imageUrl) {
+        setSaving(false);
+        toast.error("Repost cannot be empty.");
+        return;
+      }
+    } else if (!trimmed && !imageUrl) {
       setSaving(false);
       toast.error("Post cannot be empty.");
       return;
     }
 
-    const bookId = extractBookId(bookInput);
     const result = await updatePost(post.id, {
       body: trimmed,
       image_url: imageUrl,
-      book_id: bookId,
+      ...(isRepost ? {} : { book_id: extractBookId(bookInput) }),
     });
     setSaving(false);
 
@@ -212,76 +202,77 @@ export function PostEditPanel({ post, viewerId, onSaved, onCancel }: Props) {
         minHeightClassName="min-h-[80px]"
       />
 
-      {!isRepost ? (
-        <>
-          {displayImage ? (
-            <div className="relative inline-block w-fit max-w-full">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={displayImage}
-                alt={gifUrl ? "Post GIF" : "Post image"}
-                className={cn(
-                  "max-h-48 rounded-lg border border-border",
-                  gifUrl ? "object-contain bg-background" : "object-cover"
-                )}
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  if (gifUrl) clearGif();
-                  else clearImage();
-                }}
-                className="absolute -right-2 -top-2 rounded-full bg-surface px-2 py-0.5 text-xs shadow-sm ring-1 ring-border"
-                aria-label="Remove image"
-              >
-                Remove
-              </button>
-            </div>
-          ) : null}
-
-          <div className="flex flex-wrap items-center gap-2">
-            <input
-              ref={fileInputRef}
-              id={inputId}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              className="sr-only"
-              onChange={handleFileChange}
-              disabled={saving}
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={saving || Boolean(gifUrl)}
-            >
-              Attach image
-            </Button>
-          </div>
-
-          <details className="rounded-lg border border-border bg-background/50 px-3 py-2">
-            <summary className="cursor-pointer text-sm font-medium text-text">Add a GIF (optional)</summary>
-            <div className="mt-3">
-              <Input
-                label="Giphy URL"
-                value={gifInput}
-                onChange={(e) => setGifInput(e.target.value)}
-                onBlur={() => applyGifUrl(gifInput)}
-                placeholder="Paste a giphy.com link"
-                className="mb-0"
-              />
-            </div>
-          </details>
-
-          <Input
-            label="Book ID or link (optional)"
-            value={bookInput}
-            onChange={(e) => setBookInput(e.target.value)}
-            placeholder="Paste a book ID or /book/?id=… link"
-            className="mb-0"
+      {displayImage ? (
+        <div className="relative inline-block w-fit max-w-full">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={displayImage}
+            alt={gifUrl ? "Post GIF" : "Post image"}
+            className={cn(
+              "max-h-48 rounded-lg border border-border",
+              gifUrl || (remoteImageUrl && isGiphyImageUrl(remoteImageUrl))
+                ? "object-contain bg-background"
+                : "object-cover"
+            )}
           />
-        </>
+          <button
+            type="button"
+            onClick={() => {
+              if (gifUrl) clearGif();
+              else clearImage();
+            }}
+            className="absolute -right-2 -top-2 rounded-full bg-surface px-2 py-0.5 text-xs shadow-sm ring-1 ring-border"
+            aria-label="Remove image"
+          >
+            Remove
+          </button>
+        </div>
+      ) : null}
+
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          ref={fileInputRef}
+          id={inputId}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          className="sr-only"
+          onChange={handleFileChange}
+          disabled={saving}
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={saving || Boolean(gifUrl)}
+        >
+          Attach image
+        </Button>
+      </div>
+
+      <details className="rounded-lg border border-border bg-background/50 px-3 py-2">
+        <summary className="cursor-pointer text-sm font-medium text-text">Add a GIF (optional)</summary>
+        <div className="mt-3">
+          <Input
+            label="Giphy URL"
+            value={gifInput}
+            onChange={(e) => setGifInput(e.target.value)}
+            onBlur={() => applyGifUrl(gifInput)}
+            placeholder="Paste a giphy.com link"
+            className="mb-0"
+            disabled={saving}
+          />
+        </div>
+      </details>
+
+      {!isRepost ? (
+        <Input
+          label="Book ID or link (optional)"
+          value={bookInput}
+          onChange={(e) => setBookInput(e.target.value)}
+          placeholder="Paste a book ID or /book/?id=… link"
+          className="mb-0"
+        />
       ) : post.repost_of ? (
         <div>
           <p className="mb-2 text-xs font-medium text-text-muted">Reposted content (read-only)</p>

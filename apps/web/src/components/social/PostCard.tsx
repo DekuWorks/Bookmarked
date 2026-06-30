@@ -227,7 +227,7 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
             />
           ) : (
             <>
-              {localPost.repost_of && !localPost.body.trim() ? (
+              {localPost.repost_of && !localPost.body.trim() && !localPost.image_url ? (
                 <p className="mt-2 text-xs font-medium text-text-muted">Reposted</p>
               ) : null}
 

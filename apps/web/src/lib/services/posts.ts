@@ -40,6 +40,12 @@ export type CreatePostInput = {
   imageUrl?: string | null;
 };
 
+export type RepostPostInput = {
+  body?: string;
+  image_url?: string | null;
+  book_id?: string | null;
+};
+
 export type UpdatePostInput = {
   body?: string;
   image_url?: string | null;
@@ -721,12 +727,14 @@ export async function deleteComment(commentId: string): Promise<{ error?: string
 
 export async function repostPost(
   postId: string,
-  body = ""
+  input: RepostPostInput = {}
 ): Promise<{ post?: PostWithAuthor; error?: string }> {
   const viewerId = await getViewerId();
   if (!viewerId) return { error: "You must be signed in." };
 
-  const trimmed = trimBody(body);
+  const trimmed = trimBody(input.body ?? "");
+  const imageUrl = input.image_url?.trim() || null;
+
   const supabase = createClient();
 
   const { data: existing } = await supabase
@@ -743,6 +751,8 @@ export async function repostPost(
     .insert({
       user_id: viewerId,
       body: trimmed,
+      image_url: imageUrl,
+      book_id: input.book_id ?? null,
       repost_of_post_id: postId,
     })
     .select(POST_SELECT)
@@ -815,20 +825,24 @@ export async function updatePost(
     updates.body = trimBody(input.body);
   }
 
-  if (!isRepost) {
-    if (input.image_url !== undefined) {
-      updates.image_url = input.image_url?.trim() || null;
-    }
-    if (input.book_id !== undefined) {
-      updates.book_id = input.book_id;
-    }
+  if (input.image_url !== undefined) {
+    updates.image_url = input.image_url?.trim() || null;
+  }
+
+  if (!isRepost && input.book_id !== undefined) {
+    updates.book_id = input.book_id;
   }
 
   const nextBody = updates.body ?? row.body;
   const nextImageUrl =
     updates.image_url !== undefined ? updates.image_url : row.image_url;
 
-  if (!isRepost && !nextBody.trim() && !nextImageUrl) {
+  const hadQuoteContent = Boolean(row.body.trim() || row.image_url);
+  if (isRepost) {
+    if (hadQuoteContent && !nextBody.trim() && !nextImageUrl) {
+      return { error: "Repost cannot be empty." };
+    }
+  } else if (!nextBody.trim() && !nextImageUrl) {
     return { error: "Post cannot be empty." };
   }
 
