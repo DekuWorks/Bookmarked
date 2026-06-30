@@ -2,9 +2,11 @@ import { createClient } from "@/lib/supabase/client";
 import { postFeedPath } from "@/lib/routes/posts";
 import { getFollowingIds } from "@/lib/services/follows";
 import {
+  createMentionNotification,
   createPostCommentNotification,
   createPostLikeNotification,
 } from "@/lib/services/notifications";
+import { extractMentionUsernames } from "@/lib/utils/mentions";
 import type {
   Post,
   PostAuthor,
@@ -395,6 +397,39 @@ export async function createPost(input: CreatePostInput): Promise<{ post?: PostW
     .single();
 
   if (error) return { error: error.message };
+
+  const postId = (data as RawPostRow).id;
+
+  const { data: actorProfile } = await supabase
+    .from("profiles")
+    .select("display_name, username")
+    .eq("id", viewerId)
+    .maybeSingle();
+
+  const actorDisplayName =
+    actorProfile?.display_name?.trim() ||
+    actorProfile?.username?.trim() ||
+    "A reader";
+
+  const mentionUsernames = extractMentionUsernames(body);
+  if (mentionUsernames.length) {
+    const { data: mentionedProfiles } = await supabase
+      .from("profiles")
+      .select("id, username")
+      .in("username", mentionUsernames);
+
+    for (const profile of mentionedProfiles ?? []) {
+      if (profile.id === viewerId) continue;
+      void createMentionNotification({
+        recipientId: profile.id as string,
+        actorId: viewerId,
+        actorDisplayName,
+        linkUrl: postFeedPath(postId),
+        preview: body,
+        dedupKey: `mention:post:${postId}:${profile.id}`,
+      });
+    }
+  }
 
   const [post] = await hydratePosts([data as RawPostRow], viewerId);
   return { post };

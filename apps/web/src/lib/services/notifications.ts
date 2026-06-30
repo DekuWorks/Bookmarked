@@ -453,6 +453,7 @@ export async function createMentionNotification(input: {
   linkUrl: string;
   preview: string;
   dedupKey: string;
+  postId?: string;
 }): Promise<void> {
   const supabase = createClient();
 
@@ -466,7 +467,26 @@ export async function createMentionNotification(input: {
     p_metadata: {
       notification_kind: "mention",
       dedup_key: input.dedupKey,
+      ...(input.postId ? { post_id: input.postId } : {}),
     },
+  });
+}
+
+export async function createPostMentionNotification(input: {
+  recipientId: string;
+  actorId: string;
+  actorDisplayName: string;
+  postId: string;
+  preview: string;
+}): Promise<void> {
+  await createMentionNotification({
+    recipientId: input.recipientId,
+    actorId: input.actorId,
+    actorDisplayName: input.actorDisplayName,
+    linkUrl: postFeedPath(input.postId),
+    preview: input.preview,
+    dedupKey: `mention:post:${input.postId}:${input.recipientId}`,
+    postId: input.postId,
   });
 }
 

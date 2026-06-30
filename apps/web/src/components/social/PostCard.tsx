@@ -20,6 +20,7 @@ import {
 } from "@/lib/services/posts";
 import type { PostWithAuthor } from "@/types";
 import { PostCommentSection } from "@/components/social/PostCommentSection";
+import { MentionText } from "@/components/social/MentionText";
 import { usePreferredLocale } from "@/lib/hooks/usePreferredLocale";
 import { isGiphyImageUrl } from "@/lib/utils/giphy";
 import { formatFeedTimestamp } from "@/lib/utils/locale";
@@ -53,7 +54,9 @@ function RepostPreview({ post }: { post: PostWithAuthor }) {
         )}
       </p>
       {post.body.trim() ? (
-        <p className="text-sm leading-relaxed text-text">{post.body}</p>
+        <p className="text-sm leading-relaxed text-text">
+          <MentionText body={post.body} />
+        </p>
       ) : null}
       {post.book ? (
         <Link
@@ -231,8 +234,8 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
           ) : null}
 
           {localPost.body.trim() ? (
-            <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-text">
-              {localPost.body}
+            <p className="mt-2 text-sm leading-relaxed text-text">
+              <MentionText body={localPost.body} />
             </p>
           ) : null}
 
