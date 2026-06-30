@@ -134,6 +134,7 @@ export function SearchResultCard({
 
     let cancelled = false;
     void resolveBookCoverUrl({
+      coverId: effectiveCoverId ? Number(effectiveCoverId) : null,
       coverUrl,
       isbn: effectiveIsbn,
       title,
@@ -145,7 +146,7 @@ export function SearchResultCard({
     return () => {
       cancelled = true;
     };
-  }, [coverUrl, effectiveIsbn, title, author, resolvedCoverUrl]);
+  }, [coverUrl, effectiveCoverId, effectiveIsbn, title, author, resolvedCoverUrl]);
 
   const bookPayload = {
     title: selectedEdition?.title ?? title,
@@ -156,6 +157,7 @@ export function SearchResultCard({
     isbn: effectiveIsbn,
     first_publish_year: effectiveYear,
     first_sentence,
+    edition_key: selectedEdition?.editionKey,
   };
 
   async function handleViewDetails() {
@@ -187,6 +189,9 @@ export function SearchResultCard({
     formData.set("isbn", bookPayload.isbn);
     formData.set("first_publish_year", bookPayload.first_publish_year);
     formData.set("first_sentence", first_sentence);
+    if (bookPayload.edition_key) {
+      formData.set("edition_key", bookPayload.edition_key);
+    }
     formData.set("shelf_status", shelfStatus);
 
     try {

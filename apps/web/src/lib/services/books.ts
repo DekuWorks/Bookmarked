@@ -23,6 +23,8 @@ type OpenLibraryBookInput = {
   isbn?: string;
   first_publish_year?: string;
   first_sentence?: string;
+  /** Set when the user picked a specific edition in search. */
+  edition_key?: string;
 };
 
 function seedDescriptionFromSearch(firstSentence?: string): string | null {
@@ -34,14 +36,24 @@ async function upsertOpenLibraryCatalogBook(
   supabase: SupabaseClient,
   input: OpenLibraryBookInput
 ): Promise<{ bookId?: string; error?: string }> {
-  const { title, author, external_id, cover_i, page_count, isbn, first_publish_year, first_sentence } =
-    input;
+  const {
+    title,
+    author,
+    external_id,
+    cover_i,
+    page_count,
+    isbn,
+    first_publish_year,
+    first_sentence,
+    edition_key,
+  } = input;
 
   if (!title || !external_id) {
     return { error: "Invalid book data." };
   }
 
   const publishedDate = first_publish_year?.trim() || null;
+  const editionSelected = Boolean(edition_key?.trim());
 
   const cover_url = await resolveBookCoverUrl({
     coverId: cover_i ? Number(cover_i) : null,
@@ -52,14 +64,23 @@ async function upsertOpenLibraryCatalogBook(
 
   const { data: existing } = await supabase
     .from("books")
-    .select("id, cover_url")
+    .select("id, cover_url, isbn")
     .eq("external_source", "open_library")
     .eq("external_id", external_id)
     .maybeSingle();
 
   if (existing?.id) {
     const patch: Record<string, unknown> = {};
-    if (!existing.cover_url && cover_url) patch.cover_url = cover_url;
+    const trimmedIsbn = isbn?.trim() || null;
+
+    if (editionSelected) {
+      if (cover_url) patch.cover_url = cover_url;
+      if (trimmedIsbn) patch.isbn = trimmedIsbn;
+      if (page_count) patch.page_count = Number(page_count);
+      if (publishedDate) patch.published_date = publishedDate;
+    } else if (!existing.cover_url && cover_url) {
+      patch.cover_url = cover_url;
+    }
 
     if (Object.keys(patch).length > 0) {
       await supabase.from("books").update(patch).eq("id", existing.id);
@@ -145,6 +166,7 @@ export async function addOpenLibraryBookToShelf(
     isbn: String(formData.get("isbn") ?? "").trim() || undefined,
     first_publish_year: String(formData.get("first_publish_year") ?? "").trim() || undefined,
     first_sentence: String(formData.get("first_sentence") ?? "").trim() || undefined,
+    edition_key: String(formData.get("edition_key") ?? "").trim() || undefined,
   };
 
   const catalog = await upsertOpenLibraryCatalogBook(supabase, input);

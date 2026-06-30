@@ -6,7 +6,6 @@ import {
 import {
   fetchOpenLibraryWorkDetails,
   fetchWorkEditions,
-  openLibraryCoverUrl,
 } from "@/lib/services/openLibrary";
 import type { Book } from "@/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -60,6 +59,53 @@ function buildMetadataUpdates(
   return updates;
 }
 
+function normalizeIsbn(isbn: string | null | undefined): string | null {
+  const clean = isbn?.replace(/[-\s]/g, "") ?? "";
+  return clean || null;
+}
+
+async function findOpenLibraryEditionCoverId(
+  workId: string,
+  isbn?: string | null
+): Promise<number | null> {
+  const editions = await fetchWorkEditions(workId, 20);
+  const targetIsbn = normalizeIsbn(isbn);
+
+  if (targetIsbn) {
+    const match = editions.find((edition) => normalizeIsbn(edition.isbn) === targetIsbn);
+    if (match?.coverId) return match.coverId;
+  }
+
+  return editions.find((edition) => edition.coverId)?.coverId ?? null;
+}
+
+/** Resolve best cover from Open Library (edition-aware) then Google Books. */
+export async function resolveCatalogCoverForBook(book: Book): Promise<string | null> {
+  let coverId: number | null = null;
+
+  if (book.external_source === "open_library" && book.external_id) {
+    coverId = await findOpenLibraryEditionCoverId(book.external_id, book.isbn);
+  }
+
+  return resolveBookCoverUrl({
+    coverId,
+    coverUrl: book.cover_url,
+    isbn: book.isbn,
+    title: book.title,
+    author: book.author,
+  });
+}
+
+async function syncBookCover(
+  supabase: SupabaseClient,
+  book: Book
+): Promise<Book> {
+  const coverUrl = await resolveCatalogCoverForBook(book);
+  if (!coverUrl || coverUrl === book.cover_url) return book;
+
+  return persistBookUpdates(supabase, book.id, { cover_url: coverUrl }, book);
+}
+
 async function persistBookUpdates(
   supabase: SupabaseClient,
   bookId: string,
@@ -100,7 +146,9 @@ export async function enrichBookCatalogEntry(
   supabase: SupabaseClient,
   book: Book
 ): Promise<Book> {
-  if (!bookNeedsCatalogEnrichment(book)) return book;
+  if (!bookNeedsCatalogEnrichment(book)) {
+    return syncBookCover(supabase, book);
+  }
 
   const ol =
     book.external_source === "open_library" && book.external_id
@@ -125,26 +173,7 @@ export async function enrichBookCatalogEntry(
   const metadataUpdates = buildMetadataUpdates(book, ol, google);
   let current = await persistBookUpdates(supabase, book.id, metadataUpdates, book);
 
-  if (!current.cover_url?.trim()) {
-    const coverUrl =
-      (await resolveBookCoverUrl({
-        coverUrl: current.cover_url,
-        isbn: current.isbn,
-        title: current.title,
-        author: current.author,
-      })) ??
-      google?.coverUrl ??
-      null;
-
-    if (coverUrl) {
-      current = await persistBookUpdates(
-        supabase,
-        current.id,
-        { cover_url: coverUrl },
-        current
-      );
-    }
-  }
+  current = await syncBookCover(supabase, current);
 
   return current;
 }
@@ -183,18 +212,7 @@ export async function refreshBookFromOpenLibrary(
   if (ol.publisher) updates.publisher = ol.publisher;
   if (ol.page_count) updates.page_count = ol.page_count;
 
-  const editions = await fetchWorkEditions(row.external_id, 5);
-  const coverId = editions.find((edition) => edition.coverId)?.coverId ?? null;
-  const olCover = coverId ? openLibraryCoverUrl(coverId) : null;
-  const resolvedCover =
-    olCover ??
-    (await resolveBookCoverUrl({
-      coverUrl: row.cover_url,
-      isbn: row.isbn,
-      title: row.title,
-      author: row.author,
-    }));
-
+  const resolvedCover = await resolveCatalogCoverForBook(row);
   if (resolvedCover) {
     updates.cover_url = resolvedCover;
   }
