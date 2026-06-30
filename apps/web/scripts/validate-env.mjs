@@ -27,10 +27,8 @@ function loadDotEnvFile(filename) {
   }
 }
 
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-  loadDotEnvFile(".env.local");
-  loadDotEnvFile(".env");
-}
+loadDotEnvFile(".env.local");
+loadDotEnvFile(".env");
 
 const checks = [
   ["NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()],
@@ -51,6 +49,12 @@ for (const [name, value] of checks) {
 
 if (failed) {
   process.exit(1);
+}
+
+if (!process.env.NEXT_PUBLIC_GIPHY_API_KEY?.trim()) {
+  console.warn(
+    "::warning::NEXT_PUBLIC_GIPHY_API_KEY is not set. GIF search will be disabled; pasting Giphy URLs still works."
+  );
 }
 
 console.log("Supabase environment variables validated.");
