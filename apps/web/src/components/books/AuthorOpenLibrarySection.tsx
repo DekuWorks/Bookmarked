@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { SearchResultCard } from "@/components/search/SearchResultCard";
 import { Button } from "@/components/ui/Button";
 import { SEARCH_PAGE_SIZE } from "@/lib/constants/searchFilters";
+import { usePreferredOpenLibraryLanguage } from "@/lib/hooks/usePreferredOpenLibraryLanguage";
 import {
   openLibraryWorkId,
   searchOpenLibraryByAuthor,
@@ -26,6 +27,7 @@ function filterNewWorks(docs: OpenLibraryDoc[], knownExternalIds: Set<string>): 
 }
 
 export function AuthorOpenLibrarySection({ authorName, knownExternalIds }: Props) {
+  const preferredLanguage = usePreferredOpenLibraryLanguage();
   const [docs, setDocs] = useState<OpenLibraryDoc[]>([]);
   const [numFound, setNumFound] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -46,6 +48,7 @@ export function AuthorOpenLibrarySection({ authorName, knownExternalIds }: Props
         const result = await searchOpenLibraryByAuthor(authorName, {
           limit: SEARCH_PAGE_SIZE,
           offset,
+          language: preferredLanguage,
         });
 
         setNumFound(result.numFound);
@@ -65,7 +68,7 @@ export function AuthorOpenLibrarySection({ authorName, knownExternalIds }: Props
         setLoadingMore(false);
       }
     },
-    [authorName]
+    [authorName, preferredLanguage]
   );
 
   useEffect(() => {
@@ -73,7 +76,7 @@ export function AuthorOpenLibrarySection({ authorName, knownExternalIds }: Props
     setNumFound(0);
     setRawOffset(0);
     void loadPage(0, false);
-  }, [authorName, loadPage]);
+  }, [authorName, preferredLanguage, loadPage]);
 
   const visibleDocs = filterNewWorks(docs, knownExternalIds);
   const hasMore = rawOffset < numFound;

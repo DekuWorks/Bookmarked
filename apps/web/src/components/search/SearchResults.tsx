@@ -11,7 +11,9 @@ import {
 } from "@/lib/services/openLibrary";
 import { resolveDisplayCoverUrl } from "@/lib/services/covers";
 import { SEARCH_PAGE_SIZE } from "@/lib/constants/searchFilters";
+import { usePreferredOpenLibraryLanguage } from "@/lib/hooks/usePreferredOpenLibraryLanguage";
 import { isIsbnQuery } from "@/lib/utils/isbn";
+import { resolveSearchLanguage } from "@/lib/utils/searchLanguage";
 import { LoadingState } from "@/components/ui/LoadingState";
 import type { OpenLibraryDoc } from "@/types";
 
@@ -27,12 +29,14 @@ function parseOptionalInt(value: string | null): number | undefined {
 
 export function SearchResults({ query }: Props) {
   const searchParams = useSearchParams();
-  const language = searchParams.get("lang") ?? undefined;
+  const preferredLanguage = usePreferredOpenLibraryLanguage();
+  const urlLang = searchParams.get("lang");
+  const language = resolveSearchLanguage(urlLang, preferredLanguage);
   const yearFrom = parseOptionalInt(searchParams.get("yearFrom"));
   const yearTo = parseOptionalInt(searchParams.get("yearTo"));
   const sort = searchParams.get("sort") ?? undefined;
 
-  const filterKey = `${language ?? ""}|${yearFrom ?? ""}|${yearTo ?? ""}|${sort ?? ""}`;
+  const filterKey = `${urlLang ?? ""}|${language ?? ""}|${preferredLanguage ?? ""}|${yearFrom ?? ""}|${yearTo ?? ""}|${sort ?? ""}`;
 
   const searchOptions = useMemo(
     () => ({ language, yearFrom, yearTo, sort }),

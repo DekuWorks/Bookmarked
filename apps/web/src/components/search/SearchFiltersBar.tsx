@@ -5,6 +5,8 @@ import {
   SEARCH_LANGUAGE_OPTIONS,
   SEARCH_SORT_OPTIONS,
 } from "@/lib/constants/searchFilters";
+import { usePreferredOpenLibraryLanguage } from "@/lib/hooks/usePreferredOpenLibraryLanguage";
+import { resolveSearchLanguageFilterValue } from "@/lib/utils/searchLanguage";
 import { cn } from "@/lib/utils/cn";
 
 function parseYear(value: string | null): string {
@@ -18,7 +20,9 @@ export function SearchFiltersBar() {
   const searchParams = useSearchParams();
   const q = searchParams.get("q") ?? "";
 
-  const language = searchParams.get("lang") ?? "";
+  const preferredLanguage = usePreferredOpenLibraryLanguage();
+  const urlLang = searchParams.get("lang");
+  const language = resolveSearchLanguageFilterValue(urlLang, preferredLanguage);
   const yearFrom = parseYear(searchParams.get("yearFrom"));
   const yearTo = parseYear(searchParams.get("yearTo"));
   const sort = searchParams.get("sort") ?? "";
@@ -49,7 +53,9 @@ export function SearchFiltersBar() {
           <span className="mb-1 block text-xs font-medium text-text-muted">Language</span>
           <select
             value={language}
-            onChange={(e) => pushFilters({ lang: e.target.value || null })}
+            onChange={(e) =>
+              pushFilters({ lang: e.target.value ? e.target.value : "any" })
+            }
             className={selectClass}
             aria-label="Filter by language"
           >
