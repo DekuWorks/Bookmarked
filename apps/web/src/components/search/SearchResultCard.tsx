@@ -19,6 +19,10 @@ import { bookDetailsPath } from "@/lib/routes/book";
 import { cn } from "@/lib/utils/cn";
 import type { ShelfStatus } from "@/types";
 
+/** Outline buttons on the desktop hover overlay (puce-red background). */
+const overlayOutlineButtonClass =
+  "border-white bg-white/90 text-puce-red hover:bg-white";
+
 type Props = {
   title: string;
   author: string | null;
@@ -38,6 +42,7 @@ function ResultActions({
   viewDetailsLoading,
   addLoading,
   editionLabel,
+  overlay = false,
   className,
 }: {
   onViewDetails: () => void;
@@ -46,8 +51,11 @@ function ResultActions({
   viewDetailsLoading: boolean;
   addLoading: boolean;
   editionLabel?: string | null;
+  overlay?: boolean;
   className?: string;
 }) {
+  const outlineButtonClass = overlay ? overlayOutlineButtonClass : undefined;
+
   return (
     <div className={cn("flex flex-col gap-2", className)}>
       <Button
@@ -59,7 +67,13 @@ function ResultActions({
       >
         View details
       </Button>
-      <Button type="button" variant="outline" size="sm" onClick={onPickEdition}>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={onPickEdition}
+        className={outlineButtonClass}
+      >
         {editionLabel ? "Change edition" : "Pick edition"}
       </Button>
       <Button
@@ -69,7 +83,7 @@ function ResultActions({
         loading={addLoading}
         disabled={addLoading}
         onClick={onAddToShelf}
-        className="border-white bg-white/90 text-puce-red hover:bg-white md:border-primary md:bg-transparent md:text-white md:hover:bg-white/20"
+        className={outlineButtonClass}
       >
         Add to shelf
       </Button>
@@ -214,6 +228,7 @@ export function SearchResultCard({
             aria-hidden={false}
           >
             <ResultActions
+              overlay
               onViewDetails={handleViewDetails}
               onAddToShelf={openShelfMenu}
               onPickEdition={() => setEditionOpen(true)}

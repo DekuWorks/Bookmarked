@@ -69,7 +69,12 @@ export default function ReadingRoomPage() {
         <CurrentlyReadingRow items={data.currentlyReading} onItemsChange={loadReadingRoom} />
       </ReadingRoomSection>
 
-      <SuggestedShelvesPanel userId={user.id} className="rounded-xl border border-border bg-surface/80 p-5 shadow-sm" />
+      <SuggestedShelvesPanel
+        userId={user.id}
+        variant="reading-room"
+        className="rounded-xl border border-border bg-surface/80 p-5 shadow-sm"
+        onShelfCreated={() => void loadReadingRoom()}
+      />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <ReadingRoomSection title="Recently finished" emoji="✅">

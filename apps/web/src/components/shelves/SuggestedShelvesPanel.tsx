@@ -18,12 +18,15 @@ import { getProfile } from "@/lib/services/profile";
 import { useUserBooksRealtime } from "@/lib/hooks/useUserBooksRealtime";
 import { useToast } from "@/components/ui/Toast";
 import type { UserShelf } from "@/types";
+import { SuggestedShelfPreviewBar } from "@/components/shelves/SuggestedShelfPreviewBar";
 import { cn } from "@/lib/utils/cn";
 
 type Props = {
   userId: string;
   className?: string;
   onShelfCreated?: (shelf: UserShelf) => void;
+  /** Reading room opens a preview bar on chip click instead of quick-create. */
+  variant?: "default" | "reading-room";
 };
 
 type ShelfDraft = {
@@ -54,7 +57,20 @@ function suggestionSubtitle(shelf: SuggestedShelf): string {
   return parts.join(" · ");
 }
 
-export function SuggestedShelvesPanel({ userId, className, onShelfCreated }: Props) {
+function matchingBooksForShelf(
+  books: LibraryBookRow[],
+  genre: string | null
+): LibraryBookRow[] {
+  const ids = new Set(matchingLibraryBookIds(books, genre));
+  return books.filter((row) => row.books?.id && ids.has(row.books.id));
+}
+
+export function SuggestedShelvesPanel({
+  userId,
+  className,
+  onShelfCreated,
+  variant = "default",
+}: Props) {
   const toast = useToast();
   const [suggestions, setSuggestions] = useState<SuggestedShelf[]>([]);
   const [libraryBooks, setLibraryBooks] = useState<LibraryBookRow[]>([]);
@@ -66,6 +82,8 @@ export function SuggestedShelvesPanel({ userId, className, onShelfCreated }: Pro
   const [modalOpen, setModalOpen] = useState(false);
   const [modalPrefill, setModalPrefill] = useState<SuggestedShelf | null>(null);
   const [modalBookIds, setModalBookIds] = useState<string[]>([]);
+  const [previewShelf, setPreviewShelf] = useState<SuggestedShelf | null>(null);
+  const usePreviewBar = variant === "reading-room";
 
   const reloadSuggestions = useCallback(async () => {
     const [profile, books] = await Promise.all([
@@ -184,6 +202,40 @@ export function SuggestedShelvesPanel({ userId, className, onShelfCreated }: Pro
     setModalOpen(true);
     setEditingKey(null);
     setInlineError(null);
+    setPreviewShelf(null);
+  }
+
+  function openPreview(shelf: SuggestedShelf) {
+    setPreviewShelf(shelf);
+    setEditingKey(null);
+    setInlineError(null);
+  }
+
+  function closePreview() {
+    setPreviewShelf(null);
+  }
+
+  async function handlePreviewCreate() {
+    if (!previewShelf) return;
+    const key = suggestionKey(previewShelf);
+    const shelf = await createFromDraft(key, draftFromShelf(previewShelf));
+    if (shelf) closePreview();
+  }
+
+  function handleChipClick(shelf: SuggestedShelf) {
+    if (usePreviewBar) {
+      openPreview(shelf);
+      return;
+    }
+    void handleQuickCreate(shelf);
+  }
+
+  function handleChipCustomize(shelf: SuggestedShelf) {
+    if (usePreviewBar) {
+      openCustomizeModal(shelf);
+      return;
+    }
+    startInlineEdit(shelf);
   }
 
   if (loading) {
@@ -288,7 +340,7 @@ export function SuggestedShelvesPanel({ userId, className, onShelfCreated }: Pro
                 <button
                   type="button"
                   disabled={isCreating}
-                  onClick={() => void handleQuickCreate(shelf)}
+                  onClick={() => handleChipClick(shelf)}
                   className="min-h-[44px] px-3 py-2 text-left text-sm transition hover:bg-primary/5 disabled:opacity-50"
                 >
                   <span className="block font-medium text-text">📚 {shelf.name}</span>
@@ -298,8 +350,8 @@ export function SuggestedShelvesPanel({ userId, className, onShelfCreated }: Pro
                 </button>
                 <button
                   type="button"
-                  onClick={() => startInlineEdit(shelf)}
-                  className="border-l border-border px-2 text-xs text-text-muted hover:bg-background hover:text-text"
+                  onClick={() => handleChipCustomize(shelf)}
+                  className="min-h-[44px] min-w-[44px] border-l border-border px-2 text-xs text-text-muted hover:bg-background hover:text-text"
                   aria-label={`Customize ${shelf.name} shelf before creating`}
                   title="Customize before creating"
                 >
@@ -310,6 +362,20 @@ export function SuggestedShelvesPanel({ userId, className, onShelfCreated }: Pro
           );
         })}
       </ul>
+
+      <SuggestedShelfPreviewBar
+        open={usePreviewBar && previewShelf !== null}
+        shelf={previewShelf}
+        matchingBooks={
+          previewShelf ? matchingBooksForShelf(libraryBooks, previewShelf.genre) : []
+        }
+        creating={previewShelf ? creatingKey === suggestionKey(previewShelf) : false}
+        onClose={closePreview}
+        onCreate={() => void handlePreviewCreate()}
+        onCustomize={() => {
+          if (previewShelf) openCustomizeModal(previewShelf);
+        }}
+      />
 
       <CreateShelfModal
         key={modalPrefill ? suggestionKey(modalPrefill) : "new-shelf"}

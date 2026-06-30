@@ -11,9 +11,12 @@ import { ReadingProgressPanel } from "@/components/books/ReadingProgressPanel";
 import { BookReviewSection } from "@/components/books/BookReviewSection";
 import { ShelfBadge } from "@/components/shelves/ShelfBadge";
 import { LoadingState } from "@/components/ui/LoadingState";
+import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import { bookDetailsPath } from "@/lib/routes/book";
+import { authorPagePath } from "@/lib/routes/author";
+import { refreshBookFromOpenLibrary } from "@/lib/services/bookMetadata";
 import type { BookDetailsData } from "@/lib/services/bookDetails";
 import type { ShelfStatus } from "@/types";
 
@@ -24,6 +27,8 @@ function BookDetailsContent() {
   const focusReviews = searchParams.get("section") === "reviews";
   const user = useAuthUser();
   const [data, setData] = useState<BookDetailsData | null | undefined>(undefined);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState<string | null>(null);
 
   const loadBookDetails = () => {
     if (!user || !bookId) return;
@@ -79,6 +84,22 @@ function BookDetailsContent() {
 
   const { book, userBook, reviews, ownReview } = data;
   const currentShelf = (userBook?.shelf_status as ShelfStatus | undefined) ?? null;
+  const canRefreshFromOpenLibrary =
+    book.external_source === "open_library" && Boolean(book.external_id);
+
+  const handleRefreshMetadata = async () => {
+    setRefreshError(null);
+    setRefreshing(true);
+    const result = await refreshBookFromOpenLibrary(book.id);
+    setRefreshing(false);
+
+    if (result.error) {
+      setRefreshError(result.error);
+      return;
+    }
+
+    loadBookDetails();
+  };
 
   return (
     <div className="mx-auto max-w-2xl space-y-10 overflow-x-hidden text-center">
@@ -105,12 +126,29 @@ function BookDetailsContent() {
         {book.author ? (
           <p className="mt-2 text-lg text-text-muted">
             <Link
-              href={`/search/?q=${encodeURIComponent(book.author)}`}
+              href={authorPagePath(book.author)}
               className="hover:text-primary hover:underline"
             >
               {book.author}
             </Link>
           </p>
+        ) : null}
+
+        {canRefreshFromOpenLibrary ? (
+          <div className="mt-4 flex flex-col items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              loading={refreshing}
+              onClick={() => void handleRefreshMetadata()}
+            >
+              Refresh metadata
+            </Button>
+            {refreshError ? (
+              <p className="text-sm text-royal-orange">{refreshError}</p>
+            ) : null}
+          </div>
         ) : null}
 
         <dl className="mx-auto mt-6 grid max-w-md gap-3 text-sm sm:grid-cols-2">
