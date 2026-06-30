@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import { postFeedPath } from "@/lib/routes/posts";
+import { uploadPostImage, validatePostImageFile } from "@/lib/services/posts";
 import {
   createMentionNotification,
   createPostCommentReactionNotification,
@@ -10,6 +11,14 @@ import { extractMentionUsernames } from "@/lib/utils/mentions";
 import { buildReplyThread, type ThreadNode } from "@/lib/utils/threadReplies";
 
 const AUTHOR_SELECT = "id, username, display_name, avatar_url";
+
+export { validatePostImageFile as validateCommentAttachmentFile };
+
+export async function uploadCommentAttachment(
+  file: File
+): Promise<{ url?: string; error?: string }> {
+  return uploadPostImage(file);
+}
 
 async function getViewerId(): Promise<string | null> {
   const supabase = createClient();

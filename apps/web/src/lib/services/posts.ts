@@ -283,7 +283,7 @@ async function fetchCommentsForPosts(
   const supabase = createClient();
   const { data, error } = await supabase
     .from("post_comments")
-    .select("id, post_id, user_id, body, created_at, updated_at")
+    .select("id, post_id, user_id, body, attachment_url, created_at, updated_at")
     .in("post_id", postIds)
     .order("created_at", { ascending: true });
 
@@ -557,13 +557,15 @@ export async function unlikePost(postId: string): Promise<{ error?: string }> {
 
 export async function addComment(
   postId: string,
-  body: string
+  body: string,
+  attachmentUrl?: string | null
 ): Promise<{ comment?: PostCommentWithAuthor; error?: string }> {
   const viewerId = await getViewerId();
   if (!viewerId) return { error: "You must be signed in." };
 
   const trimmed = trimBody(body);
-  if (!trimmed) return { error: "Comment cannot be empty." };
+  const attachment = attachmentUrl?.trim() || null;
+  if (!trimmed && !attachment) return { error: "Write a comment or attach an image or GIF." };
 
   const supabase = createClient();
 
@@ -582,8 +584,9 @@ export async function addComment(
       post_id: postId,
       user_id: viewerId,
       body: trimmed,
+      attachment_url: attachment,
     })
-    .select("id, post_id, user_id, body, created_at, updated_at")
+    .select("id, post_id, user_id, body, attachment_url, created_at, updated_at")
     .single();
 
   if (error) return { error: error.message };
@@ -614,8 +617,31 @@ export async function addComment(
       "A reader",
     postId,
     commentId: (data as RawCommentRow).id,
-    preview: trimmed,
+    preview: trimmed || "Sent an image",
   });
+
+  const mentionUsernames = extractMentionUsernames(trimmed);
+  if (mentionUsernames.length) {
+    const { data: mentionedProfiles } = await supabase
+      .from("profiles")
+      .select("id, username")
+      .in("username", mentionUsernames);
+
+    for (const profile of mentionedProfiles ?? []) {
+      if (profile.id === viewerId) continue;
+      void createMentionNotification({
+        recipientId: profile.id as string,
+        actorId: viewerId,
+        actorDisplayName:
+          actorProfile?.display_name?.trim() ||
+          actorProfile?.username?.trim() ||
+          "A reader",
+        linkUrl: postFeedPath(postId),
+        preview: trimmed,
+        dedupKey: `mention:post_comment:${(data as RawCommentRow).id}:${profile.id}`,
+      });
+    }
+  }
 
   return { comment };
 }
@@ -628,15 +654,26 @@ export async function updateComment(
   if (!viewerId) return { error: "You must be signed in." };
 
   const trimmed = trimBody(body);
-  if (!trimmed) return { error: "Comment cannot be empty." };
 
   const supabase = createClient();
+
+  const { data: existing, error: existingError } = await supabase
+    .from("post_comments")
+    .select("attachment_url")
+    .eq("id", commentId)
+    .eq("user_id", viewerId)
+    .maybeSingle();
+
+  if (existingError) return { error: existingError.message };
+  if (!existing) return { error: "Comment not found." };
+  if (!trimmed && !existing.attachment_url) return { error: "Comment cannot be empty." };
+
   const { data, error } = await supabase
     .from("post_comments")
     .update({ body: trimmed })
     .eq("id", commentId)
     .eq("user_id", viewerId)
-    .select("id, post_id, user_id, body, created_at, updated_at")
+    .select("id, post_id, user_id, body, attachment_url, created_at, updated_at")
     .single();
 
   if (error) return { error: error.message };
@@ -670,10 +707,14 @@ export async function deleteComment(commentId: string): Promise<{ error?: string
   return {};
 }
 
-export async function repostPost(postId: string): Promise<{ post?: PostWithAuthor; error?: string }> {
+export async function repostPost(
+  postId: string,
+  body = ""
+): Promise<{ post?: PostWithAuthor; error?: string }> {
   const viewerId = await getViewerId();
   if (!viewerId) return { error: "You must be signed in." };
 
+  const trimmed = trimBody(body);
   const supabase = createClient();
 
   const { data: existing } = await supabase
@@ -689,13 +730,46 @@ export async function repostPost(postId: string): Promise<{ post?: PostWithAutho
     .from("posts")
     .insert({
       user_id: viewerId,
-      body: "",
+      body: trimmed,
       repost_of_post_id: postId,
     })
     .select(POST_SELECT)
     .single();
 
   if (error) return { error: error.message };
+
+  const newPostId = (data as RawPostRow).id;
+
+  const mentionUsernames = extractMentionUsernames(trimmed);
+  if (mentionUsernames.length) {
+    const { data: actorProfile } = await supabase
+      .from("profiles")
+      .select("display_name, username")
+      .eq("id", viewerId)
+      .maybeSingle();
+
+    const actorDisplayName =
+      actorProfile?.display_name?.trim() ||
+      actorProfile?.username?.trim() ||
+      "A reader";
+
+    const { data: mentionedProfiles } = await supabase
+      .from("profiles")
+      .select("id, username")
+      .in("username", mentionUsernames);
+
+    for (const profile of mentionedProfiles ?? []) {
+      if (profile.id === viewerId) continue;
+      void createMentionNotification({
+        recipientId: profile.id as string,
+        actorId: viewerId,
+        actorDisplayName,
+        linkUrl: postFeedPath(newPostId),
+        preview: trimmed,
+        dedupKey: `mention:post:${newPostId}:${profile.id}`,
+      });
+    }
+  }
 
   const [post] = await hydratePosts([data as RawPostRow], viewerId);
   return { post };

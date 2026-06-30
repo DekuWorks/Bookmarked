@@ -172,6 +172,7 @@ export interface PostComment {
   post_id: string;
   user_id: string;
   body: string;
+  attachment_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -210,6 +211,7 @@ export type ReviewReply = {
   user_id: string;
   parent_reply_id: string | null;
   body: string;
+  attachment_url: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -224,6 +226,7 @@ export type PostCommentReply = {
   user_id: string;
   parent_reply_id: string | null;
   body: string;
+  attachment_url: string | null;
   created_at: string;
   updated_at: string;
 };

@@ -15,11 +15,12 @@ import {
   deletePost,
   getPostById,
   likePost,
-  repostPost,
   unlikePost,
 } from "@/lib/services/posts";
 import type { PostWithAuthor } from "@/types";
 import { PostCommentSection } from "@/components/social/PostCommentSection";
+import { QuoteRepostModal } from "@/components/social/QuoteRepostModal";
+import { RepostPreview } from "@/components/social/RepostPreview";
 import { MentionText } from "@/components/social/MentionText";
 import { usePreferredLocale } from "@/lib/hooks/usePreferredLocale";
 import { isGiphyImageUrl } from "@/lib/utils/giphy";
@@ -37,60 +38,13 @@ function authorLabel(author: PostWithAuthor["author"]): string {
   return author.display_name?.trim() || author.username?.trim() || "Reader";
 }
 
-function RepostPreview({ post }: { post: PostWithAuthor }) {
-  const profileHref = post.author.username
-    ? readerProfilePath(post.author.username)
-    : null;
-
-  return (
-    <div className="rounded-lg border border-border bg-background/60 p-3">
-      <p className="mb-1 text-xs text-text-muted">
-        {profileHref ? (
-          <Link href={profileHref} className="font-semibold text-puce-red hover:underline">
-            {authorLabel(post.author)}
-          </Link>
-        ) : (
-          <span className="font-semibold text-puce-red">{authorLabel(post.author)}</span>
-        )}
-      </p>
-      {post.body.trim() ? (
-        <p className="text-sm leading-relaxed text-text">
-          <MentionText body={post.body} />
-        </p>
-      ) : null}
-      {post.book ? (
-        <Link
-          href={bookDetailsPath(post.book.id)}
-          className="mt-2 flex items-center gap-3 rounded-md border border-border p-2 hover:border-primary/40"
-        >
-          <div className="h-16 w-11 shrink-0 overflow-hidden rounded shadow-sm">
-            <BookCover title={post.book.title} coverUrl={post.book.cover_url} className="h-full w-full" />
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-puce-red">{post.book.title}</p>
-            {post.book.author ? (
-              <Link
-                href={authorPagePath(post.book.author)}
-                className="truncate text-xs text-text-muted hover:text-primary hover:underline"
-                onClick={(event) => event.stopPropagation()}
-              >
-                {post.book.author}
-              </Link>
-            ) : null}
-          </div>
-        </Link>
-      ) : null}
-    </div>
-  );
-}
-
 export function PostCard({ post, viewerId, highlighted = false, onPostChange }: Props) {
   const toast = useToast();
   const locale = usePreferredLocale();
   const [expanded, setExpanded] = useState(false);
   const [localPost, setLocalPost] = useState(post);
   const [liking, setLiking] = useState(false);
-  const [reposting, setReposting] = useState(false);
+  const [repostModalOpen, setRepostModalOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [loadingComments, setLoadingComments] = useState(false);
 
@@ -131,22 +85,15 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
     }));
   }
 
-  async function handleRepost() {
+  function handleRepostClick() {
     if (localPost.viewer_has_reposted) {
       toast.error("You already reposted this.");
       return;
     }
+    setRepostModalOpen(true);
+  }
 
-    setReposting(true);
-    const result = await repostPost(localPost.id);
-    setReposting(false);
-
-    if (result.error) {
-      toast.error(result.error);
-      return;
-    }
-
-    toast.success("Reposted.");
+  function handleReposted() {
     setLocalPost((current) => ({ ...current, viewer_has_reposted: true }));
     onPostChange?.();
   }
@@ -229,7 +176,7 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
             ) : null}
           </div>
 
-          {localPost.repost_of ? (
+          {localPost.repost_of && !localPost.body.trim() ? (
             <p className="mt-2 text-xs font-medium text-text-muted">Reposted</p>
           ) : null}
 
@@ -321,9 +268,9 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
                 type="button"
                 variant="ghost"
                 size="sm"
-                loading={reposting}
+                loading={false}
                 disabled={localPost.viewer_has_reposted}
-                onClick={() => void handleRepost()}
+                onClick={handleRepostClick}
               >
                 {localPost.viewer_has_reposted ? "Reposted" : "Repost"}
               </Button>
@@ -346,6 +293,16 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
           ) : null}
         </div>
       </div>
+
+      {!isOwn ? (
+        <QuoteRepostModal
+          open={repostModalOpen}
+          onClose={() => setRepostModalOpen(false)}
+          post={localPost}
+          viewerId={viewerId}
+          onReposted={handleReposted}
+        />
+      ) : null}
     </article>
   );
 }
