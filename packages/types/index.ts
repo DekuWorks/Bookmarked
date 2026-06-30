@@ -35,6 +35,9 @@ export interface Profile {
   notify_messages: boolean;
   notify_follows: boolean;
   notify_feed: boolean;
+  notify_likes: boolean;
+  notify_comments: boolean;
+  notify_mentions: boolean;
   notify_browser: boolean;
   preferred_language: PreferredLanguage;
   created_at: string;
@@ -141,6 +144,9 @@ export type NotificationPreferences = {
   notify_messages: boolean;
   notify_follows: boolean;
   notify_feed: boolean;
+  notify_likes: boolean;
+  notify_comments: boolean;
+  notify_mentions: boolean;
   notify_browser: boolean;
 };
 

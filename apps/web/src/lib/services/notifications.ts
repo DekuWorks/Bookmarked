@@ -206,7 +206,9 @@ export async function getNotificationPreferences(
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("notify_messages, notify_follows, notify_feed, notify_browser")
+    .select(
+      "notify_messages, notify_follows, notify_feed, notify_likes, notify_comments, notify_mentions, notify_browser"
+    )
     .eq("id", userId)
     .maybeSingle();
 

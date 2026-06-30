@@ -18,7 +18,13 @@ type Props = {
   profile: Profile;
 };
 
-type PrefKey = "notify_messages" | "notify_follows" | "notify_feed";
+type PrefKey =
+  | "notify_messages"
+  | "notify_follows"
+  | "notify_feed"
+  | "notify_likes"
+  | "notify_comments"
+  | "notify_mentions";
 
 const PREF_OPTIONS: { key: PrefKey; label: string; description: string }[] = [
   {
@@ -34,7 +40,22 @@ const PREF_OPTIONS: { key: PrefKey; label: string; description: string }[] = [
   {
     key: "notify_feed",
     label: "Feed activity",
-    description: "When someone you follow reviews, finishes, or adds a book.",
+    description: "Reading updates from people you follow — reviews, finished books, and shelf changes.",
+  },
+  {
+    key: "notify_likes",
+    label: "Likes",
+    description: "When someone likes your post, review, or comment.",
+  },
+  {
+    key: "notify_comments",
+    label: "Comments and replies",
+    description: "When someone comments on your post or replies to your review or comment.",
+  },
+  {
+    key: "notify_mentions",
+    label: "@Mentions",
+    description: "When someone mentions you in a post or comment.",
   },
 ];
 
@@ -44,6 +65,9 @@ export function NotificationPreferencesPanel({ profile }: Props) {
     notify_messages: profile.notify_messages ?? true,
     notify_follows: profile.notify_follows ?? true,
     notify_feed: profile.notify_feed ?? true,
+    notify_likes: profile.notify_likes ?? true,
+    notify_comments: profile.notify_comments ?? true,
+    notify_mentions: profile.notify_mentions ?? true,
     notify_browser: profile.notify_browser ?? false,
   });
   const [saving, setSaving] = useState(false);
@@ -103,7 +127,7 @@ export function NotificationPreferencesPanel({ profile }: Props) {
     <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
       <h2 className="text-lg font-semibold text-puce-red">Notifications</h2>
       <p className="mt-1 text-sm text-text-muted">
-        Choose what you want to hear about. Likes and comments will be added in a future update.
+        Choose what you want to hear about.
       </p>
 
       <ul className="mt-5 space-y-4">
