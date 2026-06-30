@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import { useToast } from "@/components/ui/Toast";
 import { bookDetailsPath } from "@/lib/routes/book";
+import { authorPagePath } from "@/lib/routes/author";
 import { postFeedPath } from "@/lib/routes/posts";
 import { readerProfilePath } from "@/lib/routes/reader";
 import {
@@ -62,7 +63,13 @@ function RepostPreview({ post }: { post: PostWithAuthor }) {
           <div className="min-w-0">
             <p className="truncate text-sm font-medium text-puce-red">{post.book.title}</p>
             {post.book.author ? (
-              <p className="truncate text-xs text-text-muted">{post.book.author}</p>
+              <Link
+                href={authorPagePath(post.book.author)}
+                className="truncate text-xs text-text-muted hover:text-primary hover:underline"
+                onClick={(event) => event.stopPropagation()}
+              >
+                {post.book.author}
+              </Link>
             ) : null}
           </div>
         </Link>
@@ -230,6 +237,22 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
             </p>
           ) : null}
 
+          {localPost.image_url ? (
+            <a
+              href={localPost.image_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 block overflow-hidden rounded-lg border border-border"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={localPost.image_url}
+                alt="Post image"
+                className="max-h-96 w-full object-cover"
+              />
+            </a>
+          ) : null}
+
           {localPost.repost_of ? (
             <div className="mt-3">
               <RepostPreview post={localPost.repost_of} />
@@ -251,7 +274,13 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
               <div className="min-w-0">
                 <p className="font-medium text-puce-red">{localPost.book.title}</p>
                 {localPost.book.author ? (
-                  <p className="text-sm text-text-muted">{localPost.book.author}</p>
+                  <Link
+                    href={authorPagePath(localPost.book.author)}
+                    className="text-sm text-text-muted hover:text-primary hover:underline"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    {localPost.book.author}
+                  </Link>
                 ) : null}
               </div>
             </Link>

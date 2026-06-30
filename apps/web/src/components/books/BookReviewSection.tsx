@@ -168,6 +168,7 @@ export function BookReviewSection({
                     isOwnReview={isOwnReview}
                     bookId={bookId}
                     reviewId={review.id}
+                    viewerId={user?.id ?? null}
                     onReviewChange={onReviewsChange}
                   />
                 </li>

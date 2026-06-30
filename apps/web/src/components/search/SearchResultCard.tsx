@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
@@ -16,6 +17,7 @@ import {
 } from "@/lib/services/books";
 import { resolveBookCoverUrl, resolveDisplayCoverUrl } from "@/lib/services/covers";
 import { bookDetailsPath } from "@/lib/routes/book";
+import { authorPagePath } from "@/lib/routes/author";
 import { cn } from "@/lib/utils/cn";
 import type { ShelfStatus } from "@/types";
 
@@ -249,7 +251,11 @@ export function SearchResultCard({
             {selectedEdition?.title ?? title}
           </h3>
           {author ? (
-            <p className="line-clamp-1 text-sm text-text-muted">{author}</p>
+            <p className="line-clamp-1 text-sm text-text-muted">
+              <Link href={authorPagePath(author)} className="hover:text-primary hover:underline">
+                {author}
+              </Link>
+            </p>
           ) : null}
           {editionLabel ? (
             <p className="text-xs text-primary">Edition: {editionLabel}</p>

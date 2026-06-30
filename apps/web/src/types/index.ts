@@ -25,6 +25,12 @@ export type {
   PostComment,
   PostCommentWithAuthor,
   PostWithAuthor,
+  ContentReaction,
+  ReactionCounts,
+  ReviewReply,
+  ReviewReplyWithAuthor,
+  PostCommentReply,
+  PostCommentReplyWithAuthor,
 } from "../../../../packages/types";
 
 export interface UserBook {

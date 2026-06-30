@@ -182,3 +182,39 @@ export type PostWithAuthor = Post & {
   viewer_has_reposted: boolean;
   comments?: PostCommentWithAuthor[];
 };
+
+export type ContentReaction = "like" | "dislike";
+
+export type ReactionCounts = {
+  like_count: number;
+  dislike_count: number;
+  viewer_reaction: ContentReaction | null;
+};
+
+export type ReviewReply = {
+  id: string;
+  review_id: string;
+  user_id: string;
+  parent_reply_id: string | null;
+  body: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ReviewReplyWithAuthor = ReviewReply & {
+  author: PostAuthor;
+};
+
+export type PostCommentReply = {
+  id: string;
+  comment_id: string;
+  user_id: string;
+  parent_reply_id: string | null;
+  body: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PostCommentReplyWithAuthor = PostCommentReply & {
+  author: PostAuthor;
+};

@@ -1,18 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Input";
+import { ContentReactionBar } from "@/components/social/ContentReactionBar";
+import { MentionComposer } from "@/components/social/MentionComposer";
+import { MentionText } from "@/components/social/MentionText";
+import { ReplyThread } from "@/components/social/ReplyThread";
 import { useToast } from "@/components/ui/Toast";
-import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { readerProfilePath } from "@/lib/routes/reader";
 import {
   addComment,
   deleteComment,
   updateComment,
 } from "@/lib/services/posts";
-import type { PostCommentWithAuthor } from "@/types";
+import {
+  addPostCommentReply,
+  deletePostCommentReply,
+  dislikePostComment,
+  getPostCommentReactionCounts,
+  likePostComment,
+  listPostCommentReplies,
+} from "@/lib/services/postCommentEngagement";
+import type { PostCommentReplyWithAuthor, PostCommentWithAuthor, ReactionCounts } from "@/types";
+import type { ThreadNode } from "@/lib/utils/threadReplies";
+
+type PostCommentReplyNode = Omit<PostCommentReplyWithAuthor, "children">;
 
 type Props = {
   postId: string;
@@ -39,10 +53,45 @@ function CommentItem({
   const [editBody, setEditBody] = useState(comment.body);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [reactions, setReactions] = useState<ReactionCounts>({
+    like_count: 0,
+    dislike_count: 0,
+    viewer_reaction: null,
+  });
+  const [reactionLoading, setReactionLoading] = useState(false);
+  const [repliesOpen, setRepliesOpen] = useState(false);
+  const [replies, setReplies] = useState<ThreadNode<PostCommentReplyNode>[]>([]);
+  const [repliesLoading, setRepliesLoading] = useState(false);
   const isOwn = comment.user_id === viewerId;
   const profileHref = comment.author.username
     ? readerProfilePath(comment.author.username)
     : null;
+
+  const loadReactions = useCallback(async () => {
+    const counts = await getPostCommentReactionCounts([comment.id], viewerId);
+    const next = counts.get(comment.id);
+    if (next) setReactions(next);
+  }, [comment.id, viewerId]);
+
+  const loadReplies = useCallback(async () => {
+    setRepliesLoading(true);
+    try {
+      const next = await listPostCommentReplies(comment.id);
+      setReplies(next);
+    } catch {
+      toast.error("Could not load replies.");
+    } finally {
+      setRepliesLoading(false);
+    }
+  }, [comment.id, toast]);
+
+  useEffect(() => {
+    void loadReactions();
+  }, [loadReactions]);
+
+  useEffect(() => {
+    if (repliesOpen) void loadReplies();
+  }, [repliesOpen, loadReplies]);
 
   async function handleSave() {
     const trimmed = editBody.trim();
@@ -77,6 +126,22 @@ function CommentItem({
 
     toast.success("Comment deleted.");
     onCommentsChange?.();
+  }
+
+  async function handleLike() {
+    setReactionLoading(true);
+    const result = await likePostComment(comment.id);
+    setReactionLoading(false);
+    if (result.error) toast.error(result.error);
+    else if (result.counts) setReactions(result.counts);
+  }
+
+  async function handleDislike() {
+    setReactionLoading(true);
+    const result = await dislikePostComment(comment.id);
+    setReactionLoading(false);
+    if (result.error) toast.error(result.error);
+    else if (result.counts) setReactions(result.counts);
   }
 
   return (
@@ -132,7 +197,9 @@ function CommentItem({
           </div>
         </div>
       ) : (
-        <p className="text-sm leading-relaxed text-text">{comment.body}</p>
+        <p className="text-sm leading-relaxed text-text">
+          <MentionText body={comment.body} />
+        </p>
       )}
 
       <p className="mt-1 text-xs text-text-muted">
@@ -145,6 +212,48 @@ function CommentItem({
           })}
         </time>
       </p>
+
+      {!isEditing ? (
+        <div className="mt-2 border-t border-border pt-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <ContentReactionBar
+              likeCount={reactions.like_count}
+              dislikeCount={reactions.dislike_count}
+              viewerReaction={reactions.viewer_reaction}
+              onLike={() => void handleLike()}
+              onDislike={() => void handleDislike()}
+              loading={reactionLoading}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setRepliesOpen((open) => !open)}
+            >
+              {repliesOpen ? "Hide replies" : "Reply"}
+            </Button>
+          </div>
+
+          {repliesOpen ? (
+            <div className="mt-3">
+              {repliesLoading ? (
+                <p className="text-sm text-text-muted">Loading replies…</p>
+              ) : (
+                <ReplyThread
+                  replies={replies}
+                  viewerId={viewerId}
+                  onSubmitReply={(body, parentReplyId) =>
+                    addPostCommentReply(comment.id, body, parentReplyId)
+                  }
+                  onDeleteReply={deletePostCommentReply}
+                  onRefresh={() => void loadReplies()}
+                  composerPlaceholder="Reply to this comment…"
+                />
+              )}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </li>
   );
 }
@@ -197,11 +306,11 @@ export function PostCommentSection({
       )}
 
       <div className="space-y-2">
-        <Textarea
+        <MentionComposer
           value={body}
-          onChange={(e) => setBody(e.target.value)}
-          placeholder="Write a comment…"
-          className="mb-0 min-h-[80px]"
+          onChange={setBody}
+          viewerId={viewerId}
+          placeholder="Write a comment… Use @ to mention someone."
         />
         <div className="flex justify-end">
           <Button

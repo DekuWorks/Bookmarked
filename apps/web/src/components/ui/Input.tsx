@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils/cn";
-import { type InputHTMLAttributes, type TextareaHTMLAttributes } from "react";
+import { forwardRef, type InputHTMLAttributes, type TextareaHTMLAttributes } from "react";
 
 type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   label?: string;
@@ -39,7 +39,10 @@ type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   error?: string;
 };
 
-export function Textarea({ label, error, className, id, ...rest }: TextareaProps) {
+export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
+  { label, error, className, id, ...rest },
+  ref
+) {
   const inputId = id ?? label?.toLowerCase().replace(/\s+/g, "-");
 
   return (
@@ -53,6 +56,7 @@ export function Textarea({ label, error, className, id, ...rest }: TextareaProps
         </label>
       ) : null}
       <textarea
+        ref={ref}
         id={inputId}
         className={cn(
           "w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-text min-h-[120px]",
@@ -65,4 +69,4 @@ export function Textarea({ label, error, className, id, ...rest }: TextareaProps
       {error ? <p className="mt-1 text-sm text-rust">{error}</p> : null}
     </div>
   );
-}
+});

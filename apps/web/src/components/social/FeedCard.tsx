@@ -4,6 +4,7 @@ import Link from "next/link";
 import { BookCover } from "@/components/books/BookCover";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import { feedItemHref } from "@/lib/routes/activity";
+import { authorPagePath } from "@/lib/routes/author";
 import { readerProfilePath } from "@/lib/routes/reader";
 import { bookDetailsPath } from "@/lib/routes/book";
 import { isFeedEligibleEvent } from "@/lib/services/activity";
@@ -90,6 +91,13 @@ export function FeedCard({ item }: Props) {
             })}
           </time>
         </p>
+        {item.bookAuthor ? (
+          <p className="mt-1 text-sm text-text-muted">
+            <Link href={authorPagePath(item.bookAuthor)} className="hover:text-primary hover:underline">
+              {item.bookAuthor}
+            </Link>
+          </p>
+        ) : null}
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <Link
             href={activityHref}

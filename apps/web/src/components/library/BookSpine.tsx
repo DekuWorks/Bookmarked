@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
+import { authorPagePath } from "@/lib/routes/author";
 
 type Props = {
   title: string;
@@ -84,9 +85,19 @@ export function BookSpine({
 
   if (href) {
     return (
-      <Link href={href} className="block flex-shrink-0">
-        {content}
-      </Link>
+      <div className="flex flex-col items-center">
+        <Link href={href} className="block flex-shrink-0">
+          {content}
+        </Link>
+        {author ? (
+          <Link
+            href={authorPagePath(author)}
+            className="mt-1 max-w-[4.5rem] truncate text-center text-[10px] text-text-muted hover:text-primary hover:underline"
+          >
+            {author}
+          </Link>
+        ) : null}
+      </div>
     );
   }
 

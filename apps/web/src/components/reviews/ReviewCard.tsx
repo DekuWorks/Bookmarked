@@ -1,14 +1,30 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Input";
+import { ContentReactionBar } from "@/components/social/ContentReactionBar";
+import { MentionText } from "@/components/social/MentionText";
+import { ReplyThread } from "@/components/social/ReplyThread";
 import { useToast } from "@/components/ui/Toast";
 import {
   deleteReview,
   saveReview,
   type BookActionState,
 } from "@/lib/actions/book";
+import {
+  addReviewReply,
+  deleteReviewReply,
+  dislikeReview,
+  getReviewReactionCounts,
+  likeReview,
+  listReviewReplies,
+} from "@/lib/services/reviewEngagement";
+import type { ReactionCounts } from "@/types";
+import type { ThreadNode } from "@/lib/utils/threadReplies";
+import type { ReviewReplyWithAuthor } from "@/types";
+
+type ReviewReplyNode = Omit<ReviewReplyWithAuthor, "children">;
 
 const initial: BookActionState = {};
 
@@ -21,6 +37,7 @@ type Props = {
   isOwnReview?: boolean;
   bookId?: string;
   reviewId?: string;
+  viewerId?: string | null;
   onReviewChange?: () => void;
 };
 
@@ -59,6 +76,7 @@ export function ReviewCard({
   isOwnReview = false,
   bookId,
   reviewId,
+  viewerId,
   onReviewChange,
 }: Props) {
   const toast = useToast();
@@ -68,6 +86,37 @@ export function ReviewCard({
   const [editSpoilers, setEditSpoilers] = useState(Boolean(hasSpoilers));
   const [saveState, saveAction, saving] = useActionState(saveReview, initial);
   const [deleteState, deleteAction, deleting] = useActionState(deleteReview, initial);
+  const [reactions, setReactions] = useState<ReactionCounts>({
+    like_count: 0,
+    dislike_count: 0,
+    viewer_reaction: null,
+  });
+  const [reactionLoading, setReactionLoading] = useState(false);
+  const [repliesOpen, setRepliesOpen] = useState(false);
+  const [replies, setReplies] = useState<ThreadNode<ReviewReplyNode>[]>([]);
+  const [repliesLoading, setRepliesLoading] = useState(false);
+
+  const canEngage = Boolean(viewerId && reviewId);
+
+  const loadReactions = useCallback(async () => {
+    if (!reviewId) return;
+    const counts = await getReviewReactionCounts([reviewId], viewerId ?? null);
+    const next = counts.get(reviewId);
+    if (next) setReactions(next);
+  }, [reviewId, viewerId]);
+
+  const loadReplies = useCallback(async () => {
+    if (!reviewId) return;
+    setRepliesLoading(true);
+    try {
+      const next = await listReviewReplies(reviewId);
+      setReplies(next);
+    } catch {
+      toast.error("Could not load replies.");
+    } finally {
+      setRepliesLoading(false);
+    }
+  }, [reviewId, toast]);
 
   useEffect(() => {
     if (saveState.error) toast.error(saveState.error);
@@ -94,6 +143,32 @@ export function ReviewCard({
       setEditSpoilers(Boolean(hasSpoilers));
     }
   }, [rating, reviewBody, hasSpoilers, isEditing]);
+
+  useEffect(() => {
+    if (canEngage) void loadReactions();
+  }, [canEngage, loadReactions]);
+
+  useEffect(() => {
+    if (repliesOpen && reviewId) void loadReplies();
+  }, [repliesOpen, reviewId, loadReplies]);
+
+  async function handleLike() {
+    if (!reviewId) return;
+    setReactionLoading(true);
+    const result = await likeReview(reviewId);
+    setReactionLoading(false);
+    if (result.error) toast.error(result.error);
+    else if (result.counts) setReactions(result.counts);
+  }
+
+  async function handleDislike() {
+    if (!reviewId) return;
+    setReactionLoading(true);
+    const result = await dislikeReview(reviewId);
+    setReactionLoading(false);
+    if (result.error) toast.error(result.error);
+    else if (result.counts) setReactions(result.counts);
+  }
 
   const canManage = isOwnReview && bookId && reviewId;
 
@@ -196,14 +271,16 @@ export function ReviewCard({
               className="cursor-default select-none text-sm leading-relaxed text-text blur-md transition-[filter] duration-200 group-hover:blur-none group-focus-within:blur-none"
               tabIndex={0}
             >
-              {reviewBody}
+              <MentionText body={reviewBody} />
             </p>
             <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-xs font-medium text-text-muted opacity-100 transition-opacity group-hover:opacity-0 group-focus-within:opacity-0">
               Hover to reveal spoilers
             </p>
           </div>
         ) : (
-          <p className="text-sm leading-relaxed text-text">{reviewBody}</p>
+          <p className="text-sm leading-relaxed text-text">
+            <MentionText body={reviewBody} />
+          </p>
         )
       ) : (
         <p className="text-sm text-text-muted italic">Rating only — no written review.</p>
@@ -215,6 +292,48 @@ export function ReviewCard({
             {new Date(createdAt).toLocaleDateString()}
           </time>
         </p>
+      ) : null}
+
+      {canEngage && !isEditing ? (
+        <div className="mt-3 border-t border-border pt-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <ContentReactionBar
+              likeCount={reactions.like_count}
+              dislikeCount={reactions.dislike_count}
+              viewerReaction={reactions.viewer_reaction}
+              onLike={() => void handleLike()}
+              onDislike={() => void handleDislike()}
+              loading={reactionLoading}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setRepliesOpen((open) => !open)}
+            >
+              {repliesOpen ? "Hide replies" : "Reply"}
+            </Button>
+          </div>
+
+          {repliesOpen ? (
+            <div className="mt-3">
+              {repliesLoading ? (
+                <p className="text-sm text-text-muted">Loading replies…</p>
+              ) : (
+                <ReplyThread
+                  replies={replies}
+                  viewerId={viewerId!}
+                  onSubmitReply={(body, parentReplyId) =>
+                    addReviewReply(reviewId!, body, parentReplyId)
+                  }
+                  onDeleteReply={deleteReviewReply}
+                  onRefresh={() => void loadReplies()}
+                  composerPlaceholder="Reply to this review…"
+                />
+              )}
+            </div>
+          ) : null}
+        </div>
       ) : null}
     </article>
   );

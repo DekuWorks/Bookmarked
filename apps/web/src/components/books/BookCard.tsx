@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BookCover } from "@/components/books/BookCover";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { ShelfBadge } from "@/components/shelves/ShelfBadge";
+import { authorPagePath } from "@/lib/routes/author";
 import type { ShelfStatus } from "@/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -26,20 +27,33 @@ export function BookCard({
   progressPercent,
   className,
 }: Props) {
-  const content = (
+  const cover = (
+    <BookCover title={title} author={author} coverUrl={coverUrl} className="rounded-none border-0" />
+  );
+
+  return (
     <article
       className={cn(
         "flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-sm transition hover:shadow-md",
-        href && "cursor-pointer",
         className
       )}
     >
-      <BookCover title={title} author={author} coverUrl={coverUrl} className="rounded-none border-0" />
+      {href ? <Link href={href}>{cover}</Link> : cover}
       <div className="flex flex-1 flex-col gap-2 p-4">
         {shelfStatus ? <ShelfBadge status={shelfStatus} /> : null}
-        <h3 className="line-clamp-2 font-semibold text-text">{title}</h3>
+        {href ? (
+          <Link href={href}>
+            <h3 className="line-clamp-2 font-semibold text-text hover:text-primary">{title}</h3>
+          </Link>
+        ) : (
+          <h3 className="line-clamp-2 font-semibold text-text">{title}</h3>
+        )}
         {author ? (
-          <p className="line-clamp-1 text-sm text-text-muted">{author}</p>
+          <p className="line-clamp-1 text-sm text-text-muted">
+            <Link href={authorPagePath(author)} className="hover:text-primary hover:underline">
+              {author}
+            </Link>
+          </p>
         ) : null}
         {progressPercent !== undefined && progressPercent > 0 ? (
           <ProgressBar value={progressPercent} label={`${Math.round(progressPercent)}% complete`} />
@@ -47,14 +61,4 @@ export function BookCard({
       </div>
     </article>
   );
-
-  if (href) {
-    return (
-      <Link href={href} className="block">
-        {content}
-      </Link>
-    );
-  }
-
-  return content;
 }

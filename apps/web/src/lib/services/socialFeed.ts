@@ -24,6 +24,7 @@ export type FeedItem = {
   bookId: string | null;
   coverUrl: string | null;
   bookTitle: string;
+  bookAuthor: string | null;
 };
 
 type RawFeedRow = {
@@ -49,6 +50,12 @@ export type ActivityRow = {
 
 const ACTIVITY_SELECT =
   "id, user_id, event_type, entity_id, entity_type, metadata_json, created_at, visibility";
+
+function bookAuthorFromMetadata(metadata: Record<string, unknown> | null): string | null {
+  if (typeof metadata?.author === "string") return metadata.author;
+  if (typeof metadata?.book_author === "string") return metadata.book_author;
+  return null;
+}
 
 function bookTitleFromMetadata(metadata: Record<string, unknown> | null): string {
   if (typeof metadata?.title === "string") return metadata.title;
@@ -116,6 +123,7 @@ export function enrichFeedRow(row: RawFeedRow): FeedItem {
     bookId,
     coverUrl,
     bookTitle: bookTitleFromMetadata(metadata),
+    bookAuthor: bookAuthorFromMetadata(metadata),
   };
 }
 
@@ -180,18 +188,19 @@ export async function hydrateFeedItems(
     ]),
   ];
 
-  const bookMap = new Map<string, { cover_url: string | null; title: string }>();
+  const bookMap = new Map<string, { cover_url: string | null; title: string; author: string | null }>();
 
   if (allBookIds.length) {
     const { data } = await supabase
       .from("books")
-      .select("id, cover_url, title")
+      .select("id, cover_url, title, author")
       .in("id", allBookIds);
 
     for (const book of data ?? []) {
       bookMap.set(book.id, {
         cover_url: book.cover_url as string | null,
         title: book.title as string,
+        author: book.author as string | null,
       });
     }
   }
@@ -205,6 +214,7 @@ export async function hydrateFeedItems(
       bookId: resolvedBookId,
       coverUrl: item.coverUrl ?? book?.cover_url ?? null,
       bookTitle: item.bookTitle !== "Book" ? item.bookTitle : book?.title ?? item.bookTitle,
+      bookAuthor: item.bookAuthor ?? book?.author ?? null,
     };
   });
 }

@@ -18,6 +18,15 @@ const POST_SELECT =
 
 const AUTHOR_SELECT = "id, username, display_name, avatar_url";
 
+const POST_IMAGE_BUCKET = "post-images";
+const MAX_POST_IMAGE_BYTES = 5 * 1024 * 1024;
+const POST_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+]);
+
 type RawPostRow = Post;
 
 type RawCommentRow = PostComment;
@@ -317,12 +326,61 @@ function scoreForYouPost(
   return score;
 }
 
+export function validatePostImageFile(file: File): string | null {
+  if (!POST_IMAGE_TYPES.has(file.type)) {
+    return "Please choose a JPEG, PNG, WebP, or GIF image.";
+  }
+  if (file.size > MAX_POST_IMAGE_BYTES) {
+    return "Image must be 5 MB or smaller.";
+  }
+  return null;
+}
+
+function postImageExtension(mime: string): string {
+  switch (mime) {
+    case "image/jpeg":
+      return "jpg";
+    case "image/png":
+      return "png";
+    case "image/webp":
+      return "webp";
+    case "image/gif":
+      return "gif";
+    default:
+      return "jpg";
+  }
+}
+
+export async function uploadPostImage(
+  file: File
+): Promise<{ url?: string; error?: string }> {
+  const validationError = validatePostImageFile(file);
+  if (validationError) return { error: validationError };
+
+  const viewerId = await getViewerId();
+  if (!viewerId) return { error: "You must be signed in." };
+
+  const supabase = createClient();
+  const fileId = crypto.randomUUID();
+  const path = `${viewerId}/${fileId}.${postImageExtension(file.type)}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(POST_IMAGE_BUCKET)
+    .upload(path, file, { upsert: false, contentType: file.type });
+
+  if (uploadError) return { error: uploadError.message };
+
+  const { data } = supabase.storage.from(POST_IMAGE_BUCKET).getPublicUrl(path);
+  return { url: data.publicUrl };
+}
+
 export async function createPost(input: CreatePostInput): Promise<{ post?: PostWithAuthor; error?: string }> {
   const viewerId = await getViewerId();
   if (!viewerId) return { error: "You must be signed in." };
 
   const body = trimBody(input.body);
-  if (!body) return { error: "Post cannot be empty." };
+  const imageUrl = input.imageUrl?.trim() || null;
+  if (!body && !imageUrl) return { error: "Post cannot be empty." };
 
   const supabase = createClient();
   const { data, error } = await supabase
@@ -331,7 +389,7 @@ export async function createPost(input: CreatePostInput): Promise<{ post?: PostW
       user_id: viewerId,
       body,
       book_id: input.bookId ?? null,
-      image_url: input.imageUrl ?? null,
+      image_url: imageUrl,
     })
     .select(POST_SELECT)
     .single();

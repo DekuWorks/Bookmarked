@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import { activityEventHref } from "@/lib/routes/activity";
+import { bookDetailsReviewsPath } from "@/lib/routes/book";
 import { messageThreadPath } from "@/lib/routes/messages";
 import { postFeedPath } from "@/lib/routes/posts";
 import { readerProfilePath } from "@/lib/routes/reader";
@@ -331,6 +332,140 @@ export async function createPostCommentNotification(input: {
       comment_id: input.commentId,
       notification_kind: "post_comment",
       dedup_key: `post_comment:${input.commentId}`,
+    },
+  });
+}
+
+export async function createReviewReactionNotification(input: {
+  recipientId: string;
+  actorId: string;
+  actorDisplayName: string;
+  reviewId: string;
+  bookId: string;
+  reaction: "like" | "dislike";
+}): Promise<void> {
+  const supabase = createClient();
+  const label = input.reaction === "like" ? "liked" : "disliked";
+
+  await supabase.rpc("create_notification", {
+    p_user_id: input.recipientId,
+    p_type: "feed",
+    p_title: `${input.actorDisplayName} ${label} your review`,
+    p_body: "Tap to view the review.",
+    p_actor_id: input.actorId,
+    p_link_url: bookDetailsReviewsPath(input.bookId),
+    p_metadata: {
+      review_id: input.reviewId,
+      book_id: input.bookId,
+      notification_kind: "review_reaction",
+      dedup_key: `review_reaction:${input.reviewId}:${input.actorId}`,
+    },
+  });
+}
+
+export async function createReviewReplyNotification(input: {
+  recipientId: string;
+  actorId: string;
+  actorDisplayName: string;
+  reviewId: string;
+  bookId: string;
+  replyId: string;
+  preview: string;
+}): Promise<void> {
+  const supabase = createClient();
+
+  await supabase.rpc("create_notification", {
+    p_user_id: input.recipientId,
+    p_type: "feed",
+    p_title: `${input.actorDisplayName} replied to your review`,
+    p_body: input.preview.slice(0, 160),
+    p_actor_id: input.actorId,
+    p_link_url: bookDetailsReviewsPath(input.bookId),
+    p_metadata: {
+      review_id: input.reviewId,
+      book_id: input.bookId,
+      reply_id: input.replyId,
+      notification_kind: "review_reply",
+      dedup_key: `review_reply:${input.replyId}`,
+    },
+  });
+}
+
+export async function createPostCommentReactionNotification(input: {
+  recipientId: string;
+  actorId: string;
+  actorDisplayName: string;
+  postId: string;
+  commentId: string;
+  reaction: "like" | "dislike";
+}): Promise<void> {
+  const supabase = createClient();
+  const label = input.reaction === "like" ? "liked" : "disliked";
+
+  await supabase.rpc("create_notification", {
+    p_user_id: input.recipientId,
+    p_type: "feed",
+    p_title: `${input.actorDisplayName} ${label} your comment`,
+    p_body: "Tap to view the post.",
+    p_actor_id: input.actorId,
+    p_link_url: postFeedPath(input.postId),
+    p_metadata: {
+      post_id: input.postId,
+      comment_id: input.commentId,
+      notification_kind: "post_comment_reaction",
+      dedup_key: `post_comment_reaction:${input.commentId}:${input.actorId}`,
+    },
+  });
+}
+
+export async function createPostCommentReplyNotification(input: {
+  recipientId: string;
+  actorId: string;
+  actorDisplayName: string;
+  postId: string;
+  commentId: string;
+  replyId: string;
+  preview: string;
+}): Promise<void> {
+  const supabase = createClient();
+
+  await supabase.rpc("create_notification", {
+    p_user_id: input.recipientId,
+    p_type: "feed",
+    p_title: `${input.actorDisplayName} replied to your comment`,
+    p_body: input.preview.slice(0, 160),
+    p_actor_id: input.actorId,
+    p_link_url: postFeedPath(input.postId),
+    p_metadata: {
+      post_id: input.postId,
+      comment_id: input.commentId,
+      reply_id: input.replyId,
+      notification_kind: "post_comment_reply",
+      dedup_key: `post_comment_reply:${input.replyId}`,
+    },
+  });
+}
+
+export async function createMentionNotification(input: {
+  recipientId: string;
+  actorId: string;
+  actorDisplayName: string;
+  linkUrl: string;
+  preview: string;
+  dedupKey: string;
+}): Promise<void> {
+  const supabase = createClient();
+
+  await supabase.rpc("create_notification", {
+    p_user_id: input.recipientId,
+    p_type: "feed",
+    p_title: `${input.actorDisplayName} mentioned you`,
+    p_body: input.preview.slice(0, 160),
+    p_actor_id: input.actorId,
+    p_link_url: input.linkUrl,
+    p_metadata: {
+      notification_kind: "mention",
+      dedup_key: input.dedupKey,
     },
   });
 }
