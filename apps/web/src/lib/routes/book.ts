@@ -7,3 +7,8 @@ export function bookDetailsPath(bookId: string): string {
 export function bookDetailsReviewsPath(bookId: string): string {
   return `/book/?id=${encodeURIComponent(bookId)}&section=reviews`;
 }
+
+/** Book details with reading journal focused (scroll target on book page). */
+export function bookDetailsJournalPath(bookId: string): string {
+  return `/book/?id=${encodeURIComponent(bookId)}&section=journal`;
+}

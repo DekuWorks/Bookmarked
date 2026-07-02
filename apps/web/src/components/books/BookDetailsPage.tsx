@@ -66,6 +66,11 @@ function BookDetailsContent() {
     document.getElementById("book-reviews")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [focusReviews, data]);
 
+  useEffect(() => {
+    if (focusSection !== "journal" || !data) return;
+    document.getElementById("reading-journal")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [focusSection, data]);
+
   if (!bookId) {
     return (
       <div className="space-y-4 text-center">

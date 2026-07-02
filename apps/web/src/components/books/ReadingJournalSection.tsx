@@ -50,7 +50,7 @@ export function ReadingJournalSection({ sessions, loading }: Props) {
   const oldestId = chronological[0]?.id;
 
   return (
-    <section className="rounded-xl border border-border bg-surface p-5">
+    <section id="reading-journal" className="rounded-xl border border-border bg-surface p-5">
       <h2 className="text-lg font-semibold text-puce-red">Reading journal</h2>
       <p className="mt-1 text-sm text-text-muted">
         Your reading history for this book — newest first.

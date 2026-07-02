@@ -249,6 +249,22 @@ export function ReadingProgressPanel({
           </Button>
         </form>
       ) : null}
+
+      <div className="mt-4 border-t border-border pt-4">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            document.getElementById("reading-journal")?.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }}
+        >
+          Reading journal
+        </Button>
+      </div>
     </section>
   );
 }
