@@ -1,12 +1,14 @@
 import { createClient } from "@/lib/supabase/client";
 import { enrichBookCatalogEntry } from "@/lib/services/bookMetadata";
-import type { Book, Review, UserBook } from "@/types";
+import { listReadingSessions } from "@/lib/services/readingSessions";
+import type { Book, ReadingSession, Review, UserBook } from "@/types";
 
 export type BookDetailsData = {
   book: Book;
   userBook: UserBook | null;
   reviews: Review[];
   ownReview: Review | null;
+  readingSessions: ReadingSession[];
 };
 
 export async function getBookDetails(
@@ -42,10 +44,15 @@ export async function getBookDetails(
   const reviewList = (reviews ?? []) as Review[];
   const ownReview = reviewList.find((r) => r.user_id === userId) ?? null;
 
+  const readingSessions = userBook
+    ? await listReadingSessions(userBook.id)
+    : [];
+
   return {
     book: enriched,
     userBook: (userBook as UserBook | null) ?? null,
     reviews: reviewList,
     ownReview,
+    readingSessions,
   };
 }

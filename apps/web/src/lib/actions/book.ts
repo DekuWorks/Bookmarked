@@ -4,6 +4,7 @@ import {
   bookActivityContext,
   recordActivity,
 } from "@/lib/services/activity";
+import { createReadingSessionWithClient } from "@/lib/services/readingSessions";
 import { getShelfLabel, isShelfStatus } from "@/lib/constants/shelfLabels";
 import type { ShelfStatus } from "@/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -61,6 +62,14 @@ async function getAuthUserBook(bookId: string): Promise<AuthBookContext> {
     .maybeSingle();
 
   return { ok: true, supabase, user, book, userBook: userBook as UserBookRow | null };
+}
+
+function parseDateInput(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const parsed = new Date(`${trimmed}T12:00:00.000Z`);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
 }
 
 export async function setBookShelfStatus(
@@ -147,9 +156,15 @@ export async function updateReadingProgress(
       : 0;
 
   const now = new Date().toISOString();
+  const previousPage = Number(userBook.progress_pages) || 0;
+  const finalPage =
+    effectiveTotal > 0 && currentPage >= effectiveTotal ? effectiveTotal : currentPage;
+  const finalPercent =
+    effectiveTotal > 0 && currentPage >= effectiveTotal ? 100 : progress_percent;
+
   const updates: Record<string, unknown> = {
-    progress_pages: currentPage,
-    progress_percent,
+    progress_pages: finalPage,
+    progress_percent: finalPercent,
     started_at: userBook.started_at ?? now,
     updated_at: now,
   };
@@ -157,8 +172,8 @@ export async function updateReadingProgress(
   if (effectiveTotal > 0 && currentPage >= effectiveTotal) {
     updates.shelf_status = "read";
     updates.finished_at = userBook.finished_at ?? now;
-    updates.progress_percent = 100;
-    updates.progress_pages = effectiveTotal;
+  } else if (userBook.shelf_status !== "currently_reading" && currentPage > 0) {
+    updates.shelf_status = "currently_reading";
   }
 
   const { error } = await supabase
@@ -172,6 +187,16 @@ export async function updateReadingProgress(
     await supabase.from("books").update({ page_count: effectiveTotal }).eq("id", bookId);
   }
 
+  const sessionResult = await createReadingSessionWithClient(supabase, {
+    userId: user.id,
+    userBookId: userBook.id,
+    pageStart: previousPage,
+    pageEnd: finalPage,
+    percentComplete: finalPercent,
+  });
+
+  if (sessionResult.error) return { error: sessionResult.error };
+
   await recordActivity(supabase, {
     user_id: user.id,
     event_type:
@@ -180,15 +205,15 @@ export async function updateReadingProgress(
     entity_id: userBook.id,
     metadata_json: activityMetadata(book.title, {
       ...bookActivityContext(book),
-      progress_percent,
+      progress_percent: finalPercent,
     }),
   });
 
   return {
     success:
       updates.shelf_status === "read"
-        ? "Marked as finished!"
-        : `${progress_percent}% complete`,
+        ? "Book Completed 🎉"
+        : "Progress saved",
   };
 }
 
@@ -206,13 +231,15 @@ export async function markBookFinished(
   }
 
   const total = book.page_count ?? Number(userBook.progress_pages) ?? 0;
+  const previousPage = Number(userBook.progress_pages) || 0;
+  const finalPage = total > 0 ? total : previousPage;
   const now = new Date().toISOString();
 
   const { error } = await supabase
     .from("user_books")
     .update({
       shelf_status: "read",
-      progress_pages: total > 0 ? total : userBook.progress_pages,
+      progress_pages: finalPage,
       progress_percent: 100,
       finished_at: now,
       started_at: userBook.started_at ?? now,
@@ -222,6 +249,16 @@ export async function markBookFinished(
 
   if (error) return { error: error.message };
 
+  const sessionResult = await createReadingSessionWithClient(supabase, {
+    userId: user.id,
+    userBookId: userBook.id,
+    pageStart: previousPage,
+    pageEnd: finalPage,
+    percentComplete: 100,
+  });
+
+  if (sessionResult.error) return { error: sessionResult.error };
+
   await recordActivity(supabase, {
     user_id: user.id,
     event_type: "book_finished",
@@ -230,7 +267,7 @@ export async function markBookFinished(
     metadata_json: activityMetadata(book.title, bookActivityContext(book)),
   });
 
-  return { success: "Marked as finished!" };
+  return { success: "Book Completed 🎉" };
 }
 
 export async function removeFromShelf(
@@ -336,6 +373,50 @@ export async function toggleFavorite(
   if (error) return { error: error.message };
 
   return { success: next ? "Added to favorites." : "Removed from favorites." };
+}
+
+export async function updateReadingDates(
+  _prev: BookActionState,
+  formData: FormData
+): Promise<BookActionState> {
+  const bookId = String(formData.get("book_id") ?? "");
+  const startedRaw = String(formData.get("started_at") ?? "");
+  const finishedRaw = String(formData.get("finished_at") ?? "");
+
+  const ctx = await getAuthUserBook(bookId);
+  if (!ctx.ok) return { error: ctx.error };
+  const { supabase, userBook } = ctx;
+
+  if (!userBook) {
+    return { error: "Add this book to a shelf before setting reading dates." };
+  }
+
+  const started_at = parseDateInput(startedRaw);
+  const finished_at = parseDateInput(finishedRaw);
+
+  if (startedRaw.trim() && !started_at) {
+    return { error: "Invalid start date." };
+  }
+  if (finishedRaw.trim() && !finished_at) {
+    return { error: "Invalid finish date." };
+  }
+
+  if (started_at && finished_at && finished_at < started_at) {
+    return { error: "Finish date cannot be before start date." };
+  }
+
+  const { error } = await supabase
+    .from("user_books")
+    .update({
+      started_at,
+      finished_at,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", userBook.id);
+
+  if (error) return { error: error.message };
+
+  return { success: "Reading dates updated." };
 }
 
 export async function deleteReview(

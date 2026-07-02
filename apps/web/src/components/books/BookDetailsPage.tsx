@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { getBookDetails } from "@/lib/services/bookDetails";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { useUserBooksRealtime } from "@/lib/hooks/useUserBooksRealtime";
 import { BookCover } from "@/components/books/BookCover";
 import { BookShelfActions } from "@/components/books/BookShelfActions";
 import { ReadingProgressPanel } from "@/components/books/ReadingProgressPanel";
+import { ReadingJournalSection } from "@/components/books/ReadingJournalSection";
+import { ReadingDatesEditor } from "@/components/books/ReadingDatesEditor";
 import { BookReviewSection } from "@/components/books/BookReviewSection";
 import { ShelfBadge } from "@/components/shelves/ShelfBadge";
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -30,7 +33,7 @@ function BookDetailsContent() {
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState<string | null>(null);
 
-  const loadBookDetails = () => {
+  const loadBookDetails = useCallback(() => {
     if (!user || !bookId) return;
     void getBookDetails(bookId, user.id)
       .then(setData)
@@ -38,7 +41,7 @@ function BookDetailsContent() {
         console.error("[book-details] load failed:", error);
         setData(null);
       });
-  };
+  }, [user, bookId]);
 
   useEffect(() => {
     if (!user || !bookId) {
@@ -46,7 +49,9 @@ function BookDetailsContent() {
       return;
     }
     loadBookDetails();
-  }, [user, bookId]);
+  }, [user, bookId, loadBookDetails]);
+
+  useUserBooksRealtime(user?.id, loadBookDetails);
 
   useEffect(() => {
     if (focusSection !== "reviews" || !data) return;
@@ -87,7 +92,7 @@ function BookDetailsContent() {
     );
   }
 
-  const { book, userBook, reviews, ownReview } = data;
+  const { book, userBook, reviews, ownReview, readingSessions } = data;
   const currentShelf = (userBook?.shelf_status as ShelfStatus | undefined) ?? null;
   const canRefreshFromOpenLibrary =
     book.external_source === "open_library" && Boolean(book.external_id);
@@ -213,7 +218,7 @@ function BookDetailsContent() {
           </section>
       </div>
 
-      <div className="mx-auto grid max-w-4xl gap-6 lg:grid-cols-2">
+      <div className="mx-auto grid max-w-4xl gap-6 text-left lg:grid-cols-2">
         <BookShelfActions
           bookId={book.id}
           bookTitle={book.title}
@@ -228,8 +233,22 @@ function BookDetailsContent() {
           progressPercent={Number(userBook?.progress_percent) || 0}
           startedAt={userBook?.started_at}
           finishedAt={userBook?.finished_at}
+          onProgressChange={loadBookDetails}
         />
       </div>
+
+      {userBook ? (
+        <div className="mx-auto grid max-w-4xl gap-6 text-left lg:grid-cols-2">
+          <ReadingDatesEditor
+            bookId={book.id}
+            onShelf={Boolean(userBook)}
+            startedAt={userBook.started_at}
+            finishedAt={userBook.finished_at}
+            onDatesChange={loadBookDetails}
+          />
+          <ReadingJournalSection sessions={readingSessions} />
+        </div>
+      ) : null}
 
       <div id="book-reviews">
         <BookReviewSection

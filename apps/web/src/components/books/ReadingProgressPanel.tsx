@@ -35,6 +35,7 @@ type Props = {
   progressPercent: number;
   startedAt?: string | null;
   finishedAt?: string | null;
+  onProgressChange?: () => void;
 };
 
 export function ReadingProgressPanel({
@@ -45,10 +46,12 @@ export function ReadingProgressPanel({
   progressPercent,
   startedAt,
   finishedAt,
+  onProgressChange,
 }: Props) {
   const toast = useToast();
   const [page, setPage] = useState(String(currentPage || ""));
   const [total, setTotal] = useState(String(totalPages || ""));
+  const [displayPercent, setDisplayPercent] = useState(progressPercent);
   const [clientError, setClientError] = useState<string | null>(null);
   const [progressAction, submitProgress, saving] = useActionState(
     updateReadingProgress,
@@ -60,21 +63,41 @@ export function ReadingProgressPanel({
   );
 
   useEffect(() => {
+    setPage(String(currentPage || ""));
+    setTotal(String(totalPages || ""));
+    setDisplayPercent(progressPercent);
+  }, [currentPage, totalPages, progressPercent]);
+
+  useEffect(() => {
     if (progressAction.error) toast.error(progressAction.error);
-    if (progressAction.success) toast.success(progressAction.success);
-  }, [progressAction, toast]);
+    if (progressAction.success) {
+      toast.success(progressAction.success);
+      onProgressChange?.();
+    }
+  }, [progressAction, toast, onProgressChange]);
 
   useEffect(() => {
     if (finishAction.error) toast.error(finishAction.error);
-    if (finishAction.success) toast.success(finishAction.success);
-  }, [finishAction, toast]);
+    if (finishAction.success) {
+      toast.success(finishAction.success);
+      onProgressChange?.();
+    }
+  }, [finishAction, toast, onProgressChange]);
 
   const previewPercent = useMemo(() => {
     const cur = Number(page) || 0;
     const tot = Number(total) || totalPages || 0;
-    if (tot <= 0) return progressPercent;
+    if (tot <= 0) return displayPercent;
     return Math.min(100, Math.round((cur / tot) * 1000) / 10);
-  }, [page, total, totalPages, progressPercent]);
+  }, [page, total, totalPages, displayPercent]);
+
+  useEffect(() => {
+    const cur = Number(page) || 0;
+    const tot = Number(total) || totalPages || 0;
+    if (tot > 0) {
+      setDisplayPercent(previewPercent);
+    }
+  }, [page, total, totalPages, previewPercent]);
 
   const pageCountUnavailable = !totalPages && !total;
 
@@ -92,7 +115,7 @@ export function ReadingProgressPanel({
   if (!onShelf) {
     return (
       <section className="rounded-xl border border-border bg-surface p-5">
-        <h2 className="text-lg font-semibold text-puce-red">Reading progress</h2>
+        <h2 className="text-lg font-semibold text-puce-red">Reading room</h2>
         <p className="mt-2 text-sm text-text-muted">
           Add this book to a shelf to start tracking progress.
         </p>
@@ -100,42 +123,48 @@ export function ReadingProgressPanel({
     );
   }
 
-  const displayPercent =
-    progressAction.success && progressAction.success.includes("%")
-      ? parseFloat(progressAction.success)
-      : previewPercent;
-
   const startedLabel = formatDate(startedAt);
   const finishedLabel = formatDate(finishedAt);
+  const isFinished = Boolean(finishedLabel) || displayPercent >= 100;
 
   const cur = Number(page) || 0;
   const tot = Number(total) || totalPages || 0;
-  const atFullProgress = tot > 0 && cur >= tot && !finishedLabel;
+  const atFullProgress = tot > 0 && cur >= tot && !isFinished;
 
   return (
     <section className="rounded-xl border border-border bg-surface p-5">
-      <h2 className="text-lg font-semibold text-puce-red">Reading progress</h2>
+      <h2 className="text-lg font-semibold text-puce-red">Reading room</h2>
 
-      {startedLabel || finishedLabel ? (
-        <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm">
-          {startedLabel ? (
-            <div>
-              <dt className="inline text-text-muted">Started </dt>
-              <dd className="inline text-text" suppressHydrationWarning>
-                {startedLabel}
-              </dd>
-            </div>
-          ) : null}
-          {finishedLabel ? (
-            <div>
-              <dt className="inline text-text-muted">Finished </dt>
-              <dd className="inline text-text" suppressHydrationWarning>
-                {finishedLabel}
-              </dd>
-            </div>
-          ) : null}
-        </dl>
-      ) : null}
+      <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+        <div>
+          <dt className="text-text-muted">Progress</dt>
+          <dd className="font-medium text-text">{Math.round(displayPercent)}% complete</dd>
+        </div>
+        {tot > 0 ? (
+          <div>
+            <dt className="text-text-muted">Pages</dt>
+            <dd className="font-medium text-text">
+              {cur || currentPage} / {tot}
+            </dd>
+          </div>
+        ) : null}
+        {startedLabel ? (
+          <div>
+            <dt className="text-text-muted">Started</dt>
+            <dd className="text-text" suppressHydrationWarning>
+              {startedLabel}
+            </dd>
+          </div>
+        ) : null}
+        {finishedLabel ? (
+          <div>
+            <dt className="text-text-muted">Finished</dt>
+            <dd className="text-text" suppressHydrationWarning>
+              {finishedLabel}
+            </dd>
+          </div>
+        ) : null}
+      </dl>
 
       {pageCountUnavailable ? (
         <p className="mt-2 text-sm text-text-muted">
@@ -163,6 +192,7 @@ export function ReadingProgressPanel({
               setClientError(null);
             }}
             error={clientError ?? undefined}
+            disabled={isFinished}
           />
           <Input
             label="Total pages"
@@ -175,11 +205,13 @@ export function ReadingProgressPanel({
               setTotal(e.target.value);
               setClientError(null);
             }}
+            disabled={isFinished}
           />
         </div>
         <ProgressBar
           value={displayPercent}
           label={`${Math.round(displayPercent)}% complete`}
+          animate
         />
         {atFullProgress ? (
           <p className="rounded-lg bg-orange-yellow/20 px-3 py-2 text-sm text-puce-red">
@@ -187,30 +219,36 @@ export function ReadingProgressPanel({
             Read.
           </p>
         ) : null}
-        <Button type="submit" variant="secondary" loading={saving}>
-          Save progress
-        </Button>
+        {!isFinished ? (
+          <Button type="submit" variant="secondary" loading={saving}>
+            Update progress
+          </Button>
+        ) : (
+          <p className="text-sm font-medium text-puce-red">This book is finished.</p>
+        )}
       </form>
 
-      <form
-        action={submitFinish}
-        className={cn(
-          "mt-4 border-t border-border pt-4",
-          atFullProgress && "rounded-lg bg-primary/10 px-3 pb-3"
-        )}
-        onSubmit={(e) => {
-          if (!validateBeforeSubmit()) e.preventDefault();
-        }}
-      >
-        <input type="hidden" name="book_id" value={bookId} />
-        <Button
-          type="submit"
-          variant={atFullProgress ? "secondary" : "outline"}
-          loading={finishing}
+      {!isFinished ? (
+        <form
+          action={submitFinish}
+          className={cn(
+            "mt-4 border-t border-border pt-4",
+            atFullProgress && "rounded-lg bg-primary/10 px-3 pb-3"
+          )}
+          onSubmit={(e) => {
+            if (!validateBeforeSubmit()) e.preventDefault();
+          }}
         >
-          Mark as finished
-        </Button>
-      </form>
+          <input type="hidden" name="book_id" value={bookId} />
+          <Button
+            type="submit"
+            variant={atFullProgress ? "secondary" : "outline"}
+            loading={finishing}
+          >
+            Mark as finished
+          </Button>
+        </form>
+      ) : null}
     </section>
   );
 }

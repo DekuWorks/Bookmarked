@@ -33,6 +33,7 @@ export type {
   ReviewReplyWithAuthor,
   PostCommentReply,
   PostCommentReplyWithAuthor,
+  ReadingSession,
 } from "../../../../packages/types";
 
 export interface UserBook {

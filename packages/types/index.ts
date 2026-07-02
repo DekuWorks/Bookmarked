@@ -240,3 +240,15 @@ export type PostCommentReply = {
 export type PostCommentReplyWithAuthor = PostCommentReply & {
   author: PostAuthor;
 };
+
+export interface ReadingSession {
+  id: string;
+  user_id: string;
+  user_book_id: string;
+  page_start: number;
+  page_end: number;
+  pages_read: number;
+  percent_complete: number;
+  note: string | null;
+  created_at: string;
+}
