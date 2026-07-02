@@ -11,9 +11,15 @@ export function useAuthUser() {
     const supabase = createClient();
     let cancelled = false;
 
-    void supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!cancelled) setUser(session?.user ?? null);
-    });
+    void supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        if (!cancelled) setUser(session?.user ?? null);
+      })
+      .catch((error) => {
+        console.warn("[auth] getSession failed:", error);
+        if (!cancelled) setUser(null);
+      });
 
     const {
       data: { subscription },

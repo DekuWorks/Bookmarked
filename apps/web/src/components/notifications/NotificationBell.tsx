@@ -20,7 +20,11 @@ export function NotificationBell() {
 
   const refreshCount = useCallback(() => {
     if (!userId) return;
-    void getUnreadNotificationCount(userId).then(setUnreadCount);
+    void getUnreadNotificationCount(userId)
+      .then(setUnreadCount)
+      .catch((error) => {
+        console.warn("[notifications] unread count failed:", error);
+      });
   }, [userId]);
 
   const refreshCountRef = useRef(refreshCount);
@@ -68,11 +72,13 @@ export function NotificationBell() {
           if (shownBrowserNotificationIdsRef.current.has(notificationId)) return;
           shownBrowserNotificationIdsRef.current.add(notificationId);
 
-          void supabase
-            .from("profiles")
-            .select("notify_browser")
-            .eq("id", userId)
-            .maybeSingle()
+          void Promise.resolve(
+            supabase
+              .from("profiles")
+              .select("notify_browser")
+              .eq("id", userId)
+              .maybeSingle()
+          )
             .then(({ data }) => {
               if (!data?.notify_browser) return;
               showBrowserNotification(row.title ?? "Bookmarked", {
@@ -80,6 +86,9 @@ export function NotificationBell() {
                 tag: notificationId,
                 url: row.link_url ?? "/notifications/",
               });
+            })
+            .catch((error) => {
+              console.warn("[notifications] browser preference check failed:", error);
             });
         }
       )

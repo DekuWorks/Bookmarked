@@ -20,10 +20,17 @@ export function NavbarPublicAuth({ layout = "inline" }: Props) {
 
   useEffect(() => {
     const supabase = createClient();
-    void supabase.auth.getSession().then(({ data: { session } }) => {
-      setHasSession(Boolean(session));
-      setReady(true);
-    });
+    void supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        setHasSession(Boolean(session));
+        setReady(true);
+      })
+      .catch((error) => {
+        console.warn("[auth] getSession failed:", error);
+        setHasSession(false);
+        setReady(true);
+      });
   }, []);
 
   if (!ready) {

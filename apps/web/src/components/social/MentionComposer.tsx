@@ -42,9 +42,14 @@ export function MentionComposer({
         return;
       }
 
-      const results = await searchProfilesForMessaging(query, viewerId);
-      setSuggestions(results.filter((profile) => profile.username));
-      setHighlightIndex(0);
+      try {
+        const results = await searchProfilesForMessaging(query, viewerId);
+        setSuggestions(results.filter((profile) => profile.username));
+        setHighlightIndex(0);
+      } catch (error) {
+        console.warn("[mentions] profile search failed:", error);
+        setSuggestions([]);
+      }
     },
     [viewerId]
   );

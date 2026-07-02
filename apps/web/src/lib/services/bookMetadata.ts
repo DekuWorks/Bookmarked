@@ -152,7 +152,10 @@ export async function enrichBookCatalogEntry(
 
   const ol =
     book.external_source === "open_library" && book.external_id
-      ? await fetchOpenLibraryWorkDetails(book.external_id)
+      ? await fetchOpenLibraryWorkDetails(book.external_id).catch((error) => {
+          console.warn("[bookMetadata] Open Library fetch failed:", error);
+          return null;
+        })
       : null;
 
   const needsGoogle =

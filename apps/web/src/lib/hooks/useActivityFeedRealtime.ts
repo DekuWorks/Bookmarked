@@ -42,7 +42,9 @@ export function useActivityFeedRealtime(
         },
         () => {
           if (cancelled) return;
-          onChangeRef.current();
+          void Promise.resolve(onChangeRef.current()).catch((error) => {
+            console.warn("[activity-realtime] refresh failed:", error);
+          });
         }
       );
     }

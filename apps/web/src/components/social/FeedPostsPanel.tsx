@@ -160,7 +160,14 @@ export function FeedPostsPanel({
       ) : null}
 
       {showComposer ? (
-        <PostComposer userId={userId} onPostCreated={() => void loadPosts()} />
+        <PostComposer
+          userId={userId}
+          onPostCreated={() => {
+            void loadPosts().catch((error) => {
+              console.warn("[feed-posts] reload failed:", error);
+            });
+          }}
+        />
       ) : null}
 
       {error ? (
@@ -205,7 +212,11 @@ export function FeedPostsPanel({
                   post={post}
                   viewerId={userId}
                   highlighted={post.id === highlightedPostId}
-                  onPostChange={() => void loadPosts()}
+                  onPostChange={() => {
+                    void loadPosts().catch((error) => {
+                      console.warn("[feed-posts] reload failed:", error);
+                    });
+                  }}
                 />
               </li>
             ))}

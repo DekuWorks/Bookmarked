@@ -42,7 +42,9 @@ export function usePostsRealtime(
         },
         () => {
           if (cancelled) return;
-          onChangeRef.current();
+          void Promise.resolve(onChangeRef.current()).catch((error) => {
+            console.warn("[posts-realtime] refresh failed:", error);
+          });
         }
       );
     }

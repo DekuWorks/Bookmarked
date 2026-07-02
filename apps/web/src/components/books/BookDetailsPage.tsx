@@ -32,7 +32,12 @@ function BookDetailsContent() {
 
   const loadBookDetails = () => {
     if (!user || !bookId) return;
-    void getBookDetails(bookId, user.id).then(setData);
+    void getBookDetails(bookId, user.id)
+      .then(setData)
+      .catch((error) => {
+        console.error("[book-details] load failed:", error);
+        setData(null);
+      });
   };
 
   useEffect(() => {

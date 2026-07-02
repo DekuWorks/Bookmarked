@@ -30,7 +30,11 @@ export function useUserBooksRealtime(
           table: "user_books",
           filter: `user_id=eq.${userId}`,
         },
-        () => onChange()
+        () => {
+          void Promise.resolve(onChange()).catch((error) => {
+            console.warn("[user-books-realtime] refresh failed:", error);
+          });
+        }
       )
       .subscribe();
 

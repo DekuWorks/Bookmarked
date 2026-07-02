@@ -72,7 +72,12 @@ export async function searchOpenLibraryByAuthor(
     params.set("sort", options.sort);
   }
 
-  const res = await fetch(`${SEARCH_URL}?${params}`);
+  let res: Response;
+  try {
+    res = await fetch(`${SEARCH_URL}?${params}`, { signal: AbortSignal.timeout(8000) });
+  } catch {
+    throw new Error("Could not reach Open Library. Check your connection and try again.");
+  }
 
   if (!res.ok) {
     throw new Error("Could not load books for this author. Try again.");
@@ -109,7 +114,12 @@ export async function searchOpenLibrary(
     params.set("sort", options.sort);
   }
 
-  const res = await fetch(`${SEARCH_URL}?${params}`);
+  let res: Response;
+  try {
+    res = await fetch(`${SEARCH_URL}?${params}`, { signal: AbortSignal.timeout(8000) });
+  } catch {
+    throw new Error("Could not reach Open Library. Check your connection and try again.");
+  }
 
   if (!res.ok) {
     throw new Error("Could not search Open Library. Try again.");
@@ -220,11 +230,15 @@ function normalizeWorkPath(externalId: string): string {
 }
 
 async function fetchOpenLibraryJson<T>(path: string): Promise<T | null> {
-  const res = await fetch(`https://openlibrary.org${path}`, {
-    signal: AbortSignal.timeout(8000),
-  });
-  if (!res.ok) return null;
-  return (await res.json()) as T;
+  try {
+    const res = await fetch(`https://openlibrary.org${path}`, {
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
 }
 
 function parseOpenLibraryDescription(

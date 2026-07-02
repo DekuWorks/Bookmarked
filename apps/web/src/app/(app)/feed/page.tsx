@@ -273,7 +273,14 @@ function FeedContent() {
 
           {feedView === "posts" ? (
             <>
-              <PostComposer userId={user.id} onPostCreated={() => void loadPosts()} />
+              <PostComposer
+                userId={user.id}
+                onPostCreated={() => {
+                  void loadPosts().catch((error) => {
+                    console.warn("[feed] posts reload failed:", error);
+                  });
+                }}
+              />
 
               {!posts ? (
                 <LoadingState message="Loading posts…" />
@@ -309,7 +316,11 @@ function FeedContent() {
                         post={post}
                         viewerId={user.id}
                         highlighted={post.id === highlightedPostId}
-                        onPostChange={() => void loadPosts()}
+                        onPostChange={() => {
+                          void loadPosts().catch((error) => {
+                            console.warn("[feed] posts reload failed:", error);
+                          });
+                        }}
                       />
                     </li>
                   ))}

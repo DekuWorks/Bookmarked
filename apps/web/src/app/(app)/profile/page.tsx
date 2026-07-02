@@ -92,7 +92,9 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!user) return;
-    void loadProfile();
+    void loadProfile().catch((error) => {
+      console.error("[profile] load failed:", error);
+    });
   }, [user, loadProfile]);
 
   useUserBooksRealtime(user?.id, loadProfile);

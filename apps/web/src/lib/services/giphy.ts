@@ -46,7 +46,13 @@ async function fetchGiphyEndpoint(path: "search" | "trending", params: Record<st
     url.searchParams.set(key, value);
   }
 
-  const response = await fetch(url.toString());
+  let response: Response;
+  try {
+    response = await fetch(url.toString(), { signal: AbortSignal.timeout(8000) });
+  } catch {
+    throw new Error("Could not reach Giphy. Check your connection and try again.");
+  }
+
   if (!response.ok) {
     throw new Error("GIF search failed.");
   }
