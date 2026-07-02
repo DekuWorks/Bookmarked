@@ -73,27 +73,33 @@ export function RepostPreview({ post, linkToPost = true }: Props) {
         </a>
       ) : null}
       {post.book ? (
-        <Link
-          href={bookDetailsPath(post.book.id)}
+        <div
           className="mt-2 flex items-center gap-3 rounded-md border border-border p-2 hover:border-primary/40"
           onClick={(event) => event.stopPropagation()}
         >
-          <div className="h-16 w-11 shrink-0 overflow-hidden rounded shadow-sm">
+          <Link
+            href={bookDetailsPath(post.book.id)}
+            className="h-16 w-11 shrink-0 overflow-hidden rounded shadow-sm"
+          >
             <BookCover title={post.book.title} coverUrl={post.book.cover_url} className="h-full w-full" />
-          </div>
+          </Link>
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-puce-red">{post.book.title}</p>
+            <Link
+              href={bookDetailsPath(post.book.id)}
+              className="block truncate text-sm font-medium text-puce-red hover:underline"
+            >
+              {post.book.title}
+            </Link>
             {post.book.author ? (
               <Link
                 href={authorPagePath(post.book.author)}
-                className="truncate text-xs text-text-muted hover:text-primary hover:underline"
-                onClick={(event) => event.stopPropagation()}
+                className="block truncate text-xs text-text-muted hover:text-primary hover:underline"
               >
                 {post.book.author}
               </Link>
             ) : null}
           </div>
-        </Link>
+        </div>
       ) : null}
     </>
   );

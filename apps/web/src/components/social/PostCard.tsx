@@ -265,30 +265,34 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
               ) : null}
 
               {localPost.book ? (
-                <Link
-                  href={bookDetailsPath(localPost.book.id)}
-                  className="mt-3 flex items-center gap-3 rounded-lg border border-border p-3 hover:border-primary/40"
-                >
-                  <div className="h-20 w-14 shrink-0 overflow-hidden rounded-md shadow-sm">
+                <div className="mt-3 flex items-center gap-3 rounded-lg border border-border p-3 hover:border-primary/40">
+                  <Link
+                    href={bookDetailsPath(localPost.book.id)}
+                    className="h-20 w-14 shrink-0 overflow-hidden rounded-md shadow-sm"
+                  >
                     <BookCover
                       title={localPost.book.title}
                       coverUrl={localPost.book.cover_url}
                       className="h-full w-full"
                     />
-                  </div>
+                  </Link>
                   <div className="min-w-0">
-                    <p className="font-medium text-puce-red">{localPost.book.title}</p>
+                    <Link
+                      href={bookDetailsPath(localPost.book.id)}
+                      className="block font-medium text-puce-red hover:underline"
+                    >
+                      {localPost.book.title}
+                    </Link>
                     {localPost.book.author ? (
                       <Link
                         href={authorPagePath(localPost.book.author)}
                         className="text-sm text-text-muted hover:text-primary hover:underline"
-                        onClick={(event) => event.stopPropagation()}
                       >
                         {localPost.book.author}
                       </Link>
                     ) : null}
                   </div>
-                </Link>
+                </div>
               ) : null}
             </>
           )}
