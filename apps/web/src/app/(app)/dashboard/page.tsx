@@ -7,9 +7,11 @@ import { getProfile } from "@/lib/services/profile";
 import { getUserLibraryBooks } from "@/lib/services/library";
 import { computeReadingAnalytics } from "@/lib/services/analytics";
 import { fetchReadingStreakTimestamps } from "@/lib/services/readingInsights";
+import { backfillReadingSessionsForUser } from "@/lib/services/readingSessionBackfill";
 import { computeReadingGoal } from "@/lib/services/readingGoal";
 import { ReadingGoalPanel } from "@/components/reading-goal/ReadingGoalPanel";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
+import { ReadingActivityPanel } from "@/components/analytics/ReadingActivityPanel";
 import { SuggestedShelvesPanel } from "@/components/shelves/SuggestedShelvesPanel";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
@@ -59,6 +61,8 @@ export default function DashboardPage() {
           .select("id", { count: "exact", head: true })
           .eq("user_id", user.id),
       ]);
+
+      void backfillReadingSessionsForUser(user.id, supabase);
 
       const analytics = computeReadingAnalytics({
         books,
@@ -166,6 +170,10 @@ export default function DashboardPage() {
           </div>
         </DashboardCard>
       </div>
+
+      <DashboardCard title="Reading activity">
+        <ReadingActivityPanel userId={userId} />
+      </DashboardCard>
 
       <DashboardCard title="Your reading at a glance">
         <AnalyticsGrid analytics={analytics} readingGoal={readingGoal} compact />
