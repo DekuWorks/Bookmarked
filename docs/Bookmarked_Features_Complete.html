@@ -1,0 +1,1855 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Bookmarked — Complete Feature Documentation</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+    });
+  </script>
+  <style>
+    body.markdown-body { box-sizing: border-box; min-width: 200px; max-width: 980px; margin: 0 auto; padding: 45px; }
+    @media print {
+      body.markdown-body { padding: 20px; font-size: 11pt; }
+      pre.mermaid { page-break-inside: avoid; }
+      table { page-break-inside: avoid; }
+      h1, h2, h3 { page-break-after: avoid; }
+      a { color: #0366d6; text-decoration: none; }
+      .print-instructions { display: none; }
+    }
+    @media screen {
+      .print-instructions {
+        background: #fff8e6; border: 1px solid #f0c36d; border-radius: 8px;
+        padding: 1rem 1.25rem; margin-bottom: 2rem; font-size: 0.95rem;
+      }
+    }
+    pre.mermaid { background: #f6f8fa; border-radius: 8px; padding: 1rem; overflow-x: auto; }
+  </style>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css" />
+</head>
+<body class="markdown-body">
+<div class="print-instructions">
+  <strong>Print to PDF:</strong> Open this file in a browser, wait for flowcharts to render, then use <strong>File → Print → Save as PDF</strong> (enable &ldquo;Background graphics&rdquo; for best results).
+</div>
+<header id="title-block-header">
+<h1 class="title">Bookmarked — Complete Feature Documentation</h1>
+</header>
+<h1 id="bookmarked-complete-feature-documentation">Bookmarked — Complete
+Feature Documentation</h1>
+<p><strong>Product:</strong> Bookmarked — web-first digital home library
+and social reading platform<br />
+<strong>Live URL:</strong> https://bookmarked.online<br />
+<strong>Repository:</strong> Bookmarked monorepo (<code>apps/web</code>,
+<code>apps/mobile</code>, <code>supabase/</code>,
+<code>docs/</code>)<br />
+<strong>Document date:</strong> July 6, 2026<br />
+<strong>Total commits:</strong> 104 (May 2026 → July 2026)</p>
+<hr />
+<h2 id="executive-summary">Executive Summary</h2>
+<p>Bookmarked is a <strong>web-first reading platform</strong> where
+users search books, organize personal libraries on interactive shelves,
+track reading progress with journals and notes, write reviews, discover
+other readers, and participate in a social feed with posts, likes,
+comments, reposts, direct messages, and group chats.</p>
+<p>The product ships as a <strong>Next.js static export</strong>
+deployed to <strong>GitHub Pages</strong> at the custom domain
+<strong>bookmarked.online</strong>, with <strong>Supabase</strong>
+providing authentication, PostgreSQL data, Row Level Security, file
+storage, and realtime subscriptions. Book metadata comes primarily from
+the <strong>Open Library API</strong>, with Google Books cover fallback
+and <strong>Giphy</strong> for GIF attachments in posts and
+messages.</p>
+<p><strong>Phases completed:</strong></p>
+<table>
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 34%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Scope</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Phase 0</td>
+<td>Planning, schema, infra</td>
+<td>✅ Complete</td>
+</tr>
+<tr>
+<td>Phase 1</td>
+<td>Core web MVP (auth, search, shelves, progress, reviews,
+dashboard)</td>
+<td>✅ Complete</td>
+</tr>
+<tr>
+<td>Phase 2</td>
+<td>Public pages, polish, production launch</td>
+<td>✅ Complete</td>
+</tr>
+<tr>
+<td>Beyond plan</td>
+<td>Social feed, messaging, posts, author pages, reading journal, notes,
+import</td>
+<td>✅ Shipped</td>
+</tr>
+<tr>
+<td>Phase 3</td>
+<td>Mobile app foundation (<code>apps/mobile</code> scaffold)</td>
+<td>🟡 Ready to start</td>
+</tr>
+</tbody>
+</table>
+<p>The web application is <strong>production-ready</strong> and
+continuously extended. Mobile (React Native + Expo) is planned to reuse
+the same Supabase backend.</p>
+<hr />
+<h2 id="technology-stack">Technology Stack</h2>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Technology</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Frontend</td>
+<td>Next.js, TypeScript, Tailwind CSS</td>
+</tr>
+<tr>
+<td>Backend</td>
+<td>Supabase (PostgreSQL, Auth, RLS, Storage, Realtime)</td>
+</tr>
+<tr>
+<td>Book data</td>
+<td>Open Library API, Google Books (cover fallback)</td>
+</tr>
+<tr>
+<td>GIFs</td>
+<td>Giphy API (<code>NEXT_PUBLIC_GIPHY_API_KEY</code>)</td>
+</tr>
+<tr>
+<td>Deployment</td>
+<td>GitHub Actions → GitHub Pages → bookmarked.online</td>
+</tr>
+<tr>
+<td>DNS</td>
+<td>GoDaddy (GitHub Pages A records + www CNAME)</td>
+</tr>
+<tr>
+<td>Mobile (future)</td>
+<td>React Native + Expo (<code>apps/mobile</code>)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="feature-catalog-by-area">Feature Catalog by Area</h2>
+<h3 id="authentication-sessions">Authentication &amp; Sessions</h3>
+<table>
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 43%" />
+<col style="width: 32%" />
+</colgroup>
+<thead>
+<tr>
+<th>What it does</th>
+<th>Key routes / components</th>
+<th>Shipped (approx.)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Email signup and login via Supabase Auth</td>
+<td><code>/signup</code>, <code>/login</code></td>
+<td>Jun 2026</td>
+</tr>
+<tr>
+<td>Protected app routes with client auth guard</td>
+<td><code>ClientAuthGuard</code>, <code>(app)/layout</code></td>
+<td>Jun 2026</td>
+</tr>
+<tr>
+<td>Session persistence</td>
+<td>Remember me on login/signup</td>
+<td>Jun 26, 2026</td>
+</tr>
+<tr>
+<td>Logout</td>
+<td>Navbar / profile actions</td>
+<td>Jun 2026</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Notes:</strong> Static export means all auth runs
+client-side; no server actions at runtime.</p>
+<hr />
+<h3 id="profiles-onboarding">Profiles &amp; Onboarding</h3>
+<table>
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 43%" />
+<col style="width: 32%" />
+</colgroup>
+<thead>
+<tr>
+<th>What it does</th>
+<th>Key routes / components</th>
+<th>Shipped (approx.)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>First-time profile setup (username, display name, genres)</td>
+<td><code>/profile/setup</code></td>
+<td>Jun 2026</td>
+</tr>
+<tr>
+<td>Profile view and edit</td>
+<td><code>/profile</code></td>
+<td>Jun 2026</td>
+</tr>
+<tr>
+<td>Avatar upload</td>
+<td>Supabase Storage (<code>013_avatar_storage</code>)</td>
+<td>Jun 29, 2026</td>
+</tr>
+<tr>
+<td>Favorite genres, bio, display name</td>
+<td><code>profiles</code> table</td>
+<td>Jun 2026</td>
+</tr>
+<tr>
+<td>Preferred library view (bookshelf vs grid)</td>
+<td><code>profiles.preferred_library_view</code></td>
+<td>Jun 2026</td>
+</tr>
+<tr>
+<td>Yearly reading goal with progress</td>
+<td><code>004_yearly_reading_goal</code></td>
+<td>Jun 8, 2026</td>
+</tr>
+<tr>
+<td>Preferred language (Open Library search default)</td>
+<td><code>20260630030000_preferred_language</code></td>
+<td>Jun 29, 2026</td>
+</tr>
+<tr>
+<td>Goodreads CSV library import</td>
+<td>Profile import UI</td>
+<td>Jul 6, 2026</td>
+</tr>
+<tr>
+<td>Granular notification preferences</td>
+<td><code>20260630050000_granular_notification_preferences</code></td>
+<td>Jun 29, 2026</td>
+</tr>
+<tr>
+<td>Profile feed &amp; notifications previews</td>
+<td><code>/profile</code> sections</td>
+<td>Jun 29, 2026</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="dashboard">Dashboard</h3>
+<table>
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 43%" />
+<col style="width: 32%" />
+</colgroup>
+<thead>
+<tr>
+<th>What it does</th>
+<th>Key routes / components</th>
+<th>Shipped (approx.)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Welcome, quick actions, continue reading</td>
+<td><code>/dashboard</code></td>
+<td>Jun 2026</td>
+</tr>
+<tr>
+<td>Activity feed (own + social events)</td>
+<td><code>ActivityFeed</code></td>
+<td>Jun 2026</td>
+</tr>
+<tr>
+<td>Reading overview, streaks, favorite genre analytics</td>
+<td>Dashboard widgets</td>
+<td>Jun 8, 2026</td>
+</tr>
+<tr>
+<td>Reading activity charts</td>
+<td>Charts component</td>
+<td>Jul 6, 2026</td>
+</tr>
+<tr>
+<td>Because you read recommendations</td>
+<td>Discovery section</td>
+<td>Jul 6, 2026</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="book-search-catalog">Book Search &amp; Catalog</h3>
+<table>
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 43%" />
+<col style="width: 32%" />
+</colgroup>
+<thead>
+<tr>
+<th>What it does</th>
+<th>Key routes / components</th>
+<th>Shipped (approx.)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Open Library title/keyword search</td>
+<td><code>/search</code></td>
+<td>Jun 2026</td>
+</tr>
+<tr>
+<td>Search filters, ISBN lookup</td>
+<td>Search filters UI</td>
+<td>Jun 29, 2026</td>
+</tr>
+<tr>
+<td>Paginated edition picker (load more)</td>
+<td>Edition picker modal</td>
+<td>Jun 29, 2026</td>
+</tr>
+<tr>
+<td>Add to shelf from search (hover actions, shelf picker, toasts)</td>
+<td><code>BookShelfActions</code>, <code>ShelfSelectMenu</code></td>
+<td>Jun 2026</td>
+</tr>
+<tr>
+<td>Book metadata enrichment from Open Library</td>
+<td><code>lib/services</code></td>
+<td>Jun 26, 2026</td>
+</tr>
+<tr>
+<td>Edition-specific covers when adding from search</td>
+<td>ISBN-aware resolution</td>
+<td>Jun 29, 2026</td>
+</tr>
+<tr>
+<td>Background stale catalog metadata refresh on library load</td>
+<td>Library service</td>
+<td>Jul 6, 2026</td>
+</tr>
+<tr>
+<td>Cache search results in <code>books</code> catalog table</td>
+<td><code>001_phase0_schema</code></td>
+<td>Jun 2026</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Cover fallback order:</strong> Open Library cover ID → Open
+Library ISBN URL → Google Books → branded Bookmarked placeholder.</p>
+<hr />
+<h3 id="book-details">Book Details</h3>
+<table>
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 43%" />
+<col style="width: 32%" />
+</colgroup>
+<thead>
+<tr>
+<th>What it does</th>
+<th>Key routes / components</th>
+<th>Shipped (approx.)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Static-safe book page (GitHub Pages)</td>
+<td><code>/book/?id={uuid}</code></td>
+<td>Jun 14, 2026</td>
+</tr>
+<tr>
+<td>Metadata display (title, author, description, ISBN, pages)</td>
+<td><code>BookDetailsPage</code></td>
+<td>Jun 2026</td>
+</tr>
+<tr>
+<td>Shelf actions (want to read / reading / read)</td>
+<td><code>BookShelfActions</code></td>
+<td>Jun 2026</td>
+</tr>
+<tr>
+<td>Reading progress panel</td>
+<td><code>ReadingProgressPanel</code></td>
+<td>Jun 2026</td>
+</tr>
+<tr>
+<td>Reviews and ratings</td>
+<td><code>BookReviewSection</code></td>
+<td>Jun 2026</td>
+</tr>
+<tr>
+<td>Reading Journal button + deep-link scroll</td>
+<td>Book page anchor</td>
+<td>Jul 2, 2026</td>
+</tr>
+<tr>
+<td>Shareable book links</td>
+<td>URL with query id</td>
+<td>Jun 29, 2026</td>
+</tr>
+<tr>
+<td>Link to author page</td>
+<td><code>/author/?key=</code></td>
+<td>Jun 29, 2026</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="library-shelves">Library &amp; Shelves</h3>
+<table>
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 43%" />
+<col style="width: 32%" />
+</colgroup>
+<thead>
+<tr>
+<th>What it does</th>
+<th>Key routes / components</th>
+<th>Shipped (approx.)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Full library with bookshelf and grid views</td>
+<td><code>/library</code>, <code>LibraryViewShell</code></td>
+<td>Jun 2026</td>
+</tr>
+<tr>
+<td>Default shelves: want to read, currently reading, read</td>
+<td><code>/library/want-to-read</code>, <code>/library/reading</code>,
+<code>/library/read</code></td>
+<td>Jun 2026</td>
+</tr>
+<tr>
+<td>Per-shelf analytics and sorting</td>
+<td><code>ShelfPageClient</code></td>
+<td>Jun 8, 2026</td>
+</tr>
+<tr>
+<td>Interactive bookshelf spines with full cover art</td>
+<td>Bookshelf view</td>
+<td>Jun 26, 2026</td>
+</tr>
+<tr>
+<td>Custom user-created shelves with optional genre labels</td>
+<td><code>/library/custom</code>, <code>user_shelves</code></td>
+<td>Jun 29, 2026</td>
+</tr>
+<tr>
+<td>Custom shelf deletion</td>
+<td>Custom shelf UI</td>
+<td>Jun 29, 2026</td>
+</tr>
+<tr>
+<td>Suggested shelves (genre-based, match preview tabs)</td>
+<td>Reading Room / search flows</td>
+<td>Jun 29, 2026</td>
+</tr>
+<tr>
+<td>Per-shelf privacy (public / followers / private)</td>
+<td><code>ShelfPrivacyPanel</code>, migration <code>007</code></td>
+<td>Jun 19, 2026</td>
+</tr>
+<tr>
+<td>Live shelf updates without full page reload</td>
+<td>Realtime / optimistic UI</td>
+<td>Jun 29, 2026</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="reading-room-signature-feature">Reading Room (Signature
+Feature)</h3>
+<table>
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 43%" />
+<col style="width: 32%" />
+</colgroup>
+<thead>
+<tr>
+<th>What it does</th>
+<th>Key routes / components</th>
+<th>Shipped (approx.)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Personalized reading space</td>
+<td><code>/reading-room</code></td>
+<td>Jun 2026 (refined ongoing)</td>
+</tr>
+<tr>
+<td>Shelf analytics, reading goal, streaks</td>
+<td>Reading Room panels</td>
+<td>Jun 2026</td>
+</tr>
+<tr>
+<td>Suggested shelf previews</td>
+<td>Suggested shelves UI</td>
+<td>Jun 29, 2026</td>
+</tr>
+<tr>
+<td>Reading notes and quote highlights timeline</td>
+<td>Reading Room notes</td>
+<td>Jul 6, 2026</td>
+</tr>
+<tr>
+<td>Reading activity charts</td>
+<td>Charts</td>
+<td>Jul 6, 2026</td>
+</tr>
+<tr>
+<td>Because you read recommendations</td>
+<td>Discovery</td>
+<td>Jul 6, 2026</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="reading-progress-journal-sessions">Reading Progress, Journal
+&amp; Sessions</h3>
+<table>
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 43%" />
+<col style="width: 32%" />
+</colgroup>
+<thead>
+<tr>
+<th>What it does</th>
+<th>Key routes / components</th>
+<th>Shipped (approx.)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Page and percent progress tracking</td>
+<td><code>user_books</code> columns</td>
+<td>Jun 2026</td>
+</tr>
+<tr>
+<td>Start/finish dates, mark as finished</td>
+<td>Progress panel</td>
+<td>Jun 2026</td>
+</tr>
+<tr>
+<td>Reading sessions (<code>reading_sessions</code> table)</td>
+<td>Journal UI on book page</td>
+<td>Jul 2, 2026</td>
+</tr>
+<tr>
+<td>Per-session journal notes</td>
+<td>Session notes</td>
+<td>Jul 6, 2026</td>
+</tr>
+<tr>
+<td>Backfill reading sessions from existing progress</td>
+<td>Migration / service</td>
+<td>Jul 6, 2026</td>
+</tr>
+<tr>
+<td>Reading Journal deep links from book details</td>
+<td>Book page</td>
+<td>Jul 2, 2026</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="reading-notes">Reading Notes</h3>
+<table>
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 43%" />
+<col style="width: 32%" />
+</colgroup>
+<thead>
+<tr>
+<th>What it does</th>
+<th>Key routes / components</th>
+<th>Shipped (approx.)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Quote highlights and reading notes per book</td>
+<td><code>reading_notes</code> table</td>
+<td>Jul 6, 2026</td>
+</tr>
+<tr>
+<td>Notes on profile and public reader pages</td>
+<td>Profile / reader sections</td>
+<td>Jul 6, 2026</td>
+</tr>
+<tr>
+<td>Global notes search</td>
+<td><code>/notes</code></td>
+<td>Jul 6, 2026</td>
+</tr>
+<tr>
+<td>Shared timeline and quote styles</td>
+<td>UI polish</td>
+<td>Jul 6, 2026</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="reviews-ratings">Reviews &amp; Ratings</h3>
+<table>
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 43%" />
+<col style="width: 32%" />
+</colgroup>
+<thead>
+<tr>
+<th>What it does</th>
+<th>Key routes / components</th>
+<th>Shipped (approx.)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1–5 star ratings, review text, spoiler flag</td>
+<td><code>reviews</code> table</td>
+<td>Jun 2026</td>
+</tr>
+<tr>
+<td>Edit and delete own reviews</td>
+<td><code>BookReviewSection</code></td>
+<td>Jun 2026</td>
+</tr>
+<tr>
+<td>One review per user per book</td>
+<td><code>003_book_metadata_and_reviews_unique</code></td>
+<td>Jun 2026</td>
+</tr>
+<tr>
+<td>Review/message editing in conversations</td>
+<td>Messaging polish</td>
+<td>Jun 29, 2026</td>
+</tr>
+<tr>
+<td>Review comment reactions and replies</td>
+<td><code>20260630020000_review_comment_reactions_replies</code></td>
+<td>Jun 29, 2026</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="author-pages">Author Pages</h3>
+<table>
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 43%" />
+<col style="width: 32%" />
+</colgroup>
+<thead>
+<tr>
+<th>What it does</th>
+<th>Key routes / components</th>
+<th>Shipped (approx.)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Author profile from Open Library key</td>
+<td><code>/author/?key=</code></td>
+<td>Jun 29, 2026</td>
+</tr>
+<tr>
+<td>Open Library discovery section on author pages</td>
+<td>Author discovery</td>
+<td>Jun 29, 2026</td>
+</tr>
+<tr>
+<td>Metadata refresh from Open Library</td>
+<td>Catalog sync</td>
+<td>Jun 29, 2026</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="social-feed-posts">Social Feed &amp; Posts</h3>
+<table>
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 43%" />
+<col style="width: 32%" />
+</colgroup>
+<thead>
+<tr>
+<th>What it does</th>
+<th>Key routes / components</th>
+<th>Shipped (approx.)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>For You and Following feeds</td>
+<td><code>/feed</code></td>
+<td>Jun 18, 2026</td>
+</tr>
+<tr>
+<td>Activity events (shelf changes, reviews, etc.)</td>
+<td><code>activity_events</code></td>
+<td>Jun 2026</td>
+</tr>
+<tr>
+<td>Activity visibility (public / followers / private)</td>
+<td>Migration <code>005</code></td>
+<td>Jun 18, 2026</td>
+</tr>
+<tr>
+<td>Feed search (readers, books, posts)</td>
+<td>Feed search bar</td>
+<td>Jun 19, 2026</td>
+</tr>
+<tr>
+<td>Social posts with likes, comments, reposts</td>
+<td><code>posts</code>, <code>post_likes</code>,
+<code>post_comments</code></td>
+<td>Jun 29, 2026</td>
+</tr>
+<tr>
+<td>Post images (Supabase Storage)</td>
+<td><code>20260630010000_post_images_storage</code></td>
+<td>Jun 29, 2026</td>
+</tr>
+<tr>
+<td>GIF attachments in posts</td>
+<td>Giphy picker</td>
+<td>Jun 29, 2026</td>
+</tr>
+<tr>
+<td>Post drafts with autosave</td>
+<td><code>post_drafts</code></td>
+<td>Jun 29, 2026</td>
+</tr>
+<tr>
+<td><span class="citation" data-cites="mentions">@mentions</span> with
+notifications</td>
+<td>Mention parser + links</td>
+<td>Jun 29, 2026</td>
+</tr>
+<tr>
+<td>Comment attachments and quote reposts</td>
+<td>Post engagement</td>
+<td>Jun 29, 2026</td>
+</tr>
+<tr>
+<td>Edit own posts and quote reposts</td>
+<td>Post owner actions</td>
+<td>Jun 29, 2026</td>
+</tr>
+<tr>
+<td>Profile composer for posts</td>
+<td><code>/profile</code></td>
+<td>Jun 29, 2026</td>
+</tr>
+<tr>
+<td>Feed realtime updates</td>
+<td>Realtime subscription</td>
+<td>Jun 29, 2026</td>
+</tr>
+<tr>
+<td>Public posts section on reader profiles</td>
+<td><code>/reader</code></td>
+<td>Jul 6, 2026</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="follow-graph-public-profiles">Follow Graph &amp; Public
+Profiles</h3>
+<table>
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 43%" />
+<col style="width: 32%" />
+</colgroup>
+<thead>
+<tr>
+<th>What it does</th>
+<th>Key routes / components</th>
+<th>Shipped (approx.)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Follow / unfollow readers</td>
+<td><code>follows</code> table</td>
+<td>Jun 18, 2026</td>
+</tr>
+<tr>
+<td>Public reader profile (case-insensitive username)</td>
+<td><code>/reader/?username=</code></td>
+<td>Jun 18, 2026</td>
+</tr>
+<tr>
+<td>Follower / following counts and lists with mutuals</td>
+<td><code>FollowListModal</code></td>
+<td>Jun 19, 2026</td>
+</tr>
+<tr>
+<td>Profile shelf preview (3 shelves × 4 books)</td>
+<td>Profile / reader</td>
+<td>Jun 19, 2026</td>
+</tr>
+<tr>
+<td>Full public reader library</td>
+<td><code>/reader-library/?username=</code></td>
+<td>Jun 19, 2026</td>
+</tr>
+<tr>
+<td>Message button on other readers’ profiles</td>
+<td>Reader profile CTA</td>
+<td>Jun 26, 2026</td>
+</tr>
+<tr>
+<td>Reading notes on reader profiles</td>
+<td>Reader page</td>
+<td>Jul 6, 2026</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="messaging">Messaging</h3>
+<table>
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 43%" />
+<col style="width: 32%" />
+</colgroup>
+<thead>
+<tr>
+<th>What it does</th>
+<th>Key routes / components</th>
+<th>Shipped (approx.)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Direct messages</td>
+<td><code>/messages</code>, <code>/messages/thread/?id=</code></td>
+<td>Jun 26, 2026</td>
+</tr>
+<tr>
+<td>Group conversations</td>
+<td>New message modal</td>
+<td>Jun 26, 2026</td>
+</tr>
+<tr>
+<td>Soft-delete own messages</td>
+<td><code>messages.deleted_at</code></td>
+<td>Jun 26, 2026</td>
+</tr>
+<tr>
+<td>Conversation pinning (3 per user)</td>
+<td><code>011_conversation_pins</code></td>
+<td>Jun 26, 2026</td>
+</tr>
+<tr>
+<td>Image attachments in messages</td>
+<td><code>20260629235453_message_attachments</code></td>
+<td>Jun 29, 2026</td>
+</tr>
+<tr>
+<td>GIF attachments in messages</td>
+<td>GifSearchPicker</td>
+<td>Jun 29, 2026</td>
+</tr>
+<tr>
+<td>Unread nav badge</td>
+<td><code>MessagesUnreadBadge</code></td>
+<td>Jul 6, 2026</td>
+</tr>
+<tr>
+<td>Group member management</td>
+<td><code>20260706120100_group_member_management</code></td>
+<td>Jul 6, 2026</td>
+</tr>
+<tr>
+<td>RLS participant scoping</td>
+<td>Migrations <code>009</code>, <code>010</code></td>
+<td>Jun 26, 2026</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="notifications">Notifications</h3>
+<table>
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 43%" />
+<col style="width: 32%" />
+</colgroup>
+<thead>
+<tr>
+<th>What it does</th>
+<th>Key routes / components</th>
+<th>Shipped (approx.)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>In-app notifications</td>
+<td><code>/notifications</code>, <code>notifications</code> table</td>
+<td>Jun 26, 2026</td>
+</tr>
+<tr>
+<td>Browser toast alerts</td>
+<td>Client notification service</td>
+<td>Jun 26, 2026</td>
+</tr>
+<tr>
+<td>Notification deduplication</td>
+<td><code>20260629235300_notification_dedup</code></td>
+<td>Jun 29, 2026</td>
+</tr>
+<tr>
+<td>Granular preferences by activity type</td>
+<td>Profile settings</td>
+<td>Jun 29, 2026</td>
+</tr>
+<tr>
+<td>Triggers: follows, mentions, likes, comments, messages</td>
+<td>DB + client</td>
+<td>Jun–Jul 2026</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="public-marketing-legal">Public Marketing &amp; Legal</h3>
+<table>
+<colgroup>
+<col style="width: 31%" />
+<col style="width: 26%" />
+<col style="width: 42%" />
+</colgroup>
+<thead>
+<tr>
+<th>What it does</th>
+<th>Key routes</th>
+<th>Shipped (approx.)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Landing page (hero, about, features, contact)</td>
+<td><code>/</code></td>
+<td>Jun 2026</td>
+</tr>
+<tr>
+<td>Privacy policy</td>
+<td><code>/privacy</code></td>
+<td>Jun 26, 2026</td>
+</tr>
+<tr>
+<td>Terms of service</td>
+<td><code>/terms</code></td>
+<td>Jun 26, 2026</td>
+</tr>
+<tr>
+<td>Contact CTAs (mailto general@bookmarked.online)</td>
+<td>Landing <code>#contact</code></td>
+<td>Jun 26, 2026</td>
+</tr>
+<tr>
+<td>Responsive mobile-first marketing layout</td>
+<td>Landing sections</td>
+<td>Jun 26, 2026</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="analytics-discovery">Analytics &amp; Discovery</h3>
+<table>
+<thead>
+<tr>
+<th>What it does</th>
+<th>Key routes / components</th>
+<th>Shipped (approx.)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Per-shelf stats</td>
+<td>Shelf pages</td>
+<td>Jun 2026</td>
+</tr>
+<tr>
+<td>Favorite genre analytics</td>
+<td>Dashboard / Reading Room</td>
+<td>Jun 8, 2026</td>
+</tr>
+<tr>
+<td>Reading streak tracking</td>
+<td>Analytics widgets</td>
+<td>Jun 8, 2026</td>
+</tr>
+<tr>
+<td>Yearly reading goal progress</td>
+<td>Profile + dashboard</td>
+<td>Jun 8, 2026</td>
+</tr>
+<tr>
+<td>Reading activity charts</td>
+<td>Dashboard + Reading Room</td>
+<td>Jul 6, 2026</td>
+</tr>
+<tr>
+<td>Because you read recommendations</td>
+<td>Discovery engine</td>
+<td>Jul 6, 2026</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="accessibility-responsive-design">Accessibility &amp; Responsive
+Design</h3>
+<table>
+<thead>
+<tr>
+<th>What it does</th>
+<th>Shipped (approx.)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mobile-first responsive layouts across all pages</td>
+<td>Jun 9, 2026</td>
+</tr>
+<tr>
+<td>Keyboard navigation, skip links, focus-visible</td>
+<td>Jun 9, 2026</td>
+</tr>
+<tr>
+<td>Semantic HTML, accessible forms</td>
+<td>Jun 9, 2026</td>
+</tr>
+<tr>
+<td>Static export navbar fixes (messages, hamburger)</td>
+<td>Jun 26, 2026</td>
+</tr>
+<tr>
+<td>Graceful network fetch failure handling</td>
+<td>Jul 2, 2026</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="route-reference-complete">Route Reference (Complete)</h2>
+<h3 id="public-routes">Public routes</h3>
+<table>
+<thead>
+<tr>
+<th>Route</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/</code></td>
+<td>Landing page</td>
+</tr>
+<tr>
+<td><code>/login</code></td>
+<td>Login</td>
+</tr>
+<tr>
+<td><code>/signup</code></td>
+<td>Signup</td>
+</tr>
+<tr>
+<td><code>/privacy</code></td>
+<td>Privacy policy</td>
+</tr>
+<tr>
+<td><code>/terms</code></td>
+<td>Terms of service</td>
+</tr>
+</tbody>
+</table>
+<h3 id="authenticated-app-routes-navbar">Authenticated app routes
+(navbar)</h3>
+<table>
+<thead>
+<tr>
+<th>Route</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/dashboard</code></td>
+<td>Home, continue reading, analytics, activity</td>
+</tr>
+<tr>
+<td><code>/feed</code></td>
+<td>Social feed (For You / Following), post composer</td>
+</tr>
+<tr>
+<td><code>/reading-room</code></td>
+<td>Signature personalized reading space</td>
+</tr>
+<tr>
+<td><code>/notes</code></td>
+<td>Global reading notes search</td>
+</tr>
+<tr>
+<td><code>/library</code></td>
+<td>Full library (bookshelf / grid toggle)</td>
+</tr>
+<tr>
+<td><code>/library/want-to-read</code></td>
+<td>Want to read shelf</td>
+</tr>
+<tr>
+<td><code>/library/reading</code></td>
+<td>Currently reading shelf</td>
+</tr>
+<tr>
+<td><code>/library/read</code></td>
+<td>Read shelf</td>
+</tr>
+<tr>
+<td><code>/library/custom</code></td>
+<td>Custom shelves management</td>
+</tr>
+<tr>
+<td><code>/library/[shelf]</code></td>
+<td>Dynamic shelf pages</td>
+</tr>
+<tr>
+<td><code>/search</code></td>
+<td>Open Library book search</td>
+</tr>
+<tr>
+<td><code>/messages</code></td>
+<td>Inbox (direct + group)</td>
+</tr>
+<tr>
+<td><code>/messages/thread/?id=</code></td>
+<td>Conversation thread</td>
+</tr>
+<tr>
+<td><code>/profile</code></td>
+<td>Own profile, settings, import</td>
+</tr>
+<tr>
+<td><code>/profile/setup</code></td>
+<td>Onboarding</td>
+</tr>
+<tr>
+<td><code>/notifications</code></td>
+<td>Notification center</td>
+</tr>
+</tbody>
+</table>
+<h3 id="detail-social-routes">Detail &amp; social routes</h3>
+<table>
+<thead>
+<tr>
+<th>Route</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/book/?id={uuid}</code></td>
+<td>Book details, progress, reviews, journal</td>
+</tr>
+<tr>
+<td><code>/author/?key={ol_key}</code></td>
+<td>Author page + Open Library discovery</td>
+</tr>
+<tr>
+<td><code>/reader/?username={name}</code></td>
+<td>Public reader profile</td>
+</tr>
+<tr>
+<td><code>/reader-library/?username={name}</code></td>
+<td>Public full library view</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="database-backend-highlights">Database &amp; Backend
+Highlights</h2>
+<h3 id="core-tables-migration-001_phase0_schema">Core tables (migration
+<code>001_phase0_schema</code>)</h3>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>profiles</code></td>
+<td>User profile data linked to <code>auth.users</code></td>
+</tr>
+<tr>
+<td><code>books</code></td>
+<td>Cached catalog (Open Library external ids)</td>
+</tr>
+<tr>
+<td><code>user_books</code></td>
+<td>User’s books on shelves with progress</td>
+</tr>
+<tr>
+<td><code>reviews</code></td>
+<td>Ratings and review text</td>
+</tr>
+<tr>
+<td><code>activity_events</code></td>
+<td>Feed activity log</td>
+</tr>
+</tbody>
+</table>
+<h3 id="incremental-migrations-chronological">Incremental migrations
+(chronological)</h3>
+<table>
+<colgroup>
+<col style="width: 55%" />
+<col style="width: 45%" />
+</colgroup>
+<thead>
+<tr>
+<th>Migration</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>002_preferred_library_view</code></td>
+<td>Bookshelf vs grid preference</td>
+</tr>
+<tr>
+<td><code>003_book_metadata_and_reviews_unique</code></td>
+<td>Richer book metadata; one review per user/book</td>
+</tr>
+<tr>
+<td><code>004_yearly_reading_goal</code></td>
+<td>Yearly reading target on profile</td>
+</tr>
+<tr>
+<td><code>005_social_follows_and_feed</code></td>
+<td><code>follows</code>; activity visibility</td>
+</tr>
+<tr>
+<td><code>006_profiles_fk_for_embeds</code></td>
+<td>PostgREST profile embeds</td>
+</tr>
+<tr>
+<td><code>007_shelf_visibility</code></td>
+<td>Per-shelf public/followers/private + RLS</td>
+</tr>
+<tr>
+<td><code>008_books_catalog_update</code></td>
+<td>Catalog update policies</td>
+</tr>
+<tr>
+<td><code>009_messaging</code></td>
+<td>Conversations, participants, messages</td>
+</tr>
+<tr>
+<td><code>010_messaging_rls_creator_access</code></td>
+<td>Creator can start DMs</td>
+</tr>
+<tr>
+<td><code>011_conversation_pins</code></td>
+<td>Pin up to 3 conversations</td>
+</tr>
+<tr>
+<td><code>012_notifications</code></td>
+<td>In-app notifications</td>
+</tr>
+<tr>
+<td><code>013_avatar_storage</code></td>
+<td>Avatar upload bucket + policies</td>
+</tr>
+<tr>
+<td><code>20260629222724_custom_shelves</code></td>
+<td><code>user_shelves</code>, <code>user_shelf_books</code></td>
+</tr>
+<tr>
+<td><code>20260629225003_fix_custom_shelves_rls</code></td>
+<td>Custom shelf RLS fix</td>
+</tr>
+<tr>
+<td><code>20260629234631_social_posts</code></td>
+<td>Posts, likes, comments</td>
+</tr>
+<tr>
+<td><code>20260629235242_notification_dedup</code></td>
+<td>Dedup notifications</td>
+</tr>
+<tr>
+<td><code>20260629235453_message_attachments</code></td>
+<td>Message image attachments</td>
+</tr>
+<tr>
+<td><code>20260630010000_post_images_storage</code></td>
+<td>Post image storage</td>
+</tr>
+<tr>
+<td><code>20260630020000_review_comment_reactions_replies</code></td>
+<td>Review/post comment engagement</td>
+</tr>
+<tr>
+<td><code>20260630030000_preferred_language</code></td>
+<td>Profile language preference</td>
+</tr>
+<tr>
+<td><code>20260630030100_posts_realtime</code></td>
+<td>Realtime for posts</td>
+</tr>
+<tr>
+<td><code>20260630030200_fix_posts_rls_recursion</code></td>
+<td>Fix posts RLS infinite recursion</td>
+</tr>
+<tr>
+<td><code>20260630030300_post_drafts</code></td>
+<td>Post draft autosave</td>
+</tr>
+<tr>
+<td><code>20260630030400_comment_attachments</code></td>
+<td>Comment file attachments</td>
+</tr>
+<tr>
+<td><code>20260630040000_post_comment_attachments</code></td>
+<td>Post comment attachments</td>
+</tr>
+<tr>
+<td><code>20260630050000_granular_notification_preferences</code></td>
+<td>Per-type notification prefs</td>
+</tr>
+<tr>
+<td><code>20260702000000_reading_sessions</code></td>
+<td>Reading session journal</td>
+</tr>
+<tr>
+<td><code>20260706120000_reading_sessions_update_note</code></td>
+<td>Session note updates</td>
+</tr>
+<tr>
+<td><code>20260706120100_group_member_management</code></td>
+<td>Group chat member admin</td>
+</tr>
+<tr>
+<td><code>20260706220000_reading_notes</code></td>
+<td>Reading notes and quotes</td>
+</tr>
+</tbody>
+</table>
+<h3 id="supabase-services-used">Supabase services used</h3>
+<ul>
+<li><strong>Auth</strong> — email/password, session JWT, client-side
+guard</li>
+<li><strong>PostgreSQL + RLS</strong> — all tables secured per-user</li>
+<li><strong>Storage</strong> — avatars, post images, message
+attachments</li>
+<li><strong>Realtime</strong> — feed posts, notifications (optional
+messaging)</li>
+</ul>
+<h3 id="external-api-integration">External API integration</h3>
+<table>
+<colgroup>
+<col style="width: 41%" />
+<col style="width: 58%" />
+</colgroup>
+<thead>
+<tr>
+<th>API</th>
+<th>Usage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Open Library</td>
+<td>Search, works/editions, authors, covers, metadata refresh</td>
+</tr>
+<tr>
+<td>Google Books</td>
+<td>Cover fallback when Open Library has no art</td>
+</tr>
+<tr>
+<td>Giphy</td>
+<td>GIF search in posts, comments, messages, reposts</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="chronological-development-timeline">Chronological Development
+Timeline</h2>
+<h3 id="may-2026-project-inception">May 2026 — Project inception</h3>
+<ul>
+<li><strong>May 2</strong> — Initial commit; mobile foundation with
+Supabase auth scaffold</li>
+</ul>
+<h3 id="june-2026-web-platform-mvp">June 2026 — Web platform MVP</h3>
+<ul>
+<li><strong>Jun 2</strong> — Web-first Next.js app, Supabase
+integration, docs structure</li>
+<li><strong>Jun 2</strong> — Interactive bookshelf views, Reading Room,
+shelf analytics</li>
+<li><strong>Jun 8</strong> — Phase 1 MVP + Phase 1.5 (shelf sorting,
+mark-finished, yearly goal, genre analytics, streaks)</li>
+<li><strong>Jun 9</strong> — Responsive design &amp; accessibility
+sprint; GitHub Pages deployment configured</li>
+<li><strong>Jun 9</strong> — Supabase env injection fixes for static
+builds</li>
+<li><strong>Jun 14</strong> — Book details static route fix for GitHub
+Pages; cover improvements</li>
+<li><strong>Jun 18</strong> — Phase 1 completion sprint closed; social
+follows + dual feed</li>
+<li><strong>Jun 19</strong> — Feed search, follower lists, shelf
+privacy, public shelf previews</li>
+<li><strong>Jun 26</strong> — Phase 2 public pages complete; messaging
+MVP; notifications; navbar/static export fixes</li>
+<li><strong>Jun 26</strong> — Metadata enrichment, Remember me,
+bookshelf spine redesign, contact email</li>
+<li><strong>Jun 29</strong> — Custom shelves, avatar uploads, advanced
+search (filters, ISBN, editions)</li>
+<li><strong>Jun 29</strong> — Social posts (likes, comments, reposts),
+message attachments, author pages</li>
+<li><strong>Jun 29</strong> — Post drafts, <span class="citation"
+data-cites="mentions">@mentions</span>, GIF picker, realtime feed,
+notification preferences</li>
+</ul>
+<h3 id="july-2026-reading-journal-notes-sprint">July 2026 — Reading
+journal &amp; notes sprint</h3>
+<ul>
+<li><strong>Jul 2</strong> — Reading sessions &amp; journal; deploy
+workflow hardening; network error handling</li>
+<li><strong>Jul 6</strong> — Reading notes, activity charts, Goodreads
+import, group chat polish</li>
+<li><strong>Jul 6</strong> — Global <code>/notes</code> search, public
+posts on profiles, catalog metadata refresh</li>
+</ul>
+<hr />
+<h2 id="deployment-information">Deployment Information</h2>
+<h3 id="hosting-architecture">Hosting architecture</h3>
+<pre><code>Git push to main
+    → GitHub Actions (.github/workflows/deploy.yml)
+    → npm install + validate-env (Supabase + Giphy secrets)
+    → Next.js static export (apps/web/out/)
+    → upload-pages-artifact
+    → deploy-pages@v4 → GitHub Pages
+    → bookmarked.online (GoDaddy DNS)</code></pre>
+<h3 id="required-github-actions-secrets">Required GitHub Actions
+secrets</h3>
+<table>
+<thead>
+<tr>
+<th>Secret</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NEXT_PUBLIC_SUPABASE_URL</code></td>
+<td>Supabase project URL (baked at build)</td>
+</tr>
+<tr>
+<td><code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code></td>
+<td>Supabase anon key (baked at build)</td>
+</tr>
+<tr>
+<td><code>NEXT_PUBLIC_GIPHY_API_KEY</code></td>
+<td>Giphy API for GIF search</td>
+</tr>
+</tbody>
+</table>
+<h3 id="dns-godaddy">DNS (GoDaddy)</h3>
+<ul>
+<li><strong>A records:</strong> <code>185.199.108.153</code>,
+<code>185.199.109.153</code>, <code>185.199.110.153</code>,
+<code>185.199.111.153</code></li>
+<li><strong>CNAME <code>www</code>:</strong>
+<code>DekuWorks.github.io</code></li>
+<li><strong>HTTPS:</strong> Enforced after DNS propagation via GitHub
+Pages</li>
+</ul>
+<h3 id="static-export-constraints">Static export constraints</h3>
+<ul>
+<li>Query-based routes: <code>/book/?id=</code>,
+<code>/reader/?username=</code>, <code>/messages/thread/?id=</code>,
+<code>/author/?key=</code></li>
+<li><code>public/.nojekyll</code> prevents Jekyll processing</li>
+<li>Full-page navigation on static export (no client-side router-only
+nav for some flows)</li>
+<li>All data access client-side via Supabase JS client</li>
+</ul>
+<h3 id="local-development">Local development</h3>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> apps/web</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> .env.local.example .env.local</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, NEXT_PUBLIC_GIPHY_API_KEY</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> install</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> run dev</span></code></pre></div>
+<p>Open http://localhost:3000</p>
+<hr />
+<h2 id="architecture-flowcharts">Architecture Flowcharts</h2>
+<h3 id="user-journey-signup-profile-library-reading-social">User
+Journey: Signup → Profile → Library → Reading → Social</h3>
+<pre class="mermaid"><code>flowchart TD
+    Start([Visitor lands on /]) --&gt; AuthChoice{Has account?}
+    AuthChoice --&gt;|No| Signup[/signup/]
+    AuthChoice --&gt;|Yes| Login[/login/]
+    Signup --&gt; SupaAuth[Supabase Auth: create user]
+    Login --&gt; SupaSession[Supabase Auth: session + Remember me]
+    SupaAuth --&gt; ProfileSetup[/profile/setup/]
+    SupaSession --&gt; Guard{Profile complete?}
+    Guard --&gt;|No| ProfileSetup
+    Guard --&gt;|Yes| Dashboard[/dashboard/]
+    ProfileSetup --&gt; Dashboard
+
+    Dashboard --&gt; Search[/search/]
+    Dashboard --&gt; Library[/library/]
+    Dashboard --&gt; ReadingRoom[/reading-room/]
+
+    Search --&gt; OL[Open Library API search]
+    OL --&gt; EditionPick{Multiple editions?}
+    EditionPick --&gt;|Yes| Picker[Edition picker modal]
+    EditionPick --&gt;|No| AddShelf[Add to shelf]
+    Picker --&gt; AddShelf
+    AddShelf --&gt; BookPage[/book/?id=uuid/]
+
+    BookPage --&gt; Progress[Reading progress panel]
+    BookPage --&gt; Review[Write review]
+    BookPage --&gt; Journal[Reading journal / sessions]
+    BookPage --&gt; Notes[Reading notes &amp; quotes]
+
+    Library --&gt; Shelves[Want to read / Reading / Read / Custom]
+    Shelves --&gt; BookPage
+    ReadingRoom --&gt; Analytics[Charts, streaks, goals]
+    ReadingRoom --&gt; NotesRoom[Notes &amp; quote highlights]
+    ReadingRoom --&gt; Recs[Because you read recommendations]
+
+    Dashboard --&gt; Feed[/feed/]
+    Feed --&gt; Post[Compose post: text, images, GIFs, @mentions]
+    Feed --&gt; Discover[For You / Following tabs]
+    Post --&gt; Notify[Notifications]
+
+    Dashboard --&gt; ReaderProfile[/reader/?username=/]
+    ReaderProfile --&gt; Follow[Follow / unfollow]
+    ReaderProfile --&gt; Message[Start DM]
+    ReaderProfile --&gt; ReaderLib[/reader-library/?username=/]
+    Message --&gt; Thread[/messages/thread/?id=/]
+
+    Dashboard --&gt; Profile[/profile/]
+    Profile --&gt; Import[Goodreads CSV import]
+    Profile --&gt; Avatar[Avatar upload → Supabase Storage]
+    Profile --&gt; Privacy[Shelf privacy controls]
+    Profile --&gt; NotifPrefs[Notification preferences]
+
+    NotesGlobal[/notes/] --&gt; SearchNotes[Search all reading notes]</code></pre>
+<h3 id="app-navigation-map">App Navigation Map</h3>
+<pre class="mermaid"><code>flowchart LR
+    subgraph Public[&quot;Public (no auth)&quot;]
+        Landing[&quot;/&quot;]
+        Privacy[&quot;/privacy&quot;]
+        Terms[&quot;/terms&quot;]
+        Login[&quot;/login&quot;]
+        Signup[&quot;/signup&quot;]
+    end
+
+    subgraph AppNav[&quot;Authenticated — Navbar&quot;]
+        Dashboard[&quot;/dashboard&quot;]
+        Feed[&quot;/feed&quot;]
+        ReadingRoom[&quot;/reading-room&quot;]
+        Notes[&quot;/notes&quot;]
+        Library[&quot;/library&quot;]
+        Search[&quot;/search&quot;]
+        Messages[&quot;/messages&quot;]
+        Profile[&quot;/profile&quot;]
+    end
+
+    subgraph LibraryRoutes[&quot;Library sub-routes&quot;]
+        LibMain[&quot;/library&quot;]
+        Want[&quot;/library/want-to-read&quot;]
+        Reading[&quot;/library/reading&quot;]
+        Read[&quot;/library/read&quot;]
+        Custom[&quot;/library/custom&quot;]
+        ShelfDyn[&quot;/library/:shelf&quot;]
+    end
+
+    subgraph DetailRoutes[&quot;Detail &amp; social routes&quot;]
+        Book[&quot;/book/?id=&quot;]
+        Author[&quot;/author/?key=&quot;]
+        Reader[&quot;/reader/?username=&quot;]
+        ReaderLib[&quot;/reader-library/?username=&quot;]
+        Thread[&quot;/messages/thread/?id=&quot;]
+        Notifications[&quot;/notifications&quot;]
+        Setup[&quot;/profile/setup&quot;]
+    end
+
+    Landing --&gt; Login
+    Landing --&gt; Signup
+    Login --&gt; Dashboard
+    Signup --&gt; Setup
+    Setup --&gt; Dashboard
+
+    Dashboard --- Feed
+    Feed --- ReadingRoom
+    ReadingRoom --- Notes
+    Notes --- LibMain
+    LibMain --- Want
+    LibMain --- Reading
+    LibMain --- Read
+    LibMain --- Custom
+    Search --- Book
+    Book --- Author
+    Messages --- Thread
+    Profile --- Setup
+    Feed --- Reader
+    Reader --- ReaderLib
+    Profile --- Notifications</code></pre>
+<h3 id="data-flow-open-library-supabase-giphy">Data Flow: Open Library,
+Supabase, Giphy</h3>
+<pre class="mermaid"><code>flowchart TB
+    subgraph Client[&quot;Next.js static web app (GitHub Pages)&quot;]
+        UI[Pages &amp; components]
+        Services[lib/services]
+        Hooks[React hooks + Supabase client]
+    end
+
+    subgraph External[&quot;External APIs&quot;]
+        OL[Open Library API&lt;br/&gt;search, works, editions, authors]
+        GB[Google Books API&lt;br/&gt;cover fallback]
+        Giphy[Giphy API&lt;br/&gt;GIF search in posts &amp; messages]
+    end
+
+    subgraph Supabase[&quot;Supabase (PostgreSQL + Auth + Storage + Realtime)&quot;]
+        Auth[Auth: sessions, JWT]
+        DB[(Tables: profiles, books, user_books,&lt;br/&gt;reviews, activity_events, follows,&lt;br/&gt;posts, messages, notifications,&lt;br/&gt;reading_sessions, reading_notes, …)]
+        Storage[Storage: avatars, post images,&lt;br/&gt;message attachments]
+        RT[Realtime: feed, notifications,&lt;br/&gt;messages optional]
+    end
+
+    UI --&gt; Services
+    Services --&gt; Hooks
+    Hooks --&gt; Auth
+    Hooks --&gt; DB
+    Hooks --&gt; Storage
+    Hooks --&gt; RT
+
+    Services --&gt;|Book search &amp; metadata| OL
+    Services --&gt;|Missing covers| GB
+    Services --&gt;|GIF picker| Giphy
+
+    OL --&gt;|Cache catalog row| DB
+    UI --&gt;|CRUD library, social, journal| DB
+    UI --&gt;|Upload media| Storage
+    DB --&gt;|Push updates| RT
+    RT --&gt; UI</code></pre>
+<blockquote>
+<p><strong>Standalone flowchart file:</strong> <a
+href="./Bookmarked_WebApp_Flowchart.md">Bookmarked_WebApp_Flowchart.md</a></p>
+</blockquote>
+<hr />
+<h2 id="deferred-future-work">Deferred / Future Work</h2>
+<table>
+<colgroup>
+<col style="width: 42%" />
+<col style="width: 57%" />
+</colgroup>
+<thead>
+<tr>
+<th>Item</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mobile app (Expo) auth + navigation parity</td>
+<td>Not started (<code>apps/mobile</code> scaffold)</td>
+</tr>
+<tr>
+<td>Mobile shelves, search, progress, reviews</td>
+<td>Phase 4 — not started</td>
+</tr>
+<tr>
+<td>Cross-platform sync testing</td>
+<td>Phase 5 — partial</td>
+</tr>
+<tr>
+<td>App store readiness</td>
+<td>Not started</td>
+</tr>
+<tr>
+<td>Book clubs</td>
+<td>Deferred</td>
+</tr>
+<tr>
+<td>Badges &amp; achievements</td>
+<td>Deferred</td>
+</tr>
+<tr>
+<td>ISBNdb metadata integration</td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>Drag-and-drop shelf animations</td>
+<td>Planned polish</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="related-documentation">Related Documentation</h2>
+<table>
+<thead>
+<tr>
+<th>Document</th>
+<th>Path</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Project overview</td>
+<td><code>docs/project/PROJECT_OVERVIEW.md</code></td>
+</tr>
+<tr>
+<td>Master task list</td>
+<td><code>docs/project/MASTER_TASK_LIST.md</code></td>
+</tr>
+<tr>
+<td>Progress tracker</td>
+<td><code>docs/progress/PROGRESS_TRACKER.md</code></td>
+</tr>
+<tr>
+<td>Architecture context</td>
+<td><code>docs/architecture/ARCHITECTURE_CONTEXT.md</code></td>
+</tr>
+<tr>
+<td>Design system</td>
+<td><code>docs/ui/DESIGN_SYSTEM.md</code></td>
+</tr>
+<tr>
+<td>Web app flowcharts</td>
+<td><code>docs/Bookmarked_WebApp_Flowchart.md</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><em>Bookmarked — Complete feature documentation. Generated July 6,
+2026.</em></p>
+</body>
+</html>
