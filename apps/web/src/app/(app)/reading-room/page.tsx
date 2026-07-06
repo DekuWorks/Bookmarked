@@ -4,11 +4,14 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { getProfile } from "@/lib/services/profile";
 import { getReadingRoomData } from "@/lib/services/readingRoom";
+import { backfillReadingSessionsForUser } from "@/lib/services/readingSessionBackfill";
 import type { ReadingRoomData } from "@/lib/services/readingRoom";
 import { ReadingRoomSection } from "@/components/reading-room/ReadingRoomSection";
 import { CurrentlyReadingRow } from "@/components/reading-room/CurrentlyReadingRow";
 import { BookMiniGrid } from "@/components/reading-room/BookMiniGrid";
 import { AnalyticsGrid } from "@/components/analytics/AnalyticsGrid";
+import { ReadingActivityPanel } from "@/components/analytics/ReadingActivityPanel";
+import { BecauseYouReadPanel } from "@/components/discovery/BecauseYouReadPanel";
 import { BookshelfView } from "@/components/library/BookshelfView";
 import { CustomShelfCollectionsPanel } from "@/components/library/CustomShelfCollectionsPanel";
 import { SuggestedShelvesPanel } from "@/components/shelves/SuggestedShelvesPanel";
@@ -29,6 +32,7 @@ export default function ReadingRoomPage() {
 
     const profile = await getProfile(user.id);
     setDisplayName(profile?.display_name || profile?.username || "Reader");
+    void backfillReadingSessionsForUser(user.id);
     const room = await getReadingRoomData(
       user.id,
       profile?.yearly_reading_goal ?? null,
@@ -101,6 +105,14 @@ export default function ReadingRoomPage() {
           />
         </ReadingRoomSection>
       </div>
+
+      <ReadingRoomSection title="Reading activity" emoji="📈">
+        <ReadingActivityPanel userId={user.id} />
+      </ReadingRoomSection>
+
+      <ReadingRoomSection title="Because you read…" emoji="✨">
+        <BecauseYouReadPanel userId={user.id} />
+      </ReadingRoomSection>
 
       <ReadingRoomSection title="Reading stats" emoji="📊">
         <AnalyticsGrid

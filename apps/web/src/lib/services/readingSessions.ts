@@ -9,6 +9,7 @@ export type CreateReadingSessionInput = {
   pageEnd: number;
   percentComplete: number;
   note?: string | null;
+  createdAt?: string;
 };
 
 export type ReadingStatsInRange = {
@@ -39,6 +40,7 @@ export async function createReadingSessionWithClient(
       pages_read: pagesRead,
       percent_complete: input.percentComplete,
       note: input.note ?? null,
+      ...(input.createdAt ? { created_at: input.createdAt } : {}),
     })
     .select("*")
     .single();
@@ -123,4 +125,22 @@ export async function getReadingPagesByDay(
     pages_read: Number(row.pages_read ?? 0),
     session_count: Number(row.session_count ?? 0),
   }));
+}
+
+export async function updateReadingSessionNote(
+  sessionId: string,
+  note: string | null
+): Promise<{ error?: string; session?: ReadingSession }> {
+  const supabase = createClient();
+  const trimmed = note?.trim() ?? "";
+
+  const { data, error } = await supabase
+    .from("reading_sessions")
+    .update({ note: trimmed || null })
+    .eq("id", sessionId)
+    .select("*")
+    .single();
+
+  if (error) return { error: error.message };
+  return { session: data as ReadingSession };
 }
