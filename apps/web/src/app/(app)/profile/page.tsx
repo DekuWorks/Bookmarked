@@ -27,6 +27,7 @@ import { readerProfilePath } from "@/lib/routes/reader";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import { ProfileNotificationsSection } from "@/components/notifications/ProfileNotificationsSection";
 import { ProfileFeedSection } from "@/components/social/ProfileFeedSection";
+import { ProfileNotesSection } from "@/components/profile/ProfileNotesSection";
 import { LibraryImportPanel } from "@/components/profile/LibraryImportPanel";
 import type { Profile } from "@/types";
 import type { LibraryBookRow } from "@/lib/services/library";
@@ -188,6 +189,11 @@ export default function ProfilePage() {
           className="rounded-xl border border-border bg-surface p-6 shadow-sm"
         />
       </Suspense>
+
+      <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
+        <h2 className="mb-4 text-lg font-semibold text-puce-red">Reading Notes</h2>
+        <ProfileNotesSection userId={user.id} isOwnProfile />
+      </section>
 
       <ProfileNotificationsSection
         userId={user.id}

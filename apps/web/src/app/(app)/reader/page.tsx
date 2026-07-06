@@ -16,6 +16,7 @@ import type { FeedItem } from "@/lib/services/socialFeed";
 import type { Profile } from "@/types";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { ProfileShelfPreview } from "@/components/profile/ProfileShelfPreview";
+import { ProfileNotesSection } from "@/components/profile/ProfileNotesSection";
 import { FollowStats } from "@/components/social/FollowStats";
 
 type ReaderData = {
@@ -142,6 +143,11 @@ function ReaderProfileContent() {
           username={profile.username}
           isOwnProfile={isSelf}
         />
+      </section>
+
+      <section className="rounded-xl border border-border bg-surface p-6 text-left shadow-sm">
+        <h2 className="mb-4 text-lg font-semibold text-puce-red">Reading Notes</h2>
+        <ProfileNotesSection userId={profile.id} isOwnProfile={isSelf} />
       </section>
 
       <section className="space-y-4">

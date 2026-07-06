@@ -209,11 +209,70 @@ export async function searchNotes(
   return (data ?? []) as ReadingNote[];
 }
 
-/** Profile prep — public notes for a user (RLS enforces visibility). */
+export type ReadingNoteWithBook = ReadingNote & {
+  book: {
+    id: string;
+    title: string;
+    cover_url: string | null;
+  } | null;
+};
+
+async function enrichNotesWithBooks(
+  notes: ReadingNote[]
+): Promise<ReadingNoteWithBook[]> {
+  if (notes.length === 0) return [];
+
+  const supabase = createClient();
+  const userBookIds = [...new Set(notes.map((note) => note.user_book_id))];
+
+  const { data, error } = await supabase
+    .from("user_books")
+    .select("id, books(id, title, cover_url)")
+    .in("id", userBookIds);
+
+  if (error) {
+    console.error("[readingNotes] enrich books failed:", error);
+    return notes.map((note) => ({ ...note, book: null }));
+  }
+
+  const bookByUserBookId = new Map<
+    string,
+    { id: string; title: string; cover_url: string | null }
+  >();
+
+  for (const row of data ?? []) {
+    const book = row.books;
+    const resolved = Array.isArray(book) ? book[0] : book;
+    if (!resolved?.id) continue;
+    bookByUserBookId.set(row.id, {
+      id: resolved.id,
+      title: resolved.title,
+      cover_url: resolved.cover_url,
+    });
+  }
+
+  return notes.map((note) => ({
+    ...note,
+    book: bookByUserBookId.get(note.user_book_id) ?? null,
+  }));
+}
+
+/** Profile notes — own profile returns all notes; others rely on RLS (public + friends_only for followers). */
+export async function listProfileNotesForUser(
+  userId: string,
+  options: { isOwnProfile?: boolean; limit?: number } = {}
+): Promise<ReadingNoteWithBook[]> {
+  const limit = options.limit ?? 50;
+  const notes = options.isOwnProfile
+    ? await listNotes({ userId, limit })
+    : await searchNotes({ userId, limit });
+  return enrichNotesWithBooks(notes);
+}
+
+/** @deprecated Use listProfileNotesForUser — RLS already filters visibility for non-owners. */
 export async function listPublicNotesForUser(
   userId: string,
-  limit = 20
-): Promise<ReadingNote[]> {
-  const notes = await searchNotes({ userId, limit });
-  return notes.filter((note) => note.visibility === "public");
+  limit = 50
+): Promise<ReadingNoteWithBook[]> {
+  return listProfileNotesForUser(userId, { isOwnProfile: false, limit });
 }
