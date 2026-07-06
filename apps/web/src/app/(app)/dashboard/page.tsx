@@ -22,6 +22,7 @@ import { LoadingState } from "@/components/ui/LoadingState";
 import { shelfStatusToSlug } from "@/lib/constants/shelves";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { useUserBooksRealtime } from "@/lib/hooks/useUserBooksRealtime";
+import { useStaleCatalogRefresh } from "@/lib/hooks/useStaleCatalogRefresh";
 import type { Profile } from "@/types";
 import type { LibraryBookRow } from "@/lib/services/library";
 import type { ReadingAnalytics } from "@/lib/services/analytics";
@@ -97,6 +98,7 @@ export default function DashboardPage() {
   }, [user, loadDashboard]);
 
   useUserBooksRealtime(user?.id, loadDashboard);
+  useStaleCatalogRefresh(data?.books, loadDashboard);
 
   if (user === undefined || user === null || (data === null && !loadError)) {
     return <LoadingState message="Loading dashboard…" />;

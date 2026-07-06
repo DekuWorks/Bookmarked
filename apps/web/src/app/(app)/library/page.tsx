@@ -11,6 +11,7 @@ import { LibraryAnalyticsPanel } from "@/components/library/LibraryAnalyticsPane
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { useUserBooksRealtime } from "@/lib/hooks/useUserBooksRealtime";
+import { useStaleCatalogRefresh } from "@/lib/hooks/useStaleCatalogRefresh";
 import type { LibraryViewMode } from "@/types";
 import type { LibraryBookRow, ShelfGroup } from "@/lib/services/library";
 
@@ -66,6 +67,7 @@ export default function LibraryPage() {
   }, [user, loadLibrary]);
 
   useUserBooksRealtime(user?.id, loadLibrary);
+  useStaleCatalogRefresh(data?.books, loadLibrary);
 
   if (user === undefined || (user && !data && !loadError)) {
     return <LoadingState message="Loading library…" />;

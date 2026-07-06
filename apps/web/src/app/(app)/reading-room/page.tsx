@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { getProfile } from "@/lib/services/profile";
 import { getReadingRoomData } from "@/lib/services/readingRoom";
 import { backfillReadingSessionsForUser } from "@/lib/services/readingSessionBackfill";
@@ -21,6 +21,7 @@ import { ReadingGoalPanel } from "@/components/reading-goal/ReadingGoalPanel";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { useUserBooksRealtime } from "@/lib/hooks/useUserBooksRealtime";
+import { useStaleCatalogRefresh } from "@/lib/hooks/useStaleCatalogRefresh";
 
 export default function ReadingRoomPage() {
   const user = useAuthUser();
@@ -46,7 +47,13 @@ export default function ReadingRoomPage() {
     void loadReadingRoom();
   }, [user, loadReadingRoom]);
 
+  const libraryBooks = useMemo(
+    () => data?.shelves.flatMap((shelf) => shelf.items) ?? [],
+    [data?.shelves]
+  );
+
   useUserBooksRealtime(user?.id, loadReadingRoom);
+  useStaleCatalogRefresh(libraryBooks, loadReadingRoom);
 
   if (user === undefined || (user && !data)) {
     return <LoadingState message="Loading reading room…" />;
