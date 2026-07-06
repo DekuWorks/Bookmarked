@@ -12,3 +12,8 @@ export function bookDetailsReviewsPath(bookId: string): string {
 export function bookDetailsJournalPath(bookId: string): string {
   return `/book/?id=${encodeURIComponent(bookId)}&section=journal`;
 }
+
+/** Book details with reading notes focused (scroll target on book page). */
+export function bookDetailsNotesPath(bookId: string): string {
+  return `/book/?id=${encodeURIComponent(bookId)}&section=notes`;
+}

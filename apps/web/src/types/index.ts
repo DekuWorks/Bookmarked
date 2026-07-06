@@ -34,6 +34,9 @@ export type {
   PostCommentReply,
   PostCommentReplyWithAuthor,
   ReadingSession,
+  ReadingNote,
+  ReadingNoteCategory,
+  ReadingNoteVisibility,
 } from "../../../../packages/types";
 
 export interface UserBook {

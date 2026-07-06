@@ -250,7 +250,7 @@ export function ReadingProgressPanel({
         </form>
       ) : null}
 
-      <div className="mt-4 border-t border-border pt-4">
+      <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-4">
         <Button
           type="button"
           variant="ghost"
@@ -263,6 +263,19 @@ export function ReadingProgressPanel({
           }}
         >
           Reading journal
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            document.getElementById("reading-notes")?.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }}
+        >
+          Reading notes
         </Button>
       </div>
     </section>

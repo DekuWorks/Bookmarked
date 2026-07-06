@@ -252,3 +252,29 @@ export interface ReadingSession {
   note: string | null;
   created_at: string;
 }
+
+export type ReadingNoteCategory =
+  | "favorite_quote"
+  | "character_development"
+  | "important_plot_point"
+  | "theory"
+  | "favorite_scene"
+  | "emotional_moment"
+  | "general_note";
+
+export type ReadingNoteVisibility = "private" | "friends_only" | "public";
+
+export interface ReadingNote {
+  id: string;
+  user_id: string;
+  user_book_id: string;
+  page_number: number | null;
+  chapter: string | null;
+  title: string | null;
+  note: string | null;
+  quote: string | null;
+  category: ReadingNoteCategory;
+  visibility: ReadingNoteVisibility;
+  created_at: string;
+  updated_at: string;
+}

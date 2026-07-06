@@ -10,6 +10,7 @@ import { BookCover } from "@/components/books/BookCover";
 import { BookShelfActions } from "@/components/books/BookShelfActions";
 import { ReadingProgressPanel } from "@/components/books/ReadingProgressPanel";
 import { ReadingJournalSection } from "@/components/books/ReadingJournalSection";
+import { ReadingNotesSection } from "@/components/books/ReadingNotesSection";
 import { ReadingDatesEditor } from "@/components/books/ReadingDatesEditor";
 import { BookReviewSection } from "@/components/books/BookReviewSection";
 import { ShelfBadge } from "@/components/shelves/ShelfBadge";
@@ -69,6 +70,11 @@ function BookDetailsContent() {
   useEffect(() => {
     if (focusSection !== "journal" || !data) return;
     document.getElementById("reading-journal")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [focusSection, data]);
+
+  useEffect(() => {
+    if (focusSection !== "notes" || !data) return;
+    document.getElementById("reading-notes")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [focusSection, data]);
 
   if (!bookId) {
@@ -243,7 +249,7 @@ function BookDetailsContent() {
       </div>
 
       {userBook ? (
-        <div className="mx-auto grid max-w-4xl gap-6 text-left lg:grid-cols-2">
+        <div className="mx-auto max-w-4xl space-y-6 text-left">
           <ReadingDatesEditor
             bookId={book.id}
             onShelf={Boolean(userBook)}
@@ -252,6 +258,7 @@ function BookDetailsContent() {
             onDatesChange={loadBookDetails}
           />
           <ReadingJournalSection sessions={readingSessions} />
+          <ReadingNotesSection userBookId={userBook.id} />
         </div>
       ) : null}
 
