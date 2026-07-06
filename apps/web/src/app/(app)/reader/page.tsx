@@ -17,6 +17,7 @@ import type { Profile } from "@/types";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { ProfileShelfPreview } from "@/components/profile/ProfileShelfPreview";
 import { ProfileNotesSection } from "@/components/profile/ProfileNotesSection";
+import { ProfilePostsSection } from "@/components/social/ProfilePostsSection";
 import { FollowStats } from "@/components/social/FollowStats";
 
 type ReaderData = {
@@ -31,6 +32,7 @@ function ReaderProfileContent() {
   const username = searchParams.get("username")?.trim() ?? "";
   const user = useAuthUser();
   const [data, setData] = useState<ReaderData | null | undefined>(undefined);
+  const [following, setFollowing] = useState(false);
 
   useEffect(() => {
     if (!username) {
@@ -46,13 +48,14 @@ function ReaderProfileContent() {
         return;
       }
 
-      const [counts, following, activity] = await Promise.all([
+      const [counts, isFollowingUser, activity] = await Promise.all([
         getFollowCounts(profile.id),
         user.id === profile.id ? Promise.resolve(false) : isFollowing(user.id, profile.id),
         fetchReaderActivity(profile.id, user.id),
       ]);
 
-      setData({ profile, counts, following, activity });
+      setData({ profile, counts, following: isFollowingUser, activity });
+      setFollowing(isFollowingUser);
     })();
   }, [username, user]);
 
@@ -82,7 +85,7 @@ function ReaderProfileContent() {
     );
   }
 
-  const { profile, counts, following, activity } = data;
+  const { profile, counts, activity } = data;
   const isSelf = user.id === profile.id;
   const displayName = profile.display_name?.trim() || profile.username || "Reader";
 
@@ -104,7 +107,11 @@ function ReaderProfileContent() {
           ) : (
             <div className="flex flex-wrap items-center justify-center gap-2">
               <ProfileMessageButton targetUserId={profile.id} />
-              <FollowButton targetUserId={profile.id} initialFollowing={following} />
+              <FollowButton
+                targetUserId={profile.id}
+                initialFollowing={following}
+                onChange={setFollowing}
+              />
             </div>
           )}
         </div>
@@ -149,6 +156,15 @@ function ReaderProfileContent() {
         <h2 className="mb-4 text-lg font-semibold text-puce-red">Reading Notes</h2>
         <ProfileNotesSection userId={profile.id} isOwnProfile={isSelf} />
       </section>
+
+      <ProfilePostsSection
+        profileUserId={profile.id}
+        viewerId={user.id}
+        isOwnProfile={isSelf}
+        isFollowing={following}
+        displayName={displayName}
+        className="rounded-xl border border-border bg-surface p-6 text-left shadow-sm"
+      />
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-puce-red">Recent activity</h2>
