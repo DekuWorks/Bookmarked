@@ -27,6 +27,7 @@ import { readerProfilePath } from "@/lib/routes/reader";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import { ProfileNotificationsSection } from "@/components/notifications/ProfileNotificationsSection";
 import { ProfileFeedSection } from "@/components/social/ProfileFeedSection";
+import { LibraryImportPanel } from "@/components/profile/LibraryImportPanel";
 import type { Profile } from "@/types";
 import type { LibraryBookRow } from "@/lib/services/library";
 import type { ReadingAnalytics } from "@/lib/services/analytics";
@@ -209,6 +210,8 @@ export default function ProfilePage() {
       ) : null}
 
       {profile ? <NotificationPreferencesPanel profile={profile} /> : null}
+
+      <LibraryImportPanel userId={user.id} onImportComplete={() => void loadProfile()} />
 
       <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
         <h2 className="mb-4 text-lg font-semibold text-puce-red">Shelves</h2>
