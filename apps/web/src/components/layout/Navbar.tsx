@@ -19,6 +19,7 @@ const APP_LINKS: NavLinkItem[] = [
     label: "Reading Room",
     className: "font-semibold text-royal-orange hover:text-rust",
   },
+  { href: "/notes/", label: "Notes" },
   { href: "/library/", label: "Library" },
   { href: "/search/", label: "Search" },
   { href: "/messages/", label: "Messages" },

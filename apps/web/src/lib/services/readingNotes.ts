@@ -184,10 +184,11 @@ async function filterNotesByBookId(
   return notes.filter((note) => allowed.has(note.user_book_id));
 }
 
-/** Search prep — uses RPC with GIN full-text index when keyword is provided. */
-export async function searchNotes(
-  filters: ReadingNoteSearchFilters = {}
-): Promise<ReadingNote[]> {
+type SearchNotesResult = { notes: ReadingNote[]; error?: string };
+
+async function executeSearchNotes(
+  filters: ReadingNoteSearchFilters
+): Promise<SearchNotesResult> {
   const supabase = createClient();
 
   const { data, error } = await supabase.rpc("search_reading_notes", {
@@ -203,10 +204,25 @@ export async function searchNotes(
 
   if (error) {
     console.error("[readingNotes] search failed:", error);
-    return listNotes(filters);
+    return { notes: await listNotes(filters), error: error.message };
   }
 
-  return (data ?? []) as ReadingNote[];
+  return { notes: (data ?? []) as ReadingNote[] };
+}
+
+/** Search prep — uses RPC with GIN full-text index when keyword is provided. */
+export async function searchNotes(
+  filters: ReadingNoteSearchFilters = {}
+): Promise<ReadingNote[]> {
+  const { notes } = await executeSearchNotes(filters);
+  return notes;
+}
+
+export async function searchNotesWithBooks(
+  filters: ReadingNoteSearchFilters = {}
+): Promise<{ notes: ReadingNoteWithBook[]; error?: string }> {
+  const { notes, error } = await executeSearchNotes(filters);
+  return { notes: await enrichNotesWithBooks(notes), error };
 }
 
 export type ReadingNoteWithBook = ReadingNote & {

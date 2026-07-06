@@ -65,7 +65,11 @@ export default function ReadingRoomPage() {
         </h1>
         <p className="mx-auto mt-2 max-w-2xl text-pretty text-text-muted">
           A cozy corner for what you&apos;re reading now, what you&apos;ve finished, and the
-          shelves that make up your library.
+          shelves that make up your library.{" "}
+          <Link href="/notes/" className="font-medium text-primary hover:underline">
+            Search your reading notes
+          </Link>
+          .
         </p>
       </header>
 
