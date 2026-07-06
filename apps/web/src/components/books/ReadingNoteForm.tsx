@@ -16,6 +16,9 @@ import {
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import type { ReadingNote, ReadingNoteCategory, ReadingNoteVisibility } from "@/types";
 
+const selectClassName =
+  "w-full min-h-[44px] rounded-lg border border-border bg-surface px-4 py-2.5 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30";
+
 type Props = {
   userBookId: string;
   initialNote?: ReadingNote;
@@ -86,34 +89,38 @@ export function ReadingNoteForm({ userBookId, initialNote, onSaved, onCancel }: 
   }
 
   return (
-    <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3">
+    <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
       <Textarea
         label="Quote"
         value={quote}
         onChange={(e) => setQuote(e.target.value)}
         placeholder="Paste a passage you want to remember…"
-        className="min-h-[88px]"
+        className="min-h-[96px]"
       />
       <Textarea
         label="Note / reflection"
         value={note}
         onChange={(e) => setNote(e.target.value)}
         placeholder="Your thoughts about this moment…"
+        className="min-h-[80px]"
       />
       <div className="grid gap-4 sm:grid-cols-2">
         <Input
           label="Page"
           type="number"
           min={0}
+          inputMode="numeric"
           value={pageNumber}
           onChange={(e) => setPageNumber(e.target.value)}
           placeholder="e.g. 142"
+          className="min-h-[44px]"
         />
         <Input
           label="Chapter"
           value={chapter}
           onChange={(e) => setChapter(e.target.value)}
           placeholder="e.g. Chapter 12"
+          className="min-h-[44px]"
         />
       </div>
       <Input
@@ -121,6 +128,7 @@ export function ReadingNoteForm({ userBookId, initialNote, onSaved, onCancel }: 
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Short label for this note"
+        className="min-h-[44px]"
       />
       <div>
         <label htmlFor="reading-note-category" className="mb-1.5 block text-sm font-medium text-text">
@@ -130,7 +138,7 @@ export function ReadingNoteForm({ userBookId, initialNote, onSaved, onCancel }: 
           id="reading-note-category"
           value={category}
           onChange={(e) => setCategory(e.target.value as ReadingNoteCategory)}
-          className="w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+          className={selectClassName}
         >
           {READING_NOTE_CATEGORIES.map((item) => (
             <option key={item.value} value={item.value}>
@@ -140,14 +148,17 @@ export function ReadingNoteForm({ userBookId, initialNote, onSaved, onCancel }: 
         </select>
       </div>
       <div>
-        <label htmlFor="reading-note-visibility" className="mb-1.5 block text-sm font-medium text-text">
+        <label
+          htmlFor="reading-note-visibility"
+          className="mb-1.5 block text-sm font-medium text-text"
+        >
           Visibility
         </label>
         <select
           id="reading-note-visibility"
           value={visibility}
           onChange={(e) => setVisibility(e.target.value as ReadingNoteVisibility)}
-          className="w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+          className={selectClassName}
         >
           {READING_NOTE_VISIBILITY_OPTIONS.map((item) => (
             <option key={item.value} value={item.value}>
@@ -156,12 +167,22 @@ export function ReadingNoteForm({ userBookId, initialNote, onSaved, onCancel }: 
           ))}
         </select>
       </div>
-      <div className="flex flex-wrap gap-2">
-        <Button type="submit" variant="secondary" loading={saving}>
+      <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:flex-wrap">
+        <Button
+          type="submit"
+          variant="secondary"
+          loading={saving}
+          className="min-h-[44px] w-full sm:w-auto"
+        >
           {initialNote ? "Save changes" : "Add note"}
         </Button>
         {onCancel ? (
-          <Button type="button" variant="ghost" onClick={onCancel}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onCancel}
+            className="min-h-[44px] w-full sm:w-auto"
+          >
             Cancel
           </Button>
         ) : null}

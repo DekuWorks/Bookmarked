@@ -8,6 +8,14 @@ import {
   getReadingNoteCategoryMeta,
   READING_NOTE_VISIBILITY_OPTIONS,
 } from "@/lib/readingNotes/categories";
+import {
+  readingNoteBookLink,
+  readingNoteCategoryPill,
+  readingNoteEmptyState,
+  readingNoteQuote,
+  readingNoteTimelineDot,
+  readingNoteTimelineItem,
+} from "@/lib/readingNotes/styles";
 import { bookDetailsNotesPath } from "@/lib/routes/book";
 import { cn } from "@/lib/utils/cn";
 import type { ReadingNoteVisibility } from "@/types";
@@ -63,14 +71,11 @@ function ProfileNoteCard({
   const bookHref = note.book ? bookDetailsNotesPath(note.book.id) : null;
 
   return (
-    <li className="relative border-l-2 border-primary/30 py-4 pl-4 first:pt-0 last:pb-0">
-      <span className="absolute -left-[5px] top-5 h-2 w-2 rounded-full bg-royal-orange" />
+    <li className={readingNoteTimelineItem}>
+      <span className={readingNoteTimelineDot} aria-hidden />
 
       {note.book ? (
-        <Link
-          href={bookHref ?? "#"}
-          className="mb-3 flex items-center gap-3 rounded-lg border border-border/70 bg-background/50 p-2 transition-colors hover:border-primary/40 hover:bg-background"
-        >
+        <Link href={bookHref ?? "#"} className={readingNoteBookLink}>
           <div className="h-14 w-10 shrink-0 overflow-hidden rounded shadow-sm">
             <BookCover
               title={note.book.title}
@@ -83,21 +88,28 @@ function ProfileNoteCard({
         </Link>
       ) : null}
 
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="space-y-1">
-          <p className="text-sm font-medium text-text" suppressHydrationWarning>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 space-y-1">
+          <p className="text-sm font-semibold text-text" suppressHydrationWarning>
             {formatNoteDate(note.created_at)}
           </p>
-          <div className="flex flex-wrap items-center gap-2 text-xs text-text-muted">
-            {note.page_number != null ? <span>Page {note.page_number}</span> : null}
-            {note.chapter ? <span>· {note.chapter}</span> : null}
-          </div>
+          {(note.page_number != null || note.chapter) && (
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-text-muted">
+              {note.page_number != null ? <span>Page {note.page_number}</span> : null}
+              {note.page_number != null && note.chapter ? (
+                <span aria-hidden className="text-border">
+                  ·
+                </span>
+              ) : null}
+              {note.chapter ? <span>{note.chapter}</span> : null}
+            </div>
+          )}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           {showVisibility ? (
             <span
               className={cn(
-                "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium",
+                readingNoteCategoryPill,
                 visibilityBadgeClass(note.visibility)
               )}
             >
@@ -105,10 +117,7 @@ function ProfileNoteCard({
             </span>
           ) : null}
           <span
-            className={cn(
-              "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium",
-              categoryMeta.tagClassName
-            )}
+            className={cn(readingNoteCategoryPill, "shrink-0", categoryMeta.tagClassName)}
           >
             <span aria-hidden>{categoryMeta.emoji}</span>
             {categoryMeta.label}
@@ -117,17 +126,15 @@ function ProfileNoteCard({
       </div>
 
       {note.title ? (
-        <h3 className="mt-2 text-sm font-semibold text-puce-red">{note.title}</h3>
+        <h3 className="mt-3 text-sm font-semibold tracking-tight text-puce-red">{note.title}</h3>
       ) : null}
 
       {note.quote ? (
-        <blockquote className="mt-2 border-l-4 border-primary/40 pl-3 text-sm italic text-text">
-          &ldquo;{note.quote}&rdquo;
-        </blockquote>
+        <blockquote className={readingNoteQuote}>&ldquo;{note.quote}&rdquo;</blockquote>
       ) : null}
 
       {note.note ? (
-        <p className="mt-2 text-sm leading-relaxed text-text-muted whitespace-pre-wrap">
+        <p className="mt-3 text-sm leading-relaxed text-text-muted whitespace-pre-wrap">
           {note.note}
         </p>
       ) : null}
@@ -158,11 +165,16 @@ export function ProfileNotesSection({ userId, isOwnProfile = false }: Props) {
 
   if (notes.length === 0) {
     return (
-      <p className="text-sm text-text-muted">
-        {isOwnProfile
-          ? "No reading notes yet. Add notes from any book in your library."
-          : "No reading notes to show yet."}
-      </p>
+      <div className={readingNoteEmptyState}>
+        <p className="text-sm font-medium text-text">
+          {isOwnProfile ? "No reading notes yet" : "No reading notes to show"}
+        </p>
+        <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-text-muted">
+          {isOwnProfile
+            ? "Add notes from any book in your library — quotes and reflections show up here."
+            : "Notes from this reader will appear here when they share them."}
+        </p>
+      </div>
     );
   }
 

@@ -5,6 +5,12 @@ import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { deleteReadingNote } from "@/lib/services/readingNotes";
 import { getReadingNoteCategoryMeta } from "@/lib/readingNotes/categories";
+import {
+  readingNoteCategoryPill,
+  readingNoteQuote,
+  readingNoteTimelineDot,
+  readingNoteTimelineItem,
+} from "@/lib/readingNotes/styles";
 import { ReadingNoteForm } from "@/components/books/ReadingNoteForm";
 import type { ReadingNote } from "@/types";
 import { cn } from "@/lib/utils/cn";
@@ -53,8 +59,8 @@ export function ReadingNoteCard({ note, userBookId, onChange }: Props) {
 
   if (editing) {
     return (
-      <li className="relative border-l-2 border-primary/30 py-3 pl-4">
-        <span className="absolute -left-[5px] top-4 h-2 w-2 rounded-full bg-royal-orange" />
+      <li className={cn(readingNoteTimelineItem, "pb-6")}>
+        <span className={readingNoteTimelineDot} aria-hidden />
         <ReadingNoteForm
           userBookId={userBookId}
           initialNote={note}
@@ -69,23 +75,27 @@ export function ReadingNoteCard({ note, userBookId, onChange }: Props) {
   }
 
   return (
-    <li className="relative border-l-2 border-primary/30 py-3 pl-4 first:pt-0 last:pb-0">
-      <span className="absolute -left-[5px] top-4 h-2 w-2 rounded-full bg-royal-orange" />
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="space-y-1">
-          <p className="text-sm font-medium text-text" suppressHydrationWarning>
+    <li className={readingNoteTimelineItem}>
+      <span className={readingNoteTimelineDot} aria-hidden />
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 space-y-1">
+          <p className="text-sm font-semibold text-text" suppressHydrationWarning>
             {formatNoteDate(note.created_at)}
           </p>
-          <div className="flex flex-wrap items-center gap-2 text-xs text-text-muted">
-            {note.page_number != null ? <span>Page {note.page_number}</span> : null}
-            {note.chapter ? <span>· {note.chapter}</span> : null}
-          </div>
+          {(note.page_number != null || note.chapter) && (
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-text-muted">
+              {note.page_number != null ? <span>Page {note.page_number}</span> : null}
+              {note.page_number != null && note.chapter ? (
+                <span aria-hidden className="text-border">
+                  ·
+                </span>
+              ) : null}
+              {note.chapter ? <span>{note.chapter}</span> : null}
+            </div>
+          )}
         </div>
         <span
-          className={cn(
-            "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium",
-            categoryMeta.tagClassName
-          )}
+          className={cn(readingNoteCategoryPill, "shrink-0", categoryMeta.tagClassName)}
         >
           <span aria-hidden>{categoryMeta.emoji}</span>
           {categoryMeta.label}
@@ -93,29 +103,34 @@ export function ReadingNoteCard({ note, userBookId, onChange }: Props) {
       </div>
 
       {note.title ? (
-        <h3 className="mt-2 text-sm font-semibold text-puce-red">{note.title}</h3>
+        <h3 className="mt-3 text-sm font-semibold tracking-tight text-puce-red">{note.title}</h3>
       ) : null}
 
       {note.quote ? (
-        <blockquote className="mt-2 border-l-4 border-primary/40 pl-3 text-sm italic text-text">
-          &ldquo;{note.quote}&rdquo;
-        </blockquote>
+        <blockquote className={readingNoteQuote}>&ldquo;{note.quote}&rdquo;</blockquote>
       ) : null}
 
       {note.note ? (
-        <p className="mt-2 text-sm leading-relaxed text-text-muted whitespace-pre-wrap">
+        <p className="mt-3 text-sm leading-relaxed text-text-muted whitespace-pre-wrap">
           {note.note}
         </p>
       ) : null}
 
-      <div className="mt-3 flex flex-wrap gap-2">
-        <Button type="button" variant="ghost" size="sm" onClick={() => setEditing(true)}>
+      <div className="mt-4 flex flex-wrap gap-1">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="min-h-[44px] min-w-[44px] px-3"
+          onClick={() => setEditing(true)}
+        >
           Edit
         </Button>
         <Button
           type="button"
           variant="ghost"
           size="sm"
+          className="min-h-[44px] min-w-[44px] px-3"
           loading={deleting}
           onClick={() => void handleDelete()}
         >
