@@ -167,6 +167,7 @@ function MessageThreadContent() {
             current ? { ...current, viewerPinnedAt: pinnedAt } : current
           )
         }
+        onConversationUpdate={() => void loadThread()}
       />
 
       <MessageList

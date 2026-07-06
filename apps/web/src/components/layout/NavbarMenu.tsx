@@ -15,6 +15,7 @@ import { usePathname } from "next/navigation";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import { layout } from "@/lib/constants/layout";
 import { cn } from "@/lib/utils/cn";
+import { MessagesUnreadBadge } from "@/components/messages/MessagesUnreadBadge";
 
 export type NavLinkItem = {
   href: string;
@@ -147,6 +148,7 @@ export function NavbarMenu({ links, actions, footer, useAppNavLinks = false }: P
                     )}
                   >
                     {link.label}
+                    {link.href.includes("/messages/") ? <MessagesUnreadBadge /> : null}
                   </NavItem>
                 ))}
                 {footer ? (
@@ -177,6 +179,7 @@ export function NavbarMenu({ links, actions, footer, useAppNavLinks = false }: P
             )}
           >
             {link.label}
+            {link.href.includes("/messages/") ? <MessagesUnreadBadge /> : null}
           </NavItem>
         ))}
         {footer ? <div className="ml-2 flex items-center gap-2">{footer}</div> : null}

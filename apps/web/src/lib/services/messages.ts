@@ -156,6 +156,187 @@ function sortConversations(conversations: ConversationPreview[]): ConversationPr
   });
 }
 
+export async function getUnreadMessageCount(userId: string): Promise<number> {
+  const conversations = await getConversations(userId);
+  return conversations.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
+}
+
+export async function leaveConversation(
+  conversationId: string
+): Promise<{ error?: string }> {
+  try {
+    const { supabase, user } = await requireUser();
+
+    const { error } = await supabase
+      .from("conversation_participants")
+      .delete()
+      .eq("conversation_id", conversationId)
+      .eq("user_id", user.id);
+
+    if (error) return { error: error.message };
+    return {};
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not leave conversation.",
+    };
+  }
+}
+
+export async function renameGroupConversation(
+  conversationId: string,
+  title: string
+): Promise<{ error?: string }> {
+  const trimmed = title.trim();
+  if (!trimmed) return { error: "Group name is required." };
+
+  try {
+    const { supabase, user } = await requireUser();
+
+    const { data: conversation } = await supabase
+      .from("conversations")
+      .select("type")
+      .eq("id", conversationId)
+      .maybeSingle();
+
+    if (!conversation || conversation.type !== "group") {
+      return { error: "Only group conversations can be renamed." };
+    }
+
+    const { data: membership } = await supabase
+      .from("conversation_participants")
+      .select("role")
+      .eq("conversation_id", conversationId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!membership || membership.role !== "owner") {
+      return { error: "Only the group owner can rename this chat." };
+    }
+
+    const { error } = await supabase
+      .from("conversations")
+      .update({ title: trimmed, updated_at: new Date().toISOString() })
+      .eq("id", conversationId);
+
+    if (error) return { error: error.message };
+    return {};
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not rename group.",
+    };
+  }
+}
+
+export async function addGroupMembers(
+  conversationId: string,
+  userIds: string[]
+): Promise<{ error?: string; added?: number }> {
+  const uniqueIds = [...new Set(userIds.filter(Boolean))];
+  if (!uniqueIds.length) return { error: "Select at least one reader." };
+
+  try {
+    const { supabase, user } = await requireUser();
+
+    const { data: conversation } = await supabase
+      .from("conversations")
+      .select("type")
+      .eq("id", conversationId)
+      .maybeSingle();
+
+    if (!conversation || conversation.type !== "group") {
+      return { error: "Members can only be added to group chats." };
+    }
+
+    const { data: membership } = await supabase
+      .from("conversation_participants")
+      .select("role")
+      .eq("conversation_id", conversationId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!membership || membership.role !== "owner") {
+      return { error: "Only the group owner can add members." };
+    }
+
+    const { data: existing } = await supabase
+      .from("conversation_participants")
+      .select("user_id")
+      .eq("conversation_id", conversationId);
+
+    const existingIds = new Set((existing ?? []).map((row) => row.user_id));
+    const toAdd = uniqueIds.filter((id) => id !== user.id && !existingIds.has(id));
+
+    if (!toAdd.length) return { error: "Those readers are already in the group." };
+
+    const { data: profiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("id")
+      .in("id", toAdd);
+
+    if (profilesError) return { error: profilesError.message };
+    if ((profiles ?? []).length !== toAdd.length) {
+      return { error: "One or more readers were not found." };
+    }
+
+    const rows = toAdd.map((memberId) => ({
+      conversation_id: conversationId,
+      user_id: memberId,
+      role: "member" as const,
+    }));
+
+    const { error } = await supabase.from("conversation_participants").insert(rows);
+    if (error) return { error: error.message };
+
+    await supabase
+      .from("conversations")
+      .update({ updated_at: new Date().toISOString() })
+      .eq("id", conversationId);
+
+    return { added: toAdd.length };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not add members.",
+    };
+  }
+}
+
+export async function removeGroupMember(
+  conversationId: string,
+  memberUserId: string
+): Promise<{ error?: string }> {
+  try {
+    const { supabase, user } = await requireUser();
+
+    if (memberUserId === user.id) {
+      return leaveConversation(conversationId);
+    }
+
+    const { data: membership } = await supabase
+      .from("conversation_participants")
+      .select("role")
+      .eq("conversation_id", conversationId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!membership || membership.role !== "owner") {
+      return { error: "Only the group owner can remove members." };
+    }
+
+    const { error } = await supabase
+      .from("conversation_participants")
+      .delete()
+      .eq("conversation_id", conversationId)
+      .eq("user_id", memberUserId);
+
+    if (error) return { error: error.message };
+    return {};
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not remove member.",
+    };
+  }
+}
+
 export async function searchProfilesForMessaging(
   query: string,
   excludeUserId: string

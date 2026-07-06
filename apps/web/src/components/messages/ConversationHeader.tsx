@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { UserAvatar } from "@/components/messages/UserAvatar";
 import { PinIcon } from "@/components/messages/PinIcon";
+import { GroupSettingsModal } from "@/components/messages/GroupSettingsModal";
 import {
   conversationDisplayName,
   pinConversation,
@@ -19,15 +20,18 @@ type Props = {
   conversation: ConversationWithParticipants;
   currentUserId: string;
   onPinChange?: (pinnedAt: string | null) => void;
+  onConversationUpdate?: () => void;
 };
 
 export function ConversationHeader({
   conversation,
   currentUserId,
   onPinChange,
+  onConversationUpdate,
 }: Props) {
   const toast = useToast();
   const [pinning, setPinning] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const isPinned = Boolean(conversation.viewerPinnedAt);
 
   const title = conversationDisplayName(conversation, currentUserId);
@@ -92,6 +96,16 @@ export function ConversationHeader({
           {isPinned ? "Unpin" : "Pin"}
         </button>
 
+        {conversation.type === "group" ? (
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-text-muted hover:bg-background hover:text-royal-orange"
+          >
+            Settings
+          </button>
+        ) : null}
+
         <Link
           href={messagesInboxPath()}
           className="hidden shrink-0 text-sm font-medium text-primary hover:underline sm:inline"
@@ -99,6 +113,19 @@ export function ConversationHeader({
           All messages
         </Link>
       </div>
+
+      {conversation.type === "group" ? (
+        <GroupSettingsModal
+          open={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+          conversation={conversation}
+          currentUserId={currentUserId}
+          onUpdated={() => {
+            setSettingsOpen(false);
+            onConversationUpdate?.();
+          }}
+        />
+      ) : null}
     </header>
   );
 }
