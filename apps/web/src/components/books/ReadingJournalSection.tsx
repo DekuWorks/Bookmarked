@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import type { ReadingSession } from "@/types";
 
+export const READING_JOURNAL_PREVIEW_LIMIT = 5;
+
 function formatSessionDay(iso: string): string {
   const date = new Date(iso);
   const now = new Date();
@@ -137,8 +139,13 @@ type Props = {
 };
 
 export function ReadingJournalSection({ sessions, loading, onSessionUpdate }: Props) {
+  const [expanded, setExpanded] = useState(false);
   const chronological = [...sessions].reverse();
   const oldestId = chronological[0]?.id;
+  const hasMoreSessions = sessions.length > READING_JOURNAL_PREVIEW_LIMIT;
+  const visibleSessions = expanded
+    ? sessions
+    : sessions.slice(0, READING_JOURNAL_PREVIEW_LIMIT);
 
   return (
     <section id="reading-journal" className="rounded-xl border border-border bg-surface p-5">
@@ -154,26 +161,41 @@ export function ReadingJournalSection({ sessions, loading, onSessionUpdate }: Pr
           No reading sessions yet. Save progress to start your journal.
         </p>
       ) : (
-        <ol className="mt-4 space-y-0">
-          {sessions.map((session) => (
-            <li
-              key={session.id}
-              className="relative border-l-2 border-primary/30 py-3 pl-4 first:pt-0 last:pb-0"
-            >
-              <span className="absolute -left-[5px] top-4 h-2 w-2 rounded-full bg-royal-orange" />
-              <p className="text-sm font-medium text-text" suppressHydrationWarning>
-                {formatSessionDay(session.created_at)}
-              </p>
-              <p className="mt-0.5 text-sm text-text-muted">
-                {sessionLabel(session, session.id === oldestId)}
-              </p>
-              <SessionNoteEditor
-                session={session}
-                onSaved={(updated) => onSessionUpdate?.(updated)}
-              />
-            </li>
-          ))}
-        </ol>
+        <>
+          <ol className="mt-4 space-y-0">
+            {visibleSessions.map((session) => (
+              <li
+                key={session.id}
+                className="relative border-l-2 border-primary/30 py-3 pl-4 first:pt-0 last:pb-0"
+              >
+                <span className="absolute -left-[5px] top-4 h-2 w-2 rounded-full bg-royal-orange" />
+                <p className="text-sm font-medium text-text" suppressHydrationWarning>
+                  {formatSessionDay(session.created_at)}
+                </p>
+                <p className="mt-0.5 text-sm text-text-muted">
+                  {sessionLabel(session, session.id === oldestId)}
+                </p>
+                <SessionNoteEditor
+                  session={session}
+                  onSaved={(updated) => onSessionUpdate?.(updated)}
+                />
+              </li>
+            ))}
+          </ol>
+          {hasMoreSessions ? (
+            <div className="mt-6 text-center">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                aria-expanded={expanded}
+                onClick={() => setExpanded((value) => !value)}
+              >
+                {expanded ? "Show less" : "View full reading journal"}
+              </Button>
+            </div>
+          ) : null}
+        </>
       )}
     </section>
   );

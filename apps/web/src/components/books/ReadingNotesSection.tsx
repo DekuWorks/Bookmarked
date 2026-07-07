@@ -5,7 +5,10 @@ import { ReadingNoteCard } from "@/components/books/ReadingNoteCard";
 import { ReadingNoteForm } from "@/components/books/ReadingNoteForm";
 import { readingNoteEmptyState } from "@/lib/readingNotes/styles";
 import { listNotesByBook } from "@/lib/services/readingNotes";
+import { Button } from "@/components/ui/Button";
 import type { ReadingNote } from "@/types";
+
+export const READING_NOTES_PREVIEW_LIMIT = 5;
 
 type Props = {
   userBookId: string;
@@ -15,6 +18,7 @@ type Props = {
 export function ReadingNotesSection({ userBookId, loading: externalLoading }: Props) {
   const [notes, setNotes] = useState<ReadingNote[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   const loadNotes = useCallback(async () => {
     setLoading(true);
@@ -28,6 +32,8 @@ export function ReadingNotesSection({ userBookId, loading: externalLoading }: Pr
   }, [loadNotes]);
 
   const isLoading = externalLoading || loading;
+  const hasMoreNotes = notes.length > READING_NOTES_PREVIEW_LIMIT;
+  const visibleNotes = expanded ? notes : notes.slice(0, READING_NOTES_PREVIEW_LIMIT);
 
   return (
     <section
@@ -59,16 +65,31 @@ export function ReadingNotesSection({ userBookId, loading: externalLoading }: Pr
           </p>
         </div>
       ) : (
-        <ol className="mt-6 space-y-0">
-          {notes.map((note) => (
-            <ReadingNoteCard
-              key={note.id}
-              note={note}
-              userBookId={userBookId}
-              onChange={() => void loadNotes()}
-            />
-          ))}
-        </ol>
+        <>
+          <ol className="mt-6 space-y-0">
+            {visibleNotes.map((note) => (
+              <ReadingNoteCard
+                key={note.id}
+                note={note}
+                userBookId={userBookId}
+                onChange={() => void loadNotes()}
+              />
+            ))}
+          </ol>
+          {hasMoreNotes ? (
+            <div className="mt-6 text-center">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                aria-expanded={expanded}
+                onClick={() => setExpanded((value) => !value)}
+              >
+                {expanded ? "Show less" : "View all reading notes"}
+              </Button>
+            </div>
+          ) : null}
+        </>
       )}
     </section>
   );
