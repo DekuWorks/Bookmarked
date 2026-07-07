@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { BookCover } from "@/components/books/BookCover";
 import { getReadingNoteCategoryMeta } from "@/lib/readingNotes/categories";
+import { useReadingNoteCategories } from "@/lib/hooks/useReadingNoteCategories";
 import {
   readingNoteBookLink,
   readingNoteCategoryPill,
@@ -34,7 +35,8 @@ type Props = {
 };
 
 export function NotesSearchResultCard({ note }: Props) {
-  const categoryMeta = getReadingNoteCategoryMeta(note.category);
+  const { customLookup } = useReadingNoteCategories(note.user_id);
+  const categoryMeta = getReadingNoteCategoryMeta(note.category, customLookup);
   const bookHref = note.book ? bookDetailsNotesPath(note.book.id) : null;
 
   return (

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { deleteReadingNote } from "@/lib/services/readingNotes";
 import { getReadingNoteCategoryMeta } from "@/lib/readingNotes/categories";
+import { useReadingNoteCategories } from "@/lib/hooks/useReadingNoteCategories";
 import {
   readingNoteCategoryPill,
   readingNoteQuote,
@@ -40,9 +41,10 @@ type Props = {
 
 export function ReadingNoteCard({ note, userBookId, onChange }: Props) {
   const toast = useToast();
+  const { customLookup } = useReadingNoteCategories(note.user_id);
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const categoryMeta = getReadingNoteCategoryMeta(note.category);
+  const categoryMeta = getReadingNoteCategoryMeta(note.category, customLookup);
 
   async function handleDelete() {
     if (!window.confirm("Delete this note?")) return;

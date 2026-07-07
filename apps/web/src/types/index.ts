@@ -36,6 +36,8 @@ export type {
   ReadingSession,
   ReadingNote,
   ReadingNoteCategory,
+  BuiltinReadingNoteCategory,
+  UserReadingNoteCategory,
   ReadingNoteVisibility,
 } from "../../../../packages/types";
 

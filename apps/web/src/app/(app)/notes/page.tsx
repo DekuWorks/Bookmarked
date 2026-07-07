@@ -10,12 +10,10 @@ import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { layout } from "@/lib/constants/layout";
 import type { ReadingNoteCategory } from "@/types";
-import { READING_NOTE_CATEGORIES } from "@/lib/readingNotes/categories";
-
-const CATEGORY_VALUES = new Set(READING_NOTE_CATEGORIES.map((item) => item.value));
+import { isReadingNoteCategoryValue } from "@/lib/readingNotes/categories";
 
 function isReadingNoteCategory(value: string): value is ReadingNoteCategory {
-  return CATEGORY_VALUES.has(value as ReadingNoteCategory);
+  return isReadingNoteCategoryValue(value);
 }
 
 function parsePageNumber(value: string | null): number | undefined {

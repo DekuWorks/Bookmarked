@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { AddCustomNoteCategoryModal } from "@/components/books/AddCustomNoteCategoryModal";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
-import {
-  READING_NOTE_CATEGORIES,
-  READING_NOTE_VISIBILITY_OPTIONS,
-} from "@/lib/readingNotes/categories";
+import { useReadingNoteCategories } from "@/lib/hooks/useReadingNoteCategories";
+import { READING_NOTE_VISIBILITY_OPTIONS } from "@/lib/readingNotes/categories";
 import {
   createReadingNote,
   updateReadingNote,
@@ -19,6 +18,8 @@ import type { ReadingNote, ReadingNoteCategory, ReadingNoteVisibility } from "@/
 const selectClassName =
   "w-full min-h-[44px] rounded-lg border border-border bg-surface px-4 py-2.5 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30";
 
+const ADD_CUSTOM_CATEGORY_VALUE = "__add_custom_category__";
+
 type Props = {
   userBookId: string;
   initialNote?: ReadingNote;
@@ -29,7 +30,9 @@ type Props = {
 export function ReadingNoteForm({ userBookId, initialNote, onSaved, onCancel }: Props) {
   const user = useAuthUser();
   const toast = useToast();
+  const { categories, refresh: refreshCategories } = useReadingNoteCategories(user?.id);
   const [saving, setSaving] = useState(false);
+  const [showAddCategory, setShowAddCategory] = useState(false);
   const [quote, setQuote] = useState(initialNote?.quote ?? "");
   const [note, setNote] = useState(initialNote?.note ?? "");
   const [pageNumber, setPageNumber] = useState(
@@ -43,6 +46,14 @@ export function ReadingNoteForm({ userBookId, initialNote, onSaved, onCancel }: 
   const [visibility, setVisibility] = useState<ReadingNoteVisibility>(
     initialNote?.visibility ?? "private"
   );
+
+  function handleCategoryChange(value: string) {
+    if (value === ADD_CUSTOM_CATEGORY_VALUE) {
+      setShowAddCategory(true);
+      return;
+    }
+    setCategory(value as ReadingNoteCategory);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -89,104 +100,121 @@ export function ReadingNoteForm({ userBookId, initialNote, onSaved, onCancel }: 
   }
 
   return (
-    <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
-      <Textarea
-        label="Quote"
-        value={quote}
-        onChange={(e) => setQuote(e.target.value)}
-        placeholder="Paste a passage you want to remember…"
-        className="min-h-[96px]"
-      />
-      <Textarea
-        label="Note / reflection"
-        value={note}
-        onChange={(e) => setNote(e.target.value)}
-        placeholder="Your thoughts about this moment…"
-        className="min-h-[80px]"
-      />
-      <div className="grid gap-4 sm:grid-cols-2">
+    <>
+      <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+        <Textarea
+          label="Quote"
+          value={quote}
+          onChange={(e) => setQuote(e.target.value)}
+          placeholder="Paste a passage you want to remember…"
+          className="min-h-[96px]"
+        />
+        <Textarea
+          label="Note / reflection"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Your thoughts about this moment…"
+          className="min-h-[80px]"
+        />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Input
+            label="Page"
+            type="number"
+            min={0}
+            inputMode="numeric"
+            value={pageNumber}
+            onChange={(e) => setPageNumber(e.target.value)}
+            placeholder="e.g. 142"
+            className="min-h-[44px]"
+          />
+          <Input
+            label="Chapter"
+            value={chapter}
+            onChange={(e) => setChapter(e.target.value)}
+            placeholder="e.g. Chapter 12"
+            className="min-h-[44px]"
+          />
+        </div>
         <Input
-          label="Page"
-          type="number"
-          min={0}
-          inputMode="numeric"
-          value={pageNumber}
-          onChange={(e) => setPageNumber(e.target.value)}
-          placeholder="e.g. 142"
+          label="Title (optional)"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Short label for this note"
           className="min-h-[44px]"
         />
-        <Input
-          label="Chapter"
-          value={chapter}
-          onChange={(e) => setChapter(e.target.value)}
-          placeholder="e.g. Chapter 12"
-          className="min-h-[44px]"
-        />
-      </div>
-      <Input
-        label="Title (optional)"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="Short label for this note"
-        className="min-h-[44px]"
-      />
-      <div>
-        <label htmlFor="reading-note-category" className="mb-1.5 block text-sm font-medium text-text">
-          Category
-        </label>
-        <select
-          id="reading-note-category"
-          value={category}
-          onChange={(e) => setCategory(e.target.value as ReadingNoteCategory)}
-          className={selectClassName}
-        >
-          {READING_NOTE_CATEGORIES.map((item) => (
-            <option key={item.value} value={item.value}>
-              {item.emoji} {item.label}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label
-          htmlFor="reading-note-visibility"
-          className="mb-1.5 block text-sm font-medium text-text"
-        >
-          Visibility
-        </label>
-        <select
-          id="reading-note-visibility"
-          value={visibility}
-          onChange={(e) => setVisibility(e.target.value as ReadingNoteVisibility)}
-          className={selectClassName}
-        >
-          {READING_NOTE_VISIBILITY_OPTIONS.map((item) => (
-            <option key={item.value} value={item.value}>
-              {item.label}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:flex-wrap">
-        <Button
-          type="submit"
-          variant="secondary"
-          loading={saving}
-          className="min-h-[44px] w-full sm:w-auto"
-        >
-          {initialNote ? "Save changes" : "Add note"}
-        </Button>
-        {onCancel ? (
+        <div>
+          <label htmlFor="reading-note-category" className="mb-1.5 block text-sm font-medium text-text">
+            Category
+          </label>
+          <select
+            id="reading-note-category"
+            value={category}
+            onChange={(e) => handleCategoryChange(e.target.value)}
+            className={selectClassName}
+          >
+            {categories.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.emoji} {item.label}
+              </option>
+            ))}
+            {user ? (
+              <option value={ADD_CUSTOM_CATEGORY_VALUE}>➕ Add custom category…</option>
+            ) : null}
+          </select>
+        </div>
+        <div>
+          <label
+            htmlFor="reading-note-visibility"
+            className="mb-1.5 block text-sm font-medium text-text"
+          >
+            Visibility
+          </label>
+          <select
+            id="reading-note-visibility"
+            value={visibility}
+            onChange={(e) => setVisibility(e.target.value as ReadingNoteVisibility)}
+            className={selectClassName}
+          >
+            {READING_NOTE_VISIBILITY_OPTIONS.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:flex-wrap">
           <Button
-            type="button"
-            variant="ghost"
-            onClick={onCancel}
+            type="submit"
+            variant="secondary"
+            loading={saving}
             className="min-h-[44px] w-full sm:w-auto"
           >
-            Cancel
+            {initialNote ? "Save changes" : "Add note"}
           </Button>
-        ) : null}
-      </div>
-    </form>
+          {onCancel ? (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onCancel}
+              className="min-h-[44px] w-full sm:w-auto"
+            >
+              Cancel
+            </Button>
+          ) : null}
+        </div>
+      </form>
+
+      {user ? (
+        <AddCustomNoteCategoryModal
+          open={showAddCategory}
+          userId={user.id}
+          onClose={() => setShowAddCategory(false)}
+          onCreated={(nextCategory) => {
+            void refreshCategories();
+            setCategory(nextCategory);
+          }}
+        />
+      ) : null}
+    </>
   );
 }

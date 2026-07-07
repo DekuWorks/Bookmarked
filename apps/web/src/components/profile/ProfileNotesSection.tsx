@@ -8,6 +8,7 @@ import {
   getReadingNoteCategoryMeta,
   READING_NOTE_VISIBILITY_OPTIONS,
 } from "@/lib/readingNotes/categories";
+import { useReadingNoteCategories } from "@/lib/hooks/useReadingNoteCategories";
 import {
   readingNoteBookLink,
   readingNoteCategoryPill,
@@ -67,7 +68,8 @@ function ProfileNoteCard({
   note: ReadingNoteWithBook;
   showVisibility: boolean;
 }) {
-  const categoryMeta = getReadingNoteCategoryMeta(note.category);
+  const { customLookup } = useReadingNoteCategories(note.user_id);
+  const categoryMeta = getReadingNoteCategoryMeta(note.category, customLookup);
   const bookHref = note.book ? bookDetailsNotesPath(note.book.id) : null;
 
   return (

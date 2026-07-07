@@ -253,7 +253,7 @@ export interface ReadingSession {
   created_at: string;
 }
 
-export type ReadingNoteCategory =
+export type BuiltinReadingNoteCategory =
   | "favorite_quote"
   | "character_development"
   | "important_plot_point"
@@ -261,6 +261,16 @@ export type ReadingNoteCategory =
   | "favorite_scene"
   | "emotional_moment"
   | "general_note";
+
+export type ReadingNoteCategory = BuiltinReadingNoteCategory | `custom:${string}`;
+
+export interface UserReadingNoteCategory {
+  id: string;
+  user_id: string;
+  label: string;
+  emoji: string | null;
+  created_at: string;
+}
 
 export type ReadingNoteVisibility = "private" | "friends_only" | "public";
 
