@@ -10,9 +10,10 @@ import { cn } from "@/lib/utils/cn";
 type Props = {
   profile: Profile;
   onLanguageChange?: (language: PreferredLanguage) => void;
+  embedded?: boolean;
 };
 
-export function LanguagePreferencePanel({ profile, onLanguageChange }: Props) {
+export function LanguagePreferencePanel({ profile, onLanguageChange, embedded = false }: Props) {
   const toast = useToast();
   const [language, setLanguage] = useState<PreferredLanguage>(
     profile.preferred_language ?? "en"
@@ -35,8 +36,16 @@ export function LanguagePreferencePanel({ profile, onLanguageChange }: Props) {
     toast.success("Language preference saved.");
   }
 
+  const Wrapper = embedded ? "div" : "section";
+
   return (
-    <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
+    <Wrapper
+      className={cn(
+        embedded
+          ? "border-b border-border pb-6 last:border-0 last:pb-0"
+          : "rounded-xl border border-border bg-surface p-6 shadow-sm"
+      )}
+    >
       <h2 className="text-lg font-semibold text-puce-red">Language</h2>
       <p className="mt-1 text-sm text-text-muted">
         Choose your preferred language. UI translation is coming soon — this setting will be used
@@ -66,6 +75,6 @@ export function LanguagePreferencePanel({ profile, onLanguageChange }: Props) {
       </div>
 
       <p className="mt-3 text-xs text-text-muted">UI translation coming soon.</p>
-    </section>
+    </Wrapper>
   );
 }

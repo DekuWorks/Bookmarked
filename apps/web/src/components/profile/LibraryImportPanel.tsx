@@ -4,13 +4,15 @@ import { useRef, useState } from "react";
 import { importGoodreadsCsv, type ImportSummary } from "@/lib/services/goodreadsImport";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
+import { cn } from "@/lib/utils/cn";
 
 type Props = {
   userId: string;
   onImportComplete?: () => void;
+  embedded?: boolean;
 };
 
-export function LibraryImportPanel({ userId, onImportComplete }: Props) {
+export function LibraryImportPanel({ userId, onImportComplete, embedded = false }: Props) {
   const toast = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
@@ -51,8 +53,16 @@ export function LibraryImportPanel({ userId, onImportComplete }: Props) {
     }
   }
 
+  const Wrapper = embedded ? "div" : "section";
+
   return (
-    <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
+    <Wrapper
+      className={cn(
+        embedded
+          ? "border-b border-border pb-6 last:border-0 last:pb-0"
+          : "rounded-xl border border-border bg-surface p-6 shadow-sm"
+      )}
+    >
       <h2 className="text-lg font-semibold text-puce-red">Import library</h2>
       <p className="mt-1 text-sm text-text-muted">
         Upload your Goodreads export CSV to add books to your shelves. We match titles via Open
@@ -123,6 +133,6 @@ export function LibraryImportPanel({ userId, onImportComplete }: Props) {
           ) : null}
         </div>
       ) : null}
-    </section>
+    </Wrapper>
   );
 }

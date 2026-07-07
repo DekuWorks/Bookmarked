@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils/cn";
 
 type Props = {
   profile: Profile;
+  embedded?: boolean;
 };
 
 type PrefKey =
@@ -59,7 +60,7 @@ const PREF_OPTIONS: { key: PrefKey; label: string; description: string }[] = [
   },
 ];
 
-export function NotificationPreferencesPanel({ profile }: Props) {
+export function NotificationPreferencesPanel({ profile, embedded = false }: Props) {
   const toast = useToast();
   const [values, setValues] = useState({
     notify_messages: profile.notify_messages ?? true,
@@ -123,8 +124,16 @@ export function NotificationPreferencesPanel({ profile }: Props) {
     void savePrefs(next);
   }
 
+  const Wrapper = embedded ? "div" : "section";
+
   return (
-    <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
+    <Wrapper
+      className={cn(
+        embedded
+          ? "border-b border-border pb-6 last:border-0 last:pb-0"
+          : "rounded-xl border border-border bg-surface p-6 shadow-sm"
+      )}
+    >
       <h2 className="text-lg font-semibold text-puce-red">Notifications</h2>
       <p className="mt-1 text-sm text-text-muted">
         Choose what you want to hear about.
@@ -207,6 +216,6 @@ export function NotificationPreferencesPanel({ profile }: Props) {
           </p>
         ) : null}
       </div>
-    </section>
+    </Wrapper>
   );
 }
