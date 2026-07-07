@@ -5,17 +5,12 @@ import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getProfile } from "@/lib/services/profile";
 import { getUserLibraryBooks } from "@/lib/services/library";
-import { computeReadingAnalytics } from "@/lib/services/analytics";
-import { fetchReadingStreakTimestamps } from "@/lib/services/readingInsights";
 import { backfillReadingSessionsForUser } from "@/lib/services/readingSessionBackfill";
 import { computeReadingGoal } from "@/lib/services/readingGoal";
 import { ReadingGoalPanel } from "@/components/reading-goal/ReadingGoalPanel";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
-import { ReadingActivityPanel } from "@/components/analytics/ReadingActivityPanel";
-import { SuggestedShelvesPanel } from "@/components/shelves/SuggestedShelvesPanel";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
-import { AnalyticsGrid } from "@/components/analytics/AnalyticsGrid";
 import { CurrentlyReadingRow } from "@/components/reading-room/CurrentlyReadingRow";
 import { ShelfBadge } from "@/components/shelves/ShelfBadge";
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -25,7 +20,6 @@ import { useUserBooksRealtime } from "@/lib/hooks/useUserBooksRealtime";
 import { useStaleCatalogRefresh } from "@/lib/hooks/useStaleCatalogRefresh";
 import type { Profile } from "@/types";
 import type { LibraryBookRow } from "@/lib/services/library";
-import type { ReadingAnalytics } from "@/lib/services/analytics";
 import type { ReadingGoalStatus } from "@/lib/services/readingGoal";
 import type { ShelfStatus } from "@/types";
 
@@ -34,7 +28,6 @@ const QUICK_SHELVES: ShelfStatus[] = ["want_to_read", "currently_reading", "read
 type DashboardData = {
   profile: Profile | null;
   books: LibraryBookRow[];
-  analytics: ReadingAnalytics;
   readingGoal: ReadingGoalStatus;
   userId: string;
 };
@@ -53,28 +46,16 @@ export default function DashboardPage() {
 
     const supabase = createClient();
     try {
-      const [profile, books, streakTimestamps, reviewResult] = await Promise.all([
+      const [profile, books] = await Promise.all([
         getProfile(user.id),
         getUserLibraryBooks(user.id),
-        fetchReadingStreakTimestamps(user.id),
-        supabase
-          .from("reviews")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", user.id),
       ]);
 
       void backfillReadingSessionsForUser(user.id, supabase);
 
-      const analytics = computeReadingAnalytics({
-        books,
-        reviewsWritten: reviewResult.count ?? 0,
-        streakTimestamps,
-        profileGenres: profile?.favorite_genres,
-      });
       setData({
         profile,
         books,
-        analytics,
         readingGoal: computeReadingGoal(books, profile?.yearly_reading_goal ?? null),
         userId: user.id,
       });
@@ -116,7 +97,7 @@ export default function DashboardPage() {
     return <LoadingState message="Loading dashboard…" />;
   }
 
-  const { profile, books, analytics, readingGoal, userId } = data;
+  const { profile, books, readingGoal, userId } = data;
   const currentlyReading = books.filter((b) => b.shelf_status === "currently_reading");
 
   return (
@@ -136,8 +117,6 @@ export default function DashboardPage() {
       <DashboardCard title="Currently reading">
         <CurrentlyReadingRow items={currentlyReading} onItemsChange={loadDashboard} />
       </DashboardCard>
-
-      <SuggestedShelvesPanel userId={userId} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <DashboardCard title="Reading goal">
@@ -172,14 +151,6 @@ export default function DashboardPage() {
           </div>
         </DashboardCard>
       </div>
-
-      <DashboardCard title="Reading activity">
-        <ReadingActivityPanel userId={userId} />
-      </DashboardCard>
-
-      <DashboardCard title="Your reading at a glance">
-        <AnalyticsGrid analytics={analytics} readingGoal={readingGoal} compact />
-      </DashboardCard>
 
       <ActivityFeed userId={userId} />
     </div>

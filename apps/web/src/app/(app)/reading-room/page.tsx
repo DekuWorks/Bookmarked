@@ -9,15 +9,8 @@ import type { ReadingRoomData } from "@/lib/services/readingRoom";
 import { ReadingRoomSection } from "@/components/reading-room/ReadingRoomSection";
 import { CurrentlyReadingRow } from "@/components/reading-room/CurrentlyReadingRow";
 import { BookMiniGrid } from "@/components/reading-room/BookMiniGrid";
-import { AnalyticsGrid } from "@/components/analytics/AnalyticsGrid";
 import { ReadingActivityPanel } from "@/components/analytics/ReadingActivityPanel";
-import { BecauseYouReadPanel } from "@/components/discovery/BecauseYouReadPanel";
-import { BookshelfView } from "@/components/library/BookshelfView";
-import { CustomShelfCollectionsPanel } from "@/components/library/CustomShelfCollectionsPanel";
 import { SuggestedShelvesPanel } from "@/components/shelves/SuggestedShelvesPanel";
-import { ButtonLink } from "@/components/ui/ButtonLink";
-import { SHELF_CONFIG } from "@/lib/constants/shelves";
-import { ReadingGoalPanel } from "@/components/reading-goal/ReadingGoalPanel";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { useUserBooksRealtime } from "@/lib/hooks/useUserBooksRealtime";
@@ -71,8 +64,8 @@ export default function ReadingRoomPage() {
           {displayName}&apos;s Reading Room
         </h1>
         <p className="mx-auto mt-2 max-w-2xl text-pretty text-text-muted">
-          A cozy corner for what you&apos;re reading now, what you&apos;ve finished, and the
-          shelves that make up your library.{" "}
+          A cozy corner for what you&apos;re reading now, what you&apos;ve finished, and your
+          favorite reads.{" "}
           <Link href="/notes/" className="font-medium text-primary hover:underline">
             Search your reading notes
           </Link>
@@ -117,58 +110,8 @@ export default function ReadingRoomPage() {
         </ReadingRoomSection>
       </div>
 
-      <ReadingRoomSection title="Reading activity" emoji="📈">
+      <ReadingRoomSection title="Reading statistics" emoji="📊">
         <ReadingActivityPanel userId={user.id} />
-      </ReadingRoomSection>
-
-      <ReadingRoomSection title="Because you read…" emoji="✨">
-        <BecauseYouReadPanel userId={user.id} />
-      </ReadingRoomSection>
-
-      <ReadingRoomSection title="Reading stats" emoji="📊">
-        <AnalyticsGrid
-          analytics={data.analytics}
-          readingGoal={data.readingGoal}
-          showFuturePlaceholders
-          compact
-        />
-      </ReadingRoomSection>
-
-      <ReadingRoomSection title="Reading goal" emoji="🎯">
-        <ReadingGoalPanel status={data.readingGoal} />
-      </ReadingRoomSection>
-
-      <ReadingRoomSection title="Your bookshelves" emoji="🪵">
-        {data.shelves.every((s) => s.items.length === 0) ? (
-          <p className="text-center text-sm text-text-muted">
-            Your shelves are empty.{" "}
-            <Link href="/search" className="font-medium text-primary hover:underline">
-              Search for books
-            </Link>{" "}
-            to fill your room.
-          </p>
-        ) : (
-          <BookshelfView shelves={data.shelves} />
-        )}
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
-          {SHELF_CONFIG.map((shelf) => (
-            <ButtonLink
-              key={shelf.slug}
-              href={`/library/${shelf.slug}`}
-              variant="outline"
-              size="sm"
-            >
-              {shelf.emoji} {shelf.title}
-            </ButtonLink>
-          ))}
-        </div>
-
-        <CustomShelfCollectionsPanel
-          userId={user.id}
-          title="Custom collections"
-          description="Organize books into named shelves with optional genre labels."
-          className="mt-10 border-t border-border pt-8"
-        />
       </ReadingRoomSection>
     </div>
   );

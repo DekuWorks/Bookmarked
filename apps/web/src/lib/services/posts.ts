@@ -324,23 +324,6 @@ async function fetchCommentsForPosts(
   return map;
 }
 
-function scoreForYouPost(
-  post: RawPostRow,
-  viewerId: string,
-  followingSet: Set<string>
-): number {
-  let score = 0;
-  const ageHours =
-    (Date.now() - new Date(post.created_at).getTime()) / (1000 * 60 * 60);
-  score += Math.max(0, 48 - ageHours);
-
-  if (followingSet.has(post.user_id)) score += 12;
-  if (post.user_id === viewerId) score -= 20;
-  if (post.repost_of_post_id) score += 2;
-
-  return score;
-}
-
 export function validatePostImageFile(file: File): string | null {
   if (!POST_IMAGE_TYPES.has(file.type)) {
     return "Please choose a JPEG, PNG, WebP, or GIF image.";
@@ -464,31 +447,14 @@ export async function listFeedPosts(
     .select(POST_SELECT)
     .in("user_id", authorIds)
     .order("created_at", { ascending: false })
-    .limit(mode === "for-you" ? limit * 2 : limit);
+    .limit(limit);
 
   if (error) throw error;
 
   const rows = (data ?? []) as RawPostRow[];
   if (!rows.length) return [];
 
-  if (mode === "following") {
-    return hydratePosts(rows.slice(0, limit), viewerId);
-  }
-
-  const followingSet = new Set(followingIds);
-  const ranked = rows
-    .map((row) => ({
-      row,
-      score: scoreForYouPost(row, viewerId, followingSet),
-    }))
-    .sort(
-      (a, b) =>
-        b.score - a.score || b.row.created_at.localeCompare(a.row.created_at)
-    )
-    .slice(0, limit)
-    .map(({ row }) => row);
-
-  return hydratePosts(ranked, viewerId);
+  return hydratePosts(rows.slice(0, limit), viewerId);
 }
 
 export async function listPostsByUser(

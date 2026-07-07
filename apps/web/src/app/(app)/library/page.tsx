@@ -7,7 +7,6 @@ import { LibraryViewShell } from "@/components/library/LibraryViewShell";
 import { CustomShelfCollectionsPanel } from "@/components/library/CustomShelfCollectionsPanel";
 import { SuggestedShelvesPanel } from "@/components/shelves/SuggestedShelvesPanel";
 import { ButtonLink } from "@/components/ui/ButtonLink";
-import { LibraryAnalyticsPanel } from "@/components/library/LibraryAnalyticsPanel";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { useUserBooksRealtime } from "@/lib/hooks/useUserBooksRealtime";
@@ -99,10 +98,6 @@ export default function LibraryPage() {
           Add books
         </ButtonLink>
       </header>
-
-      {!isEmpty ? (
-        <LibraryAnalyticsPanel books={books} userId={userId} showFuturePlaceholders />
-      ) : null}
 
       {isEmpty ? (
         <div className="rounded-xl border border-dashed border-border bg-surface p-12 text-center">
