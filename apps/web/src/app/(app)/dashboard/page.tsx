@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getProfile } from "@/lib/services/profile";
@@ -12,18 +11,14 @@ import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { CurrentlyReadingRow } from "@/components/reading-room/CurrentlyReadingRow";
-import { ShelfBadge } from "@/components/shelves/ShelfBadge";
 import { LoadingState } from "@/components/ui/LoadingState";
-import { shelfStatusToSlug } from "@/lib/constants/shelves";
+import { bookDetailsPath } from "@/lib/routes/book";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { useUserBooksRealtime } from "@/lib/hooks/useUserBooksRealtime";
 import { useStaleCatalogRefresh } from "@/lib/hooks/useStaleCatalogRefresh";
 import type { Profile } from "@/types";
 import type { LibraryBookRow } from "@/lib/services/library";
 import type { ReadingGoalStatus } from "@/lib/services/readingGoal";
-import type { ShelfStatus } from "@/types";
-
-const QUICK_SHELVES: ShelfStatus[] = ["want_to_read", "currently_reading", "read"];
 
 type DashboardData = {
   profile: Profile | null;
@@ -99,6 +94,12 @@ export default function DashboardPage() {
 
   const { profile, books, readingGoal, userId } = data;
   const currentlyReading = books.filter((b) => b.shelf_status === "currently_reading");
+  const continueReadingBook = books.find(
+    (b) => b.shelf_status === "currently_reading" && b.books?.id
+  );
+  const continueReadingHref = continueReadingBook?.books?.id
+    ? bookDetailsPath(continueReadingBook.books.id)
+    : "/search";
 
   return (
     <div className={layout.pageStackWide}>
@@ -124,29 +125,18 @@ export default function DashboardPage() {
         </DashboardCard>
 
         <DashboardCard title="Quick actions">
-          <div className="flex flex-wrap justify-center gap-2">
-            {QUICK_SHELVES.map((status) => (
-              <Link
-                key={status}
-                href={`/library/${shelfStatusToSlug(status)}`}
-                className="inline-flex min-h-[44px] items-center rounded-lg transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
-              >
-                <ShelfBadge status={status} />
-              </Link>
-            ))}
-          </div>
-          <div className="mx-auto mt-4 grid max-w-md gap-2 sm:grid-cols-2">
+          <div className="mx-auto grid max-w-md gap-2 sm:grid-cols-2">
             <ButtonLink href="/search" variant="secondary" size="sm">
               Search books
+            </ButtonLink>
+            <ButtonLink href={continueReadingHref} variant="primary" size="sm">
+              Continue reading
             </ButtonLink>
             <ButtonLink href="/library" variant="outline" size="sm">
               Open library
             </ButtonLink>
-            <ButtonLink href="/reading-room" variant="primary" size="sm">
-              Reading Room
-            </ButtonLink>
-            <ButtonLink href="/library/want-to-read" variant="ghost" size="sm">
-              Want to read
+            <ButtonLink href="/search" variant="ghost" size="sm">
+              Add book
             </ButtonLink>
           </div>
         </DashboardCard>
