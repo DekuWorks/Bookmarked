@@ -64,7 +64,7 @@ export function NavbarPublicAuth({ layout = "inline" }: Props) {
   }
 
   return (
-    <div className={cn("flex items-center gap-3", stacked && "w-full flex-col gap-2")}>
+    <div className={cn("flex shrink-0 items-center gap-3", stacked && "w-full flex-col gap-2")}>
       <Link
         href="/login"
         className={cn(linkClass, "text-puce-red hover:text-rust", stacked && "w-full")}

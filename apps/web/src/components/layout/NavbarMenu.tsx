@@ -27,7 +27,11 @@ type Props = {
   links: NavLinkItem[];
   actions?: ReactNode;
   footer?: ReactNode;
+  /** Stacked auth/actions in the mobile drawer; defaults to `footer`. */
+  mobileFooter?: ReactNode;
   useAppNavLinks?: boolean;
+  /** Center nav links between logo and actions (public landing). */
+  centerNav?: boolean;
 };
 
 const linkBase =
@@ -63,7 +67,15 @@ function NavItem({
   );
 }
 
-export function NavbarMenu({ links, actions, footer, useAppNavLinks = false }: Props) {
+export function NavbarMenu({
+  links,
+  actions,
+  footer,
+  mobileFooter,
+  useAppNavLinks = false,
+  centerNav = false,
+}: Props) {
+  const drawerFooter = mobileFooter ?? footer;
   const [open, setOpen] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(56);
   const [mounted, setMounted] = useState(false);
@@ -151,9 +163,9 @@ export function NavbarMenu({ links, actions, footer, useAppNavLinks = false }: P
                     {link.href.includes("/messages/") ? <MessagesUnreadBadge /> : null}
                   </NavItem>
                 ))}
-                {footer ? (
+                {drawerFooter ? (
                   <div className="mt-3 flex flex-col gap-2 border-t border-border pt-4">
-                    {footer}
+                    {drawerFooter}
                   </div>
                 ) : null}
               </nav>
@@ -166,27 +178,44 @@ export function NavbarMenu({ links, actions, footer, useAppNavLinks = false }: P
   return (
     <>
       {/* Desktop navigation */}
-      <div className="hidden items-center gap-1 md:flex lg:gap-2">
-        {links.map((link) => (
-          <NavItem
-            key={link.href}
-            href={link.href}
-            useAppNavLinks={useAppNavLinks}
-            className={cn(
-              linkBase,
-              "text-puce-red hover:bg-primary/10 hover:text-rust",
-              link.className
-            )}
-          >
-            {link.label}
-            {link.href.includes("/messages/") ? <MessagesUnreadBadge /> : null}
-          </NavItem>
-        ))}
-        {footer ? <div className="ml-2 flex items-center gap-2">{footer}</div> : null}
+      <div
+        className={cn(
+          "hidden min-w-0 flex-1 items-center gap-2 md:flex",
+          centerNav ? "justify-between" : "justify-end gap-1 lg:gap-2"
+        )}
+      >
+        <div
+          className={cn(
+            "flex items-center gap-1 lg:gap-2",
+            centerNav && "flex-1 justify-center"
+          )}
+        >
+          {links.map((link) => (
+            <NavItem
+              key={link.href}
+              href={link.href}
+              useAppNavLinks={useAppNavLinks}
+              className={cn(
+                linkBase,
+                "text-puce-red hover:bg-primary/10 hover:text-rust",
+                link.className
+              )}
+            >
+              {link.label}
+              {link.href.includes("/messages/") ? <MessagesUnreadBadge /> : null}
+            </NavItem>
+          ))}
+        </div>
+        {footer || actions ? (
+          <div className="flex shrink-0 items-center gap-2">
+            {actions}
+            {footer}
+          </div>
+        ) : null}
       </div>
 
-      {/* Shared actions (e.g. notification bell) + mobile menu */}
-      <div className="relative z-[110] flex items-center gap-1">
+      {/* Mobile menu toggle (actions render in desktop row above) */}
+      <div className="relative z-[110] flex items-center gap-1 md:hidden">
         {actions ? <div className="flex items-center">{actions}</div> : null}
         <button
           type="button"

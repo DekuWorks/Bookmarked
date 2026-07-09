@@ -19,7 +19,6 @@ import { fetchFollowingFeed, fetchForYouFeed } from "@/lib/services/socialFeed";
 import type { FeedItem } from "@/lib/services/socialFeed";
 import { getPostById, listFeedPosts } from "@/lib/services/posts";
 import type { PostWithAuthor } from "@/types";
-import { cn } from "@/lib/utils/cn";
 
 type FeedView = "posts" | "activity";
 type FeedTab = "for-you" | "following";
@@ -201,14 +200,18 @@ function FeedContent() {
 
   return (
     <div className={layout.pageStack}>
-      <header className={layout.pageHeader}>
-        <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Feed</h1>
-        <p className="mx-auto mt-1 max-w-xl text-pretty text-text-muted">
-          Discover readers, follow posts, and see what people you follow are reading.
-        </p>
-      </header>
+      <div className="-mx-4 feed-header-gradient px-4 pb-6 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+        <header className={layout.pageHeader}>
+          <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Feed</h1>
+          <p className="mx-auto mt-1 max-w-xl text-pretty text-text-muted">
+            Discover readers, follow posts, and see what people you follow are reading.
+          </p>
+        </header>
 
-      <FeedSearchBar value={searchQuery} onChange={setSearchQuery} />
+        <div className="mt-6">
+          <FeedSearchBar value={searchQuery} onChange={setSearchQuery} />
+        </div>
+      </div>
 
       {isSearching ? (
         <FeedSearchResults
@@ -219,46 +222,30 @@ function FeedContent() {
         />
       ) : (
         <>
-          <div
-            className="flex gap-2 rounded-lg border border-border bg-background p-1"
-            role="tablist"
-            aria-label="Feed content"
-          >
+          <div className="pill-tabs" role="tablist" aria-label="Feed content">
             {viewOptions.map((option) => (
               <Link
                 key={option.id}
                 href={viewHref(option.id)}
                 role="tab"
                 aria-selected={feedView === option.id}
-                className={cn(
-                  "flex-1 rounded-md px-4 py-2 text-center text-sm font-semibold transition-colors",
-                  feedView === option.id
-                    ? "bg-primary text-puce-red shadow-sm"
-                    : "text-text-muted hover:text-text"
-                )}
+                data-active={feedView === option.id ? "true" : "false"}
+                className="pill-tab"
               >
                 {option.label}
               </Link>
             ))}
           </div>
 
-          <div
-            className="flex gap-2 rounded-lg border border-border bg-background p-1"
-            role="tablist"
-            aria-label="Feed type"
-          >
+          <div className="pill-tabs" role="tablist" aria-label="Feed type">
             {tabOptions.map((option) => (
               <Link
                 key={option.id}
                 href={tabHref(option.id)}
                 role="tab"
                 aria-selected={tab === option.id}
-                className={cn(
-                  "flex-1 rounded-md px-4 py-2 text-center text-sm font-semibold transition-colors",
-                  tab === option.id
-                    ? "bg-primary text-puce-red shadow-sm"
-                    : "text-text-muted hover:text-text"
-                )}
+                data-active={tab === option.id ? "true" : "false"}
+                className="pill-tab"
               >
                 {option.label}
               </Link>

@@ -39,10 +39,15 @@ export function Navbar({ variant = "public" }: Props) {
   return (
     <header
       id="app-header"
-      className="sticky top-0 z-[100] border-b border-border bg-surface/95 backdrop-blur"
+      className={cn(
+        "sticky top-0 z-[100] border-b backdrop-blur",
+        isApp
+          ? "border-border bg-surface/95"
+          : "border-border/60 bg-gradient-to-b from-primary/15 via-surface/90 to-surface/95"
+      )}
     >
       <nav
-        className={cn(layout.container, "flex items-center justify-between gap-4 py-3")}
+        className={cn(layout.container, "flex items-center gap-4 py-3")}
         aria-label="Main navigation"
       >
         {isApp ? (
@@ -64,13 +69,15 @@ export function Navbar({ variant = "public" }: Props) {
         <NavbarMenu
           links={isApp ? APP_LINKS : PUBLIC_LINKS}
           actions={isApp ? <NotificationBell /> : null}
+          centerNav={!isApp}
           footer={
             isApp ? (
               <LogoutButton />
             ) : (
-              <NavbarPublicAuth layout="menu" />
+              <NavbarPublicAuth />
             )
           }
+          mobileFooter={isApp ? undefined : <NavbarPublicAuth layout="menu" />}
           useAppNavLinks={isApp}
         />
       </nav>
