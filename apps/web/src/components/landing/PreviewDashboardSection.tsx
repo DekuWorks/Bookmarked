@@ -1,6 +1,7 @@
 import { BookCard } from "@/components/books/BookCard";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { ShelfBadge } from "@/components/shelves/ShelfBadge";
+import { openLibraryIsbnCoverUrl } from "@/lib/services/covers";
 import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
 
@@ -31,12 +32,14 @@ export function PreviewDashboardSection() {
               <BookCard
                 title="The Night Circus"
                 author="Erin Morgenstern"
+                coverUrl={openLibraryIsbnCoverUrl("9780307460926")}
                 shelfStatus="currently_reading"
                 progressPercent={42}
               />
               <BookCard
                 title="Piranesi"
                 author="Susanna Clarke"
+                coverUrl={openLibraryIsbnCoverUrl("9781635570827")}
                 shelfStatus="currently_reading"
                 progressPercent={18}
               />
