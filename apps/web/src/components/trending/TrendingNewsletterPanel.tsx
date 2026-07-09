@@ -48,29 +48,29 @@ export function TrendingNewsletterPanel() {
           <h2 id={`trending-${section.id}`} className="text-lg font-semibold text-puce-red">
             {section.title}
           </h2>
-          <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {section.books.map((book) => (
               <li key={book.bookId}>
                 <Link
                   href={bookDetailsPath(book.bookId)}
-                  className="flex gap-3 rounded-xl border border-border bg-surface p-3 transition hover:-translate-y-0.5 hover:shadow-sm"
+                  className="flex h-full flex-col items-center rounded-xl border border-border bg-surface p-4 text-center transition hover:-translate-y-0.5 hover:shadow-sm"
                 >
-                  <BookCover
-                    title={book.title}
-                    author={book.author}
-                    coverUrl={book.coverUrl}
-                    className="w-16 shrink-0"
-                    sizes="64px"
-                  />
-                  <div className="min-w-0 text-left">
-                    <p className="line-clamp-2 font-semibold text-text">{book.title}</p>
-                    {book.author ? (
-                      <p className="line-clamp-1 text-xs text-text-muted">{book.author}</p>
-                    ) : null}
-                    <p className="mt-1 text-xs font-medium text-primary">
-                      {book.metric} {book.metricLabel}
-                    </p>
+                  <div className="mx-auto w-24 sm:w-28">
+                    <BookCover
+                      title={book.title}
+                      author={book.author}
+                      coverUrl={book.coverUrl}
+                      className="w-full"
+                      sizes="(max-width: 640px) 96px, 112px"
+                    />
                   </div>
+                  <p className="mt-3 line-clamp-2 w-full font-semibold text-text">{book.title}</p>
+                  {book.author ? (
+                    <p className="mt-1 line-clamp-1 w-full text-xs text-text-muted">{book.author}</p>
+                  ) : null}
+                  <p className="mt-2 text-xs font-medium text-primary">
+                    {book.metric} {book.metricLabel}
+                  </p>
                 </Link>
               </li>
             ))}
