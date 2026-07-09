@@ -23,7 +23,7 @@ import type { ShelfStatus } from "@/types";
 
 /** Outline buttons on the desktop hover overlay (puce-red background). */
 const overlayOutlineButtonClass =
-  "border-white bg-white/90 text-puce-red hover:bg-white";
+  "border-surface bg-surface/90 text-puce-red hover:bg-surface";
 
 type Props = {
   title: string;

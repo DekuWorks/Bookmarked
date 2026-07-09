@@ -6,11 +6,11 @@
   --color-rust: #C0350F;
   --color-royal-orange: #F3904B;
   --color-orange-yellow: #F7C767;
-  --color-background: #FDFBF9;
-  --color-surface: #FFFFFF;
+  --color-background: #FAF8FC;
+  --color-surface: #FCFAFE;
   --color-text: #1A1A1A;
   --color-text-muted: #6B6B6B;
-  --color-border: #E8E0E4;
+  --color-border: #E5DFEB;
 }
 
 @theme inline {
@@ -88,8 +88,9 @@ body {
 .landing-hero-gradient {
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--color-primary) 28%, transparent) 0%,
-    color-mix(in srgb, var(--color-royal-orange) 12%, transparent) 42%,
+    color-mix(in srgb, var(--color-primary) 22%, var(--color-background)) 0%,
+    color-mix(in srgb, var(--color-primary) 14%, var(--color-background)) 10%,
+    color-mix(in srgb, var(--color-royal-orange) 10%, var(--color-background)) 42%,
     var(--color-background) 100%
   );
 }
@@ -97,7 +98,7 @@ body {
 .feed-header-gradient {
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--color-primary) 18%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary) 16%, var(--color-background)) 0%,
     var(--color-background) 72%
   );
 }

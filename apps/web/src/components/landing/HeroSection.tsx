@@ -6,7 +6,7 @@ const btnBase =
 
 export function HeroSection() {
   return (
-    <section className="landing-hero-gradient relative overflow-hidden px-4 py-14 sm:px-6 sm:py-20 lg:px-8 lg:py-28">
+    <section className="relative overflow-hidden px-4 py-14 sm:px-6 sm:py-20 lg:px-8 lg:py-28">
       <div className="mx-auto max-w-7xl text-center">
         <p className="mb-4 inline-block rounded-full bg-royal-orange/20 px-4 py-1.5 text-sm font-medium text-puce-red">
           Web-first · Mobile coming soon

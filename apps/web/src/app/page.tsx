@@ -10,9 +10,11 @@ import { ContactSection } from "@/components/landing/ContactSection";
 export default function HomePage() {
   return (
     <>
-      <Navbar variant="public" />
-      <main id="main-content" className="overflow-x-hidden text-center">
+      <div className="landing-hero-gradient">
+        <Navbar variant="public" />
         <HeroSection />
+      </div>
+      <main id="main-content" className="overflow-x-hidden text-center">
         <AboutSection />
         <FeaturesSection />
         <HowItWorksSection />
