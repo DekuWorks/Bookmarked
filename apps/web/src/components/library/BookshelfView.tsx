@@ -3,9 +3,12 @@ import type { ShelfGroup } from "@/lib/services/library";
 
 type Props = {
   shelves: ShelfGroup[];
+  /** When set, shelf links route to this reader's public library. */
+  username?: string;
+  showHeaderLink?: boolean;
 };
 
-export function BookshelfView({ shelves }: Props) {
+export function BookshelfView({ shelves, username, showHeaderLink = true }: Props) {
   return (
     <div className="space-y-8">
       {shelves.map((shelf) => (
@@ -16,6 +19,8 @@ export function BookshelfView({ shelves }: Props) {
           status={shelf.status}
           slug={shelf.slug}
           items={shelf.items}
+          username={username}
+          showHeaderLink={showHeaderLink}
         />
       ))}
     </div>

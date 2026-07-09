@@ -77,9 +77,13 @@ export function LibraryViewShell({ initialView, shelves }: Props) {
 export function ShelfViewShell({
   initialView,
   shelves,
+  username,
+  showHeaderLink = true,
 }: {
   initialView: LibraryViewMode;
   shelves: ShelfGroup[];
+  username?: string;
+  showHeaderLink?: boolean;
 }) {
   const [view, setView] = useState<DisplayViewMode>(normalizeView(initialView));
   const [pending, startTransition] = useTransition();
@@ -123,7 +127,11 @@ export function ShelfViewShell({
       </div>
 
       {view === "bookshelf" ? (
-        <BookshelfView shelves={shelf ? [shelf] : []} />
+        <BookshelfView
+          shelves={shelf ? [shelf] : []}
+          username={username}
+          showHeaderLink={showHeaderLink}
+        />
       ) : (
         <LibraryGridView shelves={shelf ? [shelf] : []} />
       )}

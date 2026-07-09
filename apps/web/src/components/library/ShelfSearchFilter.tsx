@@ -15,9 +15,16 @@ import { cn } from "@/lib/utils/cn";
 type Props = {
   shelf: ShelfGroup;
   initialView: LibraryViewMode;
+  username?: string;
+  showHeaderLink?: boolean;
 };
 
-export function ShelfSearchFilter({ shelf, initialView }: Props) {
+export function ShelfSearchFilter({
+  shelf,
+  initialView,
+  username,
+  showHeaderLink = true,
+}: Props) {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<ShelfSortMode>("recently_added");
 
@@ -92,7 +99,12 @@ export function ShelfSearchFilter({ shelf, initialView }: Props) {
           No books match &ldquo;{query}&rdquo; on this shelf.
         </p>
       ) : (
-        <ShelfViewShell initialView={initialView} shelves={[displayShelf]} />
+        <ShelfViewShell
+          initialView={initialView}
+          shelves={[displayShelf]}
+          username={username}
+          showHeaderLink={showHeaderLink}
+        />
       )}
     </div>
   );

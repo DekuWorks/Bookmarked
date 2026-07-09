@@ -111,7 +111,10 @@ function ReaderLibraryContent() {
           This reader has no public shelves to show.
         </p>
       ) : (
-        <BookshelfView shelves={visibleShelves} />
+        <BookshelfView
+          shelves={visibleShelves}
+          username={profile.username ?? undefined}
+        />
       )}
     </div>
   );
