@@ -81,7 +81,7 @@ export function RepostPreview({ post, linkToPost = true }: Props) {
             href={bookDetailsPath(post.book.id)}
             className="h-16 w-11 shrink-0 overflow-hidden rounded shadow-sm"
           >
-            <BookCover title={post.book.title} coverUrl={post.book.cover_url} className="h-full w-full" bookmarked bookmarkBadgeSize="sm" />
+            <BookCover title={post.book.title} coverUrl={post.book.cover_url} className="h-full w-full" bookmarked bookmarkBadgeSize="md" />
           </Link>
           <div className="min-w-0">
             <Link

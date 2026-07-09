@@ -41,7 +41,7 @@ export function FeedCard({ item }: Props) {
       coverUrl={item.coverUrl}
       className="h-full w-full"
       bookmarked={showBookmarkBadge}
-      bookmarkBadgeSize="sm"
+      bookmarkBadgeSize="md"
     />
   );
 
