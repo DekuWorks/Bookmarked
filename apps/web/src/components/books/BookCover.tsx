@@ -14,7 +14,7 @@ type Props = {
   className?: string;
   sizes?: string;
   priority?: boolean;
-  /** When true, shows the lavender "B" shelf ribbon on the cover. */
+  /** When true, shows the brand logo shelf badge on the cover. */
   bookmarked?: boolean;
   bookmarkBadgeSize?: BookmarkBadgeSize;
 };

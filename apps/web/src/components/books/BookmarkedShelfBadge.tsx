@@ -1,8 +1,9 @@
+import Image from "next/image";
 import { cn } from "@/lib/utils/cn";
 
 type Size = "sm" | "md" | "lg";
 
-/** ~1/5 cover width; 5:8 ribbon aspect matches mockup proportions. */
+/** ~1/5 cover width; square emblem matches the brand logo on shelved covers. */
 const sizeClass: Record<Size, string> = {
   sm: "w-[20%] min-w-[0.875rem] max-w-[1.125rem]",
   md: "w-[22%] min-w-[1.125rem] max-w-[1.75rem]",
@@ -15,40 +16,27 @@ type Props = {
 };
 
 /**
- * Lavender bookmark ribbon with a white serif "B" for books on the user's shelf.
- * Classic swallowtail silhouette — rectangular tab with a deep V-notch at the bottom.
+ * Brand logo emblem for books on the user's shelf — lavender circle with the
+ * purple bookmark "B", positioned at the top-right of covers.
  */
 export function BookmarkedShelfBadge({ className, size = "md" }: Props) {
   return (
     <div
       className={cn(
-        "pointer-events-none absolute right-0 top-0 z-20 aspect-[5/8]",
+        "pointer-events-none absolute right-0 top-0 z-20 aspect-square",
         sizeClass[size],
         className
       )}
       aria-hidden
     >
-      <svg
-        viewBox="0 0 20 32"
-        className="h-full w-full drop-shadow-[0_1px_2px_rgba(0,0,0,0.18)]"
-        xmlns="http://www.w3.org/2000/svg"
-        role="img"
-        aria-label="On your shelf"
-      >
-        <path d="M0 0 H20 V24 L10 32 L0 24 Z" className="fill-primary" />
-        <text
-          x="10"
-          y="12.5"
-          textAnchor="middle"
-          dominantBaseline="middle"
-          fill="white"
-          fontFamily="Georgia, 'Times New Roman', 'Palatino Linotype', serif"
-          fontSize="13"
-          fontWeight="700"
-        >
-          B
-        </text>
-      </svg>
+      <Image
+        src="/logo-circle.png"
+        alt=""
+        fill
+        className="object-contain drop-shadow-[0_1px_3px_rgba(0,0,0,0.28)]"
+        sizes="2rem"
+        unoptimized
+      />
     </div>
   );
 }
