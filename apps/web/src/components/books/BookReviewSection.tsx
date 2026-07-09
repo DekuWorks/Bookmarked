@@ -1,12 +1,12 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/Button";
-import { Textarea } from "@/components/ui/Input";
 import { ReviewCard } from "@/components/reviews/ReviewCard";
+import { ReviewForm } from "@/components/reviews/ReviewForm";
 import { useToast } from "@/components/ui/Toast";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { saveReview, type BookActionState } from "@/lib/actions/book";
+import { readNumberLabel } from "@/lib/utils/ratings";
 import type { Review } from "@/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -16,54 +16,31 @@ type ReviewTab = "all" | "regular" | "spoilers";
 
 type Props = {
   bookId: string;
-  ownReview: Review | null;
+  readNumber: number;
+  ownReviews: Review[];
   reviews: Review[];
   onReviewsChange?: () => void;
 };
 
-function StarRating({
-  value,
-  onChange,
-}: {
-  value: number;
-  onChange: (n: number) => void;
-}) {
-  return (
-    <div className="flex gap-1" role="radiogroup" aria-label="Rating">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <button
-          key={star}
-          type="button"
-          role="radio"
-          aria-checked={value === star}
-          aria-label={`${star} star${star === 1 ? "" : "s"}`}
-          onClick={() => onChange(star)}
-          className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center text-2xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange rounded-lg ${star <= value ? "text-royal-orange" : "text-border"}`}
-        >
-          ★
-        </button>
-      ))}
-    </div>
-  );
-}
-
 export function BookReviewSection({
   bookId,
-  ownReview,
+  readNumber,
+  ownReviews,
   reviews,
   onReviewsChange,
 }: Props) {
   const user = useAuthUser();
   const toast = useToast();
   const [state, formAction, pending] = useActionState(saveReview, initial);
-  const [rating, setRating] = useState(0);
   const [reviewTab, setReviewTab] = useState<ReviewTab>("all");
+
+  const reviewForCurrentRead = ownReviews.find((r) => r.read_number === readNumber) ?? null;
+  const canWriteReview = !reviewForCurrentRead;
 
   useEffect(() => {
     if (state.error) toast.error(state.error);
     if (state.success) {
       toast.success(state.success);
-      setRating(0);
       onReviewsChange?.();
     }
   }, [state, toast, onReviewsChange]);
@@ -84,41 +61,45 @@ export function BookReviewSection({
 
   return (
     <section id="book-reviews" className="space-y-6">
-      {!ownReview ? (
-        <div className="rounded-xl border border-border bg-surface p-5">
-          <h2 className="text-lg font-semibold text-puce-red">Write a review</h2>
-          <form action={formAction} className="mt-4 space-y-3">
-            <input type="hidden" name="book_id" value={bookId} />
-            <input type="hidden" name="rating" value={rating || ""} />
-            <div>
-              <p className="mb-1.5 text-sm font-medium text-text">Rating</p>
-              <StarRating value={rating} onChange={setRating} />
-            </div>
-            <Textarea
-              label="Review"
-              name="review_body"
-              placeholder="What did you think?"
+      {canWriteReview ? (
+        <div className="rounded-xl border border-border bg-surface p-5 text-left">
+          <h2 className="text-lg font-semibold text-puce-red">
+            Write a review — {readNumberLabel(readNumber)}
+          </h2>
+          <div className="mt-4">
+            <ReviewForm
+              bookId={bookId}
+              readNumber={readNumber}
+              formAction={formAction}
+              pending={pending}
             />
-            <label className="flex items-center gap-2 text-sm text-text">
-              <input
-                type="checkbox"
-                name="has_spoilers"
-                className="rounded border-border"
-              />
-              Contains spoilers
-            </label>
-            <Button type="submit" variant="primary" loading={pending}>
-              Publish review
-            </Button>
-          </form>
+          </div>
+        </div>
+      ) : null}
+
+      {ownReviews.length > 0 ? (
+        <div className="text-left">
+          <h3 className="mb-3 text-lg font-semibold text-puce-red">Your reviews</h3>
+          <ul className="space-y-3">
+            {ownReviews.map((review) => (
+              <li key={review.id}>
+                <ReviewCard
+                  review={review}
+                  displayName={`Your review — ${readNumberLabel(review.read_number)}`}
+                  isOwnReview
+                  bookId={bookId}
+                  viewerId={user?.id ?? null}
+                  onReviewChange={onReviewsChange}
+                />
+              </li>
+            ))}
+          </ul>
         </div>
       ) : null}
 
       <div>
         <div className="mb-4 flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
-          <h3 className="text-lg font-semibold text-puce-red">
-            {ownReview ? "Reviews" : "Community reviews"}
-          </h3>
+          <h3 className="text-lg font-semibold text-puce-red">Community reviews</h3>
           {reviews.length > 0 ? (
             <div
               className="flex w-full max-w-full rounded-lg border border-border bg-surface p-1 shadow-sm sm:w-auto"
@@ -147,27 +128,20 @@ export function BookReviewSection({
           ) : null}
         </div>
 
-        {visibleReviews.length > 0 ? (
-          <ul className="space-y-3">
+        {visibleReviews.some((r) => r.user_id !== user?.id) ? (
+          <ul className="space-y-3 text-left">
             {visibleReviews.map((review) => {
               const isOwnReview = Boolean(user && review.user_id === user.id);
+              if (isOwnReview) return null;
               return (
                 <li key={review.id}>
                   <ReviewCard
+                    review={review}
                     displayName={
-                      isOwnReview
-                        ? "Your review"
-                        : (review.profiles?.display_name ??
-                          review.profiles?.username ??
-                          "Reader")
+                      review.profiles?.display_name ??
+                      review.profiles?.username ??
+                      "Reader"
                     }
-                    rating={review.rating}
-                    reviewBody={review.review_body}
-                    hasSpoilers={review.has_spoilers}
-                    createdAt={review.created_at}
-                    isOwnReview={isOwnReview}
-                    bookId={bookId}
-                    reviewId={review.id}
                     viewerId={user?.id ?? null}
                     onReviewChange={onReviewsChange}
                   />

@@ -2,10 +2,11 @@
 
 import { useActionState, useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { Textarea } from "@/components/ui/Input";
 import { ContentReactionBar } from "@/components/social/ContentReactionBar";
 import { MentionText } from "@/components/social/MentionText";
 import { ReplyThread } from "@/components/social/ReplyThread";
+import { ReviewForm } from "@/components/reviews/ReviewForm";
+import { StarDisplay } from "@/components/reviews/StarDisplay";
 import { useToast } from "@/components/ui/Toast";
 import {
   deleteReview,
@@ -20,9 +21,9 @@ import {
   likeReview,
   listReviewReplies,
 } from "@/lib/services/reviewEngagement";
-import type { ReactionCounts } from "@/types";
+import { readNumberLabel } from "@/lib/utils/ratings";
+import type { ReactionCounts, Review, ReviewReplyWithAuthor } from "@/types";
 import type { ThreadNode } from "@/lib/utils/threadReplies";
-import type { ReviewReplyWithAuthor } from "@/types";
 import { usePreferredLocale } from "@/lib/hooks/usePreferredLocale";
 import { formatReviewDate } from "@/lib/utils/locale";
 
@@ -30,63 +31,35 @@ type ReviewReplyNode = Omit<ReviewReplyWithAuthor, "children">;
 
 const initial: BookActionState = {};
 
+const ASPECT_LABELS: { key: keyof Review; label: string }[] = [
+  { key: "plot", label: "Plot" },
+  { key: "characters", label: "Characters" },
+  { key: "writing_style", label: "Writing" },
+  { key: "world_building", label: "World" },
+  { key: "pacing", label: "Pacing" },
+  { key: "emotional_impact", label: "Emotion" },
+];
+
 type Props = {
+  review: Review;
   displayName: string;
-  rating?: number | null;
-  reviewBody?: string | null;
-  hasSpoilers?: boolean;
-  createdAt?: string;
   isOwnReview?: boolean;
   bookId?: string;
-  reviewId?: string;
   viewerId?: string | null;
   onReviewChange?: () => void;
 };
 
-function StarRating({
-  value,
-  onChange,
-}: {
-  value: number;
-  onChange: (n: number) => void;
-}) {
-  return (
-    <div className="flex gap-1" role="radiogroup" aria-label="Rating">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <button
-          key={star}
-          type="button"
-          role="radio"
-          aria-checked={value === star}
-          aria-label={`${star} star${star === 1 ? "" : "s"}`}
-          onClick={() => onChange(star)}
-          className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center text-2xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange rounded-lg ${star <= value ? "text-royal-orange" : "text-border"}`}
-        >
-          ★
-        </button>
-      ))}
-    </div>
-  );
-}
-
 export function ReviewCard({
+  review,
   displayName,
-  rating,
-  reviewBody,
-  hasSpoilers,
-  createdAt,
   isOwnReview = false,
   bookId,
-  reviewId,
   viewerId,
   onReviewChange,
 }: Props) {
   const toast = useToast();
   const locale = usePreferredLocale();
   const [isEditing, setIsEditing] = useState(false);
-  const [editRating, setEditRating] = useState(rating ? Number(rating) : 0);
-  const [editBody, setEditBody] = useState(reviewBody ?? "");
-  const [editSpoilers, setEditSpoilers] = useState(Boolean(hasSpoilers));
   const [saveState, saveAction, saving] = useActionState(saveReview, initial);
   const [deleteState, deleteAction, deleting] = useActionState(deleteReview, initial);
   const [reactions, setReactions] = useState<ReactionCounts>({
@@ -99,7 +72,8 @@ export function ReviewCard({
   const [replies, setReplies] = useState<ThreadNode<ReviewReplyNode>[]>([]);
   const [repliesLoading, setRepliesLoading] = useState(false);
 
-  const canEngage = Boolean(viewerId && reviewId);
+  const reviewId = review.id;
+  const canEngage = Boolean(viewerId && reviewId && !isOwnReview);
 
   const loadReactions = useCallback(async () => {
     if (!reviewId) return;
@@ -140,14 +114,6 @@ export function ReviewCard({
   }, [deleteState, toast, onReviewChange]);
 
   useEffect(() => {
-    if (!isEditing) {
-      setEditRating(rating ? Number(rating) : 0);
-      setEditBody(reviewBody ?? "");
-      setEditSpoilers(Boolean(hasSpoilers));
-    }
-  }, [rating, reviewBody, hasSpoilers, isEditing]);
-
-  useEffect(() => {
     if (canEngage) void loadReactions();
   }, [canEngage, loadReactions]);
 
@@ -174,18 +140,23 @@ export function ReviewCard({
   }
 
   const canManage = isOwnReview && bookId && reviewId;
+  const aspectRatings = ASPECT_LABELS.filter(
+    ({ key }) => review[key] != null && Number(review[key]) > 0
+  );
 
   return (
     <article className="rounded-xl border border-border bg-surface p-4">
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <span className="font-semibold text-puce-red">{displayName}</span>
-        {!isEditing && rating != null ? (
-          <span className="text-sm text-royal-orange">
-            {"★".repeat(Math.round(rating))}
-            {"☆".repeat(5 - Math.round(rating))}
+        {!isEditing && review.rating != null ? (
+          <StarDisplay rating={Number(review.rating)} />
+        ) : null}
+        {!isEditing ? (
+          <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs text-puce-red">
+            {readNumberLabel(review.read_number)}
           </span>
         ) : null}
-        {!isEditing && hasSpoilers ? (
+        {!isEditing && review.has_spoilers ? (
           <span className="rounded-full bg-rust/15 px-2 py-0.5 text-xs text-rust">
             Spoilers
           </span>
@@ -203,7 +174,6 @@ export function ReviewCard({
               onClick={() => {
                 const fd = new FormData();
                 fd.set("review_id", reviewId);
-                fd.set("book_id", bookId);
                 deleteAction(fd);
               }}
             >
@@ -214,85 +184,78 @@ export function ReviewCard({
       </div>
 
       {isEditing && canManage ? (
-        <form action={saveAction} className="space-y-3 text-left">
-          <input type="hidden" name="book_id" value={bookId} />
-          <input type="hidden" name="rating" value={editRating || ""} />
-          <div>
-            <p className="mb-1.5 text-sm font-medium text-text">Rating</p>
-            <StarRating value={editRating} onChange={setEditRating} />
-          </div>
-          <Textarea
-            label="Review"
-            name="review_body"
-            value={editBody}
-            onChange={(e) => setEditBody(e.target.value)}
-            placeholder="What did you think?"
-            className="mb-0"
-          />
-          <label className="flex items-center gap-2 text-sm text-text">
-            <input
-              type="checkbox"
-              name="has_spoilers"
-              checked={editSpoilers}
-              onChange={(e) => setEditSpoilers(e.target.checked)}
-              className="rounded border-border"
-            />
-            Contains spoilers
-          </label>
-          <div className="flex flex-wrap gap-2">
-            <Button type="submit" variant="primary" size="sm" loading={saving}>
-              Save
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsEditing(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              loading={deleting}
-              onClick={() => {
-                const fd = new FormData();
-                fd.set("review_id", reviewId);
-                fd.set("book_id", bookId);
-                deleteAction(fd);
-              }}
-            >
-              Delete
-            </Button>
-          </div>
-        </form>
-      ) : reviewBody ? (
-        hasSpoilers ? (
-          <div className="group relative">
-            <p
-              className="cursor-default select-none text-sm leading-relaxed text-text blur-md transition-[filter] duration-200 group-hover:blur-none group-focus-within:blur-none"
-              tabIndex={0}
-            >
-              <MentionText body={reviewBody} />
-            </p>
-            <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-xs font-medium text-text-muted opacity-100 transition-opacity group-hover:opacity-0 group-focus-within:opacity-0">
-              Hover to reveal spoilers
-            </p>
-          </div>
-        ) : (
-          <p className="text-sm leading-relaxed text-text">
-            <MentionText body={reviewBody} />
-          </p>
-        )
+        <ReviewForm
+          bookId={bookId}
+          readNumber={review.read_number}
+          reviewId={reviewId}
+          initial={review}
+          formAction={saveAction}
+          pending={saving}
+          submitLabel="Save review"
+        />
       ) : (
-        <p className="text-sm text-text-muted italic">Rating only — no written review.</p>
+        <>
+          {review.edition ? (
+            <p className="mb-2 text-xs text-text-muted">Edition: {review.edition}</p>
+          ) : null}
+
+          {review.feelings?.length ? (
+            <div className="mb-2 flex flex-wrap gap-1">
+              {review.feelings.map((feeling) => (
+                <span
+                  key={feeling}
+                  className="rounded-full bg-orange-yellow/25 px-2 py-0.5 text-xs text-puce-red"
+                >
+                  {feeling}
+                </span>
+              ))}
+            </div>
+          ) : null}
+
+          {aspectRatings.length > 0 ? (
+            <dl className="mb-3 grid gap-2 text-xs sm:grid-cols-2">
+              {aspectRatings.map(({ key, label }) => (
+                <div
+                  key={key}
+                  className="flex items-center justify-between gap-2 rounded-lg bg-background px-2 py-1"
+                >
+                  <dt className="text-text-muted">{label}</dt>
+                  <dd>
+                    <StarDisplay rating={Number(review[key])} />
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          ) : null}
+
+          {review.review_body ? (
+            review.has_spoilers ? (
+              <div className="group relative">
+                <p
+                  className="cursor-default select-none text-sm leading-relaxed text-text blur-md transition-[filter] duration-200 group-hover:blur-none group-focus-within:blur-none"
+                  tabIndex={0}
+                >
+                  <MentionText body={review.review_body} />
+                </p>
+                <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-xs font-medium text-text-muted opacity-100 transition-opacity group-hover:opacity-0 group-focus-within:opacity-0">
+                  Hover to reveal spoilers
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm leading-relaxed text-text">
+                <MentionText body={review.review_body} />
+              </p>
+            )
+          ) : (
+            <p className="text-sm text-text-muted italic">Rating only — no written review.</p>
+          )}
+        </>
       )}
 
-      {createdAt && !isEditing ? (
+      {review.created_at && !isEditing ? (
         <p className="mt-2 text-xs text-text-muted">
-          <time suppressHydrationWarning dateTime={createdAt}>
-            {formatReviewDate(createdAt, locale)}
+          <time suppressHydrationWarning dateTime={review.created_at}>
+            {formatReviewDate(review.created_at, locale)}
           </time>
         </p>
       ) : null}
