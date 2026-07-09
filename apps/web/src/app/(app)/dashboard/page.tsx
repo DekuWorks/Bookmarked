@@ -77,8 +77,12 @@ export default function DashboardPage() {
   useUserBooksRealtime(user?.id, loadDashboard);
   useStaleCatalogRefresh(data?.books, loadDashboard);
 
-  if (user === undefined || user === null || (data === null && !loadError)) {
+  if (user === undefined || (user && data === null && !loadError)) {
     return <LoadingState message="Loading dashboard…" />;
+  }
+
+  if (!user) {
+    return null;
   }
 
   if (loadError) {

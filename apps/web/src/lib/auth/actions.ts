@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/client";
+import { createClient, resetBrowserClient } from "@/lib/supabase/client";
 import {
   applyRememberMePreference,
   parseRememberMeFromForm,
@@ -28,12 +28,23 @@ export async function login(
   }
 
   applyRememberMePreference(parseRememberMeFromForm(formData));
+  resetBrowserClient();
 
   const supabase = createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     return { error: error.message };
+  }
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    return {
+      error: "Sign-in succeeded but your session could not be saved. Please try again.",
+    };
   }
 
   const redirectTo = String(formData.get("redirect") ?? "").trim();
@@ -57,6 +68,7 @@ export async function signup(
   }
 
   applyRememberMePreference(parseRememberMeFromForm(formData));
+  resetBrowserClient();
 
   const supabase = createClient();
   const { data, error } = await supabase.auth.signUp({ email, password });

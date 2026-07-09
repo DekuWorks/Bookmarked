@@ -5,6 +5,11 @@ import { assertSupabaseEnv } from "@/lib/env";
 
 let browserClient: SupabaseClient | undefined;
 
+/** Drop cached client so the next createClient() picks up current auth storage. */
+export function resetBrowserClient(): void {
+  browserClient = undefined;
+}
+
 export function createClient() {
   if (browserClient) return browserClient;
 

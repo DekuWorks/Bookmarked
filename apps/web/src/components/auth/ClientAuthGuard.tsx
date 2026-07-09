@@ -12,6 +12,8 @@ type Props = {
   children: React.ReactNode;
 };
 
+const INITIAL_SESSION_FALLBACK_MS = 2500;
+
 export function ClientAuthGuard({ children }: Props) {
   const pathname = usePathname();
   const pathnameRef = useRef(pathname);
@@ -29,6 +31,7 @@ export function ClientAuthGuard({ children }: Props) {
 
     const supabase = createClient();
     let cancelled = false;
+    let initialSessionHandled = false;
 
     async function verifyAccess(session: Session | null, redirectIfMissing: boolean) {
       if (cancelled) return;
@@ -71,18 +74,24 @@ export function ClientAuthGuard({ children }: Props) {
       }
     }
 
-    // Use getSession as the sole source for the initial redirect decision.
-    // INITIAL_SESSION can fire with null before persisted auth is read after
-    // login, which races with the post-login dashboard navigation and crashes
-    // the tab on static export (Chrome: "This page couldn't load").
-    void supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!cancelled) void verifyAccess(session, true);
-    });
+    function handleInitialSession(session: Session | null) {
+      if (cancelled || initialSessionHandled) return;
+      initialSessionHandled = true;
+      void verifyAccess(session, true);
+    }
 
+    // Wait for INITIAL_SESSION — Supabase fires this after persisted auth is read.
+    // Calling getSession() on mount races with hydration and can redirect to login
+    // before the post-login session is available (Chrome: "This page couldn't load").
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (cancelled) return;
+
+      if (event === "INITIAL_SESSION") {
+        handleInitialSession(session);
+        return;
+      }
 
       if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
         void verifyAccess(session, false);
@@ -96,8 +105,17 @@ export function ClientAuthGuard({ children }: Props) {
       }
     });
 
+    const fallbackTimer = window.setTimeout(() => {
+      if (cancelled || initialSessionHandled) return;
+
+      void supabase.auth.getSession().then(({ data: { session } }) => {
+        handleInitialSession(session);
+      });
+    }, INITIAL_SESSION_FALLBACK_MS);
+
     return () => {
       cancelled = true;
+      window.clearTimeout(fallbackTimer);
       subscription.unsubscribe();
     };
   }, []);
