@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { BookshelfView } from "@/components/library/BookshelfView";
+import { ReaderLibraryOrganizePanel } from "@/components/library/ReaderLibraryOrganizePanel";
 import { FollowStats } from "@/components/social/FollowStats";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -111,9 +111,10 @@ function ReaderLibraryContent() {
           This reader has no public shelves to show.
         </p>
       ) : (
-        <BookshelfView
+        <ReaderLibraryOrganizePanel
           shelves={visibleShelves}
           username={profile.username ?? undefined}
+          sortKey={`reader:${username}`}
         />
       )}
     </div>

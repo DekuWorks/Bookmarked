@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { getProfile } from "@/lib/services/profile";
 import { getUserLibraryBooks, groupBooksByShelf } from "@/lib/services/library";
-import { LibraryViewShell } from "@/components/library/LibraryViewShell";
+import { LibraryOrganizePanel } from "@/components/library/LibraryOrganizePanel";
 import { CustomShelfCollectionsPanel } from "@/components/library/CustomShelfCollectionsPanel";
 import { SuggestedShelvesPanel } from "@/components/shelves/SuggestedShelvesPanel";
 import { ButtonLink } from "@/components/ui/ButtonLink";
@@ -108,7 +108,9 @@ export default function LibraryPage() {
           </ButtonLink>
         </div>
       ) : (
-        <LibraryViewShell initialView={preferredView} shelves={shelves} />
+        <Suspense fallback={<LoadingState message="Loading view…" />}>
+          <LibraryOrganizePanel initialView={preferredView} shelves={shelves} />
+        </Suspense>
       )}
 
       <SuggestedShelvesPanel userId={userId} className="pt-2" />

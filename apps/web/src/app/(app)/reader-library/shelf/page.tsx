@@ -128,6 +128,7 @@ function ReaderShelfContent() {
         initialView="bookshelf"
         username={profile.username ?? undefined}
         showHeaderLink={false}
+        sortKey={`reader:${username}:${shelfSlug}`}
       />
     </div>
   );

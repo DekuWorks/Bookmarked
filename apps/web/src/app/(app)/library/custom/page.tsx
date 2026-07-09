@@ -1,10 +1,11 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BookSpine } from "@/components/library/BookSpine";
 import { EmptyShelfMessage } from "@/components/library/EmptyShelfMessage";
+import { ShelfSortSelect } from "@/components/library/ShelfSortSelect";
 import { DeleteCustomShelfModal } from "@/components/shelves/DeleteCustomShelfModal";
 import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
@@ -12,6 +13,7 @@ import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useToast } from "@/components/ui/Toast";
 import { layout } from "@/lib/constants/layout";
+import { useShelfSort } from "@/lib/hooks/useShelfSort";
 import { bookDetailsPath } from "@/lib/routes/book";
 import { customShelfPath } from "@/lib/routes/customShelf";
 import {
@@ -19,6 +21,7 @@ import {
   removeBookFromCustomShelf,
   type CustomShelfGroup,
 } from "@/lib/services/customShelves";
+import { sortShelfItems } from "@/lib/utils/shelfSort";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 
 function CustomShelfContent() {
@@ -31,6 +34,12 @@ function CustomShelfContent() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const { sort, setSort } = useShelfSort(`custom:${slug}`);
+
+  const displayItems = useMemo(
+    () => (shelf ? sortShelfItems(shelf.items, sort) : []),
+    [shelf, sort]
+  );
 
   const loadShelf = useCallback(async () => {
     if (!user || !slug) return;
@@ -150,13 +159,18 @@ function CustomShelfContent() {
         }}
       />
 
+      <div className="mx-auto w-full max-w-4xl rounded-xl border border-border bg-surface p-4 shadow-sm">
+        <p className="mb-3 text-center text-sm font-medium text-puce-red">Organize shelf</p>
+        <ShelfSortSelect value={sort} onChange={setSort} />
+      </div>
+
       <section className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
         <div className="bookshelf-back px-4 pb-0 pt-5">
           {shelf.items.length === 0 ? (
             <EmptyShelfMessage className="pb-6" />
           ) : (
             <div className="bookshelf-row scrollbar-thin">
-              {shelf.items.map((item) => {
+              {displayItems.map((item) => {
                 const book = item.books;
                 return (
                   <div key={item.id} className="relative shrink-0">

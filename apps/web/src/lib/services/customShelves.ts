@@ -12,6 +12,7 @@ export type CustomShelfBookItem = {
     author: string | null;
     cover_url: string | null;
     page_count: number | null;
+    published_date: string | null;
   } | null;
 };
 
@@ -30,7 +31,7 @@ const RESERVED_SLUGS = new Set([
 ]);
 
 const BOOK_SELECT =
-  "id, shelf_id, book_id, created_at, books(id, title, author, cover_url, page_count)";
+  "id, shelf_id, book_id, created_at, books(id, title, author, cover_url, page_count, published_date)";
 
 export function slugifyShelfName(name: string): string {
   const base = name
