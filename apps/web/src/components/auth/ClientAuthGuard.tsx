@@ -71,10 +71,12 @@ export function ClientAuthGuard({ children }: Props) {
       }
     }
 
+    // Use getSession as the sole source for the initial redirect decision.
+    // INITIAL_SESSION can fire with null before persisted auth is read after
+    // login, which races with the post-login dashboard navigation and crashes
+    // the tab on static export (Chrome: "This page couldn't load").
     void supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        void verifyAccess(session, false);
-      }
+      if (!cancelled) void verifyAccess(session, true);
     });
 
     const {
@@ -82,8 +84,8 @@ export function ClientAuthGuard({ children }: Props) {
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (cancelled) return;
 
-      if (event === "INITIAL_SESSION" || event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-        void verifyAccess(session, event === "INITIAL_SESSION");
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+        void verifyAccess(session, false);
         return;
       }
 

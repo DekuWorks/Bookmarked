@@ -5,6 +5,11 @@ import {
 } from "@/lib/auth/rememberMe";
 import { parsePreferredLanguage } from "@/lib/constants/languages";
 
+function normalizeAppPath(path: string): string {
+  if (!path.startsWith("/")) return path;
+  return path.endsWith("/") ? path : `${path}/`;
+}
+
 export type AuthActionState = {
   error?: string;
   success?: string;
@@ -33,7 +38,10 @@ export async function login(
 
   const redirectTo = String(formData.get("redirect") ?? "").trim();
   return {
-    redirect: redirectTo && redirectTo.startsWith("/") ? redirectTo : "/dashboard/",
+    redirect:
+      redirectTo && redirectTo.startsWith("/")
+        ? normalizeAppPath(redirectTo)
+        : "/dashboard/",
   };
 }
 
@@ -114,6 +122,6 @@ export async function saveProfile(
 
   const redirectTo = String(formData.get("redirect") ?? "").trim();
   return {
-    redirect: redirectTo.startsWith("/") ? redirectTo : "/dashboard/",
+    redirect: redirectTo.startsWith("/") ? normalizeAppPath(redirectTo) : "/dashboard/",
   };
 }
