@@ -58,29 +58,31 @@ export function BookSpine({
     >
       <div
         className={cn(
-          "book-spine group relative h-52 overflow-hidden rounded-t-[3px] transition-transform duration-200 hover:-translate-y-1.5",
+          "book-spine group relative h-52 rounded-t-[3px] transition-transform duration-200 hover:-translate-y-1.5",
           "book-spine-shadow",
           widthClass
         )}
       >
-        {coverUrl ? (
-          <div className="book-spine-cover absolute inset-0" aria-hidden>
-            <img
-              src={coverUrl}
-              alt=""
-              className="book-spine-cover-image"
-              loading="lazy"
-              decoding="async"
-            />
-          </div>
-        ) : (
-          <div className={cn("absolute inset-0", spineColor)} aria-hidden />
-        )}
+        <div className="absolute inset-0 overflow-hidden rounded-t-[3px]">
+          {coverUrl ? (
+            <div className="book-spine-cover absolute inset-0" aria-hidden>
+              <img
+                src={coverUrl}
+                alt=""
+                className="book-spine-cover-image"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+          ) : (
+            <div className={cn("absolute inset-0", spineColor)} aria-hidden />
+          )}
 
-        <div className="absolute inset-0 flex items-center justify-center px-0.5 py-3">
-          <span className="book-spine-title" aria-label={title}>
-            {title}
-          </span>
+          <div className="absolute inset-0 flex items-center justify-center px-0.5 py-3">
+            <span className="book-spine-title" aria-label={title}>
+              {title}
+            </span>
+          </div>
         </div>
         {bookmarked ? <BookmarkedShelfBadge size="sm" /> : null}
       </div>

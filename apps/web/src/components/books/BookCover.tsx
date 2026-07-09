@@ -60,26 +60,23 @@ export function BookCover({
   const showImage = coverUrl && !imageError;
 
   return (
-    <div
-      className={cn(
-        "relative aspect-[2/3] w-full overflow-hidden rounded-xl border border-border bg-background",
-        className
-      )}
-    >
-      {showImage ? (
-        <Image
-          src={coverUrl}
-          alt={`Cover of ${title}`}
-          fill
-          className="object-cover"
-          sizes={sizes}
-          unoptimized
-          priority={priority}
-          onError={() => setImageError(true)}
-        />
-      ) : (
-        <CoverPlaceholder title={title} author={author} />
-      )}
+    <div className={cn("relative aspect-[2/3] w-full", className)}>
+      <div className="absolute inset-0 overflow-hidden rounded-xl border border-border bg-background">
+        {showImage ? (
+          <Image
+            src={coverUrl}
+            alt={`Cover of ${title}`}
+            fill
+            className="object-cover"
+            sizes={sizes}
+            unoptimized
+            priority={priority}
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <CoverPlaceholder title={title} author={author} />
+        )}
+      </div>
       {bookmarked ? <BookmarkedShelfBadge size={bookmarkBadgeSize} /> : null}
     </div>
   );
