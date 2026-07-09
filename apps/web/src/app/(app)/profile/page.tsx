@@ -12,6 +12,11 @@ import { LanguagePreferencePanel } from "@/components/profile/LanguagePreference
 import { NotificationPreferencesPanel } from "@/components/notifications/NotificationPreferencesPanel";
 import { LibraryImportPanel } from "@/components/profile/LibraryImportPanel";
 import { getFollowCounts, type FollowCounts } from "@/lib/services/follows";
+import {
+  computeReadingStreak,
+  fetchReadingStreakTimestamps,
+} from "@/lib/services/readingInsights";
+import { ReadingStreakCard } from "@/components/profile/ReadingStreakCard";
 import { readerProfilePath } from "@/lib/routes/reader";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import type { Profile } from "@/types";
@@ -22,6 +27,7 @@ type ProfileData = {
   profile: Profile | null;
   email: string;
   followCounts: FollowCounts;
+  readingStreak: ReturnType<typeof computeReadingStreak>;
 };
 
 export default function ProfilePage() {
@@ -31,15 +37,17 @@ export default function ProfilePage() {
   const loadProfile = useCallback(async () => {
     if (!user) return;
 
-    const [profile, followCounts] = await Promise.all([
+    const [profile, followCounts, streakTimestamps] = await Promise.all([
       getProfile(user.id),
       getFollowCounts(user.id),
+      fetchReadingStreakTimestamps(user.id),
     ]);
 
     setData({
       profile,
       email: user.email ?? "",
       followCounts,
+      readingStreak: computeReadingStreak(streakTimestamps),
     });
   }, [user]);
 
@@ -56,7 +64,7 @@ export default function ProfilePage() {
 
   if (!user || !data) return null;
 
-  const { profile, email, followCounts } = data;
+  const { profile, email, followCounts, readingStreak } = data;
 
   return (
     <div className={layout.pageStack}>
@@ -96,6 +104,7 @@ export default function ProfilePage() {
             />
           </div>
         </div>
+        <ReadingStreakCard streak={readingStreak} className="mt-6" />
         {profile?.bio ? (
           <p className="mt-4 leading-relaxed text-text">{profile.bio}</p>
         ) : null}

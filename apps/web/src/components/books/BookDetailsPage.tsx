@@ -13,6 +13,9 @@ import { ReadingJournalSection } from "@/components/books/ReadingJournalSection"
 import { ReadingNotesSection } from "@/components/books/ReadingNotesSection";
 import { ReadingDatesEditor } from "@/components/books/ReadingDatesEditor";
 import { BookReviewSection } from "@/components/books/BookReviewSection";
+import { BookTrendBadge } from "@/components/books/BookTrendBadge";
+import { CommunityRatingDisplay } from "@/components/books/CommunityRatingDisplay";
+import { AddAnotherReadButton } from "@/components/books/AddAnotherReadButton";
 import { ShelfBadge } from "@/components/shelves/ShelfBadge";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { Button } from "@/components/ui/Button";
@@ -56,10 +59,7 @@ function BookDetailsContent() {
 
   useEffect(() => {
     if (focusSection !== "reviews" || !data) return;
-    const el = document.getElementById("book-reviews");
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    document.getElementById("book-reviews")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [focusSection, data]);
 
   useEffect(() => {
@@ -103,8 +103,17 @@ function BookDetailsContent() {
     );
   }
 
-  const { book, userBook, reviews, ownReview, readingSessions } = data;
+  const {
+    book,
+    userBook,
+    reviews,
+    ownReviews,
+    communityRating,
+    badges,
+    readingSessions,
+  } = data;
   const currentShelf = (userBook?.shelf_status as ShelfStatus | undefined) ?? null;
+  const readCount = Number(userBook?.read_count) || 1;
   const canRefreshFromOpenLibrary =
     book.external_source === "open_library" && Boolean(book.external_id);
 
@@ -145,6 +154,16 @@ function BookDetailsContent() {
           <h1 className="text-2xl font-bold text-puce-red sm:text-3xl">{book.title}</h1>
           {currentShelf ? <ShelfBadge status={currentShelf} /> : null}
         </div>
+        {badges.length > 0 ? (
+          <div className="mt-3 flex justify-center">
+            <BookTrendBadge badges={badges} size="md" />
+          </div>
+        ) : null}
+        {communityRating ? (
+          <div className="mt-3">
+            <CommunityRatingDisplay rating={communityRating} />
+          </div>
+        ) : null}
         {book.author ? (
           <p className="mt-2 text-lg text-text-muted">
             <Link
@@ -174,60 +193,73 @@ function BookDetailsContent() {
         ) : null}
 
         <dl className="mx-auto mt-6 grid max-w-md gap-3 text-sm sm:grid-cols-2">
-            {book.published_date ? (
-              <div>
-                <dt className="font-medium text-text-muted">Published</dt>
-                <dd className="text-text">{book.published_date}</dd>
-              </div>
-            ) : null}
-            {book.page_count ? (
-              <div>
-                <dt className="font-medium text-text-muted">Pages</dt>
-                <dd className="text-text">{book.page_count}</dd>
-              </div>
-            ) : null}
-            {book.isbn ? (
-              <div>
-                <dt className="font-medium text-text-muted">ISBN</dt>
-                <dd className="break-all text-text">{book.isbn}</dd>
-              </div>
-            ) : null}
-            {book.publisher ? (
-              <div>
-                <dt className="font-medium text-text-muted">Publisher</dt>
-                <dd className="text-text">{book.publisher}</dd>
-              </div>
-            ) : null}
-          </dl>
-
-          {book.subjects && book.subjects.length > 0 ? (
-            <div className="mt-4 flex flex-wrap justify-center gap-2">
-              {book.subjects.slice(0, 8).map((subject) => (
-                <span
-                  key={subject}
-                  className="rounded-full bg-primary/20 px-3 py-1 text-xs font-medium text-puce-red"
-                >
-                  {subject}
-                </span>
-              ))}
+          {book.published_date ? (
+            <div>
+              <dt className="font-medium text-text-muted">Published</dt>
+              <dd className="text-text">{book.published_date}</dd>
             </div>
           ) : null}
+          {book.page_count ? (
+            <div>
+              <dt className="font-medium text-text-muted">Pages</dt>
+              <dd className="text-text">{book.page_count}</dd>
+            </div>
+          ) : null}
+          {book.isbn ? (
+            <div>
+              <dt className="font-medium text-text-muted">ISBN</dt>
+              <dd className="break-all text-text">{book.isbn}</dd>
+            </div>
+          ) : null}
+          {book.publisher ? (
+            <div>
+              <dt className="font-medium text-text-muted">Publisher</dt>
+              <dd className="text-text">{book.publisher}</dd>
+            </div>
+          ) : null}
+        </dl>
 
-          <section className="mt-8" aria-labelledby="book-description-heading">
-            <h2 id="book-description-heading" className="text-lg font-semibold text-puce-red">
-              About this book
-            </h2>
-            {book.description ? (
-              <p className="mx-auto mt-3 max-w-prose text-pretty leading-relaxed text-text">
-                {book.description}
-              </p>
-            ) : (
-              <p className="mt-3 text-text-muted">
-                No description available yet. Metadata is filled in from Open Library when
-                possible.
-              </p>
-            )}
-          </section>
+        {book.subjects && book.subjects.length > 0 ? (
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            {book.subjects.slice(0, 8).map((subject) => (
+              <span
+                key={subject}
+                className="rounded-full bg-primary/20 px-3 py-1 text-xs font-medium text-puce-red"
+              >
+                {subject}
+              </span>
+            ))}
+          </div>
+        ) : null}
+
+        {userBook?.completion_tags?.length ? (
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            {userBook.completion_tags.map((tag) => (
+              <span
+                key={tag}
+                className="rounded-full bg-royal-orange/15 px-3 py-1 text-xs font-medium text-puce-red"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        ) : null}
+
+        <section className="mt-8" aria-labelledby="book-description-heading">
+          <h2 id="book-description-heading" className="text-lg font-semibold text-puce-red">
+            About this book
+          </h2>
+          {book.description ? (
+            <p className="mx-auto mt-3 max-w-prose text-pretty leading-relaxed text-text">
+              {book.description}
+            </p>
+          ) : (
+            <p className="mt-3 text-text-muted">
+              No description available yet. Metadata is filled in from Open Library when
+              possible.
+            </p>
+          )}
+        </section>
       </div>
 
       <div className="mx-auto grid max-w-4xl gap-6 text-left lg:grid-cols-2">
@@ -264,9 +296,15 @@ function BookDetailsContent() {
       ) : null}
 
       <div id="book-reviews">
+        {userBook?.shelf_status === "read" ? (
+          <div className="mb-6 flex justify-center">
+            <AddAnotherReadButton bookId={book.id} onStarted={loadBookDetails} />
+          </div>
+        ) : null}
         <BookReviewSection
           bookId={book.id}
-          ownReview={ownReview}
+          readNumber={readCount}
+          ownReviews={ownReviews}
           reviews={reviews}
           onReviewsChange={loadBookDetails}
         />

@@ -19,12 +19,18 @@ import { ProfileShelfPreview } from "@/components/profile/ProfileShelfPreview";
 import { ProfileNotesSection } from "@/components/profile/ProfileNotesSection";
 import { ProfilePostsSection } from "@/components/social/ProfilePostsSection";
 import { FollowStats } from "@/components/social/FollowStats";
+import {
+  computeReadingStreak,
+  fetchReadingStreakTimestamps,
+} from "@/lib/services/readingInsights";
+import { ReadingStreakCard } from "@/components/profile/ReadingStreakCard";
 
 type ReaderData = {
   profile: Profile;
   counts: FollowCounts;
   following: boolean;
   activity: FeedItem[];
+  readingStreak: ReturnType<typeof computeReadingStreak>;
 };
 
 function ReaderProfileContent() {
@@ -48,13 +54,20 @@ function ReaderProfileContent() {
         return;
       }
 
-      const [counts, isFollowingUser, activity] = await Promise.all([
+      const [counts, isFollowingUser, activity, streakTimestamps] = await Promise.all([
         getFollowCounts(profile.id),
         user.id === profile.id ? Promise.resolve(false) : isFollowing(user.id, profile.id),
         fetchReaderActivity(profile.id, user.id),
+        fetchReadingStreakTimestamps(profile.id),
       ]);
 
-      setData({ profile, counts, following: isFollowingUser, activity });
+      setData({
+        profile,
+        counts,
+        following: isFollowingUser,
+        activity,
+        readingStreak: computeReadingStreak(streakTimestamps),
+      });
       setFollowing(isFollowingUser);
     })();
   }, [username, user]);
@@ -85,7 +98,7 @@ function ReaderProfileContent() {
     );
   }
 
-  const { profile, counts, activity } = data;
+  const { profile, counts, activity, readingStreak } = data;
   const isSelf = user.id === profile.id;
   const displayName = profile.display_name?.trim() || profile.username || "Reader";
 
@@ -141,6 +154,7 @@ function ReaderProfileContent() {
           className="mt-6"
           size="md"
         />
+        <ReadingStreakCard streak={readingStreak} className="mt-6" />
       </header>
 
       <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">

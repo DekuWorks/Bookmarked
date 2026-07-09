@@ -8,6 +8,7 @@ import { backfillReadingSessionsForUser } from "@/lib/services/readingSessionBac
 import { computeReadingGoal } from "@/lib/services/readingGoal";
 import { ReadingGoalPanel } from "@/components/reading-goal/ReadingGoalPanel";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
+import { TrendingNewsletterPanel } from "@/components/trending/TrendingNewsletterPanel";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { CurrentlyReadingRow } from "@/components/reading-room/CurrentlyReadingRow";
@@ -143,6 +144,10 @@ export default function DashboardPage() {
       </div>
 
       <ActivityFeed userId={userId} />
+
+      <DashboardCard title="Community picks">
+        <TrendingNewsletterPanel />
+      </DashboardCard>
     </div>
   );
 }
