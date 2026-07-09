@@ -39,6 +39,7 @@ export function BookMiniGrid({ items, emptyMessage, emptyAction }: Props) {
               coverUrl={book?.cover_url}
               className="w-full"
               sizes="120px"
+              bookmarked
             />
             <p className="mt-2 line-clamp-2 text-xs font-medium text-text">
               {book?.title ?? "Untitled"}

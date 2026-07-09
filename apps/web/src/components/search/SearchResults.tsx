@@ -10,7 +10,9 @@ import {
   type OpenLibrarySearchResult,
 } from "@/lib/services/openLibrary";
 import { resolveDisplayCoverUrl } from "@/lib/services/covers";
+import { getShelvedOpenLibraryWorkIds } from "@/lib/services/library";
 import { SEARCH_PAGE_SIZE } from "@/lib/constants/searchFilters";
+import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { usePreferredOpenLibraryLanguage } from "@/lib/hooks/usePreferredOpenLibraryLanguage";
 import { isIsbnQuery } from "@/lib/utils/isbn";
 import { resolveSearchLanguage } from "@/lib/utils/searchLanguage";
@@ -29,6 +31,7 @@ function parseOptionalInt(value: string | null): number | undefined {
 
 export function SearchResults({ query }: Props) {
   const searchParams = useSearchParams();
+  const user = useAuthUser();
   const preferredLanguage = usePreferredOpenLibraryLanguage();
   const urlLang = searchParams.get("lang");
   const language = resolveSearchLanguage(urlLang, preferredLanguage);
@@ -48,6 +51,27 @@ export function SearchResults({ query }: Props) {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [shelvedWorkIds, setShelvedWorkIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!user) {
+      setShelvedWorkIds(new Set());
+      return;
+    }
+
+    let cancelled = false;
+    void getShelvedOpenLibraryWorkIds(user.id)
+      .then((ids) => {
+        if (!cancelled) setShelvedWorkIds(ids);
+      })
+      .catch((error) => {
+        console.error("[search] failed to load shelved work ids:", error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   const runSearch = useCallback(
     async (offset: number, append: boolean) => {
@@ -138,6 +162,10 @@ export function SearchResults({ query }: Props) {
                   doc.first_publish_year ? String(doc.first_publish_year) : ""
                 }
                 first_sentence={doc.first_sentence?.[0] ?? ""}
+                bookmarked={shelvedWorkIds.has(workId)}
+                onBookmarked={() => {
+                  setShelvedWorkIds((prev) => new Set(prev).add(workId));
+                }}
               />
             </li>
           );

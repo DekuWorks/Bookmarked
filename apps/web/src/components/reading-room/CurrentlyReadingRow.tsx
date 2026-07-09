@@ -89,6 +89,7 @@ export function CurrentlyReadingRow({ items, onItemsChange }: Props) {
               coverUrl={book?.cover_url}
               className="mx-auto w-28 shadow-sm"
               sizes="112px"
+              bookmarked
             />
 
             <p className="mt-3 line-clamp-2 w-full px-1 text-sm font-semibold text-text">

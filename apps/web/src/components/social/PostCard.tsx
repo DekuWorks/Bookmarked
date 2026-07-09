@@ -274,6 +274,7 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
                       title={localPost.book.title}
                       coverUrl={localPost.book.cover_url}
                       className="h-full w-full"
+                      bookmarked
                     />
                   </Link>
                   <div className="min-w-0">

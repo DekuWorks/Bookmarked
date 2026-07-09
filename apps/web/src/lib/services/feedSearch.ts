@@ -24,6 +24,7 @@ export type BookSearchResult = {
   title: string;
   author: string | null;
   cover_url: string | null;
+  onShelf?: boolean;
 };
 
 export type FeedSearchResults = {
@@ -74,6 +75,7 @@ export async function searchReaders(
 
 export async function searchCatalogBooks(
   query: string,
+  viewerId?: string,
   limit = 8
 ): Promise<BookSearchResult[]> {
   const trimmed = query.trim();
@@ -89,7 +91,23 @@ export async function searchCatalogBooks(
     .limit(limit);
 
   if (error) throw error;
-  return (data ?? []) as BookSearchResult[];
+  const books = (data ?? []) as BookSearchResult[];
+  if (!viewerId || books.length === 0) return books;
+
+  const bookIds = books.map((book) => book.id);
+  const { data: shelvedRows, error: shelvedError } = await supabase
+    .from("user_books")
+    .select("book_id")
+    .eq("user_id", viewerId)
+    .in("book_id", bookIds);
+
+  if (shelvedError) throw shelvedError;
+
+  const shelvedIds = new Set((shelvedRows ?? []).map((row) => row.book_id));
+  return books.map((book) => ({
+    ...book,
+    onShelf: shelvedIds.has(book.id),
+  }));
 }
 
 export async function searchFeedPosts(
@@ -158,7 +176,7 @@ export async function searchFeed(
 
   const [readers, books, posts] = await Promise.all([
     searchReaders(trimmed, viewerId),
-    searchCatalogBooks(trimmed),
+    searchCatalogBooks(trimmed, viewerId),
     searchFeedPosts(trimmed, viewerId),
   ]);
 

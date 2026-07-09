@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BookmarkedShelfBadge } from "@/components/books/BookmarkedShelfBadge";
 import { cn } from "@/lib/utils/cn";
 import { authorPagePath } from "@/lib/routes/author";
 
@@ -11,6 +12,7 @@ type Props = {
   pageCount?: number | null;
   href?: string;
   className?: string;
+  bookmarked?: boolean;
 };
 
 const SPINE_COLORS = [
@@ -43,6 +45,7 @@ export function BookSpine({
   pageCount,
   href,
   className,
+  bookmarked = true,
 }: Props) {
   const hash = hashTitle(title);
   const spineColor = SPINE_COLORS[hash % SPINE_COLORS.length];
@@ -79,6 +82,7 @@ export function BookSpine({
             {title}
           </span>
         </div>
+        {bookmarked ? <BookmarkedShelfBadge size="sm" /> : null}
       </div>
     </div>
   );

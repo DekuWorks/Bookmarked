@@ -137,6 +137,7 @@ function BookDetailsContent() {
         coverUrl={book.cover_url}
         className="mx-auto max-w-[220px] shadow-sm"
         priority
+        bookmarked={Boolean(userBook)}
       />
 
       <div className="min-w-0">

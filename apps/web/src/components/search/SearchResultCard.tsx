@@ -35,6 +35,8 @@ type Props = {
   isbn?: string;
   first_publish_year?: string;
   first_sentence?: string;
+  bookmarked?: boolean;
+  onBookmarked?: () => void;
 };
 
 function ResultActions({
@@ -103,6 +105,8 @@ export function SearchResultCard({
   isbn = "",
   first_publish_year = "",
   first_sentence = "",
+  bookmarked = false,
+  onBookmarked,
 }: Props) {
   const router = useRouter();
   const toast = useToast();
@@ -205,6 +209,7 @@ export function SearchResultCard({
       if (result.success) {
         toast.success(result.success);
         setMenuOpen(false);
+        onBookmarked?.();
       }
     } finally {
       setSaving(false);
@@ -228,6 +233,7 @@ export function SearchResultCard({
             coverUrl={resolvedCoverUrl}
             className="rounded-none border-0"
             sizes="(max-width: 768px) 50vw, 200px"
+            bookmarked={bookmarked}
           />
 
           <div

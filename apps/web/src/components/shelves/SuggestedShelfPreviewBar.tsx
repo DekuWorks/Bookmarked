@@ -51,6 +51,7 @@ function MatchingBookCard({ book }: { book: MatchingBook }) {
           coverUrl={book.cover}
           className="h-16 w-11 shrink-0"
           sizes="44px"
+          bookmarked
         />
         <div className="min-w-0 flex-1">
           <p className="line-clamp-2 text-sm font-medium text-text">{book.title}</p>
@@ -211,6 +212,8 @@ export function SuggestedShelfPreviewBar({
                         coverUrl={book.cover}
                         className="w-full"
                         sizes="64px"
+                        bookmarked
+                        bookmarkBadgeSize="sm"
                       />
                     </Link>
                   </li>

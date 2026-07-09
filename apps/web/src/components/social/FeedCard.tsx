@@ -37,6 +37,7 @@ export function FeedCard({ item }: Props) {
       title={item.bookTitle}
       coverUrl={item.coverUrl}
       className="h-full w-full"
+      bookmarked={Boolean(item.bookId)}
     />
   );
 

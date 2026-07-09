@@ -49,6 +49,8 @@ export function NotesSearchResultCard({ note }: Props) {
               coverUrl={note.book.cover_url}
               className="h-full w-full"
               sizes="40px"
+              bookmarked
+              bookmarkBadgeSize="sm"
             />
           </div>
           <p className="line-clamp-2 text-sm font-semibold text-puce-red">{note.book.title}</p>

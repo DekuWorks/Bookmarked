@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { BookmarkedShelfBadge } from "@/components/books/BookmarkedShelfBadge";
 import { cn } from "@/lib/utils/cn";
+
+type BookmarkBadgeSize = "sm" | "md" | "lg";
 
 type Props = {
   title: string;
@@ -11,6 +14,9 @@ type Props = {
   className?: string;
   sizes?: string;
   priority?: boolean;
+  /** When true, shows the lavender "B" shelf ribbon on the cover. */
+  bookmarked?: boolean;
+  bookmarkBadgeSize?: BookmarkBadgeSize;
 };
 
 function CoverPlaceholder({
@@ -47,6 +53,8 @@ export function BookCover({
   className,
   sizes = "(max-width: 768px) 50vw, 220px",
   priority,
+  bookmarked = false,
+  bookmarkBadgeSize = "md",
 }: Props) {
   const [imageError, setImageError] = useState(false);
   const showImage = coverUrl && !imageError;
@@ -72,6 +80,7 @@ export function BookCover({
       ) : (
         <CoverPlaceholder title={title} author={author} />
       )}
+      {bookmarked ? <BookmarkedShelfBadge size={bookmarkBadgeSize} /> : null}
     </div>
   );
 }

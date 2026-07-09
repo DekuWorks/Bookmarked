@@ -28,7 +28,13 @@ export function BookCard({
   className,
 }: Props) {
   const cover = (
-    <BookCover title={title} author={author} coverUrl={coverUrl} className="rounded-none border-0" />
+    <BookCover
+      title={title}
+      author={author}
+      coverUrl={coverUrl}
+      className="rounded-none border-0"
+      bookmarked={Boolean(shelfStatus)}
+    />
   );
 
   return (

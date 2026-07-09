@@ -62,6 +62,30 @@ export function groupBooksByShelf(books: LibraryBookRow[]): ShelfGroup[] {
   }));
 }
 
+/** Open Library work IDs for books currently on the viewer's shelves. */
+export async function getShelvedOpenLibraryWorkIds(userId: string): Promise<Set<string>> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("user_books")
+    .select("books(external_id, external_source)")
+    .eq("user_id", userId);
+
+  if (error) throw error;
+
+  const workIds = new Set<string>();
+  for (const row of data ?? []) {
+    const rawBook = row.books;
+    const book = (Array.isArray(rawBook) ? rawBook[0] : rawBook) as
+      | { external_id: string | null; external_source: string | null }
+      | null
+      | undefined;
+    if (book?.external_source === "open_library" && book.external_id) {
+      workIds.add(book.external_id);
+    }
+  }
+  return workIds;
+}
+
 export type ShelfStats = {
   totalBooks: number;
   averageProgress: number;
