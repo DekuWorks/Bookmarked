@@ -52,19 +52,34 @@ export interface UserBook {
   finished_at: string | null;
   rating: number | null;
   is_favorite: boolean;
+  read_count: number;
+  completion_tags: string[];
   created_at: string;
   updated_at: string;
   books?: import("../../../../packages/types").Book;
 }
 
+export type ReviewRatingMode = "regular" | "advanced";
+
 export interface Review {
   id: string;
   user_id: string;
   book_id: string;
+  user_book_id: string | null;
+  read_number: number;
   rating: number | null;
   review_body: string | null;
   has_spoilers: boolean;
   visibility: import("../../../../packages/types").ReviewVisibility;
+  edition: string | null;
+  feelings: string[];
+  plot: number | null;
+  characters: number | null;
+  writing_style: number | null;
+  world_building: number | null;
+  pacing: number | null;
+  emotional_impact: number | null;
+  rating_mode: ReviewRatingMode;
   created_at: string;
   updated_at: string;
   profiles?: { display_name: string | null; username: string | null };

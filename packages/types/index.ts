@@ -57,6 +57,10 @@ export interface Book {
   isbn: string | null;
   publisher: string | null;
   subjects: string[] | null;
+  /** Phase 3: series UI not yet implemented */
+  series_name?: string | null;
+  /** Phase 3: series UI not yet implemented */
+  series_position?: number | null;
   created_at: string;
 }
 
@@ -250,6 +254,7 @@ export interface ReadingSession {
   pages_read: number;
   percent_complete: number;
   note: string | null;
+  read_number: number;
   created_at: string;
 }
 
