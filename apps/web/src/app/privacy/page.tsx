@@ -9,8 +9,9 @@ export const metadata = { title: "Privacy Policy" };
 export default function PrivacyPage() {
   return (
     <>
-      <Navbar variant="public" />
-      <main id="main-content" className={layout.prose}>
+      <div className="app-shell-gradient flex min-h-full flex-1 flex-col">
+        <Navbar variant="public" />
+        <main id="main-content" className={layout.prose}>
         <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Privacy Policy</h1>
         <p className="mt-4 text-sm text-text-muted">Last updated: June 2026</p>
 
@@ -60,6 +61,7 @@ export default function PrivacyPage() {
           </section>
         </div>
       </main>
+      </div>
       <Footer />
     </>
   );

@@ -33,7 +33,7 @@ export async function login(
 
   const redirectTo = String(formData.get("redirect") ?? "").trim();
   return {
-    redirect: redirectTo && redirectTo.startsWith("/") ? redirectTo : "/dashboard",
+    redirect: redirectTo && redirectTo.startsWith("/") ? redirectTo : "/dashboard/",
   };
 }
 
@@ -58,7 +58,7 @@ export async function signup(
   }
 
   if (data.session) {
-    return { redirect: "/profile/setup" };
+    return { redirect: "/profile/setup/" };
   }
 
   return {
@@ -114,6 +114,6 @@ export async function saveProfile(
 
   const redirectTo = String(formData.get("redirect") ?? "").trim();
   return {
-    redirect: redirectTo.startsWith("/") ? redirectTo : "/dashboard",
+    redirect: redirectTo.startsWith("/") ? redirectTo : "/dashboard/",
   };
 }

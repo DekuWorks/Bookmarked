@@ -11,13 +11,15 @@ export default function AppShellLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ToastProvider>
-      <Navbar variant="app" />
-      <main id="main-content" className={layout.appMain}>
-        <Suspense fallback={<LoadingState message="Loading your library…" />}>
-          <ClientAuthGuard>{children}</ClientAuthGuard>
-        </Suspense>
-      </main>
-    </ToastProvider>
+    <div className="app-shell-gradient flex min-h-full flex-1 flex-col">
+      <ToastProvider>
+        <Navbar variant="app" />
+        <main id="main-content" className={layout.appMain}>
+          <Suspense fallback={<LoadingState message="Loading your library…" />}>
+            <ClientAuthGuard>{children}</ClientAuthGuard>
+          </Suspense>
+        </main>
+      </ToastProvider>
+    </div>
   );
 }

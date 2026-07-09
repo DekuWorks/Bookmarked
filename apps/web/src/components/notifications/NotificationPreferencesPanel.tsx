@@ -162,7 +162,7 @@ export function NotificationPreferencesPanel({ profile, embedded = false }: Prop
             >
               <span
                 className={cn(
-                  "absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition",
+                  "absolute top-0.5 h-6 w-6 rounded-full bg-surface shadow transition",
                   values[key] ? "left-5" : "left-0.5"
                 )}
               />

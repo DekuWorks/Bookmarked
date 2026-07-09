@@ -103,6 +103,15 @@ body {
   );
 }
 
+.app-shell-gradient {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-primary) 12%, var(--color-background)) 0%,
+    var(--color-background) 28%,
+    color-mix(in srgb, var(--color-royal-orange) 6%, var(--color-background)) 100%
+  );
+}
+
 /* Pill tab lists (feed, etc.) */
 .pill-tabs {
   display: flex;

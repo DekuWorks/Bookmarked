@@ -41,23 +41,34 @@ export function ClientAuthGuard({ children }: Props) {
         return;
       }
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("username")
-        .eq("id", session.user.id)
-        .maybeSingle();
+      try {
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("username")
+          .eq("id", session.user.id)
+          .maybeSingle();
 
-      if (cancelled) return;
+        if (cancelled) return;
 
-      const hasProfile = Boolean(profile?.username?.trim());
-      const onSetup = pathnameRef.current.startsWith("/profile/setup");
+        if (error) {
+          console.warn("[auth] profile lookup failed:", error);
+          setReady(true);
+          return;
+        }
 
-      if (!hasProfile && !onSetup) {
-        staticRedirect("/profile/setup/");
-        return;
+        const hasProfile = Boolean(profile?.username?.trim());
+        const onSetup = pathnameRef.current.startsWith("/profile/setup");
+
+        if (!hasProfile && !onSetup) {
+          staticRedirect("/profile/setup/");
+          return;
+        }
+
+        setReady(true);
+      } catch (error) {
+        console.warn("[auth] verifyAccess failed:", error);
+        if (!cancelled) setReady(true);
       }
-
-      setReady(true);
     }
 
     void supabase.auth.getSession().then(({ data: { session } }) => {

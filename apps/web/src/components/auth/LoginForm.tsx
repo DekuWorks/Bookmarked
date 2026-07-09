@@ -1,8 +1,8 @@
 "use client";
 
 import { useActionState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { login, type AuthActionState } from "@/lib/auth/actions";
+import { staticRedirect } from "@/lib/navigation/staticRedirect";
 import { RememberMeField } from "@/components/auth/RememberMeField";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -16,12 +16,11 @@ type Props = {
 };
 
 export function LoginForm({ redirect }: Props) {
-  const router = useRouter();
   const [state, formAction, pending] = useActionState(login, initial);
 
   useEffect(() => {
-    if (state.redirect) router.replace(state.redirect);
-  }, [state.redirect, router]);
+    if (state.redirect) staticRedirect(state.redirect);
+  }, [state.redirect]);
 
   return (
     <form action={formAction} className={`${layout.formPanel} w-full`}>

@@ -2,8 +2,8 @@
 
 import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { saveProfile, type AuthActionState } from "@/lib/auth/actions";
+import { staticRedirect } from "@/lib/navigation/staticRedirect";
 import { getProfile } from "@/lib/services/profile";
 import { createClient } from "@/lib/supabase/client";
 import { AvatarUpload } from "@/components/profile/AvatarUpload";
@@ -16,7 +16,6 @@ import type { Profile } from "@/types";
 const initial: AuthActionState = {};
 
 export function ProfileSetupForm() {
-  const router = useRouter();
   const [state, formAction, pending] = useActionState(saveProfile, initial);
   const [profile, setProfile] = useState<Profile | null | undefined>(undefined);
   const [userId, setUserId] = useState<string | null>(null);
@@ -36,8 +35,8 @@ export function ProfileSetupForm() {
   }, []);
 
   useEffect(() => {
-    if (state.redirect) router.replace(state.redirect);
-  }, [state.redirect, router]);
+    if (state.redirect) staticRedirect(state.redirect);
+  }, [state.redirect]);
 
   if (profile === undefined) {
     return <LoadingState message="Loading profile…" />;

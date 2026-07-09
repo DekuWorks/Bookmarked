@@ -14,7 +14,7 @@ export default function HomePage() {
         <Navbar variant="public" />
         <HeroSection />
       </div>
-      <main id="main-content" className="overflow-x-hidden text-center">
+      <main id="main-content" className="app-shell-gradient overflow-x-hidden text-center">
         <AboutSection />
         <FeaturesSection />
         <HowItWorksSection />
