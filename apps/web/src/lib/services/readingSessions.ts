@@ -10,6 +10,7 @@ export type CreateReadingSessionInput = {
   percentComplete: number;
   note?: string | null;
   createdAt?: string;
+  readNumber?: number;
 };
 
 export type ReadingStatsInRange = {
@@ -40,6 +41,7 @@ export async function createReadingSessionWithClient(
       pages_read: pagesRead,
       percent_complete: input.percentComplete,
       note: input.note ?? null,
+      read_number: input.readNumber ?? 1,
       ...(input.createdAt ? { created_at: input.createdAt } : {}),
     })
     .select("*")

@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { enrichBookCatalogEntry } from "@/lib/services/bookMetadata";
+import { getCommunityRating, type CommunityRating } from "@/lib/services/communityRatings";
+import { getBookBadges, type BookBadge } from "@/lib/services/bookBadges";
 import { listReadingSessions } from "@/lib/services/readingSessions";
 import type { Book, ReadingSession, Review, UserBook } from "@/types";
 
@@ -7,7 +9,9 @@ export type BookDetailsData = {
   book: Book;
   userBook: UserBook | null;
   reviews: Review[];
-  ownReview: Review | null;
+  ownReviews: Review[];
+  communityRating: CommunityRating | null;
+  badges: BookBadge[];
   readingSessions: ReadingSession[];
 };
 
@@ -28,21 +32,20 @@ export async function getBookDetails(
 
   const enriched = await enrichBookCatalogEntry(supabase, book as Book);
 
-  const { data: userBook } = await supabase
-    .from("user_books")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("book_id", bookId)
-    .maybeSingle();
-
-  const { data: reviews } = await supabase
-    .from("reviews")
-    .select("*, profiles(display_name, username)")
-    .eq("book_id", bookId)
-    .order("created_at", { ascending: false });
+  const [{ data: userBook }, { data: reviews }, communityRating, badges] = await Promise.all([
+    supabase.from("user_books").select("*").eq("user_id", userId).eq("book_id", bookId).maybeSingle(),
+    supabase
+      .from("reviews")
+      .select("*, profiles(display_name, username)")
+      .eq("book_id", bookId)
+      .order("read_number", { ascending: false })
+      .order("created_at", { ascending: false }),
+    getCommunityRating(bookId),
+    getBookBadges(bookId),
+  ]);
 
   const reviewList = (reviews ?? []) as Review[];
-  const ownReview = reviewList.find((r) => r.user_id === userId) ?? null;
+  const ownReviews = reviewList.filter((r) => r.user_id === userId);
 
   const readingSessions = userBook
     ? await listReadingSessions(userBook.id)
@@ -52,7 +55,9 @@ export async function getBookDetails(
     book: enriched,
     userBook: (userBook as UserBook | null) ?? null,
     reviews: reviewList,
-    ownReview,
+    ownReviews,
+    communityRating,
+    badges,
     readingSessions,
   };
 }
