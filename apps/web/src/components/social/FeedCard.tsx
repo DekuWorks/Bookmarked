@@ -31,13 +31,17 @@ export function FeedCard({ item }: Props) {
   const activityHref = feedItemHref(item);
   const showBookCover =
     isFeedEligibleEvent(item.event_type) || Boolean(item.bookId || item.coverUrl);
+  const isFinishedBookEvent =
+    item.event_type === "book_finished" || item.event_type === "reading_finished";
+  const showBookmarkBadge = Boolean(item.bookId) || isFinishedBookEvent;
 
   const cover = (
     <BookCover
       title={item.bookTitle}
       coverUrl={item.coverUrl}
       className="h-full w-full"
-      bookmarked={Boolean(item.bookId)}
+      bookmarked={showBookmarkBadge}
+      bookmarkBadgeSize="sm"
     />
   );
 

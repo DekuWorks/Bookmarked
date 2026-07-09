@@ -3,9 +3,9 @@ import { cn } from "@/lib/utils/cn";
 type Size = "sm" | "md" | "lg";
 
 const sizeClass: Record<Size, string> = {
-  sm: "w-[22%] min-w-[1.125rem] max-w-[1.375rem]",
-  md: "w-[26%] min-w-[1.25rem] max-w-[1.75rem]",
-  lg: "w-[28%] min-w-[1.5rem] max-w-[2.25rem]",
+  sm: "w-[27%] min-w-[1.4rem] max-w-[1.75rem]",
+  md: "w-[32%] min-w-[1.6rem] max-w-[2.2rem]",
+  lg: "w-[34%] min-w-[1.875rem] max-w-[2.8rem]",
 };
 
 type Props = {
@@ -15,13 +15,13 @@ type Props = {
 
 /**
  * Lavender bookmark ribbon with a white "B" for books on the user's shelf.
- * Anchored to the bottom-left of a cover, matching the Bookmarked mockup.
+ * Anchored to the top-left of a cover so it stays visible inside clipped containers.
  */
 export function BookmarkedShelfBadge({ className, size = "md" }: Props) {
   return (
     <div
       className={cn(
-        "pointer-events-none absolute bottom-0 left-0 z-10 drop-shadow-sm",
+        "pointer-events-none absolute left-0 top-0 z-10 drop-shadow-sm",
         sizeClass[size],
         className
       )}
