@@ -3,11 +3,11 @@ import { cn } from "@/lib/utils/cn";
 
 type Size = "sm" | "md" | "lg";
 
-/** ~1/5 cover width; square emblem matches the brand logo on shelved covers. */
+/** Ribbon width as a fraction of cover width (trimmed asset is ~282×477). */
 const sizeClass: Record<Size, string> = {
-  sm: "w-[20%] min-w-[0.875rem] max-w-[1.125rem]",
+  sm: "w-[18%] min-w-[0.875rem] max-w-[1.125rem]",
   md: "w-[22%] min-w-[1.125rem] max-w-[1.75rem]",
-  lg: "w-[26%] min-w-[1.375rem] max-w-[2.25rem]",
+  lg: "w-[28%] min-w-[1.375rem] max-w-[2.25rem]",
 };
 
 type Props = {
@@ -16,21 +16,21 @@ type Props = {
 };
 
 /**
- * Brand logo emblem for books on the user's shelf — lavender circle with the
- * purple bookmark "B", positioned at the top-right of covers.
+ * Bookmark ribbon for shelved books — lavender ribbon with purple B + sparkles,
+ * positioned at the top-right of covers.
  */
 export function BookmarkedShelfBadge({ className, size = "md" }: Props) {
   return (
     <div
       className={cn(
-        "pointer-events-none absolute right-0 top-0 z-20 aspect-square",
+        "pointer-events-none absolute right-0 top-0 z-20 aspect-[282/477]",
         sizeClass[size],
         className
       )}
       aria-hidden
     >
       <Image
-        src="/logo-circle.png"
+        src="/images/bookmark-ribbon.png"
         alt=""
         fill
         className="object-contain drop-shadow-[0_1px_3px_rgba(0,0,0,0.28)]"
