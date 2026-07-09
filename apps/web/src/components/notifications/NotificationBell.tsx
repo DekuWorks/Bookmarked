@@ -42,9 +42,16 @@ export function NotificationBell() {
 
     const supabase = createClient();
     let cancelled = false;
+    const topic = `notifications:${userId}`;
+
+    for (const existing of supabase.getChannels()) {
+      if (existing.topic === `realtime:${topic}`) {
+        void supabase.removeChannel(existing);
+      }
+    }
 
     const channel = supabase
-      .channel(`notifications:${userId}`)
+      .channel(topic)
       .on(
         "postgres_changes",
         {

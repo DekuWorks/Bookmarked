@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 /** Refetch library data when the signed-in user's shelves change. */
@@ -8,10 +8,17 @@ export function useUserBooksRealtime(
   userId: string | undefined,
   onChange: () => void
 ): void {
+  const onChangeRef = useRef(onChange);
+
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
   useEffect(() => {
     if (!userId) return;
 
     const supabase = createClient();
+    let cancelled = false;
     const topic = `user_books:${userId}`;
 
     for (const existing of supabase.getChannels()) {
@@ -31,7 +38,8 @@ export function useUserBooksRealtime(
           filter: `user_id=eq.${userId}`,
         },
         () => {
-          void Promise.resolve(onChange()).catch((error) => {
+          if (cancelled) return;
+          void Promise.resolve(onChangeRef.current()).catch((error) => {
             console.warn("[user-books-realtime] refresh failed:", error);
           });
         }
@@ -39,7 +47,8 @@ export function useUserBooksRealtime(
       .subscribe();
 
     return () => {
+      cancelled = true;
       void supabase.removeChannel(channel);
     };
-  }, [userId, onChange]);
+  }, [userId]);
 }

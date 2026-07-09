@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getUnreadMessageCount } from "@/lib/services/messages";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { createClient } from "@/lib/supabase/client";
@@ -23,6 +23,12 @@ export function MessagesUnreadBadge({ className }: Props) {
       });
   }, [user?.id]);
 
+  const refreshRef = useRef(refresh);
+
+  useEffect(() => {
+    refreshRef.current = refresh;
+  }, [refresh]);
+
   useEffect(() => {
     refresh();
   }, [refresh]);
@@ -31,24 +37,32 @@ export function MessagesUnreadBadge({ className }: Props) {
     if (!user?.id) return;
 
     const supabase = createClient();
+    const topic = `messages-unread:${user.id}`;
+
+    for (const existing of supabase.getChannels()) {
+      if (existing.topic === `realtime:${topic}`) {
+        void supabase.removeChannel(existing);
+      }
+    }
+
     const channel = supabase
-      .channel(`messages-unread:${user.id}`)
+      .channel(topic)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "messages" },
-        () => refresh()
+        () => refreshRef.current()
       )
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "conversation_participants" },
-        () => refresh()
+        () => refreshRef.current()
       )
       .subscribe();
 
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [user?.id, refresh]);
+  }, [user?.id]);
 
   if (count <= 0) return null;
 
