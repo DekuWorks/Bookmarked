@@ -1,9 +1,14 @@
 import { BookCard } from "@/components/books/BookCard";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { ShelfBadge } from "@/components/shelves/ShelfBadge";
-import { openLibraryIsbnCoverUrl } from "@/lib/services/covers";
 import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
+
+/** Static demo covers — hosted locally for reliable GitHub Pages export. */
+const DEMO_COVERS = {
+  nightCircus: "/images/demo/night-circus.jpg",
+  piranesi: "/images/demo/piranesi.jpg",
+} as const;
 
 export function PreviewDashboardSection() {
   return (
@@ -32,14 +37,14 @@ export function PreviewDashboardSection() {
               <BookCard
                 title="The Night Circus"
                 author="Erin Morgenstern"
-                coverUrl={openLibraryIsbnCoverUrl("9780307460926")}
+                coverUrl={DEMO_COVERS.nightCircus}
                 shelfStatus="currently_reading"
                 progressPercent={42}
               />
               <BookCard
                 title="Piranesi"
                 author="Susanna Clarke"
-                coverUrl={openLibraryIsbnCoverUrl("9781635570827")}
+                coverUrl={DEMO_COVERS.piranesi}
                 shelfStatus="currently_reading"
                 progressPercent={18}
               />
