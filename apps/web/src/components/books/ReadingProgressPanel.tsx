@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -25,6 +25,11 @@ function formatDate(iso: string | null | undefined): string | null {
   } catch {
     return null;
   }
+}
+
+function percentFromPages(current: number, total: number): number | null {
+  if (total <= 0) return null;
+  return Math.min(100, Math.round((current / total) * 1000) / 10);
 }
 
 type Props = {
@@ -52,7 +57,9 @@ export function ReadingProgressPanel({
   const [page, setPage] = useState(String(currentPage || ""));
   const [total, setTotal] = useState(String(totalPages || ""));
   const [displayPercent, setDisplayPercent] = useState(progressPercent);
-  const [editingTotal, setEditingTotal] = useState(false);
+  // While focused in either field, hold the last committed percent so
+  // intermediate values (476 → 47) never flash 100% or lock the form.
+  const [editing, setEditing] = useState(false);
   const [clientError, setClientError] = useState<string | null>(null);
   const [progressAction, submitProgress, saving] = useActionState(
     updateReadingProgress,
@@ -64,11 +71,11 @@ export function ReadingProgressPanel({
   );
 
   useEffect(() => {
+    if (editing) return;
     setPage(String(currentPage || ""));
     setTotal(String(totalPages || ""));
     setDisplayPercent(progressPercent);
-    setEditingTotal(false);
-  }, [currentPage, totalPages, progressPercent]);
+  }, [currentPage, totalPages, progressPercent, editing]);
 
   useEffect(() => {
     if (progressAction.error) toast.error(progressAction.error);
@@ -86,40 +93,12 @@ export function ReadingProgressPanel({
     }
   }, [finishAction, toast, onProgressChange]);
 
-  // Live preview while editing current page; while editing total, keep the
-  // last committed percent so mid-keystrokes (476 → 47) don't show 100%.
-  const previewPercent = useMemo(() => {
-    if (editingTotal) return displayPercent;
+  function commitPreview() {
+    setEditing(false);
     const cur = Number(page) || 0;
     const tot = Number(total) || totalPages || 0;
-    if (tot <= 0) return displayPercent;
-    return Math.min(100, Math.round((cur / tot) * 1000) / 10);
-  }, [page, total, totalPages, displayPercent, editingTotal]);
-
-  useEffect(() => {
-    if (editingTotal) return;
-    const tot = Number(total) || totalPages || 0;
-    if (tot > 0) {
-      setDisplayPercent(previewPercent);
-    }
-  }, [page, total, totalPages, previewPercent, editingTotal]);
-
-  const pageCountUnavailable = !totalPages && !total;
-
-  function commitTotalPreview() {
-    setEditingTotal(false);
-    const cur = Number(page) || 0;
-    const tot = Number(total) || totalPages || 0;
-    if (tot > 0) {
-      setDisplayPercent(Math.min(100, Math.round((cur / tot) * 1000) / 10));
-    }
-  }
-
-  function validateBeforeSubmit(): boolean {
-    // Allow current > total when correcting a page count downward; server
-    // caps percent at 100% without auto-finishing.
-    setClientError(null);
-    return true;
+    const next = percentFromPages(cur, tot);
+    if (next != null) setDisplayPercent(next);
   }
 
   if (!onShelf) {
@@ -140,8 +119,9 @@ export function ReadingProgressPanel({
 
   const cur = Number(page) || 0;
   const tot = Number(total) || totalPages || 0;
-  const atFullProgress =
-    !editingTotal && tot > 0 && cur >= tot && !isFinished;
+  const pageCountUnavailable = !totalPages && !total;
+  const atFullProgress = !editing && tot > 0 && cur >= tot && !isFinished;
+  const progressAboveTotal = !editing && cur > 0 && tot > 0 && cur > tot;
 
   return (
     <section className="rounded-xl border border-border bg-surface p-5">
@@ -187,8 +167,9 @@ export function ReadingProgressPanel({
       <form
         action={submitProgress}
         className="mt-4 space-y-3"
-        onSubmit={(e) => {
-          if (!validateBeforeSubmit()) e.preventDefault();
+        onSubmit={() => {
+          setClientError(null);
+          commitPreview();
         }}
       >
         <input type="hidden" name="book_id" value={bookId} />
@@ -199,10 +180,13 @@ export function ReadingProgressPanel({
             type="number"
             min={0}
             value={page}
+            onFocus={() => setEditing(true)}
             onChange={(e) => {
+              setEditing(true);
               setPage(e.target.value);
               setClientError(null);
             }}
+            onBlur={commitPreview}
             error={clientError ?? undefined}
           />
           <Input
@@ -212,15 +196,13 @@ export function ReadingProgressPanel({
             min={0}
             placeholder={totalPages ? String(totalPages) : "Enter total"}
             value={total}
+            onFocus={() => setEditing(true)}
             onChange={(e) => {
-              setEditingTotal(true);
+              setEditing(true);
               setTotal(e.target.value);
               setClientError(null);
             }}
-            onBlur={commitTotalPreview}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") commitTotalPreview();
-            }}
+            onBlur={commitPreview}
           />
         </div>
         <ProgressBar
@@ -234,7 +216,7 @@ export function ReadingProgressPanel({
             Read.
           </p>
         ) : null}
-        {cur > 0 && tot > 0 && cur > tot && !editingTotal ? (
+        {progressAboveTotal ? (
           <p className="text-sm text-text-muted">
             Current page is above total pages. Saving will cap progress at 100% without
             marking the book finished.
@@ -246,7 +228,7 @@ export function ReadingProgressPanel({
         {isFinished ? (
           <p className="text-sm font-medium text-puce-red">
             This book is finished. Updating progress will move it back to Currently
-            Reading if you lower the page count.
+            Reading.
           </p>
         ) : null}
       </form>

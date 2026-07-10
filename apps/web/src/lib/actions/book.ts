@@ -206,17 +206,12 @@ export async function updateReadingProgress(
   };
 
   // Progress edits never mark finished; only markBookFinished does.
-  // If the user lowers progress below 100%, clear an existing finish so they
-  // can recover from a mistaken auto-finish and keep editing.
-  if (finalPercent < 100 && (userBook.finished_at || userBook.shelf_status === "read")) {
+  // Any progress save clears a prior finish so users can recover after an
+  // accidental auto-finish (e.g. editing page_count mid-keystroke).
+  if (userBook.finished_at || userBook.shelf_status === "read") {
     updates.finished_at = null;
     updates.shelf_status = finalPage > 0 ? "currently_reading" : "want_to_read";
-  } else if (
-    !userBook.finished_at &&
-    userBook.shelf_status !== "currently_reading" &&
-    userBook.shelf_status !== "read" &&
-    currentPage > 0
-  ) {
+  } else if (userBook.shelf_status !== "currently_reading" && currentPage > 0) {
     updates.shelf_status = "currently_reading";
   }
 
