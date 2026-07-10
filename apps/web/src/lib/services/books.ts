@@ -3,6 +3,7 @@ import { getShelfLabel, isShelfStatus } from "@/lib/constants/shelfLabels";
 import { activityMetadata, bookActivityContext, recordActivity } from "@/lib/services/activity";
 import { enrichBookCatalogEntry } from "@/lib/services/bookMetadata";
 import { resolveBookCoverUrl } from "@/lib/services/covers";
+import { ISBNDB_SOURCE } from "@/lib/services/isbndb";
 import type { Book, ShelfStatus } from "@/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -14,16 +15,19 @@ export type ShelfActionState = {
   bookId?: string;
 };
 
-type OpenLibraryBookInput = {
+type CatalogBookInput = {
   title: string;
   author: string | null;
   external_id: string;
-  cover_i: string;
+  /** ISBNdb cover image URL */
+  cover_url?: string;
+  /** @deprecated legacy Open Library cover id — ignored for new ISBNdb data */
+  cover_i?: string;
   page_count: string;
   isbn?: string;
   first_publish_year?: string;
   first_sentence?: string;
-  /** Set when the user picked a specific edition in search. */
+  /** Set when the user picked a specific edition in search (ISBN). */
   edition_key?: string;
 };
 
@@ -32,15 +36,15 @@ function seedDescriptionFromSearch(firstSentence?: string): string | null {
   return trimmed || null;
 }
 
-async function upsertOpenLibraryCatalogBook(
+async function upsertCatalogBook(
   supabase: SupabaseClient,
-  input: OpenLibraryBookInput
+  input: CatalogBookInput
 ): Promise<{ bookId?: string; error?: string }> {
   const {
     title,
     author,
     external_id,
-    cover_i,
+    cover_url: inputCoverUrl,
     page_count,
     isbn,
     first_publish_year,
@@ -54,32 +58,65 @@ async function upsertOpenLibraryCatalogBook(
 
   const publishedDate = first_publish_year?.trim() || null;
   const editionSelected = Boolean(edition_key?.trim());
+  const trimmedIsbn = isbn?.trim() || external_id;
 
   const cover_url = await resolveBookCoverUrl({
-    coverId: cover_i ? Number(cover_i) : null,
-    isbn: isbn ?? null,
+    coverUrl: inputCoverUrl ?? null,
+    isbn: trimmedIsbn,
     title,
     author,
   });
 
-  const { data: existing } = await supabase
-    .from("books")
-    .select("id, cover_url, isbn")
-    .eq("external_source", "open_library")
-    .eq("external_id", external_id)
-    .maybeSingle();
+  // Prefer ISBN as the stable catalog key
+  const { data: existingByIsbn } = trimmedIsbn
+    ? await supabase
+        .from("books")
+        .select("id, cover_url, isbn, external_source, external_id")
+        .eq("isbn", trimmedIsbn)
+        .maybeSingle()
+    : { data: null };
+
+  const { data: existingByExternal } = !existingByIsbn
+    ? await supabase
+        .from("books")
+        .select("id, cover_url, isbn, external_source, external_id")
+        .eq("external_source", ISBNDB_SOURCE)
+        .eq("external_id", external_id)
+        .maybeSingle()
+    : { data: null };
+
+  // Also match legacy open_library rows that share this ISBN
+  const { data: existingLegacy } =
+    !existingByIsbn && !existingByExternal && trimmedIsbn
+      ? await supabase
+          .from("books")
+          .select("id, cover_url, isbn, external_source, external_id")
+          .eq("external_source", "open_library")
+          .eq("isbn", trimmedIsbn)
+          .maybeSingle()
+      : { data: null };
+
+  const existing = existingByIsbn ?? existingByExternal ?? existingLegacy;
 
   if (existing?.id) {
-    const patch: Record<string, unknown> = {};
-    const trimmedIsbn = isbn?.trim() || null;
+    const patch: Record<string, unknown> = {
+      external_source: ISBNDB_SOURCE,
+      external_id,
+    };
 
     if (editionSelected) {
       if (cover_url) patch.cover_url = cover_url;
       if (trimmedIsbn) patch.isbn = trimmedIsbn;
       if (page_count) patch.page_count = Number(page_count);
       if (publishedDate) patch.published_date = publishedDate;
-    } else if (!existing.cover_url && cover_url) {
-      patch.cover_url = cover_url;
+      if (title) patch.title = title;
+    } else {
+      if (cover_url && (!existing.cover_url || existing.cover_url.includes("covers.openlibrary.org"))) {
+        patch.cover_url = cover_url;
+      } else if (!existing.cover_url && cover_url) {
+        patch.cover_url = cover_url;
+      }
+      if (trimmedIsbn && !existing.isbn) patch.isbn = trimmedIsbn;
     }
 
     if (Object.keys(patch).length > 0) {
@@ -99,12 +136,12 @@ async function upsertOpenLibraryCatalogBook(
   const { data: inserted, error: bookError } = await supabase
     .from("books")
     .insert({
-      external_source: "open_library",
+      external_source: ISBNDB_SOURCE,
       external_id,
       title,
       author,
       cover_url,
-      isbn: isbn?.trim() || null,
+      isbn: trimmedIsbn || null,
       page_count: page_count ? Number(page_count) : null,
       published_date: publishedDate,
       description: seedDescription,
@@ -122,7 +159,13 @@ async function upsertOpenLibraryCatalogBook(
 }
 
 export async function ensureOpenLibraryBook(
-  input: OpenLibraryBookInput
+  input: CatalogBookInput
+): Promise<ShelfActionState> {
+  return ensureCatalogBook(input);
+}
+
+export async function ensureCatalogBook(
+  input: CatalogBookInput
 ): Promise<ShelfActionState> {
   const supabase = createClient();
   const {
@@ -133,12 +176,19 @@ export async function ensureOpenLibraryBook(
     return { error: "You must be signed in." };
   }
 
-  const result = await upsertOpenLibraryCatalogBook(supabase, input);
+  const result = await upsertCatalogBook(supabase, input);
   if (result.error) return { error: result.error };
   return { bookId: result.bookId };
 }
 
 export async function addOpenLibraryBookToShelf(
+  _prev: ShelfActionState,
+  formData: FormData
+): Promise<ShelfActionState> {
+  return addCatalogBookToShelf(_prev, formData);
+}
+
+export async function addCatalogBookToShelf(
   _prev: ShelfActionState,
   formData: FormData
 ): Promise<ShelfActionState> {
@@ -157,10 +207,11 @@ export async function addOpenLibraryBookToShelf(
   }
   const shelf_status: ShelfStatus = shelfRaw;
 
-  const input: OpenLibraryBookInput = {
+  const input: CatalogBookInput = {
     title: String(formData.get("title") ?? "").trim(),
     author: String(formData.get("author") ?? "").trim() || null,
     external_id: String(formData.get("external_id") ?? "").trim(),
+    cover_url: String(formData.get("cover_url") ?? "").trim() || undefined,
     cover_i: String(formData.get("cover_i") ?? ""),
     page_count: String(formData.get("page_count") ?? ""),
     isbn: String(formData.get("isbn") ?? "").trim() || undefined,
@@ -169,7 +220,7 @@ export async function addOpenLibraryBookToShelf(
     edition_key: String(formData.get("edition_key") ?? "").trim() || undefined,
   };
 
-  const catalog = await upsertOpenLibraryCatalogBook(supabase, input);
+  const catalog = await upsertCatalogBook(supabase, input);
   if (catalog.error || !catalog.bookId) {
     return { error: ADD_BOOK_ERROR };
   }
@@ -221,7 +272,7 @@ export async function addOpenLibraryBookToShelf(
     metadata_json: activityMetadata(input.title, {
       ...bookActivityContext(bookRow ?? { id: bookId }),
       shelf_status,
-      external_source: "open_library",
+      external_source: ISBNDB_SOURCE,
       external_id: input.external_id,
       previous_shelf_status: existingUserBook?.shelf_status ?? null,
     }),

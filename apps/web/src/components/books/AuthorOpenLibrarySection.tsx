@@ -4,31 +4,31 @@ import { useCallback, useEffect, useState } from "react";
 import { SearchResultCard } from "@/components/search/SearchResultCard";
 import { Button } from "@/components/ui/Button";
 import { SEARCH_PAGE_SIZE } from "@/lib/constants/searchFilters";
-import { usePreferredOpenLibraryLanguage } from "@/lib/hooks/usePreferredOpenLibraryLanguage";
+import { usePreferredCatalogLanguage } from "@/lib/hooks/usePreferredOpenLibraryLanguage";
 import {
-  openLibraryWorkId,
-  searchOpenLibraryByAuthor,
-} from "@/lib/services/openLibrary";
+  catalogExternalId,
+  searchIsbndbByAuthor,
+  type CatalogDoc,
+} from "@/lib/services/isbndb";
 import { resolveDisplayCoverUrl } from "@/lib/services/covers";
 import { LoadingState } from "@/components/ui/LoadingState";
-import type { OpenLibraryDoc } from "@/types";
 
 type Props = {
   authorName: string;
   knownExternalIds: Set<string>;
 };
 
-function filterNewWorks(docs: OpenLibraryDoc[], knownExternalIds: Set<string>): OpenLibraryDoc[] {
+function filterNewWorks(docs: CatalogDoc[], knownExternalIds: Set<string>): CatalogDoc[] {
   return docs.filter((doc) => {
-    const workId = openLibraryWorkId(doc.key);
-    if (!workId || !doc.title) return false;
-    return !knownExternalIds.has(workId);
+    const id = catalogExternalId(doc.key);
+    if (!id || !doc.title) return false;
+    return !knownExternalIds.has(id);
   });
 }
 
 export function AuthorOpenLibrarySection({ authorName, knownExternalIds }: Props) {
-  const preferredLanguage = usePreferredOpenLibraryLanguage();
-  const [docs, setDocs] = useState<OpenLibraryDoc[]>([]);
+  const preferredLanguage = usePreferredCatalogLanguage();
+  const [docs, setDocs] = useState<CatalogDoc[]>([]);
   const [numFound, setNumFound] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -45,7 +45,7 @@ export function AuthorOpenLibrarySection({ authorName, knownExternalIds }: Props
       }
 
       try {
-        const result = await searchOpenLibraryByAuthor(authorName, {
+        const result = await searchIsbndbByAuthor(authorName, {
           limit: SEARCH_PAGE_SIZE,
           offset,
           language: preferredLanguage,
@@ -61,7 +61,7 @@ export function AuthorOpenLibrarySection({ authorName, knownExternalIds }: Props
           setRawOffset(0);
         }
         setErrorMessage(
-          error instanceof Error ? error.message : "Could not load Open Library results."
+          error instanceof Error ? error.message : "Could not load catalog results."
         );
       } finally {
         setLoading(false);
@@ -82,7 +82,7 @@ export function AuthorOpenLibrarySection({ authorName, knownExternalIds }: Props
   const hasMore = rawOffset < numFound;
 
   if (loading) {
-    return <LoadingState message="Searching Open Library…" />;
+    return <LoadingState message="Searching catalog…" />;
   }
 
   if (errorMessage && visibleDocs.length === 0) {
@@ -92,7 +92,7 @@ export function AuthorOpenLibrarySection({ authorName, knownExternalIds }: Props
   if (visibleDocs.length === 0 && !hasMore) {
     return (
       <p className="rounded-lg border border-dashed border-border bg-background px-6 py-8 text-center text-sm text-text-muted">
-        No additional titles found on Open Library for this author.
+        No additional titles found in the catalog for this author.
       </p>
     );
   }
@@ -101,19 +101,19 @@ export function AuthorOpenLibrarySection({ authorName, knownExternalIds }: Props
     <div className="space-y-4">
       <p className="text-center text-sm text-text-muted">
         {visibleDocs.length > 0
-          ? `Showing ${visibleDocs.length.toLocaleString()} discoverable title${visibleDocs.length === 1 ? "" : "s"} from Open Library`
+          ? `Showing ${visibleDocs.length.toLocaleString()} discoverable title${visibleDocs.length === 1 ? "" : "s"} from the catalog`
           : "Loading more titles…"}
-        {numFound > 0 ? ` · ${numFound.toLocaleString()} total on Open Library` : ""}
+        {numFound > 0 ? ` · ${numFound.toLocaleString()} total in catalog` : ""}
       </p>
 
       {visibleDocs.length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {visibleDocs.map((doc) => {
-            const workId = openLibraryWorkId(doc.key);
-            if (!workId || !doc.title) return null;
-            const isbn = doc.isbn?.[0] ?? "";
+            const id = catalogExternalId(doc.key);
+            if (!id || !doc.title) return null;
+            const isbn = doc.isbn?.[0] ?? id;
             const coverUrl = resolveDisplayCoverUrl({
-              coverId: doc.cover_i,
+              coverUrl: doc.cover_url,
               isbn,
             });
             const author = doc.author_name?.[0] ?? authorName;
@@ -124,8 +124,8 @@ export function AuthorOpenLibrarySection({ authorName, knownExternalIds }: Props
                 title={doc.title}
                 author={author}
                 coverUrl={coverUrl}
-                external_id={workId}
-                cover_i={doc.cover_i ? String(doc.cover_i) : ""}
+                external_id={id}
+                cover_url={doc.cover_url ?? ""}
                 page_count={
                   doc.number_of_pages_median ? String(doc.number_of_pages_median) : ""
                 }
@@ -148,7 +148,7 @@ export function AuthorOpenLibrarySection({ authorName, knownExternalIds }: Props
             loading={loadingMore}
             onClick={() => void loadPage(rawOffset, true)}
           >
-            Load more from Open Library
+            Load more from catalog
           </Button>
         </div>
       ) : null}

@@ -1,7 +1,9 @@
 import { getUserLibraryBooks, type LibraryBookRow } from "@/lib/services/library";
-import { searchOpenLibrary } from "@/lib/services/openLibrary";
-import { openLibraryCoverUrl, openLibraryWorkId } from "@/lib/services/openLibrary";
-import type { OpenLibraryDoc } from "@/types";
+import {
+  catalogExternalId,
+  searchIsbndb,
+  type CatalogDoc,
+} from "@/lib/services/isbndb";
 
 export type BecauseYouReadRecommendation = {
   title: string;
@@ -41,18 +43,18 @@ function seedBooks(books: LibraryBookRow[]): LibraryBookRow[] {
 }
 
 function docToRecommendation(
-  doc: OpenLibraryDoc,
+  doc: CatalogDoc,
   reason: string,
   sourceTitle: string
 ): BecauseYouReadRecommendation | null {
-  const externalId = openLibraryWorkId(doc.key);
+  const externalId = catalogExternalId(doc.key);
   if (!externalId || !doc.title?.trim()) return null;
 
   return {
     title: doc.title.trim(),
     author: doc.author_name?.[0]?.trim() ?? null,
     externalId,
-    coverUrl: openLibraryCoverUrl(doc.cover_i),
+    coverUrl: doc.cover_url ?? null,
     reason,
     sourceTitle,
   };
@@ -68,7 +70,7 @@ export async function getBecauseYouReadRecommendations(
 
   const ownedExternalIds = new Set(
     books
-      .map((b) => b.books?.external_id)
+      .map((b) => b.books?.external_id ?? b.books?.isbn)
       .filter((id): id is string => Boolean(id))
   );
   const ownedTitles = new Set(
@@ -117,9 +119,9 @@ export async function getBecauseYouReadRecommendations(
     if (results.length >= limit) break;
 
     try {
-      const { docs } = await searchOpenLibrary(query, { limit: 6 });
+      const { docs } = await searchIsbndb(query, { limit: 6 });
       for (const doc of docs) {
-        const externalId = openLibraryWorkId(doc.key);
+        const externalId = catalogExternalId(doc.key);
         if (!externalId || seen.has(externalId)) continue;
         if (ownedExternalIds.has(externalId)) continue;
 
@@ -134,7 +136,7 @@ export async function getBecauseYouReadRecommendations(
         if (results.length >= limit) break;
       }
     } catch {
-      // Skip failed Open Library query
+      // Skip failed catalog query
     }
   }
 

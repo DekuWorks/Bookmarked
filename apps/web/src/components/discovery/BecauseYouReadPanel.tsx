@@ -58,7 +58,7 @@ export function BecauseYouReadPanel({ userId, className, limit = 8 }: Props) {
   return (
     <div className={className}>
       <p className="mb-4 text-sm text-text-muted">
-        Picked from your shelves, genres, and subjects — powered by Open Library.
+        Picked from your shelves, genres, and subjects — powered by ISBNdb.
       </p>
       <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {items.map((item) => (

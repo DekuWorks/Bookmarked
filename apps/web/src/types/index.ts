@@ -95,11 +95,13 @@ export interface ActivityEvent {
   created_at: string;
 }
 
+/** @deprecated Prefer CatalogDoc from `@/lib/services/isbndb` */
 export interface OpenLibraryDoc {
   key?: string;
   title?: string;
   author_name?: string[];
   cover_i?: number;
+  cover_url?: string | null;
   first_publish_year?: number;
   isbn?: string[];
   number_of_pages_median?: number;

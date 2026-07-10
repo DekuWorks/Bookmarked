@@ -8,14 +8,14 @@ import { BookCover } from "@/components/books/BookCover";
 import { ShelfSelectMenu } from "@/components/shelves/ShelfSelectMenu";
 import {
   EditionPickerModal,
-  type OpenLibraryEditionSummary,
+  type CatalogEditionSummary,
 } from "@/components/search/EditionPickerModal";
 import { useToast } from "@/components/ui/Toast";
 import {
-  addOpenLibraryBookToShelf,
-  ensureOpenLibraryBook,
+  addCatalogBookToShelf,
+  ensureCatalogBook,
 } from "@/lib/services/books";
-import { resolveBookCoverUrl, resolveDisplayCoverUrl } from "@/lib/services/covers";
+import { resolveDisplayCoverUrl } from "@/lib/services/covers";
 import { bookDetailsPath } from "@/lib/routes/book";
 import { authorPagePath } from "@/lib/routes/author";
 import { cn } from "@/lib/utils/cn";
@@ -30,7 +30,10 @@ type Props = {
   author: string | null;
   external_id: string;
   coverUrl: string | null;
-  cover_i: string;
+  /** ISBNdb cover image URL to persist on add */
+  cover_url?: string;
+  /** @deprecated legacy Open Library cover id */
+  cover_i?: string;
   page_count: string;
   isbn?: string;
   first_publish_year?: string;
@@ -100,7 +103,7 @@ export function SearchResultCard({
   author,
   external_id,
   coverUrl,
-  cover_i,
+  cover_url = "",
   page_count,
   isbn = "",
   first_publish_year = "",
@@ -114,7 +117,7 @@ export function SearchResultCard({
   const [editionOpen, setEditionOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [viewDetailsLoading, setViewDetailsLoading] = useState(false);
-  const [selectedEdition, setSelectedEdition] = useState<OpenLibraryEditionSummary | null>(
+  const [selectedEdition, setSelectedEdition] = useState<CatalogEditionSummary | null>(
     null
   );
   const [resolvedCoverUrl, setResolvedCoverUrl] = useState<string | null>(coverUrl);
@@ -124,41 +127,23 @@ export function SearchResultCard({
     ? String(selectedEdition.pageCount)
     : page_count;
   const effectiveYear = selectedEdition?.publishDate?.match(/\d{4}/)?.[0] ?? first_publish_year;
-  const effectiveCoverId = selectedEdition?.coverId
-    ? String(selectedEdition.coverId)
-    : cover_i;
+  const effectiveCoverUrl = selectedEdition?.coverUrl ?? cover_url ?? coverUrl ?? "";
+  const effectiveExternalId = selectedEdition?.editionKey ?? external_id;
 
   useEffect(() => {
-    const nextCover = selectedEdition?.coverId
-      ? resolveDisplayCoverUrl({ coverId: selectedEdition.coverId, isbn: effectiveIsbn })
-      : coverUrl;
-    setResolvedCoverUrl(nextCover);
-  }, [coverUrl, selectedEdition, effectiveIsbn]);
-
-  useEffect(() => {
-    if (resolvedCoverUrl) return;
-
-    let cancelled = false;
-    void resolveBookCoverUrl({
-      coverId: effectiveCoverId ? Number(effectiveCoverId) : null,
-      coverUrl,
-      isbn: effectiveIsbn,
-      title,
-      author,
-    }).then((url) => {
-      if (!cancelled && url) setResolvedCoverUrl(url);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [coverUrl, effectiveCoverId, effectiveIsbn, title, author, resolvedCoverUrl]);
+    setResolvedCoverUrl(
+      resolveDisplayCoverUrl({
+        coverUrl: selectedEdition?.coverUrl ?? coverUrl ?? cover_url,
+        isbn: effectiveIsbn,
+      })
+    );
+  }, [coverUrl, cover_url, selectedEdition, effectiveIsbn]);
 
   const bookPayload = {
     title: selectedEdition?.title ?? title,
     author,
-    external_id,
-    cover_i: effectiveCoverId,
+    external_id: effectiveExternalId,
+    cover_url: effectiveCoverUrl,
     page_count: effectivePageCount,
     isbn: effectiveIsbn,
     first_publish_year: effectiveYear,
@@ -169,7 +154,7 @@ export function SearchResultCard({
   async function handleViewDetails() {
     setViewDetailsLoading(true);
     try {
-      const result = await ensureOpenLibraryBook(bookPayload);
+      const result = await ensureCatalogBook(bookPayload);
       if (result.error || !result.bookId) {
         toast.error(result.error ?? "Could not open book details.");
         return;
@@ -189,8 +174,8 @@ export function SearchResultCard({
     const formData = new FormData();
     formData.set("title", bookPayload.title);
     formData.set("author", author ?? "");
-    formData.set("external_id", external_id);
-    formData.set("cover_i", bookPayload.cover_i);
+    formData.set("external_id", bookPayload.external_id);
+    formData.set("cover_url", bookPayload.cover_url);
     formData.set("page_count", bookPayload.page_count);
     formData.set("isbn", bookPayload.isbn);
     formData.set("first_publish_year", bookPayload.first_publish_year);
@@ -201,7 +186,7 @@ export function SearchResultCard({
     formData.set("shelf_status", shelfStatus);
 
     try {
-      const result = await addOpenLibraryBookToShelf({}, formData);
+      const result = await addCatalogBookToShelf({}, formData);
       if (result.error) {
         toast.error(result.error || "Could not add book. Please try again.");
         return;

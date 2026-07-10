@@ -5,19 +5,19 @@ import { useSearchParams } from "next/navigation";
 import { SearchResultCard } from "@/components/search/SearchResultCard";
 import { Button } from "@/components/ui/Button";
 import {
-  openLibraryWorkId,
-  searchOpenLibrary,
-  type OpenLibrarySearchResult,
-} from "@/lib/services/openLibrary";
+  catalogExternalId,
+  searchIsbndb,
+  type CatalogDoc,
+  type CatalogSearchResult,
+} from "@/lib/services/isbndb";
 import { resolveDisplayCoverUrl } from "@/lib/services/covers";
-import { getShelvedOpenLibraryWorkIds } from "@/lib/services/library";
+import { getShelvedCatalogExternalIds } from "@/lib/services/library";
 import { SEARCH_PAGE_SIZE } from "@/lib/constants/searchFilters";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
-import { usePreferredOpenLibraryLanguage } from "@/lib/hooks/usePreferredOpenLibraryLanguage";
+import { usePreferredCatalogLanguage } from "@/lib/hooks/usePreferredOpenLibraryLanguage";
 import { isIsbnQuery } from "@/lib/utils/isbn";
 import { resolveSearchLanguage } from "@/lib/utils/searchLanguage";
 import { LoadingState } from "@/components/ui/LoadingState";
-import type { OpenLibraryDoc } from "@/types";
 
 type Props = {
   query: string;
@@ -32,7 +32,7 @@ function parseOptionalInt(value: string | null): number | undefined {
 export function SearchResults({ query }: Props) {
   const searchParams = useSearchParams();
   const user = useAuthUser();
-  const preferredLanguage = usePreferredOpenLibraryLanguage();
+  const preferredLanguage = usePreferredCatalogLanguage();
   const urlLang = searchParams.get("lang");
   const language = resolveSearchLanguage(urlLang, preferredLanguage);
   const yearFrom = parseOptionalInt(searchParams.get("yearFrom"));
@@ -46,26 +46,26 @@ export function SearchResults({ query }: Props) {
     [language, yearFrom, yearTo, sort]
   );
 
-  const [docs, setDocs] = useState<OpenLibraryDoc[]>([]);
+  const [docs, setDocs] = useState<CatalogDoc[]>([]);
   const [numFound, setNumFound] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [shelvedWorkIds, setShelvedWorkIds] = useState<Set<string>>(new Set());
+  const [shelvedIds, setShelvedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!user) {
-      setShelvedWorkIds(new Set());
+      setShelvedIds(new Set());
       return;
     }
 
     let cancelled = false;
-    void getShelvedOpenLibraryWorkIds(user.id)
+    void getShelvedCatalogExternalIds(user.id)
       .then((ids) => {
-        if (!cancelled) setShelvedWorkIds(ids);
+        if (!cancelled) setShelvedIds(ids);
       })
       .catch((error) => {
-        console.error("[search] failed to load shelved work ids:", error);
+        console.error("[search] failed to load shelved catalog ids:", error);
       });
 
     return () => {
@@ -83,7 +83,7 @@ export function SearchResults({ query }: Props) {
       }
 
       try {
-        const result: OpenLibrarySearchResult = await searchOpenLibrary(query, {
+        const result: CatalogSearchResult = await searchIsbndb(query, {
           ...searchOptions,
           limit: SEARCH_PAGE_SIZE,
           offset,
@@ -137,11 +137,11 @@ export function SearchResults({ query }: Props) {
 
       <ul className="mx-auto grid max-w-6xl grid-cols-1 justify-items-center gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {docs.map((doc) => {
-          const workId = openLibraryWorkId(doc.key);
-          if (!workId || !doc.title) return null;
-          const isbn = doc.isbn?.[0] ?? "";
+          const externalId = catalogExternalId(doc.key);
+          if (!externalId || !doc.title) return null;
+          const isbn = doc.isbn?.[0] ?? externalId;
           const coverUrl = resolveDisplayCoverUrl({
-            coverId: doc.cover_i,
+            coverUrl: doc.cover_url,
             isbn,
           });
           const author = doc.author_name?.[0] ?? null;
@@ -152,8 +152,8 @@ export function SearchResults({ query }: Props) {
                 title={doc.title}
                 author={author}
                 coverUrl={coverUrl}
-                external_id={workId}
-                cover_i={doc.cover_i ? String(doc.cover_i) : ""}
+                external_id={externalId}
+                cover_url={doc.cover_url ?? ""}
                 page_count={
                   doc.number_of_pages_median ? String(doc.number_of_pages_median) : ""
                 }
@@ -162,9 +162,9 @@ export function SearchResults({ query }: Props) {
                   doc.first_publish_year ? String(doc.first_publish_year) : ""
                 }
                 first_sentence={doc.first_sentence?.[0] ?? ""}
-                bookmarked={shelvedWorkIds.has(workId)}
+                bookmarked={shelvedIds.has(externalId)}
                 onBookmarked={() => {
-                  setShelvedWorkIds((prev) => new Set(prev).add(workId));
+                  setShelvedIds((prev) => new Set(prev).add(externalId));
                 }}
               />
             </li>

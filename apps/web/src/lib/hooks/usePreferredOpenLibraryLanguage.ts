@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { getProfile } from "@/lib/services/profile";
-import { preferredLanguageToOpenLibrary } from "@/lib/utils/searchLanguage";
+import { preferredLanguageToCatalog } from "@/lib/utils/searchLanguage";
 
-/** Open Library language code from the signed-in user's profile preference. */
-export function usePreferredOpenLibraryLanguage(): string | undefined {
+/** Catalog language code from the signed-in user's profile preference. */
+export function usePreferredCatalogLanguage(): string | undefined {
   const user = useAuthUser();
   const [language, setLanguage] = useState<string | undefined>(undefined);
 
@@ -23,7 +23,7 @@ export function usePreferredOpenLibraryLanguage(): string | undefined {
     void getProfile(user.id)
       .then((profile) => {
         if (cancelled) return;
-        setLanguage(preferredLanguageToOpenLibrary(profile?.preferred_language));
+        setLanguage(preferredLanguageToCatalog(profile?.preferred_language));
       })
       .catch(() => {
         if (!cancelled) setLanguage(undefined);
@@ -35,4 +35,9 @@ export function usePreferredOpenLibraryLanguage(): string | undefined {
   }, [user]);
 
   return language;
+}
+
+/** @deprecated Use usePreferredCatalogLanguage */
+export function usePreferredOpenLibraryLanguage(): string | undefined {
+  return usePreferredCatalogLanguage();
 }

@@ -1,17 +1,19 @@
 import { createClient } from "@/lib/supabase/client";
 import {
-  fetchGoogleBooksVolume,
-  resolveBookCoverUrl,
-} from "@/lib/services/covers";
-import {
-  fetchOpenLibraryWorkDetails,
-  fetchWorkEditions,
-} from "@/lib/services/openLibrary";
+  fetchIsbndbBookDetails,
+  ISBNDB_SOURCE,
+} from "@/lib/services/isbndb";
 import type { Book } from "@/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+const CATALOG_SOURCES = new Set(["isbndb", "open_library"]);
+
 export function bookNeedsCatalogEnrichment(book: Book): boolean {
-  if (book.external_source !== "open_library" || !book.external_id) {
+  const linked =
+    Boolean(book.external_id) &&
+    (!book.external_source || CATALOG_SOURCES.has(book.external_source));
+
+  if (!linked) {
     return !book.cover_url?.trim();
   }
 
@@ -27,73 +29,49 @@ export function bookNeedsCatalogEnrichment(book: Book): boolean {
 
 function buildMetadataUpdates(
   book: Book,
-  ol: Awaited<ReturnType<typeof fetchOpenLibraryWorkDetails>>,
-  google: Awaited<ReturnType<typeof fetchGoogleBooksVolume>>
+  details: Awaited<ReturnType<typeof fetchIsbndbBookDetails>>
 ): Partial<Book> {
+  if (!details) return {};
+
   const updates: Partial<Book> = {};
 
-  if (!book.description?.trim()) {
-    if (ol?.description) updates.description = ol.description;
-    else if (google?.description) updates.description = google.description;
+  if (!book.description?.trim() && details.description) {
+    updates.description = details.description;
   }
-
-  if (!(book.subjects && book.subjects.length) && ol?.subjects.length) {
-    updates.subjects = ol.subjects;
+  if (!(book.subjects && book.subjects.length) && details.subjects.length) {
+    updates.subjects = details.subjects;
   }
-
-  if (!book.published_date) {
-    if (ol?.published_date) updates.published_date = ol.published_date;
-    else if (google?.publishedDate) updates.published_date = google.publishedDate;
+  if (!book.published_date && details.published_date) {
+    updates.published_date = details.published_date;
   }
-
-  if (!book.publisher) {
-    if (ol?.publisher) updates.publisher = ol.publisher;
-    else if (google?.publisher) updates.publisher = google.publisher;
+  if (!book.publisher && details.publisher) {
+    updates.publisher = details.publisher;
   }
-
-  if (!book.page_count) {
-    if (ol?.page_count) updates.page_count = ol.page_count;
-    else if (google?.pageCount) updates.page_count = google.pageCount;
+  if (!book.page_count && details.page_count) {
+    updates.page_count = details.page_count;
+  }
+  if (!book.cover_url?.trim() && details.cover_url) {
+    updates.cover_url = details.cover_url;
+  }
+  if (!book.isbn && details.isbn) {
+    updates.isbn = details.isbn;
   }
 
   return updates;
 }
 
-function normalizeIsbn(isbn: string | null | undefined): string | null {
-  const clean = isbn?.replace(/[-\s]/g, "") ?? "";
-  return clean || null;
-}
-
-async function findOpenLibraryEditionCoverId(
-  workId: string,
-  isbn?: string | null
-): Promise<number | null> {
-  const { editions } = await fetchWorkEditions(workId, { limit: 20 });
-  const targetIsbn = normalizeIsbn(isbn);
-
-  if (targetIsbn) {
-    const match = editions.find((edition) => normalizeIsbn(edition.isbn) === targetIsbn);
-    if (match?.coverId) return match.coverId;
-  }
-
-  return editions.find((edition) => edition.coverId)?.coverId ?? null;
-}
-
-/** Resolve best cover from Open Library (edition-aware) then Google Books. */
+/** Resolve cover from ISBNdb only. */
 export async function resolveCatalogCoverForBook(book: Book): Promise<string | null> {
-  let coverId: number | null = null;
-
-  if (book.external_source === "open_library" && book.external_id) {
-    coverId = await findOpenLibraryEditionCoverId(book.external_id, book.isbn);
+  if (book.cover_url?.trim() && !book.cover_url.includes("covers.openlibrary.org")) {
+    return book.cover_url.trim();
   }
 
-  return resolveBookCoverUrl({
-    coverId,
-    coverUrl: book.cover_url,
-    isbn: book.isbn,
-    title: book.title,
-    author: book.author,
-  });
+  if (!book.external_id && !book.isbn) {
+    return book.cover_url?.trim() || null;
+  }
+
+  const details = await fetchIsbndbBookDetails(book.isbn ?? book.external_id ?? "");
+  return details?.cover_url ?? book.cover_url?.trim() ?? null;
 }
 
 async function syncBookCover(
@@ -150,38 +128,37 @@ export async function enrichBookCatalogEntry(
     return syncBookCover(supabase, book);
   }
 
-  const ol =
-    book.external_source === "open_library" && book.external_id
-      ? await fetchOpenLibraryWorkDetails(book.external_id).catch((error) => {
-          console.warn("[bookMetadata] Open Library fetch failed:", error);
-          return null;
-        })
-      : null;
-
-  const needsGoogle =
-    !book.description?.trim() ||
-    !book.cover_url?.trim() ||
-    !book.page_count ||
-    !book.published_date ||
-    !book.publisher;
-
-  const google = needsGoogle
-    ? await fetchGoogleBooksVolume({
-        isbn: book.isbn,
-        title: book.title,
-        author: book.author,
+  const lookupId = book.isbn ?? book.external_id;
+  const details = lookupId
+    ? await fetchIsbndbBookDetails(lookupId).catch((error) => {
+        console.warn("[bookMetadata] ISBNdb fetch failed:", error);
+        return null;
       })
     : null;
 
-  const metadataUpdates = buildMetadataUpdates(book, ol, google);
+  const metadataUpdates = buildMetadataUpdates(book, details);
+
+  // Prefer ISBNdb covers even when replacing legacy Open Library URLs
+  if (details?.cover_url) {
+    metadataUpdates.cover_url = details.cover_url;
+  }
+  if (details && book.external_source !== ISBNDB_SOURCE && details.isbn) {
+    metadataUpdates.external_source = ISBNDB_SOURCE;
+    metadataUpdates.external_id = details.isbn;
+  }
+
   let current = await persistBookUpdates(supabase, book.id, metadataUpdates, book);
-
   current = await syncBookCover(supabase, current);
-
   return current;
 }
 
 export async function refreshBookFromOpenLibrary(
+  bookId: string
+): Promise<{ book?: Book; error?: string }> {
+  return refreshBookFromCatalog(bookId);
+}
+
+export async function refreshBookFromCatalog(
   bookId: string
 ): Promise<{ book?: Book; error?: string }> {
   const supabase = createClient();
@@ -197,30 +174,32 @@ export async function refreshBookFromOpenLibrary(
   }
 
   const row = book as Book;
-
-  if (row.external_source !== "open_library" || !row.external_id) {
-    return { error: "This book is not linked to Open Library." };
+  const lookupId = row.isbn ?? row.external_id;
+  if (!lookupId) {
+    return { error: "This book is not linked to the catalog." };
   }
 
-  const ol = await fetchOpenLibraryWorkDetails(row.external_id);
-  if (!ol) {
-    return { error: "Could not fetch metadata from Open Library." };
+  const details = await fetchIsbndbBookDetails(lookupId);
+  if (!details) {
+    return { error: "Could not fetch metadata from ISBNdb." };
   }
 
-  const updates: Partial<Book> = {};
+  const updates: Partial<Book> = {
+    external_source: ISBNDB_SOURCE,
+  };
 
-  if (ol.description) updates.description = ol.description;
-  if (ol.subjects.length > 0) updates.subjects = ol.subjects;
-  if (ol.published_date) updates.published_date = ol.published_date;
-  if (ol.publisher) updates.publisher = ol.publisher;
-  if (ol.page_count) updates.page_count = ol.page_count;
+  if (details.isbn) updates.external_id = details.isbn;
+  if (details.description) updates.description = details.description;
+  if (details.subjects.length > 0) updates.subjects = details.subjects;
+  if (details.published_date) updates.published_date = details.published_date;
+  if (details.publisher) updates.publisher = details.publisher;
+  if (details.page_count) updates.page_count = details.page_count;
+  if (details.cover_url) updates.cover_url = details.cover_url;
+  if (details.isbn) updates.isbn = details.isbn;
+  if (details.title) updates.title = details.title;
+  if (details.author) updates.author = details.author;
 
-  const resolvedCover = await resolveCatalogCoverForBook(row);
-  if (resolvedCover) {
-    updates.cover_url = resolvedCover;
-  }
-
-  if (Object.keys(updates).length === 0) {
+  if (Object.keys(updates).length <= 1) {
     return { book: row };
   }
 

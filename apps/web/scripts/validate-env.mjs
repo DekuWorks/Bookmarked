@@ -57,4 +57,10 @@ if (!process.env.NEXT_PUBLIC_GIPHY_API_KEY?.trim()) {
   );
 }
 
+if (!process.env.ISBNDB_API_KEY?.trim()) {
+  console.warn(
+    "::warning::ISBNDB_API_KEY is not set locally. Book search uses the Supabase Edge Function proxy; ensure the ISBNDB_API_KEY secret is set on the Supabase project."
+  );
+}
+
 console.log("Supabase environment variables validated.");

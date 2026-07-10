@@ -23,7 +23,7 @@ import { ButtonLink } from "@/components/ui/ButtonLink";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import { bookDetailsPath } from "@/lib/routes/book";
 import { authorPagePath } from "@/lib/routes/author";
-import { refreshBookFromOpenLibrary } from "@/lib/services/bookMetadata";
+import { refreshBookFromCatalog } from "@/lib/services/bookMetadata";
 import type { BookDetailsData } from "@/lib/services/bookDetails";
 import type { ShelfStatus } from "@/types";
 
@@ -114,13 +114,12 @@ function BookDetailsContent() {
   } = data;
   const currentShelf = (userBook?.shelf_status as ShelfStatus | undefined) ?? null;
   const readCount = Number(userBook?.read_count) || 1;
-  const canRefreshFromOpenLibrary =
-    book.external_source === "open_library" && Boolean(book.external_id);
+  const canRefreshFromCatalog = Boolean(book.external_id || book.isbn);
 
   const handleRefreshMetadata = async () => {
     setRefreshError(null);
     setRefreshing(true);
-    const result = await refreshBookFromOpenLibrary(book.id);
+    const result = await refreshBookFromCatalog(book.id);
     setRefreshing(false);
 
     if (result.error) {
@@ -175,7 +174,7 @@ function BookDetailsContent() {
           </p>
         ) : null}
 
-        {canRefreshFromOpenLibrary ? (
+        {canRefreshFromCatalog ? (
           <div className="mt-4 flex flex-col items-center gap-2">
             <Button
               type="button"
@@ -255,7 +254,7 @@ function BookDetailsContent() {
             </p>
           ) : (
             <p className="mt-3 text-text-muted">
-              No description available yet. Metadata is filled in from Open Library when
+              No description available yet. Metadata is filled in from ISBNdb when
               possible.
             </p>
           )}

@@ -42,15 +42,22 @@ Open [http://localhost:3000](http://localhost:3000).
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
+**Book catalog (ISBNdb)** — the REST key stays server-side:
+
+- Local: `ISBNDB_API_KEY` in `apps/web/.env.local` (not `NEXT_PUBLIC_`)
+- Supabase: `supabase secrets set ISBNDB_API_KEY=...` (used by Edge Function `/functions/v1/isbndb`)
+- GitHub: `gh secret set ISBNDB_API_KEY` (reference; not injected into the static build)
+
 Set via GitHub → Settings → Secrets and variables → Actions, or:
 
 ```bash
 cd apps/web
 gh secret set NEXT_PUBLIC_SUPABASE_URL --body "$(grep '^NEXT_PUBLIC_SUPABASE_URL=' .env.local | cut -d= -f2-)"
 gh secret set NEXT_PUBLIC_SUPABASE_ANON_KEY --body "$(grep '^NEXT_PUBLIC_SUPABASE_ANON_KEY=' .env.local | cut -d= -f2-)"
+gh secret set ISBNDB_API_KEY --body "$(grep '^ISBNDB_API_KEY=' .env.local | cut -d= -f2-)"
 ```
 
-The deploy workflow fails fast with a clear error if either secret is missing.
+The deploy workflow fails fast with a clear error if either Supabase public secret is missing.
 
 **Manual setup (one-time):**
 
@@ -64,7 +71,7 @@ The deploy workflow fails fast with a clear error if either secret is missing.
 | Route | Description |
 |-------|-------------|
 | `/` | Landing page |
-| `/search` | Open Library search |
+| `/search` | ISBNdb book search |
 | `/book?id={id}` | Book details, progress, reviews |
 | `/library` | Full library (bookshelf / grid) |
 | `/library/want-to-read` | Want to read shelf |

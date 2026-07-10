@@ -116,10 +116,10 @@ function AuthorPageContent() {
         </section>
       ) : null}
 
-      <section className="space-y-4" aria-labelledby="author-open-library-heading">
+      <section className="space-y-4" aria-labelledby="author-catalog-heading">
         <div className="text-center">
-          <h2 id="author-open-library-heading" className="text-xl font-semibold text-puce-red">
-            Discover on Open Library
+          <h2 id="author-catalog-heading" className="text-xl font-semibold text-puce-red">
+            Discover more titles
           </h2>
           <p className="mt-1 text-sm text-text-muted">
             Find more books by {authorName} and add them to your shelves.

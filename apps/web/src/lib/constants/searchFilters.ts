@@ -3,15 +3,15 @@ export const EDITION_PAGE_SIZE = 15;
 
 export const SEARCH_LANGUAGE_OPTIONS = [
   { value: "", label: "Any language" },
-  { value: "eng", label: "English" },
-  { value: "spa", label: "Spanish" },
-  { value: "fre", label: "French" },
-  { value: "ger", label: "German" },
-  { value: "ita", label: "Italian" },
-  { value: "por", label: "Portuguese" },
-  { value: "jpn", label: "Japanese" },
-  { value: "kor", label: "Korean" },
-  { value: "chi", label: "Chinese" },
+  { value: "en", label: "English" },
+  { value: "es", label: "Spanish" },
+  { value: "fr", label: "French" },
+  { value: "de", label: "German" },
+  { value: "it", label: "Italian" },
+  { value: "pt", label: "Portuguese" },
+  { value: "ja", label: "Japanese" },
+  { value: "ko", label: "Korean" },
+  { value: "zh", label: "Chinese" },
 ] as const;
 
 export const SEARCH_SORT_OPTIONS = [

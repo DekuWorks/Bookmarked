@@ -5,9 +5,9 @@ import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { EDITION_PAGE_SIZE } from "@/lib/constants/searchFilters";
 import {
-  fetchWorkEditions,
-  type OpenLibraryEditionSummary,
-} from "@/lib/services/openLibrary";
+  fetchCatalogEditions,
+  type CatalogEditionSummary,
+} from "@/lib/services/isbndb";
 import { cn } from "@/lib/utils/cn";
 
 type Props = {
@@ -15,11 +15,11 @@ type Props = {
   workId: string;
   workTitle: string;
   onClose: () => void;
-  onSelect: (edition: OpenLibraryEditionSummary) => void;
+  onSelect: (edition: CatalogEditionSummary) => void;
 };
 
 export function EditionPickerModal({ open, workId, workTitle, onClose, onSelect }: Props) {
-  const [editions, setEditions] = useState<OpenLibraryEditionSummary[] | null>(null);
+  const [editions, setEditions] = useState<CatalogEditionSummary[] | null>(null);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -38,7 +38,7 @@ export function EditionPickerModal({ open, workId, workTitle, onClose, onSelect 
       }
 
       try {
-        const result = await fetchWorkEditions(workId, {
+        const result = await fetchCatalogEditions(workId, {
           limit: EDITION_PAGE_SIZE,
           offset,
         });
@@ -126,6 +126,7 @@ export function EditionPickerModal({ open, workId, workTitle, onClose, onSelect 
                       edition.publisher,
                       edition.pageCount ? `${edition.pageCount} pp` : null,
                       edition.isbn ? `ISBN ${edition.isbn}` : null,
+                      edition.coverUrl ? "Cover available" : null,
                     ]
                       .filter(Boolean)
                       .join(" · ") || "Edition details unavailable"}
@@ -166,4 +167,4 @@ export function EditionPickerModal({ open, workId, workTitle, onClose, onSelect 
   );
 }
 
-export type { OpenLibraryEditionSummary };
+export type { CatalogEditionSummary, CatalogEditionSummary as OpenLibraryEditionSummary };

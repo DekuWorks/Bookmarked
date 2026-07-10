@@ -22,6 +22,8 @@ env:
   NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
   NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
   NEXT_PUBLIC_GIPHY_API_KEY: ${{ secrets.NEXT_PUBLIC_GIPHY_API_KEY }}
+  # ISBNDB_API_KEY is stored as a GitHub secret for reference/docs and as a
+  # Supabase Edge Function secret (never baked into the static export).
 
 jobs:
   build:

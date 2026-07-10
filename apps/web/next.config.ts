@@ -16,6 +16,12 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
+        hostname: "images.isbndb.com",
+        pathname: "/**",
+      },
+      // Legacy covers already stored in the catalog may still display
+      {
+        protocol: "https",
         hostname: "covers.openlibrary.org",
         pathname: "/b/**",
       },

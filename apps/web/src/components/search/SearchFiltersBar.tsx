@@ -5,7 +5,7 @@ import {
   SEARCH_LANGUAGE_OPTIONS,
   SEARCH_SORT_OPTIONS,
 } from "@/lib/constants/searchFilters";
-import { usePreferredOpenLibraryLanguage } from "@/lib/hooks/usePreferredOpenLibraryLanguage";
+import { usePreferredCatalogLanguage } from "@/lib/hooks/usePreferredOpenLibraryLanguage";
 import { resolveSearchLanguageFilterValue } from "@/lib/utils/searchLanguage";
 import { cn } from "@/lib/utils/cn";
 
@@ -20,7 +20,7 @@ export function SearchFiltersBar() {
   const searchParams = useSearchParams();
   const q = searchParams.get("q") ?? "";
 
-  const preferredLanguage = usePreferredOpenLibraryLanguage();
+  const preferredLanguage = usePreferredCatalogLanguage();
   const urlLang = searchParams.get("lang");
   const language = resolveSearchLanguageFilterValue(urlLang, preferredLanguage);
   const yearFrom = parseYear(searchParams.get("yearFrom"));

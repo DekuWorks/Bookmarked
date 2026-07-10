@@ -62,12 +62,14 @@ export function groupBooksByShelf(books: LibraryBookRow[]): ShelfGroup[] {
   }));
 }
 
-/** Open Library work IDs for books currently on the viewer's shelves. */
-export async function getShelvedOpenLibraryWorkIds(userId: string): Promise<Set<string>> {
+const SHELVED_CATALOG_SOURCES = new Set(["isbndb", "open_library"]);
+
+/** Catalog external IDs (ISBNs / legacy work ids) for books on the viewer's shelves. */
+export async function getShelvedCatalogExternalIds(userId: string): Promise<Set<string>> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("user_books")
-    .select("books(external_id, external_source)")
+    .select("books(external_id, external_source, isbn)")
     .eq("user_id", userId);
 
   if (error) throw error;
@@ -76,14 +78,25 @@ export async function getShelvedOpenLibraryWorkIds(userId: string): Promise<Set<
   for (const row of data ?? []) {
     const rawBook = row.books;
     const book = (Array.isArray(rawBook) ? rawBook[0] : rawBook) as
-      | { external_id: string | null; external_source: string | null }
+      | {
+          external_id: string | null;
+          external_source: string | null;
+          isbn: string | null;
+        }
       | null
       | undefined;
-    if (book?.external_source === "open_library" && book.external_id) {
-      workIds.add(book.external_id);
+    if (!book?.external_source || !SHELVED_CATALOG_SOURCES.has(book.external_source)) {
+      continue;
     }
+    if (book.external_id) workIds.add(book.external_id);
+    if (book.isbn) workIds.add(book.isbn.replace(/[-\s]/g, ""));
   }
   return workIds;
+}
+
+/** @deprecated Use getShelvedCatalogExternalIds */
+export async function getShelvedOpenLibraryWorkIds(userId: string): Promise<Set<string>> {
+  return getShelvedCatalogExternalIds(userId);
 }
 
 export type ShelfStats = {

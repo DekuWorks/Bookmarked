@@ -4,7 +4,12 @@
  */
 
 import { createClient } from "@/lib/supabase/client";
-import { searchOpenLibrary, openLibraryWorkId, openLibraryCoverUrl } from "@/lib/services/openLibrary";
+import {
+  catalogExternalId,
+  ISBNDB_SOURCE,
+  searchIsbndb,
+  type CatalogDoc,
+} from "@/lib/services/isbndb";
 import type { ShelfStatus } from "@/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -119,12 +124,12 @@ export function parseGoodreadsCsv(text: string): GoodreadsRow[] {
   return rows;
 }
 
-async function findOpenLibraryMatch(row: GoodreadsRow) {
+async function findCatalogMatch(row: GoodreadsRow): Promise<CatalogDoc | null> {
   const isbn = row.isbn13 ?? row.isbn;
   const query = isbn ? isbn : [row.title, row.author].filter(Boolean).join(" ");
   if (!query.trim()) return null;
 
-  const result = await searchOpenLibrary(query, { limit: 5 });
+  const result = await searchIsbndb(query, { limit: 5 });
   const docs = result.docs ?? [];
 
   if (isbn) {
@@ -152,39 +157,44 @@ async function upsertImportedBook(
   supabase: SupabaseClient,
   userId: string,
   row: GoodreadsRow,
-  doc: NonNullable<Awaited<ReturnType<typeof findOpenLibraryMatch>>>
+  doc: CatalogDoc
 ): Promise<ImportRowResult> {
-  const externalId = openLibraryWorkId(doc.key);
+  const externalId = catalogExternalId(doc.key);
   if (!externalId) {
-    return { title: row.title, status: "error", message: "Invalid Open Library work id" };
+    return { title: row.title, status: "error", message: "Invalid catalog id" };
   }
 
-  const coverId = doc.cover_i;
-  const coverUrl = coverId
-    ? `https://covers.openlibrary.org/b/id/${coverId}-M.jpg`
-    : null;
+  const coverUrl = doc.cover_url ?? null;
+  const isbn = row.isbn13 ?? row.isbn ?? externalId;
 
-  const { data: existingBook } = await supabase
-    .from("books")
-    .select("id")
-    .eq("external_source", "open_library")
-    .eq("external_id", externalId)
-    .maybeSingle();
+  const { data: existingByIsbn } = isbn
+    ? await supabase.from("books").select("id").eq("isbn", isbn).maybeSingle()
+    : { data: null };
 
-  let bookId = existingBook?.id;
+  const { data: existingByExternal } = !existingByIsbn
+    ? await supabase
+        .from("books")
+        .select("id")
+        .eq("external_source", ISBNDB_SOURCE)
+        .eq("external_id", externalId)
+        .maybeSingle()
+    : { data: null };
+
+  let bookId = existingByIsbn?.id ?? existingByExternal?.id;
 
   if (!bookId) {
     const { data: inserted, error } = await supabase
       .from("books")
       .insert({
-        external_source: "open_library",
+        external_source: ISBNDB_SOURCE,
         external_id: externalId,
         title: doc.title ?? row.title,
         author: doc.author_name?.[0] ?? row.author,
         cover_url: coverUrl,
-        isbn: row.isbn13 ?? row.isbn,
+        isbn,
         page_count: row.numberOfPages ?? doc.number_of_pages_median ?? null,
         published_date: doc.first_publish_year ? String(doc.first_publish_year) : null,
+        description: doc.synopsis ?? doc.first_sentence?.[0] ?? null,
       })
       .select("id")
       .single();
@@ -193,6 +203,15 @@ async function upsertImportedBook(
       return { title: row.title, status: "error", message: error?.message ?? "Could not create book" };
     }
     bookId = inserted.id;
+  } else if (coverUrl) {
+    await supabase
+      .from("books")
+      .update({
+        cover_url: coverUrl,
+        external_source: ISBNDB_SOURCE,
+        external_id: externalId,
+      })
+      .eq("id", bookId);
   }
 
   const shelfStatus: ShelfStatus = row.exclusiveShelf ?? "want_to_read";
@@ -259,13 +278,13 @@ export async function importGoodreadsCsv(
 
   for (const row of rows) {
     try {
-      const doc = await findOpenLibraryMatch(row);
+      const doc = await findCatalogMatch(row);
       if (!doc) {
         summary.skipped += 1;
         summary.results.push({
           title: row.title,
           status: "skipped",
-          message: "No Open Library match found",
+          message: "No catalog match found",
         });
         continue;
       }

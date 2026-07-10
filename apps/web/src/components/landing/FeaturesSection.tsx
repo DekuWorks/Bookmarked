@@ -1,7 +1,7 @@
 const features = [
   {
     title: "Book search",
-    description: "Discover titles via Open Library and save them to your library.",
+    description: "Discover titles via ISBNdb and save them to your library.",
     accent: "bg-royal-orange/20 text-rust",
   },
   {

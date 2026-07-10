@@ -42,7 +42,7 @@ export function FeedSearchResults({ query, results, loading, error }: Props) {
         </p>
         <div className="mt-4">
           <ButtonLink href={`/search?q=${encodeURIComponent(query)}`} variant="outline" size="sm">
-            Search Open Library
+            Search books
           </ButtonLink>
         </div>
       </div>
@@ -76,7 +76,7 @@ export function FeedSearchResults({ query, results, loading, error }: Props) {
               href={`/search?q=${encodeURIComponent(query)}`}
               className="text-xs font-medium text-primary hover:underline"
             >
-              Search Open Library
+              Search books
             </Link>
           </div>
           <ul className="space-y-2">

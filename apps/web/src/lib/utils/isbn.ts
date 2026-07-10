@@ -15,5 +15,5 @@ export function isIsbnQuery(raw: string): boolean {
 
 export function formatIsbnForSearch(raw: string): string {
   const isbn = normalizeIsbnInput(raw);
-  return isbn ? `isbn:${isbn}` : raw.trim();
+  return isbn ?? raw.trim();
 }

@@ -99,7 +99,7 @@ export function LibraryImportPanel({ userId, onImportComplete, embedded = false 
       </div>
 
       <p className="mt-3 text-xs text-text-muted">
-        MVP supports Goodreads CSV only. Up to 200 rows per import. Books without an Open Library
+        MVP supports Goodreads CSV only. Up to 200 rows per import. Books without a catalog
         match are skipped.
       </p>
 
