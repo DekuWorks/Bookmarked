@@ -52,6 +52,7 @@ export function ReadingProgressPanel({
   const [page, setPage] = useState(String(currentPage || ""));
   const [total, setTotal] = useState(String(totalPages || ""));
   const [displayPercent, setDisplayPercent] = useState(progressPercent);
+  const [editingTotal, setEditingTotal] = useState(false);
   const [clientError, setClientError] = useState<string | null>(null);
   const [progressAction, submitProgress, saving] = useActionState(
     updateReadingProgress,
@@ -66,6 +67,7 @@ export function ReadingProgressPanel({
     setPage(String(currentPage || ""));
     setTotal(String(totalPages || ""));
     setDisplayPercent(progressPercent);
+    setEditingTotal(false);
   }, [currentPage, totalPages, progressPercent]);
 
   useEffect(() => {
@@ -84,30 +86,38 @@ export function ReadingProgressPanel({
     }
   }, [finishAction, toast, onProgressChange]);
 
+  // Live preview while editing current page; while editing total, keep the
+  // last committed percent so mid-keystrokes (476 → 47) don't show 100%.
   const previewPercent = useMemo(() => {
+    if (editingTotal) return displayPercent;
     const cur = Number(page) || 0;
     const tot = Number(total) || totalPages || 0;
     if (tot <= 0) return displayPercent;
     return Math.min(100, Math.round((cur / tot) * 1000) / 10);
-  }, [page, total, totalPages, displayPercent]);
+  }, [page, total, totalPages, displayPercent, editingTotal]);
 
   useEffect(() => {
-    const cur = Number(page) || 0;
+    if (editingTotal) return;
     const tot = Number(total) || totalPages || 0;
     if (tot > 0) {
       setDisplayPercent(previewPercent);
     }
-  }, [page, total, totalPages, previewPercent]);
+  }, [page, total, totalPages, previewPercent, editingTotal]);
 
   const pageCountUnavailable = !totalPages && !total;
 
-  function validateBeforeSubmit(): boolean {
+  function commitTotalPreview() {
+    setEditingTotal(false);
     const cur = Number(page) || 0;
     const tot = Number(total) || totalPages || 0;
-    if (tot > 0 && cur > tot) {
-      setClientError("Current page cannot exceed total pages.");
-      return false;
+    if (tot > 0) {
+      setDisplayPercent(Math.min(100, Math.round((cur / tot) * 1000) / 10));
     }
+  }
+
+  function validateBeforeSubmit(): boolean {
+    // Allow current > total when correcting a page count downward; server
+    // caps percent at 100% without auto-finishing.
     setClientError(null);
     return true;
   }
@@ -125,11 +135,13 @@ export function ReadingProgressPanel({
 
   const startedLabel = formatDate(startedAt);
   const finishedLabel = formatDate(finishedAt);
-  const isFinished = Boolean(finishedLabel) || displayPercent >= 100;
+  // Only an explicit finish marks the book finished — never live percent.
+  const isFinished = Boolean(finishedAt);
 
   const cur = Number(page) || 0;
   const tot = Number(total) || totalPages || 0;
-  const atFullProgress = tot > 0 && cur >= tot && !isFinished;
+  const atFullProgress =
+    !editingTotal && tot > 0 && cur >= tot && !isFinished;
 
   return (
     <section className="rounded-xl border border-border bg-surface p-5">
@@ -192,7 +204,6 @@ export function ReadingProgressPanel({
               setClientError(null);
             }}
             error={clientError ?? undefined}
-            disabled={isFinished}
           />
           <Input
             label="Total pages"
@@ -202,10 +213,14 @@ export function ReadingProgressPanel({
             placeholder={totalPages ? String(totalPages) : "Enter total"}
             value={total}
             onChange={(e) => {
+              setEditingTotal(true);
               setTotal(e.target.value);
               setClientError(null);
             }}
-            disabled={isFinished}
+            onBlur={commitTotalPreview}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commitTotalPreview();
+            }}
           />
         </div>
         <ProgressBar
@@ -219,13 +234,21 @@ export function ReadingProgressPanel({
             Read.
           </p>
         ) : null}
-        {!isFinished ? (
-          <Button type="submit" variant="secondary" loading={saving}>
-            Update progress
-          </Button>
-        ) : (
-          <p className="text-sm font-medium text-puce-red">This book is finished.</p>
-        )}
+        {cur > 0 && tot > 0 && cur > tot && !editingTotal ? (
+          <p className="text-sm text-text-muted">
+            Current page is above total pages. Saving will cap progress at 100% without
+            marking the book finished.
+          </p>
+        ) : null}
+        <Button type="submit" variant="secondary" loading={saving}>
+          Update progress
+        </Button>
+        {isFinished ? (
+          <p className="text-sm font-medium text-puce-red">
+            This book is finished. Updating progress will move it back to Currently
+            Reading if you lower the page count.
+          </p>
+        ) : null}
       </form>
 
       {!isFinished ? (
@@ -235,9 +258,6 @@ export function ReadingProgressPanel({
             "mt-4 border-t border-border pt-4",
             atFullProgress && "rounded-lg bg-primary/10 px-3 pb-3"
           )}
-          onSubmit={(e) => {
-            if (!validateBeforeSubmit()) e.preventDefault();
-          }}
         >
           <input type="hidden" name="book_id" value={bookId} />
           <Button

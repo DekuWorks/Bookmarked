@@ -186,10 +186,8 @@ export async function updateReadingProgress(
 
   const effectiveTotal = totalPages || book.page_count || 0;
 
-  if (effectiveTotal > 0 && currentPage > effectiveTotal) {
-    return { error: "Current page cannot exceed total pages." };
-  }
-
+  // Cap display percent only — never auto-finish from page edits.
+  // Keep progress_pages as entered even when total is corrected downward.
   const progress_percent =
     effectiveTotal > 0
       ? Math.min(100, Math.round((currentPage / effectiveTotal) * 1000) / 10)
@@ -197,10 +195,8 @@ export async function updateReadingProgress(
 
   const now = new Date().toISOString();
   const previousPage = Number(userBook.progress_pages) || 0;
-  const finalPage =
-    effectiveTotal > 0 && currentPage >= effectiveTotal ? effectiveTotal : currentPage;
-  const finalPercent =
-    effectiveTotal > 0 && currentPage >= effectiveTotal ? 100 : progress_percent;
+  const finalPage = currentPage;
+  const finalPercent = progress_percent;
 
   const updates: Record<string, unknown> = {
     progress_pages: finalPage,
@@ -209,10 +205,18 @@ export async function updateReadingProgress(
     updated_at: now,
   };
 
-  if (effectiveTotal > 0 && currentPage >= effectiveTotal) {
-    updates.shelf_status = "read";
-    updates.finished_at = userBook.finished_at ?? now;
-  } else if (userBook.shelf_status !== "currently_reading" && currentPage > 0) {
+  // Progress edits never mark finished; only markBookFinished does.
+  // If the user lowers progress below 100%, clear an existing finish so they
+  // can recover from a mistaken auto-finish and keep editing.
+  if (finalPercent < 100 && (userBook.finished_at || userBook.shelf_status === "read")) {
+    updates.finished_at = null;
+    updates.shelf_status = finalPage > 0 ? "currently_reading" : "want_to_read";
+  } else if (
+    !userBook.finished_at &&
+    userBook.shelf_status !== "currently_reading" &&
+    userBook.shelf_status !== "read" &&
+    currentPage > 0
+  ) {
     updates.shelf_status = "currently_reading";
   }
 
@@ -225,10 +229,6 @@ export async function updateReadingProgress(
 
   if (effectiveTotal > 0 && book.page_count !== effectiveTotal) {
     await supabase.from("books").update({ page_count: effectiveTotal }).eq("id", bookId);
-  }
-
-  if (updates.shelf_status === "read") {
-    await applyCompletionTagsForFinish(supabase, userBook);
   }
 
   const sessionResult = await createReadingSessionWithClient(supabase, {
@@ -244,8 +244,7 @@ export async function updateReadingProgress(
 
   await recordActivity(supabase, {
     user_id: user.id,
-    event_type:
-      updates.shelf_status === "read" ? "book_finished" : "progress_updated",
+    event_type: "progress_updated",
     entity_type: "user_book",
     entity_id: userBook.id,
     metadata_json: activityMetadata(book.title, {
@@ -254,12 +253,7 @@ export async function updateReadingProgress(
     }),
   });
 
-  return {
-    success:
-      updates.shelf_status === "read"
-        ? "Book Completed 🎉"
-        : "Progress saved",
-  };
+  return { success: "Progress saved" };
 }
 
 export async function markBookFinished(
