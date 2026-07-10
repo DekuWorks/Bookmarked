@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { useToast } from "@/components/ui/Toast";
+import { TransferReadingStatsModal } from "@/components/books/TransferReadingStatsModal";
 import { cn } from "@/lib/utils/cn";
 import {
   markBookFinished,
@@ -34,6 +35,7 @@ function percentFromPages(current: number, total: number): number | null {
 
 type Props = {
   bookId: string;
+  bookTitle: string;
   onShelf: boolean;
   currentPage: number;
   totalPages: number;
@@ -45,6 +47,7 @@ type Props = {
 
 export function ReadingProgressPanel({
   bookId,
+  bookTitle,
   onShelf,
   currentPage,
   totalPages,
@@ -61,6 +64,7 @@ export function ReadingProgressPanel({
   // intermediate values (476 → 47) never flash 100% or lock the form.
   const [editing, setEditing] = useState(false);
   const [clientError, setClientError] = useState<string | null>(null);
+  const [transferOpen, setTransferOpen] = useState(false);
   const [progressAction, submitProgress, saving] = useActionState(
     updateReadingProgress,
     initial
@@ -279,7 +283,22 @@ export function ReadingProgressPanel({
         >
           Reading notes
         </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setTransferOpen(true)}
+        >
+          Move to another edition
+        </Button>
       </div>
+
+      <TransferReadingStatsModal
+        open={transferOpen}
+        onClose={() => setTransferOpen(false)}
+        fromBookId={bookId}
+        fromBookTitle={bookTitle}
+      />
     </section>
   );
 }

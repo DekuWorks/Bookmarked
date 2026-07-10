@@ -5,6 +5,8 @@ import {
   recordActivity,
 } from "@/lib/services/activity";
 import { createReadingSessionWithClient } from "@/lib/services/readingSessions";
+import { ensureCatalogBook } from "@/lib/services/books";
+import { transferUserBookHistory } from "@/lib/services/transferUserBook";
 import { getShelfLabel, isShelfStatus } from "@/lib/constants/shelfLabels";
 import {
   computeCompletionTags,
@@ -17,6 +19,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export type BookActionState = {
   error?: string;
   success?: string;
+  bookId?: string;
 };
 
 type UserBookRow = {
@@ -573,4 +576,107 @@ export async function deleteReview(
   if (error) return { error: error.message };
 
   return { success: "Review deleted." };
+}
+
+/**
+ * Transfer progress, sessions, notes, reviews, and shelf membership
+ * from the current shelved book onto another catalog edition.
+ */
+export async function transferReadingStats(
+  _prev: BookActionState,
+  formData: FormData
+): Promise<BookActionState> {
+  const fromBookId = String(formData.get("from_book_id") ?? "").trim();
+  const toBookIdRaw = String(formData.get("to_book_id") ?? "").trim();
+
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be signed in." };
+
+  if (!fromBookId) return { error: "Source book is required." };
+
+  const { data: sourceUserBook } = await supabase
+    .from("user_books")
+    .select("id, book_id")
+    .eq("user_id", user.id)
+    .eq("book_id", fromBookId)
+    .maybeSingle();
+
+  if (!sourceUserBook) {
+    return { error: "Add this book to your library before transferring stats." };
+  }
+
+  let toBookId = toBookIdRaw;
+
+  // Catalog search path: upsert target edition first when no catalog book_id yet.
+  if (!toBookId) {
+    const externalId = String(formData.get("external_id") ?? "").trim();
+    const title = String(formData.get("title") ?? "").trim();
+    if (!externalId || !title) {
+      return { error: "Select a target edition to transfer to." };
+    }
+
+    const catalog = await ensureCatalogBook({
+      title,
+      author: String(formData.get("author") ?? "").trim() || null,
+      external_id: externalId,
+      cover_url: String(formData.get("cover_url") ?? "").trim() || undefined,
+      page_count: String(formData.get("page_count") ?? ""),
+      isbn: String(formData.get("isbn") ?? "").trim() || undefined,
+      first_publish_year: String(formData.get("first_publish_year") ?? "").trim() || undefined,
+      first_sentence: String(formData.get("first_sentence") ?? "").trim() || undefined,
+      edition_key: String(formData.get("edition_key") ?? "").trim() || undefined,
+    });
+
+    if (catalog.error || !catalog.bookId) {
+      return { error: catalog.error ?? "Could not save the target edition." };
+    }
+    toBookId = catalog.bookId;
+  }
+
+  if (toBookId === fromBookId) {
+    return { error: "Choose a different edition than the one already on your shelf." };
+  }
+
+  const { data: sourceBook } = await supabase
+    .from("books")
+    .select("id, title, cover_url, subjects")
+    .eq("id", fromBookId)
+    .maybeSingle();
+
+  const { data: targetBook } = await supabase
+    .from("books")
+    .select("id, title, cover_url, subjects")
+    .eq("id", toBookId)
+    .maybeSingle();
+
+  const result = await transferUserBookHistory(
+    supabase,
+    user.id,
+    sourceUserBook.id,
+    toBookId
+  );
+
+  if (result.error || !result.toBookId) {
+    return { error: result.error ?? "Transfer failed." };
+  }
+
+  await recordActivity(supabase, {
+    user_id: user.id,
+    event_type: "shelf_updated",
+    entity_type: "user_book",
+    entity_id: result.toUserBookId ?? null,
+    metadata_json: activityMetadata(targetBook?.title ?? sourceBook?.title ?? "Book", {
+      ...bookActivityContext(targetBook ?? sourceBook ?? { id: toBookId }),
+      transferred_from_book_id: fromBookId,
+      transferred_from_title: sourceBook?.title ?? null,
+    }),
+  });
+
+  return {
+    success: `Moved reading stats to ${targetBook?.title ?? "the selected edition"}.`,
+    bookId: result.toBookId,
+  };
 }

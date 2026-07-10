@@ -270,6 +270,7 @@ function BookDetailsContent() {
         />
         <ReadingProgressPanel
           bookId={book.id}
+          bookTitle={book.title}
           onShelf={Boolean(userBook)}
           currentPage={Number(userBook?.progress_pages) || 0}
           totalPages={book.page_count ?? 0}
