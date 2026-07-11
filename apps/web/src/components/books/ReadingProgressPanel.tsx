@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -74,8 +74,24 @@ export function ReadingProgressPanel({
     initial
   );
 
+  // Track the last props we synced so we only pull server values into the
+  // inputs when they *actually* change. Without this, toggling `editing`
+  // false (on blur/submit) would re-run this effect and overwrite the value
+  // the user just typed with the stale prop — making edits appear to revert.
+  const lastSynced = useRef({ currentPage, totalPages, progressPercent });
+
   useEffect(() => {
-    if (editing) return;
+    const prev = lastSynced.current;
+    const propsChanged =
+      prev.currentPage !== currentPage ||
+      prev.totalPages !== totalPages ||
+      prev.progressPercent !== progressPercent;
+    lastSynced.current = { currentPage, totalPages, progressPercent };
+
+    // Only overwrite local input when new server data arrives, and never
+    // while the user is actively editing (a realtime tick must not clobber
+    // an in-progress edit).
+    if (!propsChanged || editing) return;
     setPage(String(currentPage || ""));
     setTotal(String(totalPages || ""));
     setDisplayPercent(progressPercent);
