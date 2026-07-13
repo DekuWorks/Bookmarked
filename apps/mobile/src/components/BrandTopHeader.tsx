@@ -1,7 +1,11 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { Image, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { HEADER_GRADIENT, HEADER_GRADIENT_LOCATIONS } from "../constants/theme";
+import {
+  HEADER_GRADIENT,
+  HEADER_GRADIENT_LOCATIONS,
+  SERIF_DISPLAY_FONT,
+} from "../constants/theme";
 import { NotificationBell } from "./NotificationBell";
 
 type Props = {
@@ -14,7 +18,8 @@ type Props = {
  * edge-to-edge under the status bar and fades seamlessly into the page's
  * lavender tint at the bottom — no divider/border/shadow, so it blends into
  * the page. The brand lockup renders the circular logo mark AS the "B" glyph,
- * immediately followed by "OOKMARKED" so it reads as one word.
+ * immediately followed by "ookmarked" in the same high-contrast serif so it
+ * reads as one word / one typeface.
  */
 export function BrandTopHeader({ children }: Props) {
   const insets = useSafeAreaInsets();
@@ -23,21 +28,24 @@ export function BrandTopHeader({ children }: Props) {
     <LinearGradient
       colors={HEADER_GRADIENT}
       locations={HEADER_GRADIENT_LOCATIONS}
-      start={{ x: 0.1, y: 0 }}
-      end={{ x: 0.9, y: 1 }}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
       style={{ paddingTop: insets.top + 10 }}
-      className="px-4 pb-5"
+      className="px-4 pb-6"
     >
       <View className="h-11 flex-row items-center justify-center">
         <View className="flex-row items-center">
-          <Text className="mr-0.5 text-sm text-primary-dark">✦</Text>
           <Image
             source={require("../../assets/brand/logo-mark.png")}
-            style={{ width: 30, height: 30, marginRight: -1 }}
+            style={{ width: 32, height: 32, marginRight: -1 }}
             resizeMode="contain"
           />
-          <Text className="text-xl font-black tracking-[2px] text-puce-red">OOKMARKED</Text>
-          <Text className="ml-0.5 text-sm text-primary-dark">✦</Text>
+          <Text
+            style={{ fontFamily: SERIF_DISPLAY_FONT, fontSize: 25, letterSpacing: 1 }}
+            className="text-puce-red"
+          >
+            OOKMARKED
+          </Text>
         </View>
         <View className="absolute right-0">
           <NotificationBell />

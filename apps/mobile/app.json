@@ -30,7 +30,8 @@
     },
     "scheme": "bookmarked",
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-font"
     ]
   }
 }

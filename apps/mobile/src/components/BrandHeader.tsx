@@ -1,7 +1,7 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BACKGROUND_TINT } from "../constants/theme";
+import { BACKGROUND_TINT, SERIF_DISPLAY_FONT } from "../constants/theme";
 
 type Props = {
   title: string;
@@ -22,7 +22,9 @@ export function BrandHeader({ title, subtitle }: Props) {
       className="px-5 pb-5"
     >
       <View>
-        <Text className="text-3xl font-bold text-puce-red">{title}</Text>
+        <Text style={{ fontFamily: SERIF_DISPLAY_FONT }} className="text-3xl text-puce-red">
+          {title}
+        </Text>
         {subtitle ? <Text className="text-ink-muted mt-1">{subtitle}</Text> : null}
       </View>
     </LinearGradient>
