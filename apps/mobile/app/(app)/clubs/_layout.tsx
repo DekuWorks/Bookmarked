@@ -8,7 +8,7 @@ export default function ClubsLayout() {
         headerTitleStyle: { color: "#642F37", fontWeight: "700" },
         headerTintColor: "#642F37",
         headerShadowVisible: false,
-        contentStyle: { backgroundColor: "#FAF8FC" },
+        contentStyle: { backgroundColor: "#F4EEFA" },
       }}
     >
       <Stack.Screen name="index" options={{ headerShown: false }} />

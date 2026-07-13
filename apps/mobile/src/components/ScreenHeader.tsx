@@ -19,7 +19,7 @@ export function ScreenHeader({ title, back = true, right }: Props) {
   return (
     <View
       style={{ paddingTop: insets.top + 6 }}
-      className="border-b border-brand-border bg-surface px-2 pb-2"
+      className="bg-background px-2 pb-2"
     >
       <View className="h-11 flex-row items-center">
         {back ? (

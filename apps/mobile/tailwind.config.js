@@ -18,7 +18,9 @@ module.exports = {
         rust: "#C0350F",
         "royal-orange": "#F3904B",
         "orange-yellow": "#F7C767",
-        background: "#FAF8FC",
+        // App-wide light lavender tint (mirrors web --color-background, nudged
+        // toward the mockup's visible purple tint). Cards use `surface`.
+        background: "#F4EEFA",
         surface: "#FCFAFE",
         ink: "#1A1A1A",
         "ink-muted": "#6B6B6B",

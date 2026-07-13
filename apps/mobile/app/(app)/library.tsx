@@ -162,7 +162,7 @@ export default function MyBooksScreen() {
   return (
     <View className="flex-1 bg-background">
       {/* Header */}
-      <View style={{ paddingTop: insets.top + 8 }} className="bg-surface px-4 pb-2">
+      <View style={{ paddingTop: insets.top + 8 }} className="bg-background px-4 pb-2">
         <View className="flex-row items-center">
           <Text className="flex-1 text-3xl font-black text-puce-red">My Books</Text>
           <Pressable

@@ -41,7 +41,7 @@ export default function NotesScreen() {
   return (
     <View className="flex-1 bg-background">
       <ScreenHeader title="Reading Notes" />
-      <View className="bg-surface px-4 pb-2">
+      <View className="bg-background px-4 pb-2">
         <Input
           placeholder="Search your notes and quotes"
           autoCapitalize="none"

@@ -85,7 +85,7 @@ export default function SearchScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <View style={{ paddingTop: insets.top + 8 }} className="bg-surface px-4 pb-2">
+      <View style={{ paddingTop: insets.top + 8 }} className="bg-background px-4 pb-2">
         <Text className="mb-2 text-3xl font-black text-puce-red">Search</Text>
         <Input
           placeholder={

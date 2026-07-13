@@ -40,7 +40,7 @@ export default function MessagesScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <View style={{ paddingTop: insets.top + 8 }} className="bg-surface px-4 pb-3">
+      <View style={{ paddingTop: insets.top + 8 }} className="bg-background px-4 pb-3">
         <Text className="mb-3 text-3xl font-black text-puce-red">Messages</Text>
         <SegmentedTabs options={SEGMENTS} value={segment} onChange={setSegment} />
       </View>

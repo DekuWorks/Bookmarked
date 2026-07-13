@@ -1,4 +1,5 @@
 import { Redirect, Tabs } from "expo-router";
+import { BACKGROUND_TINT } from "../../src/constants/theme";
 import { LoadingState } from "../../src/components/LoadingState";
 import { useProfile } from "../../src/hooks/useProfile";
 import { FloatingTabBar } from "../../src/navigation/FloatingTabBar";
@@ -28,7 +29,7 @@ export default function AppTabsLayout() {
         tabBar={(props) => <FloatingTabBar {...props} />}
         screenOptions={{
           headerShown: false,
-          sceneStyle: { backgroundColor: "#FAF8FC" },
+          sceneStyle: { backgroundColor: BACKGROUND_TINT },
         }}
       >
         {/* Primary destinations (final mapping — IMG_5471) */}

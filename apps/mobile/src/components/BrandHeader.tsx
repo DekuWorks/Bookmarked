@@ -1,6 +1,7 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BACKGROUND_TINT } from "../constants/theme";
 
 type Props = {
   title: string;
@@ -16,7 +17,7 @@ export function BrandHeader({ title, subtitle }: Props) {
 
   return (
     <LinearGradient
-      colors={["#E4D8E6", "#FAF8FC"]}
+      colors={["#E4D8E6", BACKGROUND_TINT]}
       style={{ paddingTop: insets.top + 12 }}
       className="px-5 pb-5"
     >
