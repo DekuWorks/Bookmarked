@@ -80,6 +80,7 @@ export interface Review {
   pacing: number | null;
   emotional_impact: number | null;
   rating_mode: ReviewRatingMode;
+  rating_emoji: string | null;
   created_at: string;
   updated_at: string;
   profiles?: { display_name: string | null; username: string | null };

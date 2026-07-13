@@ -13,6 +13,7 @@ import {
   mergeCompletionTags,
 } from "@/lib/constants/completionTags";
 import { parseHalfStarRating } from "@/lib/utils/ratings";
+import { sanitizeRatingEmoji } from "@/lib/constants/reviewEmojis";
 import type { ReviewRatingMode, ShelfStatus } from "@/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -347,6 +348,7 @@ export async function saveReview(
   const edition = String(formData.get("edition") ?? "").trim() || null;
   const read_number = Math.max(1, Number(formData.get("read_number") ?? 1) || 1);
   const rating_mode = parseRatingMode(String(formData.get("rating_mode") ?? "regular"));
+  const rating_emoji = sanitizeRatingEmoji(String(formData.get("rating_emoji") ?? ""));
   const feelings = parseFeelings(formData);
 
   const aspectFields = [
@@ -383,6 +385,7 @@ export async function saveReview(
     edition,
     feelings,
     rating_mode,
+    rating_emoji,
     visibility: "public" as const,
     updated_at: new Date().toISOString(),
     ...aspects,
@@ -436,6 +439,7 @@ export async function saveReview(
       ...bookActivityContext(book),
       rating,
       read_number,
+      ...(rating_emoji ? { rating_emoji } : {}),
     }),
   });
 

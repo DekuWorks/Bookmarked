@@ -149,7 +149,14 @@ export function ReviewCard({
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <span className="font-semibold text-puce-red">{displayName}</span>
         {!isEditing && review.rating != null ? (
-          <StarDisplay rating={Number(review.rating)} />
+          <span className="inline-flex items-center gap-1.5">
+            <StarDisplay rating={Number(review.rating)} />
+            {review.rating_emoji ? (
+              <span className="text-lg leading-none" aria-label="Rating emoji">
+                {review.rating_emoji}
+              </span>
+            ) : null}
+          </span>
         ) : null}
         {!isEditing ? (
           <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs text-puce-red">

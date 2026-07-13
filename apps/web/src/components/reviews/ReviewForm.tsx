@@ -5,6 +5,11 @@ import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import { StarRating } from "@/components/reviews/StarRating";
 import { REVIEW_FEELINGS } from "@/lib/constants/reviewFeelings";
+import {
+  REVIEW_RATING_EMOJIS,
+  REVIEW_RATING_EMOJI_MAX_LENGTH,
+  sanitizeRatingEmoji,
+} from "@/lib/constants/reviewEmojis";
 import { cn } from "@/lib/utils/cn";
 import type { Review, ReviewRatingMode } from "@/types";
 
@@ -40,6 +45,7 @@ export function ReviewForm({
 }: Props) {
   const [mode, setMode] = useState<ReviewRatingMode>(initial?.rating_mode ?? "regular");
   const [rating, setRating] = useState(initial?.rating ? Number(initial.rating) : 0);
+  const [ratingEmoji, setRatingEmoji] = useState(initial?.rating_emoji ?? "");
   const [edition, setEdition] = useState(initial?.edition ?? "");
   const [reviewBody, setReviewBody] = useState(initial?.review_body ?? "");
   const [hasSpoilers, setHasSpoilers] = useState(Boolean(initial?.has_spoilers));
@@ -59,12 +65,17 @@ export function ReviewForm({
     );
   }
 
+  function pickEmoji(emoji: string) {
+    setRatingEmoji((current) => (current === emoji ? "" : emoji));
+  }
+
   return (
     <form action={formAction} className="space-y-4">
       <input type="hidden" name="book_id" value={bookId} />
       <input type="hidden" name="read_number" value={readNumber} />
       <input type="hidden" name="rating_mode" value={mode} />
       <input type="hidden" name="rating" value={rating || ""} />
+      <input type="hidden" name="rating_emoji" value={sanitizeRatingEmoji(ratingEmoji) ?? ""} />
       <input type="hidden" name="edition" value={edition} />
       {reviewId ? <input type="hidden" name="review_id" value={reviewId} /> : null}
       {feelings.map((feeling) => (
@@ -106,6 +117,55 @@ export function ReviewForm({
       <div>
         <p className="mb-1.5 text-sm font-medium text-text">Overall rating</p>
         <StarRating value={rating} onChange={setRating} />
+      </div>
+
+      <div>
+        <p className="mb-1.5 text-sm font-medium text-text">
+          Rating emoji <span className="font-normal text-text-muted">(optional)</span>
+        </p>
+        <p className="mb-2 text-xs text-text-muted">
+          Pick a signature emoji to show with your rating — like ⚡ for Harry Potter.
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          {REVIEW_RATING_EMOJIS.map((emoji) => {
+            const active = ratingEmoji === emoji;
+            return (
+              <button
+                key={emoji}
+                type="button"
+                aria-pressed={active}
+                aria-label={`Use ${emoji} as your rating emoji`}
+                onClick={() => pickEmoji(emoji)}
+                className={cn(
+                  "flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg border text-xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange",
+                  active
+                    ? "border-puce-red bg-puce-red/10 shadow-sm"
+                    : "border-border bg-background hover:border-primary"
+                )}
+              >
+                {emoji}
+              </button>
+            );
+          })}
+        </div>
+        <div className="mt-2 flex items-center gap-2">
+          <Input
+            aria-label="Pick your own rating emoji"
+            value={ratingEmoji}
+            onChange={(e) => setRatingEmoji(e.target.value.slice(0, REVIEW_RATING_EMOJI_MAX_LENGTH))}
+            placeholder="Or type your own…"
+            className="max-w-[10rem]"
+          />
+          {ratingEmoji ? (
+            <button
+              type="button"
+              onClick={() => setRatingEmoji("")}
+              className="text-xs font-medium text-text-muted hover:text-puce-red"
+            >
+              Clear
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <Input

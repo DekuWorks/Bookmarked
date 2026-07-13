@@ -99,6 +99,10 @@ function formatWithSubject(
       ? metadata.progress_percent
       : null;
   const rating = typeof metadata?.rating === "number" ? metadata.rating : null;
+  const ratingEmoji =
+    typeof metadata?.rating_emoji === "string" && metadata.rating_emoji.trim()
+      ? ` ${metadata.rating_emoji.trim()}`
+      : "";
 
   switch (event_type) {
     case "book_added":
@@ -121,8 +125,8 @@ function formatWithSubject(
     case "review_created":
     case "review_added":
       return rating != null
-        ? `${subject} reviewed ${title} (${rating}★)`
-        : `${subject} reviewed ${title}`;
+        ? `${subject} reviewed ${title} (${rating}★)${ratingEmoji}`
+        : `${subject} reviewed ${title}${ratingEmoji}`;
     case "review_updated":
       return `${subject} updated their review of ${title}`;
     case "book_removed":
