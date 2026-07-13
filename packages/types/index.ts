@@ -207,6 +207,69 @@ export type PostWithAuthor = Post & {
   comments?: PostCommentWithAuthor[];
 };
 
+export type BookClubVisibility = "public" | "private";
+
+export type BookClubMemberRole = "owner" | "member";
+
+/** Lightweight book summary used across club UI (current book, discussion attach). */
+export type BookClubBook = {
+  id: string;
+  title: string;
+  author: string | null;
+  cover_url: string | null;
+};
+
+export interface BookClub {
+  id: string;
+  owner_id: string;
+  name: string;
+  description: string | null;
+  image_url: string | null;
+  current_book_id: string | null;
+  visibility: BookClubVisibility;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BookClubMember {
+  id: string;
+  club_id: string;
+  user_id: string;
+  role: BookClubMemberRole;
+  joined_at: string;
+}
+
+export type BookClubMemberWithProfile = BookClubMember & {
+  profile: MessageProfile;
+};
+
+export interface BookClubPost {
+  id: string;
+  club_id: string;
+  user_id: string;
+  body: string;
+  book_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type BookClubPostWithAuthor = BookClubPost & {
+  author: PostAuthor;
+  book?: BookClubBook | null;
+};
+
+/** A club annotated with membership/count info for the viewer (discover + lists). */
+export type BookClubSummary = BookClub & {
+  member_count: number;
+  viewer_is_member: boolean;
+  viewer_role: BookClubMemberRole | null;
+  current_book?: BookClubBook | null;
+};
+
+export type BookClubWithDetails = BookClubSummary & {
+  members: BookClubMemberWithProfile[];
+};
+
 export type ContentReaction = "like" | "dislike";
 
 export type ReactionCounts = {

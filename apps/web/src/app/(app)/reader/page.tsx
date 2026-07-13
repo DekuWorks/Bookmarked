@@ -18,6 +18,7 @@ import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { ProfileShelfPreview } from "@/components/profile/ProfileShelfPreview";
 import { ProfileNotesSection } from "@/components/profile/ProfileNotesSection";
 import { ProfilePostsSection } from "@/components/social/ProfilePostsSection";
+import { ProfileClubsSection } from "@/components/profile/ProfileClubsSection";
 import { FollowStats } from "@/components/social/FollowStats";
 import {
   computeReadingStreak,
@@ -169,6 +170,15 @@ function ReaderProfileContent() {
       <section className="rounded-xl border border-border bg-surface p-6 text-left shadow-sm">
         <h2 className="mb-4 text-lg font-semibold text-puce-red">Reading Notes</h2>
         <ProfileNotesSection userId={profile.id} isOwnProfile={isSelf} />
+      </section>
+
+      <section className="rounded-xl border border-border bg-surface p-6 text-left shadow-sm">
+        <h2 className="mb-4 text-lg font-semibold text-puce-red">Book Clubs</h2>
+        <ProfileClubsSection
+          profileUserId={profile.id}
+          viewerId={user.id}
+          isOwnProfile={isSelf}
+        />
       </section>
 
       <ProfilePostsSection
