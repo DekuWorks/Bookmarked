@@ -13,7 +13,8 @@
       "backgroundColor": "#FAF8FC"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.dekuworks.bookmarked"
     },
     "android": {
       "adaptiveIcon": {
