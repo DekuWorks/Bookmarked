@@ -3,6 +3,7 @@ import {
   fetchIsbndbBookDetails,
   ISBNDB_SOURCE,
 } from "@/lib/services/isbndb";
+import { parseSeries } from "@/lib/utils/series";
 import type { Book } from "@/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -57,6 +58,40 @@ function buildMetadataUpdates(
     updates.isbn = details.isbn;
   }
 
+  return updates;
+}
+
+/**
+ * Auto-detect series name + position from ISBNdb title data.
+ * Never overwrites an existing series_name (respects prior/manual values).
+ * When `force` is true (explicit refresh) it re-parses and overwrites.
+ */
+function buildSeriesUpdates(
+  book: Book,
+  details: Awaited<ReturnType<typeof fetchIsbndbBookDetails>>,
+  options?: { force?: boolean }
+): Partial<Book> {
+  if (!options?.force && book.series_name?.trim()) return {};
+
+  const parsed = parseSeries({
+    title: details?.title ?? book.title,
+    titleLong: details?.title_long ?? null,
+    subjects: details?.subjects ?? book.subjects,
+  });
+
+  if (!parsed) return {};
+  if (
+    !options?.force &&
+    book.series_name?.trim() &&
+    book.series_position != null
+  ) {
+    return {};
+  }
+
+  const updates: Partial<Book> = { series_name: parsed.name };
+  if (parsed.position !== null) {
+    updates.series_position = parsed.position;
+  }
   return updates;
 }
 
@@ -125,7 +160,14 @@ export async function enrichBookCatalogEntry(
   book: Book
 ): Promise<Book> {
   if (!bookNeedsCatalogEnrichment(book)) {
-    return syncBookCover(supabase, book);
+    // Even fully-enriched books may predate series detection — parse from the
+    // title we already have (no network call) and backfill if we find one.
+    const seriesUpdates = buildSeriesUpdates(book, null);
+    const withSeries =
+      Object.keys(seriesUpdates).length > 0
+        ? await persistBookUpdates(supabase, book.id, seriesUpdates, book)
+        : book;
+    return syncBookCover(supabase, withSeries);
   }
 
   const lookupId = book.isbn ?? book.external_id;
@@ -136,7 +178,10 @@ export async function enrichBookCatalogEntry(
       })
     : null;
 
-  const metadataUpdates = buildMetadataUpdates(book, details);
+  const metadataUpdates = {
+    ...buildMetadataUpdates(book, details),
+    ...buildSeriesUpdates(book, details),
+  };
 
   // Prefer ISBNdb covers even when replacing legacy Open Library URLs
   if (details?.cover_url) {
@@ -198,6 +243,9 @@ export async function refreshBookFromCatalog(
   if (details.isbn) updates.isbn = details.isbn;
   if (details.title) updates.title = details.title;
   if (details.author) updates.author = details.author;
+
+  // Explicit refresh re-parses series from the freshest catalog title data.
+  Object.assign(updates, buildSeriesUpdates(row, details, { force: true }));
 
   if (Object.keys(updates).length <= 1) {
     return { book: row };

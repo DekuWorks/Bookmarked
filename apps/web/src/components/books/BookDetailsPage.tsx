@@ -23,6 +23,7 @@ import { ButtonLink } from "@/components/ui/ButtonLink";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import { bookDetailsPath } from "@/lib/routes/book";
 import { authorPagePath } from "@/lib/routes/author";
+import { seriesPagePath } from "@/lib/routes/series";
 import { refreshBookFromCatalog } from "@/lib/services/bookMetadata";
 import type { BookDetailsData } from "@/lib/services/bookDetails";
 import type { ShelfStatus } from "@/types";
@@ -170,6 +171,19 @@ function BookDetailsContent() {
               className="hover:text-primary hover:underline"
             >
               {book.author}
+            </Link>
+          </p>
+        ) : null}
+
+        {book.series_name ? (
+          <p className="mt-2">
+            <Link
+              href={seriesPagePath(book.series_name)}
+              className="inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1 text-sm font-medium text-puce-red hover:bg-primary/25"
+            >
+              {book.series_position != null
+                ? `Part of ${book.series_name} #${book.series_position}`
+                : `Part of ${book.series_name}`}
             </Link>
           </p>
         ) : null}

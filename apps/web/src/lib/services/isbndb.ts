@@ -65,6 +65,8 @@ export type CatalogWorkDetails = {
   page_count: number | null;
   cover_url: string | null;
   title?: string | null;
+  /** Long-form title from ISBNdb — often carries "(Series, #N)" hints. */
+  title_long?: string | null;
   author?: string | null;
   isbn?: string | null;
 };
@@ -199,6 +201,7 @@ function bookToDetails(book: IsbndbBook): CatalogWorkDetails {
     page_count: book.pages ?? null,
     cover_url: isbndbCoverUrl(book),
     title: book.title?.trim() ?? null,
+    title_long: book.title_long?.trim() ?? null,
     author: book.authors?.[0]?.trim() ?? null,
     isbn: catalogExternalId(book.isbn13 ?? book.isbn ?? book.isbn10),
   };
