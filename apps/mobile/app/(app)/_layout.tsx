@@ -61,6 +61,14 @@ export default function AppTabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="clubs"
+        options={{
+          title: "Clubs",
+          headerShown: false,
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>♣</Text>,
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: "Profile",

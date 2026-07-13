@@ -74,10 +74,14 @@ apps/mobile/
     index.tsx                # entry redirect (auth/profile-setup/tabs)
     (auth)/                  # login, signup, forgot-password, profile-setup
     (app)/                   # authenticated bottom tabs
-      _layout.tsx            # Tabs: Home / Library / Search / Profile
+      _layout.tsx            # Tabs: Home / Library / Search / Clubs / Profile
       index.tsx              # Home → Feed
       library.tsx            # Library (shelves)
       search.tsx             # Search (ISBNdb)
+      clubs/                 # Book Clubs (nested stack)
+        _layout.tsx          # Stack: list + detail
+        index.tsx            # Discover / Your clubs
+        [id].tsx             # Club detail (book, members, discussions)
       profile.tsx            # Profile + logout
   src/
     components/              # Button, Input, BookCover, Avatar, FeedCard, ...
@@ -102,6 +106,13 @@ apps/mobile/
 - **Feed / Library**: `src/services/feed.ts` and `src/services/library.ts`
   are RN-appropriate wrappers that query the same Supabase tables
   (`activity_events`, `profiles`, `books`, `user_books`) as the web services.
+- **Book Clubs**: `src/services/bookClubs.ts` mirrors the web
+  `bookClubs` service against the same `book_clubs`, `book_club_members`, and
+  `book_club_posts` tables + RLS (discover, my clubs, detail, members,
+  discussions, join, leave, post discussion).
+- **Rating emoji**: review activity in the feed surfaces a reader's signature
+  `reviews.rating_emoji` (Fable-style, e.g. ⚡) next to the star rating. It is
+  read from the activity `metadata_json` and exposed as `FeedItem.ratingEmoji`.
 
 ## Brand
 
@@ -131,12 +142,17 @@ match the web `feed-header-gradient`.
 - Feed: read-only list of recent public reading activity.
 - Library: user's books grouped by shelf (Want to Read / Reading / Read).
 - Search: live ISBNdb book search via the shared Edge Function.
+- Book Clubs: discover public clubs, view your clubs, and open a club detail
+  (current book, members, discussion feed). Join / leave and post discussions.
 - Profile: identity, favorite genres, avatar, logout.
 
 **Stubbed / not yet implemented**
 
 - Writing actions (adding books to shelves, posting, following) — read-only for now.
-- Push notifications, messaging, reading sessions/notes, clubs.
+- Push notifications, messaging, reading sessions/notes.
+- Book club owner management (create/edit club, set current book, remove
+  members, delete) — stays on the web app for now.
+- A dedicated reviews UI. Ratings/emojis currently surface via the feed only.
 - Book detail screens and deep links from feed/search results.
 - Following-aware feed ranking (currently a simple public activity feed).
 

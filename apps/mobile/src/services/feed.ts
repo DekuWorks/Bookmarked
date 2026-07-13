@@ -30,10 +30,17 @@ export type FeedItem = {
   authorUsername: string | null;
   avatarUrl: string | null;
   message: string;
+  /** Reviewer's signature rating emoji (reviews.rating_emoji), when present. */
+  ratingEmoji: string | null;
   coverUrl: string | null;
   bookTitle: string;
   bookAuthor: string | null;
 };
+
+function ratingEmoji(metadata: Record<string, unknown> | null): string | null {
+  const raw = typeof metadata?.rating_emoji === "string" ? metadata.rating_emoji.trim() : "";
+  return raw || null;
+}
 
 type ActivityRow = {
   id: string;
@@ -74,10 +81,6 @@ function formatMessage(
   const title = bookTitle(metadata);
   const shelf = shelfLabel(metadata);
   const rating = typeof metadata?.rating === "number" ? metadata.rating : null;
-  const ratingEmoji =
-    typeof metadata?.rating_emoji === "string" && metadata.rating_emoji.trim()
-      ? ` ${metadata.rating_emoji.trim()}`
-      : "";
 
   switch (eventType) {
     case "book_added":
@@ -92,8 +95,8 @@ function formatMessage(
     case "review_created":
     case "review_added":
       return rating != null
-        ? `${subject} reviewed ${title} (${rating}★)${ratingEmoji}`
-        : `${subject} reviewed ${title}${ratingEmoji}`;
+        ? `${subject} reviewed ${title} (${rating}★)`
+        : `${subject} reviewed ${title}`;
     case "review_updated":
       return `${subject} updated their review of ${title}`;
     default:
@@ -186,6 +189,7 @@ export async function fetchPublicFeed(limit = 30): Promise<FeedItem[]> {
       authorUsername: profile?.username ?? null,
       avatarUrl: profile?.avatar_url ?? null,
       message: formatMessage(row.event_type, metadata, subjectName(profile)),
+      ratingEmoji: ratingEmoji(metadata),
       coverUrl: metaCover ?? book?.cover_url ?? null,
       bookTitle: bookTitle(metadata) !== "a book" ? bookTitle(metadata) : book?.title ?? "",
       bookAuthor: bookAuthor(metadata) ?? book?.author ?? null,
