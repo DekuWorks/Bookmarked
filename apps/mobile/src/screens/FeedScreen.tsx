@@ -7,6 +7,7 @@ import { BrandTopHeader } from "../components/BrandTopHeader";
 import { EmptyState } from "../components/EmptyState";
 import { FeedPostCard } from "../components/FeedPostCard";
 import { LoadingState } from "../components/LoadingState";
+import { ScreenGradientWash } from "../components/ScreenGradientWash";
 import { SegmentedTabs } from "../components/SegmentedTabs";
 import { useHomeFeed, type FeedTab } from "../hooks/useFeed";
 import { useProfile } from "../hooks/useProfile";
@@ -50,6 +51,7 @@ export function FeedScreen() {
 
   return (
     <View className="flex-1 bg-background">
+      <ScreenGradientWash />
       <BrandTopHeader>
         <SegmentedTabs
           className="mt-3 justify-center"

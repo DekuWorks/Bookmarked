@@ -1,12 +1,6 @@
-import { LinearGradient } from "expo-linear-gradient";
 import { Image, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-  HEADER_GRADIENT,
-  HEADER_GRADIENT_EXTRA_HEIGHT,
-  HEADER_GRADIENT_LOCATIONS,
-  SERIF_DISPLAY_FONT,
-} from "../constants/theme";
+import { BRAND_WORDMARK, SERIF_DISPLAY_FONT } from "../constants/theme";
 import { NotificationBell } from "./NotificationBell";
 
 type Props = {
@@ -15,25 +9,19 @@ type Props = {
 };
 
 /**
- * Branded top header (IMG_5360): a soft lavender→peach gradient that starts
- * edge-to-edge under the status bar and fades seamlessly into the page's
- * lavender tint at the bottom — no divider/border/shadow, so it blends into
- * the page. The brand lockup renders the circular logo mark AS the "B" glyph,
- * immediately followed by "ookmarked" in the same high-contrast serif so it
- * reads as one word / one typeface.
+ * Branded top header (IMG_5360). It is transparent and sits over the screen's
+ * `ScreenGradientWash`, so the lavender→peach→tint gradient shows behind the
+ * wordmark and (on Feed) the segmented tabs with no divider/border/shadow.
+ *
+ * The brand lockup renders the circular logo mark AS the "B" glyph, immediately
+ * followed by "OOKMARKED" in the same high-contrast serif and the same dusty
+ * purple as the logo's B, so it reads as one word / one typeface / one color.
  */
 export function BrandTopHeader({ children }: Props) {
   const insets = useSafeAreaInsets();
 
   return (
-    <LinearGradient
-      colors={HEADER_GRADIENT}
-      locations={HEADER_GRADIENT_LOCATIONS}
-      start={{ x: 0.5, y: 0 }}
-      end={{ x: 0.5, y: 1 }}
-      style={{ paddingTop: insets.top + 10, paddingBottom: HEADER_GRADIENT_EXTRA_HEIGHT }}
-      className="px-4"
-    >
+    <View style={{ paddingTop: insets.top + 10 }} className="px-4 pb-3">
       <View className="h-11 flex-row items-center justify-center">
         <View className="flex-row items-center">
           <Image
@@ -42,8 +30,12 @@ export function BrandTopHeader({ children }: Props) {
             resizeMode="contain"
           />
           <Text
-            style={{ fontFamily: SERIF_DISPLAY_FONT, fontSize: 25, letterSpacing: 1 }}
-            className="text-puce-red"
+            style={{
+              fontFamily: SERIF_DISPLAY_FONT,
+              fontSize: 25,
+              letterSpacing: 1,
+              color: BRAND_WORDMARK,
+            }}
           >
             OOKMARKED
           </Text>
@@ -53,6 +45,6 @@ export function BrandTopHeader({ children }: Props) {
         </View>
       </View>
       {children}
-    </LinearGradient>
+    </View>
   );
 }

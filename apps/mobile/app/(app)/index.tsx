@@ -6,6 +6,7 @@ import Animated from "react-native-reanimated";
 import { BrandTopHeader } from "../../src/components/BrandTopHeader";
 import { CoverTile } from "../../src/components/CoverTile";
 import { EmptyState } from "../../src/components/EmptyState";
+import { ScreenGradientWash } from "../../src/components/ScreenGradientWash";
 import { LoadingState } from "../../src/components/LoadingState";
 import { ProgressBar } from "../../src/components/ProgressBar";
 import { SectionCard } from "../../src/components/SectionCard";
@@ -70,6 +71,7 @@ export default function HomeReadingRoom() {
   if (library.isLoading) {
     return (
       <View className="flex-1 bg-background">
+        <ScreenGradientWash />
         <BrandTopHeader />
         <LoadingState message="Loading your reading room…" />
       </View>
@@ -78,6 +80,7 @@ export default function HomeReadingRoom() {
 
   return (
     <View className="flex-1 bg-background">
+      <ScreenGradientWash />
       <BrandTopHeader />
       <Animated.ScrollView
         onScroll={onScroll}

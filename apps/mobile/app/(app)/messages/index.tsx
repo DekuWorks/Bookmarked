@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Avatar } from "../../../src/components/Avatar";
 import { EmptyState } from "../../../src/components/EmptyState";
 import { LoadingState } from "../../../src/components/LoadingState";
+import { ScreenGradientWash } from "../../../src/components/ScreenGradientWash";
 import { SegmentedTabs } from "../../../src/components/SegmentedTabs";
 import { UnreadBadge } from "../../../src/components/UnreadBadge";
 import { useConversations } from "../../../src/hooks/useMessages";
@@ -40,7 +41,8 @@ export default function MessagesScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <View style={{ paddingTop: insets.top + 8 }} className="bg-background px-4 pb-3">
+      <ScreenGradientWash />
+      <View style={{ paddingTop: insets.top + 8 }} className="px-4 pb-3">
         <Text className="mb-3 text-3xl font-black text-puce-red">Messages</Text>
         <SegmentedTabs options={SEGMENTS} value={segment} onChange={setSegment} />
       </View>

@@ -9,6 +9,7 @@ import { BookCard } from "../../src/components/BookCard";
 import { CoverTile } from "../../src/components/CoverTile";
 import { EmptyState } from "../../src/components/EmptyState";
 import { Input } from "../../src/components/Input";
+import { ScreenGradientWash } from "../../src/components/ScreenGradientWash";
 import { SegmentedTabs } from "../../src/components/SegmentedTabs";
 import { useBookSearch } from "../../src/hooks/useBookSearch";
 import { addCatalogBookToShelf } from "../../src/services/books";
@@ -85,7 +86,8 @@ export default function SearchScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <View style={{ paddingTop: insets.top + 8 }} className="bg-background px-4 pb-2">
+      <ScreenGradientWash />
+      <View style={{ paddingTop: insets.top + 8 }} className="px-4 pb-2">
         <Text className="mb-2 text-3xl font-black text-puce-red">Search</Text>
         <Input
           placeholder={

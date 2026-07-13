@@ -28,10 +28,12 @@ export const BRAND = {
  * matching IMG_5360. The final stop equals BACKGROUND_TINT for a clean blend.
  */
 /**
- * Vertical fade. The peach→tint transition is pushed lower (settling around
- * 0.9) and the container is taller, so the gradient carries further down the
- * page before resolving to the tint. The final stop is exactly BACKGROUND_TINT
- * so there is no visible band/seam where the header meets the page.
+ * Top-of-screen gradient "wash": vivid lavender → soft peach fading gradually
+ * into the page tint. Rendered as an absolutely-positioned background behind
+ * the top content of each screen (header wordmark + bell, and on Feed the
+ * segmented tabs), reaching ~25% down the screen before fully resolving to the
+ * tint. The final two stops are exactly BACKGROUND_TINT so there is no visible
+ * band/seam where the wash meets the page.
  */
 export const HEADER_GRADIENT = [
   "#D8C7EC",
@@ -39,13 +41,20 @@ export const HEADER_GRADIENT = [
   BACKGROUND_TINT,
   BACKGROUND_TINT,
 ] as const;
-export const HEADER_GRADIENT_LOCATIONS = [0, 0.55, 0.9, 1] as const;
+export const HEADER_GRADIENT_LOCATIONS = [0, 0.35, 0.85, 1] as const;
 
-/** Extra bottom padding on the header gradient so the fade extends lower. */
-export const HEADER_GRADIENT_EXTRA_HEIGHT = 44;
+/** Fraction of the screen height the gradient wash spans before it is all tint. */
+export const HEADER_WASH_HEIGHT_RATIO = 0.25;
 
 /**
  * High-contrast serif display face used for the brand wordmark so the text
  * matches the ornate serif "B" of the logo mark. Loaded in app/_layout.tsx.
  */
 export const SERIF_DISPLAY_FONT = "PlayfairDisplay_800ExtraBold";
+
+/**
+ * Wordmark color — the exact dusty purple of the "B" glyph in
+ * assets/brand/logo-mark.png (sampled: srgb(113,91,138)), so the logo-as-B and
+ * the "OOKMARKED" text read as one consistent color.
+ */
+export const BRAND_WORDMARK = "#715B8A";
