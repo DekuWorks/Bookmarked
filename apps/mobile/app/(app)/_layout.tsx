@@ -1,7 +1,8 @@
 import { Redirect, Tabs } from "expo-router";
-import { Text } from "react-native";
 import { LoadingState } from "../../src/components/LoadingState";
 import { useProfile } from "../../src/hooks/useProfile";
+import { FloatingTabBar } from "../../src/navigation/FloatingTabBar";
+import { TabBarScrollProvider } from "../../src/navigation/TabBarScroll";
 import { useAuthStore } from "../../src/store/authStore";
 
 export default function AppTabsLayout() {
@@ -22,59 +23,29 @@ export default function AppTabsLayout() {
   }
 
   return (
-    <Tabs
-      screenOptions={{
-        headerTitleAlign: "center",
-        headerStyle: { backgroundColor: "#FCFAFE" },
-        headerTitleStyle: { color: "#642F37", fontWeight: "700" },
-        headerShadowVisible: false,
-        sceneStyle: { backgroundColor: "#FAF8FC" },
-        tabBarStyle: {
-          backgroundColor: "#FCFAFE",
-          borderTopColor: "#E5DFEB",
-        },
-        tabBarActiveTintColor: "#642F37",
-        tabBarInactiveTintColor: "#B89DBB",
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Home",
+    <TabBarScrollProvider>
+      <Tabs
+        tabBar={(props) => <FloatingTabBar {...props} />}
+        screenOptions={{
           headerShown: false,
-          tabBarLabel: "Home",
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>⌂</Text>,
+          sceneStyle: { backgroundColor: "#FAF8FC" },
         }}
-      />
-      <Tabs.Screen
-        name="library"
-        options={{
-          title: "Library",
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>▤</Text>,
-        }}
-      />
-      <Tabs.Screen
-        name="search"
-        options={{
-          title: "Search",
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>⌕</Text>,
-        }}
-      />
-      <Tabs.Screen
-        name="clubs"
-        options={{
-          title: "Clubs",
-          headerShown: false,
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>♣</Text>,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: "Profile",
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>☺</Text>,
-        }}
-      />
-    </Tabs>
+      >
+        {/* Primary destinations (final mapping — IMG_5471) */}
+        <Tabs.Screen name="index" options={{ title: "Home" }} />
+        <Tabs.Screen name="feed" options={{ title: "Feed" }} />
+        <Tabs.Screen name="search" options={{ title: "Search" }} />
+        <Tabs.Screen name="messages" options={{ title: "Messages" }} />
+        <Tabs.Screen name="profile" options={{ title: "Profile" }} />
+
+        {/* Secondary destinations — reached from Home links, Feed, Search, or the bell */}
+        <Tabs.Screen name="library" options={{ href: null }} />
+        <Tabs.Screen name="compose" options={{ href: null }} />
+        <Tabs.Screen name="clubs" options={{ href: null }} />
+        <Tabs.Screen name="notes" options={{ href: null }} />
+        <Tabs.Screen name="notifications" options={{ href: null }} />
+        <Tabs.Screen name="book" options={{ href: null }} />
+      </Tabs>
+    </TabBarScrollProvider>
   );
 }

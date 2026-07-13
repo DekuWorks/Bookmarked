@@ -1,21 +1,100 @@
 import { useState } from "react";
-import { ActivityIndicator, FlatList, Text, View } from "react-native";
+import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "expo-router";
+import { ActivityIndicator, Alert, Modal, Pressable, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Avatar } from "../../src/components/Avatar";
 import { BookCard } from "../../src/components/BookCard";
+import { CoverTile } from "../../src/components/CoverTile";
 import { EmptyState } from "../../src/components/EmptyState";
 import { Input } from "../../src/components/Input";
+import { SegmentedTabs } from "../../src/components/SegmentedTabs";
 import { useBookSearch } from "../../src/hooks/useBookSearch";
+import { addCatalogBookToShelf } from "../../src/services/books";
+import { searchClubs } from "../../src/services/bookClubs";
+import { createDirectConversation } from "../../src/services/messages";
+import { searchProfiles } from "../../src/services/profile";
+import { fetchTrendingSections } from "../../src/services/trending";
+import { TAB_BAR_SPACE, useTabBarScroll } from "../../src/navigation/TabBarScroll";
+import { useAuthStore } from "../../src/store/authStore";
+import type { CatalogDoc } from "../../src/services/isbndb";
+import type { ShelfStatus } from "../../src/types";
 
-export default function SearchRoute() {
+type Mode = "books" | "people" | "clubs";
+
+const MODE_TABS: { id: Mode; label: string }[] = [
+  { id: "books", label: "Books" },
+  { id: "people", label: "People" },
+  { id: "clubs", label: "Clubs" },
+];
+
+const SHELF_CHOICES: { status: ShelfStatus; label: string }[] = [
+  { status: "want_to_read", label: "Want to read (TBR)" },
+  { status: "currently_reading", label: "Currently reading" },
+  { status: "read", label: "Read" },
+];
+
+export default function SearchScreen() {
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const userId = useAuthStore((s) => s.user?.id);
+  const { onScroll } = useTabBarScroll();
+
+  const [mode, setMode] = useState<Mode>("books");
   const [query, setQuery] = useState("");
   const [submitted, setSubmitted] = useState("");
-  const { data: results, isFetching, isError, error } = useBookSearch(submitted);
+  const [target, setTarget] = useState<CatalogDoc | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const books = useBookSearch(submitted);
+  const trending = useQuery({ queryKey: ["trending-sections"], queryFn: fetchTrendingSections });
+  const people = useQuery({
+    queryKey: ["search-people", query, userId],
+    queryFn: () => searchProfiles(query, userId),
+    enabled: mode === "people" && query.trim().length >= 2,
+  });
+  const clubs = useQuery({
+    queryKey: ["search-clubs", query, userId],
+    queryFn: () => searchClubs(userId as string, query),
+    enabled: mode === "clubs" && Boolean(userId) && query.trim().length >= 2,
+  });
+
+  async function addToShelf(shelf: ShelfStatus) {
+    if (!target) return;
+    setSaving(true);
+    const result = await addCatalogBookToShelf(target, shelf);
+    setSaving(false);
+    setTarget(null);
+    Alert.alert(
+      result.error ? "Couldn't add book" : "Added",
+      result.error ?? `"${target.title}" was saved to your shelf.`
+    );
+  }
+
+  async function openDm(personId: string) {
+    const result = await createDirectConversation(personId);
+    if (result.error || !result.conversationId) {
+      Alert.alert("Couldn't open chat", result.error ?? "Please try again.");
+      return;
+    }
+    router.push(`/messages/${result.conversationId}`);
+  }
+
+  const listPadding = { paddingHorizontal: 16, paddingBottom: TAB_BAR_SPACE, flexGrow: 1 };
 
   return (
     <View className="flex-1 bg-background">
-      <View className="px-5 pt-4">
+      <View style={{ paddingTop: insets.top + 8 }} className="bg-surface px-4 pb-2">
+        <Text className="mb-2 text-3xl font-black text-puce-red">Search</Text>
         <Input
-          label="Search books"
-          placeholder="Title, author, or ISBN"
+          placeholder={
+            mode === "books"
+              ? "Title, author, or ISBN"
+              : mode === "people"
+                ? "Search readers"
+                : "Search book clubs"
+          }
           autoCapitalize="none"
           autoCorrect={false}
           returnKeyType="search"
@@ -23,43 +102,153 @@ export default function SearchRoute() {
           onChangeText={setQuery}
           onSubmitEditing={() => setSubmitted(query)}
         />
+        <SegmentedTabs options={MODE_TABS} value={mode} onChange={setMode} />
       </View>
 
-      {isFetching ? (
-        <View className="py-8 items-center">
-          <ActivityIndicator size="large" color="#642F37" />
-        </View>
-      ) : isError ? (
-        <EmptyState
-          title="Search failed"
-          description={error instanceof Error ? error.message : "Please try again."}
-        />
-      ) : (
-        <FlatList
-          data={results ?? []}
-          keyExtractor={(item) => item.key}
-          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32, flexGrow: 1 }}
-          keyboardShouldPersistTaps="handled"
-          renderItem={({ item }) => (
-            <BookCard
-              title={item.title}
-              author={item.author_name?.join(", ")}
-              coverUrl={item.cover_url}
-              subtitle={item.first_publish_year ? `${item.first_publish_year}` : null}
-            />
-          )}
-          ListEmptyComponent={
-            submitted.trim().length >= 2 ? (
+      {mode === "books" ? (
+        books.isFetching ? (
+          <View className="items-center py-8">
+            <ActivityIndicator size="large" color="#642F37" />
+          </View>
+        ) : submitted.trim().length >= 2 ? (
+          <Animated.FlatList
+            data={books.data ?? []}
+            keyExtractor={(item) => item.key}
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={listPadding}
+            renderItem={({ item }) => (
+              <BookCard
+                title={item.title}
+                author={item.author_name?.join(", ")}
+                coverUrl={item.cover_url}
+                subtitle={item.first_publish_year ? `${item.first_publish_year}` : "Tap to add to a shelf"}
+                onPress={() => setTarget(item)}
+              />
+            )}
+            ListEmptyComponent={
               <EmptyState title="No results" description={`Nothing found for "${submitted}".`} />
-            ) : (
+            }
+          />
+        ) : (
+          <Animated.ScrollView
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+            contentContainerStyle={{ padding: 16, paddingBottom: TAB_BAR_SPACE }}
+          >
+            {(trending.data ?? []).length === 0 ? (
               <EmptyState
                 title="Find your next read"
-                description="Search millions of books by title, author, or ISBN via ISBNdb."
+                description="Search millions of books, or check back for community trends."
               />
-            )
+            ) : (
+              (trending.data ?? []).map((section) => (
+                <View key={section.id} className="mb-6">
+                  <Text className="mb-3 text-lg font-bold text-puce-red">{section.title}</Text>
+                  <Animated.ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {section.books.map((book) => (
+                      <View key={book.bookId} className="mr-3">
+                        <CoverTile
+                          bookId={book.bookId}
+                          title={book.title}
+                          author={book.author}
+                          coverUrl={book.coverUrl}
+                        />
+                      </View>
+                    ))}
+                  </Animated.ScrollView>
+                </View>
+              ))
+            )}
+          </Animated.ScrollView>
+        )
+      ) : mode === "people" ? (
+        <Animated.FlatList
+          data={people.data ?? []}
+          keyExtractor={(item) => item.id}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={listPadding}
+          renderItem={({ item }) => (
+            <Pressable
+              onPress={() => openDm(item.id)}
+              className="mb-2 flex-row items-center gap-3 rounded-2xl border border-brand-border bg-surface p-3 active:opacity-80"
+            >
+              <Avatar url={item.avatar_url} name={item.display_name ?? item.username} size={44} />
+              <View className="flex-1">
+                <Text className="font-semibold text-ink" numberOfLines={1}>
+                  {item.display_name?.trim() || item.username?.trim() || "Reader"}
+                </Text>
+                {item.username ? (
+                  <Text className="text-sm text-ink-muted">@{item.username}</Text>
+                ) : null}
+              </View>
+              <Text className="text-sm font-semibold text-primary-dark">Message</Text>
+            </Pressable>
+          )}
+          ListEmptyComponent={
+            <EmptyState
+              title="Find readers"
+              description="Search by name or @username to message people."
+            />
+          }
+        />
+      ) : (
+        <Animated.FlatList
+          data={clubs.data ?? []}
+          keyExtractor={(item) => item.id}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={listPadding}
+          renderItem={({ item }) => (
+            <Pressable
+              onPress={() => router.push(`/clubs/${item.id}`)}
+              className="mb-2 rounded-2xl border border-brand-border bg-surface p-4 active:opacity-80"
+            >
+              <Text className="font-bold text-ink" numberOfLines={1}>
+                {item.name}
+              </Text>
+              {item.description ? (
+                <Text className="mt-1 text-sm text-ink-muted" numberOfLines={2}>
+                  {item.description}
+                </Text>
+              ) : null}
+              <Text className="mt-2 text-xs text-primary-dark">
+                {item.member_count} member{item.member_count === 1 ? "" : "s"}
+                {item.viewer_is_member ? " · Joined" : ""}
+              </Text>
+            </Pressable>
+          )}
+          ListEmptyComponent={
+            <EmptyState title="Find book clubs" description="Search public clubs to join by name." />
           }
         />
       )}
+
+      {/* Add-to-shelf sheet */}
+      <Modal transparent visible={Boolean(target)} animationType="slide" onRequestClose={() => setTarget(null)}>
+        <Pressable className="flex-1 justify-end bg-black/30" onPress={() => setTarget(null)}>
+          <View className="rounded-t-3xl bg-surface p-5" style={{ paddingBottom: insets.bottom + 16 }}>
+            <Text className="mb-1 text-lg font-bold text-puce-red" numberOfLines={1}>
+              {target?.title}
+            </Text>
+            <Text className="mb-4 text-sm text-ink-muted">Add to a shelf</Text>
+            {SHELF_CHOICES.map((choice) => (
+              <Pressable
+                key={choice.status}
+                disabled={saving}
+                onPress={() => addToShelf(choice.status)}
+                className="mb-2 rounded-xl bg-primary/10 px-4 py-3 active:opacity-80"
+              >
+                <Text className="font-medium text-puce-red">{choice.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </Pressable>
+      </Modal>
     </View>
   );
 }

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { FlatList, Pressable, RefreshControl, Text, View } from "react-native";
+import { Pressable, RefreshControl, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import { BrandHeader } from "../../../src/components/BrandHeader";
 import { Button } from "../../../src/components/Button";
@@ -7,6 +8,7 @@ import { ClubCard } from "../../../src/components/ClubCard";
 import { EmptyState } from "../../../src/components/EmptyState";
 import { LoadingState } from "../../../src/components/LoadingState";
 import { useDiscoverClubs, useMyClubs } from "../../../src/hooks/useClubs";
+import { TAB_BAR_SPACE, useTabBarScroll } from "../../../src/navigation/TabBarScroll";
 
 type ClubsTab = "discover" | "yours";
 
@@ -17,6 +19,7 @@ const TAB_OPTIONS: { id: ClubsTab; label: string }[] = [
 
 export default function ClubsRoute() {
   const router = useRouter();
+  const { onScroll } = useTabBarScroll();
   const [tab, setTab] = useState<ClubsTab>("discover");
   const discover = useDiscoverClubs();
   const mine = useMyClubs();
@@ -75,10 +78,12 @@ export default function ClubsRoute() {
           }
         />
       ) : (
-        <FlatList
+        <Animated.FlatList
           data={clubs}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: 20, paddingBottom: 32, flexGrow: 1 }}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          contentContainerStyle={{ padding: 20, paddingBottom: TAB_BAR_SPACE, flexGrow: 1 }}
           renderItem={({ item }) => <ClubCard club={item} />}
           refreshControl={
             <RefreshControl

@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { Avatar } from "../../src/components/Avatar";
 import { Button } from "../../src/components/Button";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
@@ -40,9 +40,38 @@ export default function ProfileRoute() {
         </View>
       ) : null}
 
-      <View className="mt-10">
+      <View className="mt-8 gap-2">
+        <ProfileLink icon="📚" label="My Books" onPress={() => router.push("/library")} />
+        <ProfileLink icon="📝" label="Reading Notes" onPress={() => router.push("/notes")} />
+        <ProfileLink icon="♣️" label="Book Clubs" onPress={() => router.push("/clubs")} />
+        <ProfileLink icon="🔔" label="Notifications" onPress={() => router.push("/notifications")} />
+      </View>
+
+      <View className="mt-8">
         <Button title="Log out" variant="ghost" onPress={signOut} />
       </View>
+      <View className="h-24" />
     </ScreenContainer>
+  );
+}
+
+function ProfileLink({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: string;
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      className="flex-row items-center gap-3 rounded-2xl border border-brand-border bg-surface px-4 py-3 active:opacity-80"
+    >
+      <Text className="text-lg">{icon}</Text>
+      <Text className="flex-1 font-medium text-ink">{label}</Text>
+      <Text className="text-ink-muted">›</Text>
+    </Pressable>
   );
 }
