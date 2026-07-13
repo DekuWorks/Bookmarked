@@ -10,6 +10,28 @@ export type Book = SharedBook;
 export type ShelfStatus = SharedShelfStatus;
 export type LibraryViewMode = SharedLibraryViewMode;
 
+export type {
+  UserBook,
+  Review,
+  ReviewRatingMode,
+  ReviewVisibility,
+  ShelfVisibility,
+  UserShelf,
+  ReadingSession,
+  ReadingNote,
+  ReadingNoteCategory,
+  ReadingNoteVisibility,
+  Conversation,
+  ConversationPreview,
+  ConversationWithParticipants,
+  ConversationParticipantWithProfile,
+  Message,
+  MessageWithSender,
+  Notification,
+  NotificationType,
+  NotificationWithActor,
+} from "../../../../packages/types";
+
 // Book Clubs — shared shapes so mobile matches web + Supabase RLS tables.
 export type {
   BookClub,

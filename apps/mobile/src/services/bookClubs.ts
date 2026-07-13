@@ -112,6 +112,26 @@ export async function discoverClubs(viewerId: string, limit = 50): Promise<BookC
   return summarizeClubs((data ?? []) as ClubRow[], viewerId);
 }
 
+/** Search public clubs by name (Search → Clubs). */
+export async function searchClubs(
+  viewerId: string,
+  query: string,
+  limit = 30
+): Promise<BookClubSummary[]> {
+  const term = query.trim();
+  if (term.length < 2) return [];
+  const { data, error } = await supabase
+    .from("book_clubs")
+    .select("*")
+    .eq("visibility", "public")
+    .ilike("name", `%${term}%`)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return summarizeClubs((data ?? []) as ClubRow[], viewerId);
+}
+
 /** Clubs the viewer belongs to (owned or joined). */
 export async function getMyClubs(viewerId: string): Promise<BookClubSummary[]> {
   const { data: memberships, error: membershipError } = await supabase

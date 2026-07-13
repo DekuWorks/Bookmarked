@@ -1,25 +1,17 @@
 import { supabase } from "./supabase";
+import { getFollowingIds } from "./follows";
+import {
+  canViewerSeeActivity,
+  formatSocialActivityMessage,
+  isFeedEligibleEvent,
+  type ActivityVisibility,
+} from "./activity";
 
 /**
- * Read-only social feed for mobile. Mirrors the core of the web
- * `socialFeed` service (apps/web/src/lib/services/socialFeed.ts): it reads
- * public `activity_events`, attaches author profiles, formats a human message,
- * and hydrates book covers. Ranking/visibility-for-followers is intentionally
- * simplified for the mobile foundation.
+ * Mobile social feed. Mirrors apps/web/src/lib/services/socialFeed.ts: reads
+ * `activity_events`, attaches author profiles, ranks for-you / following feeds,
+ * and hydrates book covers via batched `.in()` lookups (respecting RLS).
  */
-
-type ActivityVisibility = "public" | "followers" | "private";
-
-const FEED_EVENT_TYPES = new Set<string>([
-  "book_added",
-  "shelf_updated",
-  "book_finished",
-  "reading_finished",
-  "reading_started",
-  "review_created",
-  "review_added",
-  "review_updated",
-]);
 
 export type FeedItem = {
   id: string;
@@ -30,17 +22,12 @@ export type FeedItem = {
   authorUsername: string | null;
   avatarUrl: string | null;
   message: string;
-  /** Reviewer's signature rating emoji (reviews.rating_emoji), when present. */
   ratingEmoji: string | null;
+  bookId: string | null;
   coverUrl: string | null;
   bookTitle: string;
   bookAuthor: string | null;
 };
-
-function ratingEmoji(metadata: Record<string, unknown> | null): string | null {
-  const raw = typeof metadata?.rating_emoji === "string" ? metadata.rating_emoji.trim() : "";
-  return raw || null;
-}
 
 type ActivityRow = {
   id: string;
@@ -53,13 +40,24 @@ type ActivityRow = {
   visibility: ActivityVisibility;
 };
 
+type ProfileLite = {
+  username: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
+};
+
 const ACTIVITY_SELECT =
   "id, user_id, event_type, entity_id, entity_type, metadata_json, created_at, visibility";
+
+function ratingEmoji(metadata: Record<string, unknown> | null): string | null {
+  const raw = typeof metadata?.rating_emoji === "string" ? metadata.rating_emoji.trim() : "";
+  return raw || null;
+}
 
 function bookTitle(metadata: Record<string, unknown> | null): string {
   if (typeof metadata?.title === "string") return metadata.title;
   if (typeof metadata?.book_title === "string") return metadata.book_title;
-  return "a book";
+  return "";
 }
 
 function bookAuthor(metadata: Record<string, unknown> | null): string | null {
@@ -68,96 +66,79 @@ function bookAuthor(metadata: Record<string, unknown> | null): string | null {
   return null;
 }
 
-function shelfLabel(metadata: Record<string, unknown> | null): string | null {
-  const raw = typeof metadata?.shelf_status === "string" ? metadata.shelf_status : null;
-  return raw ? raw.replace(/_/g, " ") : null;
-}
-
-function formatMessage(
-  eventType: string,
-  metadata: Record<string, unknown> | null,
-  subject: string
-): string {
-  const title = bookTitle(metadata);
-  const shelf = shelfLabel(metadata);
-  const rating = typeof metadata?.rating === "number" ? metadata.rating : null;
-
-  switch (eventType) {
-    case "book_added":
-      return shelf ? `${subject} added ${title} to ${shelf}` : `${subject} added ${title}`;
-    case "shelf_updated":
-      return shelf ? `${subject} moved ${title} to ${shelf}` : `${subject} updated ${title}`;
-    case "book_finished":
-    case "reading_finished":
-      return `${subject} finished ${title}`;
-    case "reading_started":
-      return `${subject} started reading ${title}`;
-    case "review_created":
-    case "review_added":
-      return rating != null
-        ? `${subject} reviewed ${title} (${rating}★)`
-        : `${subject} reviewed ${title}`;
-    case "review_updated":
-      return `${subject} updated their review of ${title}`;
-    default:
-      return `${subject} updated their library`;
-  }
-}
-
-type ProfileLite = {
-  username: string | null;
-  display_name: string | null;
-  avatar_url: string | null;
-};
-
 function subjectName(profile: ProfileLite | undefined): string {
   return profile?.display_name?.trim() || profile?.username?.trim() || "Someone";
 }
 
-export async function fetchPublicFeed(limit = 30): Promise<FeedItem[]> {
-  const { data, error } = await supabase
-    .from("activity_events")
-    .select(ACTIVITY_SELECT)
-    .eq("visibility", "public")
-    .order("created_at", { ascending: false })
-    .limit(limit * 2);
+async function attachProfiles(rows: ActivityRow[]): Promise<Map<string, ProfileLite>> {
+  const userIds = [...new Set(rows.map((r) => r.user_id))];
+  const map = new Map<string, ProfileLite>();
+  if (!userIds.length) return map;
 
-  if (error) throw error;
-
-  const rows = ((data ?? []) as ActivityRow[]).filter((r) =>
-    FEED_EVENT_TYPES.has(r.event_type)
-  );
-  const selected = rows.slice(0, limit);
-  if (!selected.length) return [];
-
-  const userIds = [...new Set(selected.map((r) => r.user_id))];
-  const { data: profileRows } = await supabase
+  const { data } = await supabase
     .from("profiles")
     .select("id, username, display_name, avatar_url")
     .in("id", userIds);
 
-  const profilesById = new Map<string, ProfileLite>(
-    (profileRows ?? []).map((p) => [
-      p.id as string,
-      {
-        username: p.username as string | null,
-        display_name: p.display_name as string | null,
-        avatar_url: p.avatar_url as string | null,
-      },
-    ])
-  );
+  for (const p of data ?? []) {
+    map.set(p.id as string, {
+      username: p.username as string | null,
+      display_name: p.display_name as string | null,
+      avatar_url: p.avatar_url as string | null,
+    });
+  }
+  return map;
+}
 
-  // Hydrate covers for events that carry a book_id in metadata.
-  const bookIds = [
-    ...new Set(
-      selected
-        .map((r) =>
-          typeof r.metadata_json?.book_id === "string" ? r.metadata_json.book_id : null
-        )
-        .filter((id): id is string => Boolean(id))
-    ),
-  ];
+async function buildItems(
+  rows: ActivityRow[],
+  profilesById: Map<string, ProfileLite>
+): Promise<FeedItem[]> {
+  if (!rows.length) return [];
 
+  // Resolve book ids: from metadata, or via user_book / review entity lookups.
+  const bookIdByRow = new Map<string, string>();
+  const userBookIds: string[] = [];
+  const reviewIds: string[] = [];
+
+  for (const row of rows) {
+    const metaBookId =
+      typeof row.metadata_json?.book_id === "string" ? row.metadata_json.book_id : null;
+    if (metaBookId) {
+      bookIdByRow.set(row.id, metaBookId);
+      continue;
+    }
+    if (!row.entity_id) continue;
+    if (row.entity_type === "user_book") userBookIds.push(row.entity_id);
+    if (row.entity_type === "review") reviewIds.push(row.entity_id);
+  }
+
+  if (userBookIds.length) {
+    const { data } = await supabase
+      .from("user_books")
+      .select("id, book_id")
+      .in("id", userBookIds);
+    for (const ub of data ?? []) {
+      for (const row of rows) {
+        if (row.entity_type === "user_book" && row.entity_id === ub.id) {
+          bookIdByRow.set(row.id, ub.book_id as string);
+        }
+      }
+    }
+  }
+
+  if (reviewIds.length) {
+    const { data } = await supabase.from("reviews").select("id, book_id").in("id", reviewIds);
+    for (const rv of data ?? []) {
+      for (const row of rows) {
+        if (row.entity_type === "review" && row.entity_id === rv.id) {
+          bookIdByRow.set(row.id, rv.book_id as string);
+        }
+      }
+    }
+  }
+
+  const bookIds = [...new Set(bookIdByRow.values())];
   const bookMap = new Map<string, { cover_url: string | null; title: string; author: string | null }>();
   if (bookIds.length) {
     const { data: books } = await supabase
@@ -173,12 +154,13 @@ export async function fetchPublicFeed(limit = 30): Promise<FeedItem[]> {
     }
   }
 
-  return selected.map((row) => {
+  return rows.map((row) => {
     const profile = profilesById.get(row.user_id);
     const metadata = row.metadata_json;
-    const bookId = typeof metadata?.book_id === "string" ? metadata.book_id : null;
+    const bookId = bookIdByRow.get(row.id) ?? null;
     const book = bookId ? bookMap.get(bookId) : undefined;
     const metaCover = typeof metadata?.cover_url === "string" ? metadata.cover_url : null;
+    const metaTitle = bookTitle(metadata);
 
     return {
       id: row.id,
@@ -188,11 +170,149 @@ export async function fetchPublicFeed(limit = 30): Promise<FeedItem[]> {
       authorName: subjectName(profile),
       authorUsername: profile?.username ?? null,
       avatarUrl: profile?.avatar_url ?? null,
-      message: formatMessage(row.event_type, metadata, subjectName(profile)),
+      message: formatSocialActivityMessage(row.event_type, metadata, profile ?? null),
       ratingEmoji: ratingEmoji(metadata),
+      bookId,
       coverUrl: metaCover ?? book?.cover_url ?? null,
-      bookTitle: bookTitle(metadata) !== "a book" ? bookTitle(metadata) : book?.title ?? "",
+      bookTitle: metaTitle || book?.title || "",
       bookAuthor: bookAuthor(metadata) ?? book?.author ?? null,
     };
   });
+}
+
+export async function fetchFollowingFeed(viewerId: string, limit = 30): Promise<FeedItem[]> {
+  const followingIds = await getFollowingIds(viewerId);
+  if (!followingIds.length) return [];
+
+  const { data, error } = await supabase
+    .from("activity_events")
+    .select(ACTIVITY_SELECT)
+    .in("user_id", followingIds)
+    .neq("visibility", "private")
+    .order("created_at", { ascending: false })
+    .limit(limit * 2);
+
+  if (error) throw error;
+
+  const rows = (data ?? []) as ActivityRow[];
+  const followingSet = new Set(followingIds);
+  const profilesById = await attachProfiles(rows);
+  const visible = rows
+    .filter(
+      (r) =>
+        isFeedEligibleEvent(r.event_type) &&
+        canViewerSeeActivity(r.visibility ?? "public", viewerId, r.user_id, followingSet.has(r.user_id))
+    )
+    .slice(0, limit);
+
+  return buildItems(visible, profilesById);
+}
+
+function scoreForYou(
+  row: ActivityRow,
+  viewerId: string,
+  followingSet: Set<string>,
+  viewerGenres: string[]
+): number {
+  let score = 0;
+  const ageHours = (Date.now() - new Date(row.created_at).getTime()) / (1000 * 60 * 60);
+  score += Math.max(0, 48 - ageHours);
+  if (followingSet.has(row.user_id)) score += 12;
+  if (row.user_id === viewerId) score -= 20;
+
+  const subjects = Array.isArray(row.metadata_json?.subjects)
+    ? (row.metadata_json?.subjects as string[])
+    : [];
+  const genreMatches = viewerGenres.filter((genre) =>
+    subjects.some((subject) => subject.toLowerCase().includes(genre.toLowerCase()))
+  ).length;
+  score += genreMatches * 8;
+
+  if (row.event_type === "review_created" || row.event_type === "review_added") score += 6;
+  if (row.event_type === "book_finished" || row.event_type === "reading_finished") score += 5;
+  if (row.event_type === "book_added") score += 3;
+  return score;
+}
+
+export async function fetchForYouFeed(
+  viewerId: string,
+  viewerGenres: string[] | null | undefined,
+  limit = 30
+): Promise<FeedItem[]> {
+  const followingIds = await getFollowingIds(viewerId);
+  const followingSet = new Set(followingIds);
+  const genres = viewerGenres ?? [];
+
+  const { data, error } = await supabase
+    .from("activity_events")
+    .select(ACTIVITY_SELECT)
+    .eq("visibility", "public")
+    .order("created_at", { ascending: false })
+    .limit(80);
+
+  if (error) throw error;
+
+  const rows = (data ?? []) as ActivityRow[];
+  const profilesById = await attachProfiles(rows);
+  const ranked = rows
+    .filter(
+      (r) =>
+        isFeedEligibleEvent(r.event_type) &&
+        canViewerSeeActivity(r.visibility ?? "public", viewerId, r.user_id, followingSet.has(r.user_id))
+    )
+    .map((row) => ({ row, score: scoreForYou(row, viewerId, followingSet, genres) }))
+    .sort((a, b) => b.score - a.score || b.row.created_at.localeCompare(a.row.created_at))
+    .slice(0, limit)
+    .map(({ row }) => row);
+
+  return buildItems(ranked, profilesById);
+}
+
+export async function fetchReaderActivity(
+  readerId: string,
+  viewerId: string,
+  limit = 20
+): Promise<FeedItem[]> {
+  const followingIds = viewerId === readerId ? [] : await getFollowingIds(viewerId);
+  const followingSet = new Set(followingIds);
+
+  const { data, error } = await supabase
+    .from("activity_events")
+    .select(ACTIVITY_SELECT)
+    .eq("user_id", readerId)
+    .neq("visibility", "private")
+    .order("created_at", { ascending: false })
+    .limit(limit * 2);
+
+  if (error) throw error;
+
+  const rows = (data ?? []) as ActivityRow[];
+  const profilesById = await attachProfiles(rows);
+  const visible = rows
+    .filter(
+      (r) =>
+        isFeedEligibleEvent(r.event_type) &&
+        canViewerSeeActivity(r.visibility ?? "public", viewerId, r.user_id, followingSet.has(r.user_id))
+    )
+    .slice(0, limit);
+
+  return buildItems(visible, profilesById);
+}
+
+/** @deprecated Kept for the initial public feed; prefer fetchForYouFeed. */
+export async function fetchPublicFeed(limit = 30): Promise<FeedItem[]> {
+  const { data, error } = await supabase
+    .from("activity_events")
+    .select(ACTIVITY_SELECT)
+    .eq("visibility", "public")
+    .order("created_at", { ascending: false })
+    .limit(limit * 2);
+
+  if (error) throw error;
+
+  const rows = ((data ?? []) as ActivityRow[])
+    .filter((r) => isFeedEligibleEvent(r.event_type))
+    .slice(0, limit);
+  const profilesById = await attachProfiles(rows);
+  return buildItems(rows, profilesById);
 }
