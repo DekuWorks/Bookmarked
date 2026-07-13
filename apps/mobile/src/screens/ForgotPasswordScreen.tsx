@@ -34,8 +34,8 @@ export function ForgotPasswordScreen() {
   return (
     <ScreenContainer scroll>
       <View className="pt-8 pb-4">
-        <Text className="text-3xl font-bold text-slate-900">Reset password</Text>
-        <Text className="text-slate-600 mt-2">
+        <Text className="text-3xl font-bold text-ink">Reset password</Text>
+        <Text className="text-ink-muted mt-2">
           Enter your email and we will send a reset link.
         </Text>
       </View>
@@ -49,13 +49,13 @@ export function ForgotPasswordScreen() {
         onChangeText={setEmail}
       />
 
-      {error ? <Text className="text-red-600 mb-3">{error}</Text> : null}
+      {error ? <Text className="text-rust mb-3">{error}</Text> : null}
       {message ? <Text className="text-emerald-700 mb-3">{message}</Text> : null}
 
       <Button title="Send reset link" onPress={onSubmit} loading={loading} />
 
       <Pressable onPress={() => router.back()} className="mt-8 items-center">
-        <Text className="text-slate-700 underline">Back to log in</Text>
+        <Text className="text-puce-red underline">Back to log in</Text>
       </Pressable>
     </ScreenContainer>
   );

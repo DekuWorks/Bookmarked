@@ -1,10 +1,35 @@
-import { Text, View } from "react-native";
+import { Pressable, Text, View, type PressableProps } from "react-native";
+import { BookCover } from "./BookCover";
 
-/** Placeholder for Phase 1 book search / details. */
-export function BookCard() {
+type Props = PressableProps & {
+  title: string;
+  author?: string | null;
+  coverUrl?: string | null;
+  subtitle?: string | null;
+};
+
+export function BookCard({ title, author, coverUrl, subtitle, ...rest }: Props) {
   return (
-    <View className="rounded-2xl border border-dashed border-slate-300 bg-white p-4">
-      <Text className="text-slate-500 text-center text-sm">Book card (Phase 1)</Text>
-    </View>
+    <Pressable
+      className="flex-row gap-3 rounded-2xl border border-brand-border bg-surface p-3 mb-3 active:opacity-80"
+      {...rest}
+    >
+      <BookCover url={coverUrl} title={title} sizeClassName="w-14 h-20" />
+      <View className="flex-1 justify-center">
+        <Text className="font-semibold text-ink" numberOfLines={2}>
+          {title}
+        </Text>
+        {author ? (
+          <Text className="text-ink-muted mt-0.5" numberOfLines={1}>
+            {author}
+          </Text>
+        ) : null}
+        {subtitle ? (
+          <Text className="text-xs text-primary-dark mt-1" numberOfLines={1}>
+            {subtitle}
+          </Text>
+        ) : null}
+      </View>
+    </Pressable>
   );
 }

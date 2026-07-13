@@ -1,6 +1,14 @@
-import type { Profile as SharedProfile } from "../../../../packages/types";
+import type {
+  Profile as SharedProfile,
+  Book as SharedBook,
+  ShelfStatus as SharedShelfStatus,
+  LibraryViewMode as SharedLibraryViewMode,
+} from "../../../../packages/types";
 
 export type Profile = SharedProfile;
+export type Book = SharedBook;
+export type ShelfStatus = SharedShelfStatus;
+export type LibraryViewMode = SharedLibraryViewMode;
 
 export type AuthStackParamList = {
   login: undefined;

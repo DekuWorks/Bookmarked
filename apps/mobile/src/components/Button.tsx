@@ -17,14 +17,14 @@ export function Button({
   const base =
     "rounded-xl px-4 py-3 items-center justify-center min-h-[48px] active:opacity-80";
   const variants = {
-    primary: "bg-slate-900",
-    secondary: "bg-slate-200",
-    ghost: "bg-transparent border border-slate-300",
+    primary: "bg-puce-red",
+    secondary: "bg-primary",
+    ghost: "bg-transparent border border-brand-border",
   };
   const textColors = {
     primary: "text-white font-semibold",
-    secondary: "text-slate-900 font-semibold",
-    ghost: "text-slate-900 font-medium",
+    secondary: "text-puce-red font-semibold",
+    ghost: "text-puce-red font-medium",
   };
 
   return (
@@ -35,7 +35,7 @@ export function Button({
       {...rest}
     >
       {loading ? (
-        <ActivityIndicator color={variant === "primary" ? "#fff" : "#0f172a"} />
+        <ActivityIndicator color={variant === "primary" ? "#fff" : "#642F37"} />
       ) : (
         <Text className={textColors[variant]}>{title}</Text>
       )}

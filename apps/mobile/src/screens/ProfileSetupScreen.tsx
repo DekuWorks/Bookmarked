@@ -62,8 +62,8 @@ export function ProfileSetupScreen() {
   return (
     <ScreenContainer scroll>
       <View className="pt-8 pb-4">
-        <Text className="text-3xl font-bold text-slate-900">Your profile</Text>
-        <Text className="text-slate-600 mt-2">
+        <Text className="text-3xl font-bold text-ink">Your profile</Text>
+        <Text className="text-ink-muted mt-2">
           Tell other readers a bit about you. You can change this later.
         </Text>
       </View>
@@ -85,9 +85,9 @@ export function ProfileSetupScreen() {
         value={genres}
         onChangeText={setGenres}
       />
-      <Text className="text-xs text-slate-500 mb-3">Separate genres with commas.</Text>
+      <Text className="text-xs text-ink-muted mb-3">Separate genres with commas.</Text>
 
-      {error ? <Text className="text-red-600 mb-3">{error}</Text> : null}
+      {error ? <Text className="text-rust mb-3">{error}</Text> : null}
 
       <Button title="Save and continue" onPress={onSubmit} loading={loading} />
     </ScreenContainer>

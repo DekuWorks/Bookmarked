@@ -10,9 +10,9 @@ type Props = {
 export function EmptyState({ title, description, action }: Props) {
   return (
     <View className="items-center justify-center px-6 py-12">
-      <Text className="text-lg font-semibold text-slate-900 text-center">{title}</Text>
+      <Text className="text-lg font-semibold text-ink text-center">{title}</Text>
       {description ? (
-        <Text className="text-slate-600 text-center mt-2">{description}</Text>
+        <Text className="text-ink-muted text-center mt-2">{description}</Text>
       ) : null}
       {action ? <View className="mt-6 w-full max-w-sm">{action}</View> : null}
     </View>

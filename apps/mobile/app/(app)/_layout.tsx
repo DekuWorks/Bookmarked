@@ -25,15 +25,23 @@ export default function AppTabsLayout() {
     <Tabs
       screenOptions={{
         headerTitleAlign: "center",
-        headerStyle: { backgroundColor: "#f8fafc" },
-        tabBarActiveTintColor: "#0f172a",
-        tabBarInactiveTintColor: "#64748b",
+        headerStyle: { backgroundColor: "#FCFAFE" },
+        headerTitleStyle: { color: "#642F37", fontWeight: "700" },
+        headerShadowVisible: false,
+        sceneStyle: { backgroundColor: "#FAF8FC" },
+        tabBarStyle: {
+          backgroundColor: "#FCFAFE",
+          borderTopColor: "#E5DFEB",
+        },
+        tabBarActiveTintColor: "#642F37",
+        tabBarInactiveTintColor: "#B89DBB",
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: "Home",
+          headerShown: false,
           tabBarLabel: "Home",
           tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>⌂</Text>,
         }}

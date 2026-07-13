@@ -1,41 +1,55 @@
-import { useRouter } from "expo-router";
-import { Text, View } from "react-native";
-import { BookCard } from "../components/BookCard";
-import { Button } from "../components/Button";
-import { ScreenContainer } from "../components/ScreenContainer";
-import { ShelfBadge } from "../components/ShelfBadge";
-import { supabase } from "../services/supabase";
+import { FlatList, RefreshControl, Text, View } from "react-native";
+import { BrandHeader } from "../components/BrandHeader";
+import { EmptyState } from "../components/EmptyState";
+import { FeedCard } from "../components/FeedCard";
+import { LoadingState } from "../components/LoadingState";
+import { useFeed } from "../hooks/useFeed";
 import { useProfile } from "../hooks/useProfile";
 
 export function HomeScreen() {
-  const router = useRouter();
   const { data: profile } = useProfile();
+  const { data: feed, isLoading, isError, error, refetch, isRefetching } = useFeed();
 
-  async function signOut() {
-    await supabase.auth.signOut();
-    router.replace("/(auth)/login");
-  }
+  const greeting = profile?.display_name?.trim() || profile?.username?.trim();
 
   return (
-    <ScreenContainer scroll>
-      <View className="pt-6 pb-2">
-        <Text className="text-2xl font-bold text-slate-900">
-          Hello{profile?.display_name ? `, ${profile.display_name}` : ""}
-        </Text>
-        <Text className="text-slate-600 mt-1">Your reading home base.</Text>
-      </View>
+    <View className="flex-1 bg-background">
+      <BrandHeader
+        title={greeting ? `Hi, ${greeting}` : "Your Feed"}
+        subtitle="What readers you follow are up to."
+      />
 
-      <View className="flex-row gap-2 my-4">
-        <ShelfBadge label="Want to read" />
-        <ShelfBadge label="Reading" />
-        <ShelfBadge label="Read" />
-      </View>
-
-      <BookCard />
-
-      <View className="mt-8">
-        <Button title="Log out" variant="ghost" onPress={signOut} />
-      </View>
-    </ScreenContainer>
+      {isLoading ? (
+        <LoadingState message="Loading your feed…" />
+      ) : isError ? (
+        <EmptyState
+          title="Couldn't load the feed"
+          description={error instanceof Error ? error.message : "Please try again."}
+        />
+      ) : (
+        <FlatList
+          data={feed ?? []}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ padding: 20, paddingBottom: 32, flexGrow: 1 }}
+          renderItem={({ item }) => <FeedCard item={item} />}
+          refreshControl={
+            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#642F37" />
+          }
+          ListEmptyComponent={
+            <EmptyState
+              title="Your feed is quiet"
+              description="Follow other readers on the web app to see their reading activity here."
+            />
+          }
+          ListHeaderComponent={
+            feed && feed.length > 0 ? (
+              <Text className="text-xs font-semibold uppercase text-ink-muted mb-3">
+                Recent activity
+              </Text>
+            ) : null
+          }
+        />
+      )}
+    </View>
   );
 }

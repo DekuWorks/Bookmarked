@@ -40,8 +40,8 @@ export function SignupScreen() {
   return (
     <ScreenContainer scroll>
       <View className="pt-8 pb-4">
-        <Text className="text-3xl font-bold text-slate-900">Create account</Text>
-        <Text className="text-slate-600 mt-2">Start tracking your reading on Bookmarked.</Text>
+        <Text className="text-3xl font-bold text-ink">Create account</Text>
+        <Text className="text-ink-muted mt-2">Start tracking your reading on Bookmarked.</Text>
       </View>
 
       <Input
@@ -60,13 +60,13 @@ export function SignupScreen() {
         onChangeText={setPassword}
       />
 
-      {error ? <Text className="text-red-600 mb-3">{error}</Text> : null}
+      {error ? <Text className="text-rust mb-3">{error}</Text> : null}
       {notice ? <Text className="text-emerald-700 mb-3">{notice}</Text> : null}
 
       <Button title="Sign up" onPress={onSubmit} loading={loading} />
 
       <Pressable onPress={() => router.back()} className="mt-8 items-center">
-        <Text className="text-slate-700 underline">Already have an account? Log in</Text>
+        <Text className="text-puce-red underline">Already have an account? Log in</Text>
       </Pressable>
     </ScreenContainer>
   );

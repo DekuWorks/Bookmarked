@@ -33,9 +33,10 @@ export function LoginScreen() {
 
   return (
     <ScreenContainer scroll>
-      <View className="pt-8 pb-4">
-        <Text className="text-3xl font-bold text-slate-900">Welcome back</Text>
-        <Text className="text-slate-600 mt-2">Sign in to continue to Bookmarked.</Text>
+      <View className="pt-10 pb-4">
+        <Text className="text-4xl font-bold text-puce-red">Bookmarked</Text>
+        <Text className="text-2xl font-bold text-ink mt-6">Welcome back</Text>
+        <Text className="text-ink-muted mt-2">Sign in to continue to Bookmarked.</Text>
       </View>
 
       <Input
@@ -54,17 +55,17 @@ export function LoginScreen() {
         onChangeText={setPassword}
       />
 
-      {error ? <Text className="text-red-600 mb-3">{error}</Text> : null}
+      {error ? <Text className="text-rust mb-3">{error}</Text> : null}
 
       <Button title="Log in" onPress={onSubmit} loading={loading} />
 
       <View className="flex-row flex-wrap gap-2 justify-center mt-6">
         <Pressable onPress={() => router.push("/(auth)/signup")}>
-          <Text className="text-slate-700 underline">Create account</Text>
+          <Text className="text-puce-red underline">Create account</Text>
         </Pressable>
-        <Text className="text-slate-400">·</Text>
+        <Text className="text-ink-muted">·</Text>
         <Pressable onPress={() => router.push("/(auth)/forgot-password")}>
-          <Text className="text-slate-700 underline">Forgot password?</Text>
+          <Text className="text-puce-red underline">Forgot password?</Text>
         </Pressable>
       </View>
     </ScreenContainer>

@@ -22,7 +22,7 @@ export function ScreenContainer({ children, scroll, className }: Props) {
   );
 
   return (
-    <SafeAreaView className={`flex-1 bg-slate-50 ${!scroll ? className ?? "" : ""}`}>
+    <SafeAreaView className={`flex-1 bg-background ${!scroll ? className ?? "" : ""}`}>
       {inner}
     </SafeAreaView>
   );
