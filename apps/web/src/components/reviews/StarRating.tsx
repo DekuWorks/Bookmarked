@@ -66,16 +66,13 @@ export function StarRating({ value, onChange, disabled = false, size = "md" }: P
             </span>
             <span
               className={cn(
-                "pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden text-royal-orange select-none",
-                textSize
+                "pointer-events-none absolute inset-0 flex items-center justify-center text-royal-orange select-none",
+                textSize,
+                fill === "half" && "[clip-path:inset(0_50%_0_0)]"
               )}
               aria-hidden
             >
-              {fill === "full" ? (
-                "★"
-              ) : fill === "half" ? (
-                <span className="inline-block w-1/2 overflow-hidden text-left">★</span>
-              ) : null}
+              {fill === "empty" ? null : "★"}
             </span>
           </button>
         );

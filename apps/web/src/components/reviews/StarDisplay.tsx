@@ -25,12 +25,13 @@ export function StarDisplay({ rating, className, showNumeric = false }: Props) {
             <span key={star} className="relative inline-block w-[1em] text-center">
               <span className="text-border">☆</span>
               {fill !== "empty" ? (
-                <span className="absolute inset-0 overflow-hidden text-royal-orange">
-                  {fill === "full" ? (
-                    "★"
-                  ) : (
-                    <span className="inline-block w-1/2 overflow-hidden">★</span>
+                <span
+                  className={cn(
+                    "absolute inset-0 text-royal-orange",
+                    fill === "half" && "[clip-path:inset(0_50%_0_0)]"
                   )}
+                >
+                  ★
                 </span>
               ) : null}
             </span>
