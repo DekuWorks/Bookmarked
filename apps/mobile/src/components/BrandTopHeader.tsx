@@ -1,5 +1,5 @@
 import { LinearGradient } from "expo-linear-gradient";
-import { Text, View } from "react-native";
+import { Image, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NotificationBell } from "./NotificationBell";
 
@@ -26,9 +26,14 @@ export function BrandTopHeader({ children }: Props) {
     >
       <View className="h-11 flex-row items-center justify-center">
         <View className="flex-row items-center">
+          <Image
+            source={require("../../assets/brand/logo-mark.png")}
+            style={{ width: 30, height: 30 }}
+            resizeMode="contain"
+            className="mr-2 rounded-full"
+          />
           <Text className="text-sm text-primary-dark">✦ </Text>
-          <Text className="text-2xl font-black tracking-wide text-puce-red">B</Text>
-          <Text className="text-xl font-black tracking-[2px] text-puce-red">OOKMARKED</Text>
+          <Text className="text-xl font-black tracking-[2px] text-puce-red">BOOKMARKED</Text>
           <Text className="text-sm text-primary-dark"> ✦</Text>
         </View>
         <View className="absolute right-0">

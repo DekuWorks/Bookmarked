@@ -4,22 +4,23 @@
     "slug": "bookmarked",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/brand/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/brand/logo-mark.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FAF8FC"
+      "backgroundColor": "#EDE6F4"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.dekuworks.bookmarked"
+      "bundleIdentifier": "com.dekuworks.bookmarked",
+      "icon": "./assets/brand/icon.png"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FAF8FC"
+        "foregroundImage": "./assets/brand/logo-mark.png",
+        "backgroundColor": "#EDE6F4"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false

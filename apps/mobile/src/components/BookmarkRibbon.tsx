@@ -1,47 +1,34 @@
-import { Text, View } from "react-native";
+import { Image, View } from "react-native";
 
-const RIBBON_COLOR = "#5B3B8C"; // deep purple, matches the mockup ribbon
+const RIBBON_ASPECT = 282 / 476; // width / height of the source asset
 
 type Props = {
-  /** Overall ribbon width in px. */
+  /** Ribbon width in px (height derived from the asset aspect ratio). */
   size?: number;
 };
 
 /**
- * The Bookmarked "B" ribbon/bookmark badge shown on saved book covers
- * (IMG_5362): a deep-purple bookmark with a white "B" and a pointed tail.
+ * The official Bookmarked "B" ribbon badge shown on saved book covers,
+ * mirroring the web `BookmarkedShelfBadge`. Uses the real brand asset
+ * (`assets/brand/bookmark-ribbon.png`, transparent) with a subtle shadow.
  */
 export function BookmarkRibbon({ size = 20 }: Props) {
-  const point = size / 2;
+  const height = size / RIBBON_ASPECT;
   return (
-    <View className="items-center" accessibilityLabel="Saved to Bookmarked">
-      <View
-        style={{
-          width: size,
-          paddingVertical: 2,
-          backgroundColor: RIBBON_COLOR,
-          borderTopLeftRadius: 4,
-          borderTopRightRadius: 4,
-        }}
-      >
-        <Text
-          style={{ fontSize: size * 0.62, lineHeight: size * 0.78 }}
-          className="text-center font-black text-white"
-        >
-          B
-        </Text>
-      </View>
-      <View
-        style={{
-          width: 0,
-          height: 0,
-          borderLeftWidth: point,
-          borderRightWidth: point,
-          borderTopWidth: point * 0.8,
-          borderLeftColor: "transparent",
-          borderRightColor: "transparent",
-          borderTopColor: RIBBON_COLOR,
-        }}
+    <View
+      accessibilityLabel="Saved to Bookmarked"
+      style={{
+        shadowColor: "#000",
+        shadowOpacity: 0.25,
+        shadowRadius: 2,
+        shadowOffset: { width: 0, height: 1 },
+        elevation: 3,
+      }}
+    >
+      <Image
+        source={require("../../assets/brand/bookmark-ribbon.png")}
+        style={{ width: size, height }}
+        resizeMode="contain"
       />
     </View>
   );
