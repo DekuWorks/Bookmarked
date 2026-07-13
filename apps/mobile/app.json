@@ -31,7 +31,13 @@
     "scheme": "bookmarked",
     "plugins": [
       "expo-router",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Bookmarked needs access to your photos so you can attach images to posts, comments, and messages."
+        }
+      ]
     ]
   }
 }
