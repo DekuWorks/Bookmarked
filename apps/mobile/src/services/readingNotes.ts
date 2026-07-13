@@ -149,6 +149,31 @@ export async function createReadingNote(
   return { note: data as ReadingNote };
 }
 
+export async function updateReadingNote(
+  noteId: string,
+  input: Partial<ReadingNoteInput>
+): Promise<{ error?: string; note?: ReadingNote }> {
+  const updates: Record<string, unknown> = {};
+  if (input.pageNumber !== undefined) updates.page_number = input.pageNumber;
+  if (input.chapter !== undefined) updates.chapter = normalizeText(input.chapter);
+  if (input.title !== undefined) updates.title = normalizeText(input.title);
+  if (input.note !== undefined) updates.note = normalizeText(input.note);
+  if (input.quote !== undefined) updates.quote = normalizeText(input.quote);
+  if (input.category !== undefined) updates.category = input.category;
+  if (input.visibility !== undefined) updates.visibility = input.visibility;
+  updates.updated_at = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from("reading_notes")
+    .update(updates)
+    .eq("id", noteId)
+    .select("*")
+    .single();
+
+  if (error) return { error: error.message };
+  return { note: data as ReadingNote };
+}
+
 export async function deleteReadingNote(noteId: string): Promise<{ error?: string }> {
   const { error } = await supabase.from("reading_notes").delete().eq("id", noteId);
   if (error) return { error: error.message };

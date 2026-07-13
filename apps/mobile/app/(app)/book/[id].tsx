@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Alert, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { BookCover } from "../../../src/components/BookCover";
 import { Button } from "../../../src/components/Button";
@@ -9,11 +9,13 @@ import { FeelingChip } from "../../../src/components/FeelingChip";
 import { LoadingState } from "../../../src/components/LoadingState";
 import { ProgressBar } from "../../../src/components/ProgressBar";
 import { RateReviewSheet } from "../../../src/components/RateReviewSheet";
+import { ReadingNotesSection } from "../../../src/components/ReadingNotesSection";
 import { SavedPill } from "../../../src/components/SavedPill";
 import { ScreenHeader } from "../../../src/components/ScreenHeader";
 import { StarRating } from "../../../src/components/StarRating";
 import { getBookDetails } from "../../../src/services/bookDetails";
 import {
+  addAnotherRead,
   markFinished,
   setDnf,
   setExpectedReadDate,
@@ -76,6 +78,7 @@ export default function BookScreen() {
   const bookId = String(id);
   const userId = useAuthStore((s) => s.user?.id);
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const [rateOpen, setRateOpen] = useState(false);
   const [progressOpen, setProgressOpen] = useState(false);
@@ -130,6 +133,28 @@ export default function BookScreen() {
     invalidate();
   }
 
+  function startAnotherRead() {
+    if (!userId || !book) return;
+    Alert.alert(
+      "Add another read",
+      "Start a fresh read of this book? Your past reviews and reading sessions stay saved.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Start read",
+          onPress: async () => {
+            const result = await addAnotherRead(userId, book);
+            if (result.error) Alert.alert("Error", result.error);
+            else if (result.readNumber) {
+              Alert.alert("Started read", `This is now read #${result.readNumber}.`);
+            }
+            invalidate();
+          },
+        },
+      ]
+    );
+  }
+
   async function saveExpectedDate() {
     if (!userId || !book) return;
     const trimmed = dateValue.trim();
@@ -162,7 +187,9 @@ export default function BookScreen() {
   }
 
   const userBook = data?.userBook ?? null;
-  const ownReview = data?.ownReviews?.[0] ?? null;
+  const ownReviews = data?.ownReviews ?? [];
+  const ownReview = ownReviews[0] ?? null;
+  const readCount = userBook?.read_count ?? 1;
   const otherReviews = (data?.reviews ?? []).filter((r) => r.user_id !== userId);
 
   return (
@@ -179,7 +206,22 @@ export default function BookScreen() {
           />
           <View className="flex-1">
             <Text className="text-xl font-bold text-ink">{book.title}</Text>
-            {book.author ? <Text className="mt-0.5 text-ink-muted">{book.author}</Text> : null}
+            {book.author ? (
+              <Pressable onPress={() => router.push(`/author/${encodeURIComponent(book.author!)}`)}>
+                <Text className="mt-0.5 text-ink-muted underline">{book.author}</Text>
+              </Pressable>
+            ) : null}
+            {book.series_name ? (
+              <Pressable
+                onPress={() => router.push(`/series/${encodeURIComponent(book.series_name!)}`)}
+                className="mt-1 self-start rounded-full bg-primary/15 px-2.5 py-1 active:opacity-80"
+              >
+                <Text className="text-xs font-medium text-puce-red">
+                  Part of {book.series_name}
+                  {book.series_position != null ? ` #${book.series_position}` : ""}
+                </Text>
+              </Pressable>
+            ) : null}
             {userBook ? (
               <View className="mt-2">
                 <SavedPill shelf={userBook.shelf_status} />
@@ -274,11 +316,33 @@ export default function BookScreen() {
           onPress={() => setRateOpen(true)}
         />
 
-        {ownReview ? (
+        {userBook ? (
+          <Pressable
+            onPress={startAnotherRead}
+            className="flex-row items-center justify-center gap-1.5 rounded-xl border border-brand-border py-3 active:opacity-70"
+          >
+            <Text className="text-sm font-semibold text-puce-red">🔄 Add another read</Text>
+          </Pressable>
+        ) : null}
+
+        {ownReviews.length ? (
           <View>
-            <Text className="mb-2 text-base font-bold text-puce-red">Your review</Text>
-            <ReviewItem review={ownReview} />
+            <Text className="mb-2 text-base font-bold text-puce-red">
+              {ownReviews.length > 1 ? `Your reading history (${ownReviews.length})` : "Your review"}
+            </Text>
+            {ownReviews.map((review) => (
+              <ReviewItem key={review.id} review={review} />
+            ))}
           </View>
+        ) : null}
+
+        {userBook ? (
+          <ReadingNotesSection
+            userId={userId as string}
+            userBookId={userBook.id}
+            initialNotes={data?.notes ?? []}
+            onChanged={invalidate}
+          />
         ) : null}
 
         {book.description ? (
@@ -307,6 +371,7 @@ export default function BookScreen() {
         book={book}
         userBookId={userBook?.id ?? null}
         existingReview={ownReview}
+        readNumber={readCount}
         onSaved={invalidate}
       />
 

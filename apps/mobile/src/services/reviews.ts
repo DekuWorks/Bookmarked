@@ -11,6 +11,8 @@ import type { Review, ReviewRatingMode, ReviewVisibility } from "../types";
 export type ReviewInput = {
   bookId: string;
   userBookId?: string | null;
+  /** Which read this review is for (multi-read). Defaults to 1. */
+  readNumber?: number | null;
   rating?: number | null;
   ratingEmoji?: string | null;
   reviewBody?: string | null;
@@ -59,10 +61,12 @@ export async function upsertReview(
   input: ReviewInput,
   book: { id: string; title: string; cover_url?: string | null; subjects?: string[] | null }
 ): Promise<{ error?: string; review?: Review }> {
+  const readNumber = Math.max(1, Number(input.readNumber) || 1);
   const payload = {
     user_id: userId,
     book_id: input.bookId,
     user_book_id: input.userBookId ?? null,
+    read_number: readNumber,
     rating: input.rating ?? null,
     rating_emoji: input.ratingEmoji?.trim() || null,
     review_body: input.reviewBody?.trim() || null,
@@ -79,11 +83,14 @@ export async function upsertReview(
     updated_at: new Date().toISOString(),
   };
 
+  // Reviews are unique on (user_id, book_id, read_number); match this read so a
+  // later read inserts a new row instead of overwriting an earlier one.
   const { data: existing } = await supabase
     .from("reviews")
     .select("id")
     .eq("user_id", userId)
     .eq("book_id", input.bookId)
+    .eq("read_number", readNumber)
     .maybeSingle();
 
   const { data, error } = existing?.id

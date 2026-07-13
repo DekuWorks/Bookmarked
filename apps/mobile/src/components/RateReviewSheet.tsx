@@ -52,6 +52,8 @@ type Props = {
   book: { id: string; title: string; author?: string | null; cover_url?: string | null; subjects?: string[] | null };
   userBookId?: string | null;
   existingReview?: Review | null;
+  /** Which read this review belongs to (multi-read). Defaults to 1. */
+  readNumber?: number;
   onSaved?: () => void;
 };
 
@@ -62,6 +64,7 @@ export function RateReviewSheet({
   book,
   userBookId,
   existingReview,
+  readNumber,
   onSaved,
 }: Props) {
   const insets = useSafeAreaInsets();
@@ -95,6 +98,7 @@ export function RateReviewSheet({
       {
         bookId: book.id,
         userBookId: userBookId ?? null,
+        readNumber: existingReview?.read_number ?? readNumber ?? 1,
         rating: rating || null,
         ratingEmoji: emoji,
         reviewBody: body,

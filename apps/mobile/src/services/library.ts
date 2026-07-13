@@ -248,6 +248,49 @@ export async function markFinished(
 }
 
 /**
+ * Start "another read" of a book (mirrors web `addAnotherRead`). Keeps the same
+ * user_books row but bumps `read_count`, resets progress, and moves it back to
+ * "currently reading". Past reviews + reading sessions (keyed by read_number)
+ * are preserved, so the read history stays intact. Returns the new read number.
+ */
+export async function addAnotherRead(
+  userId: string,
+  book: { id: string; title: string; cover_url?: string | null; subjects?: string[] | null }
+): Promise<{ error?: string; readNumber?: number }> {
+  const { data: userBook, error: fetchError } = await supabase
+    .from("user_books")
+    .select("id, read_count")
+    .eq("user_id", userId)
+    .eq("book_id", book.id)
+    .maybeSingle();
+
+  if (fetchError) return { error: fetchError.message };
+  if (!userBook) return { error: "Add this book to your library first." };
+
+  const nextReadCount = (Number(userBook.read_count) || 1) + 1;
+  const now = new Date().toISOString();
+
+  const { error } = await supabase
+    .from("user_books")
+    .update({
+      read_count: nextReadCount,
+      shelf_status: "currently_reading",
+      progress_pages: 0,
+      progress_percent: 0,
+      started_at: null,
+      finished_at: null,
+      dnf: false,
+      updated_at: now,
+    })
+    .eq("id", userBook.id);
+
+  if (error) return { error: error.message };
+
+  await recordBookActivity(userId, "reading_started", userBook.id, book);
+  return { readNumber: nextReadCount };
+}
+
+/**
  * Mark / unmark a book as did-not-finish. DNF is a real column on user_books
  * (see migration 20260713170538); it is orthogonal to shelf_status so a reader
  * can DNF a book that's still on their "reading" shelf.
