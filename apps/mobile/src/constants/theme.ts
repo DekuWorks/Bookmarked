@@ -28,9 +28,10 @@ export const BRAND = {
  * matching IMG_5360. The final stop equals BACKGROUND_TINT for a clean blend.
  */
 /**
- * Vertical fade. An extra tint stop at 0.82 → 1.0 gives the gradient room to
- * settle fully onto the page tint before its bottom edge, eliminating any
- * visible band/seam where the header meets the page.
+ * Vertical fade. The peach→tint transition is pushed lower (settling around
+ * 0.9) and the container is taller, so the gradient carries further down the
+ * page before resolving to the tint. The final stop is exactly BACKGROUND_TINT
+ * so there is no visible band/seam where the header meets the page.
  */
 export const HEADER_GRADIENT = [
   "#D8C7EC",
@@ -38,7 +39,10 @@ export const HEADER_GRADIENT = [
   BACKGROUND_TINT,
   BACKGROUND_TINT,
 ] as const;
-export const HEADER_GRADIENT_LOCATIONS = [0, 0.45, 0.82, 1] as const;
+export const HEADER_GRADIENT_LOCATIONS = [0, 0.55, 0.9, 1] as const;
+
+/** Extra bottom padding on the header gradient so the fade extends lower. */
+export const HEADER_GRADIENT_EXTRA_HEIGHT = 44;
 
 /**
  * High-contrast serif display face used for the brand wordmark so the text

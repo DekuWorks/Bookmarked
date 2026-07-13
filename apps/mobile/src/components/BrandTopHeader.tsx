@@ -3,6 +3,7 @@ import { Image, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   HEADER_GRADIENT,
+  HEADER_GRADIENT_EXTRA_HEIGHT,
   HEADER_GRADIENT_LOCATIONS,
   SERIF_DISPLAY_FONT,
 } from "../constants/theme";
@@ -30,8 +31,8 @@ export function BrandTopHeader({ children }: Props) {
       locations={HEADER_GRADIENT_LOCATIONS}
       start={{ x: 0.5, y: 0 }}
       end={{ x: 0.5, y: 1 }}
-      style={{ paddingTop: insets.top + 10 }}
-      className="px-4 pb-6"
+      style={{ paddingTop: insets.top + 10, paddingBottom: HEADER_GRADIENT_EXTRA_HEIGHT }}
+      className="px-4"
     >
       <View className="h-11 flex-row items-center justify-center">
         <View className="flex-row items-center">

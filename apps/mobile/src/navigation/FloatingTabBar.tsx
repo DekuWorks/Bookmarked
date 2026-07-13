@@ -1,4 +1,5 @@
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import { Ionicons } from "@expo/vector-icons";
 import { Pressable, Text, View } from "react-native";
 import Animated, {
   interpolate,
@@ -9,24 +10,37 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useUnreadMessageCount } from "../hooks/useMessages";
 import { useTabBarScroll } from "./TabBarScroll";
 
-/** The five primary destinations, in order (final mapping from IMG_5471). */
-const PRIMARY_TABS: { name: string; label: string; icon: string }[] = [
-  { name: "index", label: "Home", icon: "⌂" },
-  { name: "feed", label: "Feed", icon: "❋" },
-  { name: "search", label: "Search", icon: "⌕" },
-  { name: "messages", label: "Messages", icon: "✉" },
-  { name: "profile", label: "Profile", icon: "☺" },
+type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
+
+/**
+ * The five primary destinations, in order (final mapping from IMG_5471).
+ * Icons use @expo/vector-icons Ionicons outline set (filled when focused)
+ * for a consistent, native look.
+ */
+const PRIMARY_TABS: {
+  name: string;
+  label: string;
+  icon: IoniconName;
+  iconFocused: IoniconName;
+}[] = [
+  { name: "index", label: "Home", icon: "home-outline", iconFocused: "home" },
+  { name: "feed", label: "Feed", icon: "newspaper-outline", iconFocused: "newspaper" },
+  { name: "search", label: "Search", icon: "search-outline", iconFocused: "search" },
+  { name: "messages", label: "Messages", icon: "mail-outline", iconFocused: "mail" },
+  { name: "profile", label: "Profile", icon: "person-outline", iconFocused: "person" },
 ];
 
 function TabItem({
   label,
   icon,
+  iconFocused,
   focused,
   onPress,
   badge,
 }: {
   label: string;
-  icon: string;
+  icon: IoniconName;
+  iconFocused: IoniconName;
   focused: boolean;
   onPress: () => void;
   badge?: boolean;
@@ -41,7 +55,7 @@ function TabItem({
       className="flex-1 items-center justify-center py-1"
     >
       <View>
-        <Text style={{ color, fontSize: 22 }}>{icon}</Text>
+        <Ionicons name={focused ? iconFocused : icon} size={23} color={color} />
         {badge ? (
           <View className="absolute -right-1.5 -top-0.5 h-2.5 w-2.5 rounded-full border border-white bg-rust" />
         ) : null}
@@ -102,6 +116,7 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
             key={tab.name}
             label={tab.label}
             icon={tab.icon}
+            iconFocused={tab.iconFocused}
             focused={focused}
             badge={tab.name === "messages" && unreadMessages > 0}
             onPress={() => {
