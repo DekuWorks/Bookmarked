@@ -18,6 +18,8 @@ export type LibraryBookRow = {
   finished_at: string | null;
   started_at: string | null;
   completion_tags: string[] | null;
+  dnf: boolean;
+  expected_read_date: string | null;
   updated_at: string;
   created_at: string;
   books: {
@@ -40,7 +42,7 @@ export type ShelfGroup = {
 };
 
 const LIBRARY_SELECT =
-  "id, shelf_status, progress_percent, progress_pages, rating, is_favorite, finished_at, started_at, completion_tags, created_at, updated_at, books(id, title, author, cover_url, page_count, published_date, subjects)";
+  "id, shelf_status, progress_percent, progress_pages, rating, is_favorite, finished_at, started_at, completion_tags, dnf, expected_read_date, created_at, updated_at, books(id, title, author, cover_url, page_count, published_date, subjects)";
 
 export async function getUserLibraryBooks(userId: string): Promise<LibraryBookRow[]> {
   const { data, error } = await supabase
@@ -231,6 +233,7 @@ export async function markFinished(
       shelf_status: "read",
       progress_percent: 100,
       finished_at: new Date().toISOString(),
+      dnf: false,
       updated_at: new Date().toISOString(),
     })
     .eq("user_id", userId)
@@ -241,6 +244,43 @@ export async function markFinished(
   if (error) return { error: error.message };
 
   await recordBookActivity(userId, "book_finished", userBook?.id ?? null, book);
+  return {};
+}
+
+/**
+ * Mark / unmark a book as did-not-finish. DNF is a real column on user_books
+ * (see migration 20260713170538); it is orthogonal to shelf_status so a reader
+ * can DNF a book that's still on their "reading" shelf.
+ */
+export async function setDnf(
+  userId: string,
+  bookId: string,
+  dnf: boolean
+): Promise<{ error?: string }> {
+  const { error } = await supabase
+    .from("user_books")
+    .update({ dnf, updated_at: new Date().toISOString() })
+    .eq("user_id", userId)
+    .eq("book_id", bookId);
+  if (error) return { error: error.message };
+  return {};
+}
+
+/** Set (or clear) the reader's target "Date to Read" (expected_read_date). */
+export async function setExpectedReadDate(
+  userId: string,
+  bookId: string,
+  expectedReadDate: string | null
+): Promise<{ error?: string }> {
+  const { error } = await supabase
+    .from("user_books")
+    .update({
+      expected_read_date: expectedReadDate,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", userId)
+    .eq("book_id", bookId);
+  if (error) return { error: error.message };
   return {};
 }
 

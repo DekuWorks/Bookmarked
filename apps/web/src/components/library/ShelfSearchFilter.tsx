@@ -25,7 +25,10 @@ export function ShelfSearchFilter({
   sortKey,
 }: Props) {
   const [query, setQuery] = useState("");
+  const [hideDnf, setHideDnf] = useState(false);
   const { sort, setSort } = useShelfSort(sortKey ?? shelf.slug);
+
+  const hasDnf = useMemo(() => shelf.items.some((ub) => ub.dnf), [shelf.items]);
 
   const displayShelf = useMemo((): ShelfGroup => {
     const q = query.trim().toLowerCase();
@@ -39,11 +42,15 @@ export function ShelfSearchFilter({
       });
     }
 
+    if (hideDnf) {
+      items = items.filter((ub) => !ub.dnf);
+    }
+
     return {
       ...shelf,
       items: sortShelfItems(items, sort),
     };
-  }, [shelf, query, sort]);
+  }, [shelf, query, sort, hideDnf]);
 
   const isEmpty = shelf.items.length === 0;
   const noMatches = !isEmpty && displayShelf.items.length === 0;
@@ -66,6 +73,17 @@ export function ShelfSearchFilter({
             shelfStatus={shelf.status}
           />
         </div>
+        {hasDnf ? (
+          <label className="mt-3 flex items-center gap-2 text-sm text-text-muted">
+            <input
+              type="checkbox"
+              checked={hideDnf}
+              onChange={(e) => setHideDnf(e.target.checked)}
+              className="h-4 w-4 rounded border-border text-puce-red focus:ring-puce-red"
+            />
+            Hide did-not-finish (DNF) books
+          </label>
+        ) : null}
       </div>
 
       {isEmpty ? (

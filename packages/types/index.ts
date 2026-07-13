@@ -283,6 +283,10 @@ export interface UserBook {
   is_favorite: boolean;
   read_count: number;
   completion_tags: string[];
+  /** Reader explicitly marked this book as did-not-finish (a real DNF state). */
+  dnf: boolean;
+  /** Target/expected date the reader plans to read this book ("Date to Read"). */
+  expected_read_date: string | null;
   created_at: string;
   updated_at: string;
   books?: Book;

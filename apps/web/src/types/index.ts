@@ -64,6 +64,8 @@ export interface UserBook {
   is_favorite: boolean;
   read_count: number;
   completion_tags: string[];
+  dnf: boolean;
+  expected_read_date: string | null;
   created_at: string;
   updated_at: string;
   books?: import("../../../../packages/types").Book;

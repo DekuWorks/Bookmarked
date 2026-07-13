@@ -15,6 +15,8 @@ import { StarRating } from "../../../src/components/StarRating";
 import { getBookDetails } from "../../../src/services/bookDetails";
 import {
   markFinished,
+  setDnf,
+  setExpectedReadDate,
   setShelfStatus,
   updateReadingProgress,
 } from "../../../src/services/library";
@@ -78,6 +80,8 @@ export default function BookScreen() {
   const [rateOpen, setRateOpen] = useState(false);
   const [progressOpen, setProgressOpen] = useState(false);
   const [progressValue, setProgressValue] = useState("");
+  const [dateOpen, setDateOpen] = useState(false);
+  const [dateValue, setDateValue] = useState("");
 
   const details = useQuery({
     queryKey: ["book-details", bookId, userId],
@@ -114,6 +118,27 @@ export default function BookScreen() {
     const result = await updateReadingProgress(userId, book, { progressPercent: percent });
     setProgressOpen(false);
     setProgressValue("");
+    if (result.error) Alert.alert("Error", result.error);
+    invalidate();
+  }
+
+  async function toggleDnf() {
+    if (!userId || !book) return;
+    const next = !(data?.userBook?.dnf ?? false);
+    const result = await setDnf(userId, book.id, next);
+    if (result.error) Alert.alert("Error", result.error);
+    invalidate();
+  }
+
+  async function saveExpectedDate() {
+    if (!userId || !book) return;
+    const trimmed = dateValue.trim();
+    if (trimmed && !/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      Alert.alert("Invalid date", "Use the format YYYY-MM-DD (e.g. 2026-08-15).");
+      return;
+    }
+    const result = await setExpectedReadDate(userId, book.id, trimmed || null);
+    setDateOpen(false);
     if (result.error) Alert.alert("Error", result.error);
     invalidate();
   }
@@ -191,6 +216,34 @@ export default function BookScreen() {
             );
           })}
         </View>
+
+        {userBook ? (
+          <View className="flex-row gap-2">
+            <Pressable
+              onPress={toggleDnf}
+              className={`flex-1 flex-row items-center justify-center gap-1.5 rounded-xl py-2.5 ${
+                userBook.dnf ? "bg-rust" : "bg-primary/15"
+              }`}
+            >
+              <Text className={`text-sm font-semibold ${userBook.dnf ? "text-white" : "text-puce-red"}`}>
+                {userBook.dnf ? "✓ Did not finish" : "Mark did not finish"}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                setDateValue(userBook.expected_read_date ?? "");
+                setDateOpen(true);
+              }}
+              className="flex-1 flex-row items-center justify-center gap-1.5 rounded-xl bg-primary/15 py-2.5"
+            >
+              <Text className="text-sm font-semibold text-puce-red" numberOfLines={1}>
+                {userBook.expected_read_date
+                  ? `📅 ${new Date(userBook.expected_read_date).toLocaleDateString()}`
+                  : "Set date to read"}
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
 
         {userBook?.shelf_status === "currently_reading" ? (
           <View className="rounded-2xl border border-brand-border bg-surface p-4">
@@ -272,6 +325,29 @@ export default function BookScreen() {
             />
             <View className="mt-4">
               <Button title="Save" onPress={saveProgress} />
+            </View>
+          </View>
+        </Pressable>
+      </Modal>
+
+      {/* Date to read modal */}
+      <Modal transparent visible={dateOpen} animationType="fade" onRequestClose={() => setDateOpen(false)}>
+        <Pressable className="flex-1 items-center justify-center bg-black/30" onPress={() => setDateOpen(false)}>
+          <View className="w-72 rounded-2xl bg-surface p-5">
+            <Text className="mb-1 text-lg font-bold text-puce-red">Date to read</Text>
+            <Text className="mb-3 text-xs text-ink-muted">
+              When do you plan to read this? Leave blank to clear.
+            </Text>
+            <TextInput
+              value={dateValue}
+              onChangeText={setDateValue}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor="#A99DAE"
+              autoCapitalize="none"
+              className="rounded-xl border border-brand-border bg-background px-3 py-3 text-base text-ink"
+            />
+            <View className="mt-4">
+              <Button title="Save" onPress={saveExpectedDate} />
             </View>
           </View>
         </Pressable>

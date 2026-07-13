@@ -20,6 +20,8 @@ export type {
   ReadingSession,
   ReadingNote,
   ReadingNoteCategory,
+  BuiltinReadingNoteCategory,
+  UserReadingNoteCategory,
   ReadingNoteVisibility,
   Conversation,
   ConversationPreview,
@@ -30,6 +32,15 @@ export type {
   Notification,
   NotificationType,
   NotificationWithActor,
+  Post,
+  PostDraft,
+  PostComment,
+  PostCommentWithAuthor,
+  PostCommentReply,
+  PostCommentReplyWithAuthor,
+  PostWithAuthor,
+  ContentReaction,
+  ReactionCounts,
 } from "../../../../packages/types";
 
 // Book Clubs — shared shapes so mobile matches web + Supabase RLS tables.

@@ -6,6 +6,7 @@ export type SortableShelfItem = {
   created_at: string;
   updated_at?: string;
   progress_percent?: number;
+  expected_read_date?: string | null;
   books: {
     title?: string | null;
     author?: string | null;
@@ -21,6 +22,7 @@ export type ShelfSortMode =
   | "published_oldest"
   | "added_newest"
   | "added_oldest"
+  | "date_to_read"
   | "progress_updated";
 
 export const DEFAULT_SHELF_SORT: ShelfSortMode = "added_newest";
@@ -40,6 +42,7 @@ export const SHELF_SORT_OPTIONS: ShelfSortOption[] = [
   { mode: "published_oldest", label: "Date released (oldest)" },
   { mode: "added_newest", label: "Date added (newest)" },
   { mode: "added_oldest", label: "Date added (oldest)" },
+  { mode: "date_to_read", label: "Date to read (soonest)" },
   { mode: "progress_updated", label: "Recently updated progress", readingOnly: true },
 ];
 
@@ -136,6 +139,20 @@ export function sortShelfItems<T extends SortableShelfItem>(
         (a, b) =>
           parseTimestamp(a.created_at) - parseTimestamp(b.created_at)
       );
+      break;
+    case "date_to_read":
+      // Real "Date to Read" column (expected_read_date), soonest first; rows
+      // without a target date sort to the end.
+      sorted.sort((a, b) => {
+        const aDate = a.expected_read_date
+          ? parseTimestamp(a.expected_read_date)
+          : Number.POSITIVE_INFINITY;
+        const bDate = b.expected_read_date
+          ? parseTimestamp(b.expected_read_date)
+          : Number.POSITIVE_INFINITY;
+        if (aDate !== bDate) return aDate - bDate;
+        return compareStrings(a.books?.title ?? "", b.books?.title ?? "");
+      });
       break;
     case "progress_updated":
       sorted.sort((a, b) => {

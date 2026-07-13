@@ -39,7 +39,8 @@ const SORT_OPTIONS: { id: SortKey; label: string }[] = [
 ];
 
 function isDnf(row: LibraryBookRow): boolean {
-  return (row.completion_tags ?? []).some((t) => t.toLowerCase() === "dnf");
+  // Real DNF column (migration 20260713170538); fall back to any legacy tag.
+  return row.dnf || (row.completion_tags ?? []).some((t) => t.toLowerCase() === "dnf");
 }
 
 function matchesTab(row: LibraryBookRow, tab: ShelfTab): boolean {
@@ -73,11 +74,15 @@ function sortBooks(rows: LibraryBookRow[], sort: SortKey): LibraryBookRow[] {
     case "genre":
       return copy.sort((a, b) => genre(a).localeCompare(genre(b), undefined, { sensitivity: "base" }));
     case "date_to_read":
-      // No dedicated "expected read" column in the schema; approximate with the
-      // planned start date, falling back to when the book was added.
+      // Real "Date to Read" column (expected_read_date, migration 20260713170538),
+      // soonest first; rows without a target date sort to the end.
       return copy.sort((a, b) => {
-        const av = new Date(a.started_at ?? a.created_at).getTime();
-        const bv = new Date(b.started_at ?? b.created_at).getTime();
+        const av = a.expected_read_date
+          ? new Date(a.expected_read_date).getTime()
+          : Number.POSITIVE_INFINITY;
+        const bv = b.expected_read_date
+          ? new Date(b.expected_read_date).getTime()
+          : Number.POSITIVE_INFINITY;
         return av - bv;
       });
     case "date_added":

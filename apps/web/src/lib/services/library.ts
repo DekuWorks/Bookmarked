@@ -11,6 +11,8 @@ export type LibraryBookRow = {
   is_favorite: boolean;
   finished_at: string | null;
   started_at: string | null;
+  dnf: boolean;
+  expected_read_date: string | null;
   updated_at: string;
   created_at: string;
   books: {
@@ -38,7 +40,7 @@ export type ShelfGroup = {
 };
 
 const LIBRARY_SELECT =
-  "id, shelf_status, progress_percent, progress_pages, rating, is_favorite, finished_at, started_at, created_at, updated_at, books(id, title, author, cover_url, page_count, subjects, external_id, external_source, description, published_date, publisher, isbn)";
+  "id, shelf_status, progress_percent, progress_pages, rating, is_favorite, finished_at, started_at, dnf, expected_read_date, created_at, updated_at, books(id, title, author, cover_url, page_count, subjects, external_id, external_source, description, published_date, publisher, isbn)";
 
 export async function getUserLibraryBooks(userId: string): Promise<LibraryBookRow[]> {
   const supabase = createClient();
