@@ -1,4 +1,5 @@
 import { bookDetailsPath, bookDetailsReviewsPath } from "@/lib/routes/book";
+import { clubDetailPath } from "@/lib/routes/clubs";
 import { messageThreadPath, messagesInboxPath } from "@/lib/routes/messages";
 import { readerProfilePath } from "@/lib/routes/reader";
 import type { FeedItem } from "@/lib/services/socialFeed";
@@ -10,8 +11,14 @@ const REVIEW_ACTIVITY_EVENTS = new Set([
   "review_updated",
 ]);
 
+const CLUB_ACTIVITY_EVENTS = new Set(["club_discussion_created"]);
+
 export function isReviewActivityEvent(eventType: string): boolean {
   return REVIEW_ACTIVITY_EVENTS.has(eventType);
+}
+
+export function isClubActivityEvent(eventType: string): boolean {
+  return CLUB_ACTIVITY_EVENTS.has(eventType);
 }
 
 export function activityEventHref(
@@ -31,7 +38,13 @@ export function activityEventHref(
   return "/feed/";
 }
 
-export function feedItemHref(item: Pick<FeedItem, "event_type" | "bookId" | "profiles">): string {
+export function feedItemHref(
+  item: Pick<FeedItem, "event_type" | "bookId" | "profiles" | "clubId">
+): string {
+  // Club discussions link to the club, even when a book is attached.
+  if (isClubActivityEvent(item.event_type) && item.clubId) {
+    return clubDetailPath(item.clubId);
+  }
   return activityEventHref(item.event_type, item.bookId, item.profiles?.username);
 }
 

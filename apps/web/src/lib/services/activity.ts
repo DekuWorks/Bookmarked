@@ -10,7 +10,8 @@ export type ActivityEventType =
   | "book_removed"
   | "reading_started"
   | "reading_finished"
-  | "review_added";
+  | "review_added"
+  | "club_discussion_created";
 
 export type ActivityVisibility = "public" | "followers" | "private";
 
@@ -32,6 +33,7 @@ const FEED_EVENT_TYPES = new Set<string>([
   "review_created",
   "review_added",
   "review_updated",
+  "club_discussion_created",
 ]);
 
 export function isFeedEligibleEvent(eventType: string): boolean {
@@ -131,6 +133,13 @@ function formatWithSubject(
       return `${subject} updated their review of ${title}`;
     case "book_removed":
       return `${subject} removed ${title} from their library`;
+    case "club_discussion_created": {
+      const clubName =
+        typeof metadata?.club_name === "string" && metadata.club_name.trim()
+          ? metadata.club_name.trim()
+          : "a book club";
+      return `${subject} started a discussion in ${clubName}`;
+    }
     default:
       return `${subject} updated their library`;
   }
@@ -171,6 +180,35 @@ export function activityMetadata(
     ...(cover_url ? { cover_url } : {}),
     ...(subjects?.length ? { subjects } : {}),
     ...rest,
+  };
+}
+
+/**
+ * Self-describing metadata for a club discussion activity event. Kept flat so
+ * both the web and mobile feeds can render it without extra lookups. Only emit
+ * these events for public clubs (see `createDiscussion`) so private-club
+ * discussions never leak into the feed.
+ */
+export function clubDiscussionMetadata(input: {
+  clubId: string;
+  clubName: string;
+  bodySnippet: string;
+  book?: { id: string; title: string; author?: string | null; cover_url?: string | null } | null;
+}): Record<string, unknown> {
+  const book = input.book;
+  return {
+    club_id: input.clubId,
+    club_name: input.clubName,
+    body_snippet: input.bodySnippet,
+    ...(book
+      ? {
+          book_id: book.id,
+          title: book.title,
+          book_title: book.title,
+          ...(book.author ? { author: book.author } : {}),
+          ...(book.cover_url ? { cover_url: book.cover_url } : {}),
+        }
+      : {}),
   };
 }
 

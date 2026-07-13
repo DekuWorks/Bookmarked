@@ -25,6 +25,8 @@ export type FeedItem = {
   coverUrl: string | null;
   bookTitle: string;
   bookAuthor: string | null;
+  clubId: string | null;
+  clubName: string | null;
 };
 
 type RawFeedRow = {
@@ -107,6 +109,11 @@ export function enrichFeedRow(row: RawFeedRow): FeedItem {
   const coverUrl =
     typeof metadata?.cover_url === "string" ? metadata.cover_url : null;
 
+  const clubId =
+    typeof metadata?.club_id === "string" ? metadata.club_id : null;
+  const clubName =
+    typeof metadata?.club_name === "string" ? metadata.club_name : null;
+
   const message = formatSocialActivityMessage(row.event_type, metadata, row.profiles);
   const readerName =
     row.profiles?.display_name?.trim() ||
@@ -124,6 +131,8 @@ export function enrichFeedRow(row: RawFeedRow): FeedItem {
     coverUrl,
     bookTitle: bookTitleFromMetadata(metadata),
     bookAuthor: bookAuthorFromMetadata(metadata),
+    clubId,
+    clubName,
   };
 }
 

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { clubDiscussionMetadata, recordActivity } from "@/lib/services/activity";
 import type {
   BookClub,
   BookClubBook,
@@ -286,6 +287,71 @@ export async function listDiscussions(clubId: string): Promise<BookClubPostWithA
   }));
 }
 
+/**
+ * Fetch and hydrate a single discussion (author profile + optional book),
+ * mirroring `listDiscussions`. Used to hydrate posts arriving over Realtime so
+ * they can be prepended without a full refetch. Returns null if the viewer
+ * can't see the post (RLS) or it no longer exists.
+ */
+export async function getDiscussion(
+  clubId: string,
+  postId: string
+): Promise<BookClubPostWithAuthor | null> {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("book_club_posts")
+    .select(
+      `id, club_id, user_id, body, book_id, created_at, updated_at, profiles!book_club_posts_user_id_profiles_fkey (${PROFILE_SELECT})`
+    )
+    .eq("id", postId)
+    .eq("club_id", clubId)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+
+  type PostRow = {
+    id: string;
+    club_id: string;
+    user_id: string;
+    body: string;
+    book_id: string | null;
+    created_at: string;
+    updated_at: string;
+    profiles: PostAuthor | null;
+  };
+
+  const row = data as unknown as PostRow;
+
+  let book: BookClubBook | null = null;
+  if (row.book_id) {
+    const { data: bookRow } = await supabase
+      .from("books")
+      .select(BOOK_SELECT)
+      .eq("id", row.book_id)
+      .maybeSingle();
+    book = (bookRow as BookClubBook | null) ?? null;
+  }
+
+  return {
+    id: row.id,
+    club_id: row.club_id,
+    user_id: row.user_id,
+    body: row.body,
+    book_id: row.book_id,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    author: row.profiles ?? {
+      id: row.user_id,
+      username: null,
+      display_name: null,
+      avatar_url: null,
+    },
+    book,
+  };
+}
+
 export type CreateClubInput = {
   name: string;
   description?: string | null;
@@ -468,12 +534,16 @@ export async function createDiscussion(
   try {
     const { supabase, user } = await requireUser();
 
-    const { error } = await supabase.from("book_club_posts").insert({
-      club_id: clubId,
-      user_id: user.id,
-      body: trimmed,
-      book_id: bookId ?? null,
-    });
+    const { data: inserted, error } = await supabase
+      .from("book_club_posts")
+      .insert({
+        club_id: clubId,
+        user_id: user.id,
+        body: trimmed,
+        book_id: bookId ?? null,
+      })
+      .select("id")
+      .single();
 
     if (error) return { error: error.message };
 
@@ -481,6 +551,46 @@ export async function createDiscussion(
       .from("book_clubs")
       .update({ updated_at: new Date().toISOString() })
       .eq("id", clubId);
+
+    // Surface the new discussion in the activity feed. Only emit for PUBLIC
+    // clubs: the feed query filters by visibility/follows, not club membership,
+    // so a private club's name/discussion would otherwise leak to non-members.
+    try {
+      const { data: club } = await supabase
+        .from("book_clubs")
+        .select("name, visibility")
+        .eq("id", clubId)
+        .maybeSingle();
+
+      if (club && club.visibility === "public" && inserted) {
+        let book: BookClubBook | null = null;
+        if (bookId) {
+          const { data: bookRow } = await supabase
+            .from("books")
+            .select(BOOK_SELECT)
+            .eq("id", bookId)
+            .maybeSingle();
+          book = (bookRow as BookClubBook | null) ?? null;
+        }
+
+        await recordActivity(supabase, {
+          user_id: user.id,
+          event_type: "club_discussion_created",
+          entity_type: "book_club",
+          entity_id: clubId,
+          visibility: "public",
+          metadata_json: clubDiscussionMetadata({
+            clubId,
+            clubName: club.name,
+            bodySnippet: trimmed.length > 140 ? `${trimmed.slice(0, 140)}…` : trimmed,
+            book,
+          }),
+        });
+      }
+    } catch (activityError) {
+      // Activity is best-effort — never fail the discussion on feed errors.
+      console.warn("[book-clubs] activity record failed:", activityError);
+    }
 
     return {};
   } catch (error) {

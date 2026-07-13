@@ -14,9 +14,11 @@ import { ClubDiscussionComposer } from "@/components/clubs/ClubDiscussionCompose
 import { ClubMembersPanel } from "@/components/clubs/ClubMembersPanel";
 import { BookPickerModal } from "@/components/clubs/BookPickerModal";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { useClubDiscussionsRealtime } from "@/lib/hooks/useClubDiscussionsRealtime";
 import {
   deleteClub,
   getClub,
+  getDiscussion,
   joinClub,
   leaveClub,
   listDiscussions,
@@ -61,6 +63,28 @@ function ClubDetailContent() {
       setClub(null);
     });
   }, [clubId, user, loadClub]);
+
+  // Live-prepend new discussions arriving over Realtime (deduped so the
+  // poster's own optimistic reload doesn't create duplicates).
+  const handleRealtimeInsert = useCallback(
+    async (postId: string) => {
+      if (!clubId) return;
+      const post = await getDiscussion(clubId, postId);
+      if (!post) return;
+      setDiscussions((current) => {
+        if (!current) return current;
+        if (current.some((existing) => existing.id === post.id)) return current;
+        return [post, ...current];
+      });
+    },
+    [clubId]
+  );
+
+  useClubDiscussionsRealtime(club ? clubId : undefined, (postId) => {
+    void handleRealtimeInsert(postId).catch((err) => {
+      console.warn("[club] realtime hydrate failed:", err);
+    });
+  });
 
   async function handleJoin() {
     setActionPending(true);
