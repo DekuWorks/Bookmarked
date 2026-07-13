@@ -72,7 +72,17 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
   const { floating } = useTabBarScroll();
   const { data: unreadMessages = 0 } = useUnreadMessageCount();
 
-  const activeName = state.routes[state.index]?.name;
+  const focusedRoute = state.routes[state.index];
+  const activeName = focusedRoute?.name;
+
+  // Hide the floating bar on the Messages thread detail screen so the docked
+  // compose bar isn't obscured. The Messages tab hosts a nested Stack; when its
+  // active screen is the `[id]` thread we skip rendering the bar entirely.
+  const nestedState = focusedRoute?.state as
+    | { index?: number; routes?: { name: string }[] }
+    | undefined;
+  const nestedName = nestedState?.routes?.[nestedState.index ?? 0]?.name;
+  const hideForThread = activeName === "messages" && nestedName === "[id]";
 
   const containerStyle = useAnimatedStyle(() => {
     return {
@@ -90,6 +100,8 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
       borderTopWidth: interpolate(floating.value, [0, 1], [1, 0]),
     };
   });
+
+  if (hideForThread) return null;
 
   return (
     <Animated.View

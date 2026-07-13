@@ -1,5 +1,7 @@
 import { supabase } from "./supabase";
 import { getFollowingIds } from "./follows";
+import { listFeedPosts } from "./posts";
+import type { PostWithAuthor } from "../types";
 
 /**
  * Unified home feed for mobile, matching the mockup (IMG_5360): interleaves
@@ -47,8 +49,8 @@ export type PostEntry = {
   id: string;
   createdAt: string;
   author: FeedAuthor;
-  book: FeedBook | null;
-  body: string;
+  /** Full hydrated post (attachments, repost/quote embed, engagement counts). */
+  post: PostWithAuthor;
 };
 
 export type DiscussionEntry = {
@@ -123,14 +125,6 @@ type ReviewRow = {
   review_body: string | null;
   has_spoilers: boolean;
   feelings: string[] | null;
-  created_at: string;
-};
-
-type PostRow = {
-  id: string;
-  user_id: string;
-  book_id: string | null;
-  body: string;
   created_at: string;
 };
 
@@ -216,40 +210,22 @@ async function loadReviews(
 }
 
 async function loadPosts(
+  viewerId: string,
   followingIds: string[] | null,
   limit: number
 ): Promise<PostEntry[]> {
-  let query = supabase
-    .from("posts")
-    .select("id, user_id, book_id, body, created_at")
-    .order("created_at", { ascending: false })
-    .limit(limit);
-
-  if (followingIds) {
-    if (!followingIds.length) return [];
-    query = query.in("user_id", followingIds);
-  }
-
-  const { data, error } = await query;
-  if (error) {
-    // Posts table may be empty / restricted; treat as no posts.
-    return [];
-  }
-  const rows = (data ?? []) as PostRow[];
-  if (!rows.length) return [];
-
-  const [profiles, books] = await Promise.all([
-    fetchProfiles(rows.map((r) => r.user_id)),
-    fetchBooks(rows.map((r) => r.book_id).filter((id): id is string => Boolean(id))),
-  ]);
-
-  return rows.map((row) => ({
+  const posts = await listFeedPosts(viewerId, followingIds, limit);
+  return posts.map((post) => ({
     kind: "post" as const,
-    id: row.id,
-    createdAt: row.created_at,
-    author: toAuthor(row.user_id, profiles),
-    book: row.book_id ? books.get(row.book_id) ?? null : null,
-    body: row.body,
+    id: post.id,
+    createdAt: post.created_at,
+    author: {
+      id: post.author.id,
+      name: post.author.display_name?.trim() || post.author.username?.trim() || "Reader",
+      username: post.author.username,
+      avatarUrl: post.author.avatar_url,
+    },
+    post,
   }));
 }
 
@@ -338,7 +314,7 @@ export async function fetchHomeFeed(
 
   const [reviews, posts, discussions] = await Promise.all([
     loadReviews(viewerId, followingIds, limit),
-    loadPosts(followingIds, limit),
+    loadPosts(viewerId, followingIds, limit),
     loadDiscussions(followingIds, limit),
   ]);
 

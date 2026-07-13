@@ -51,7 +51,8 @@ export function useSendMessage(conversationId: string) {
   const userId = useAuthStore((s) => s.user?.id);
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: string) => sendMessage(conversationId, body),
+    mutationFn: ({ body, attachmentUrl }: { body: string; attachmentUrl?: string | null }) =>
+      sendMessage(conversationId, body, attachmentUrl),
     onSuccess: (result) => {
       if (result.error) return;
       queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });

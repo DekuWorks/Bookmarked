@@ -2,11 +2,17 @@ import { useState } from "react";
 import { useRouter } from "expo-router";
 import { Alert, Pressable, Text, View } from "react-native";
 import { Avatar } from "./Avatar";
+import { AttachmentImage } from "./AttachmentImage";
 import { BookCover } from "./BookCover";
 import { FeelingChip } from "./FeelingChip";
+import { MentionText } from "./MentionText";
+import { PostCommentsSheet } from "./PostCommentsSheet";
+import { RepostPreview } from "./RepostPreview";
 import { StarRating } from "./StarRating";
 import { timeAgo } from "../utils";
-import { useToggleReviewLike } from "../hooks/useFeed";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToggleReviewLike, useRepostPost, useTogglePostLike } from "../hooks/useFeed";
+import { deletePost } from "../services/posts";
 import { setShelfStatus } from "../services/library";
 import { useAuthStore } from "../store/authStore";
 import type { DiscussionEntry, FeedEntry, PostEntry, ReviewEntry } from "../services/socialFeed";
@@ -153,31 +159,171 @@ function ReviewCard({ entry, viewerId }: { entry: ReviewEntry; viewerId?: string
   );
 }
 
-function PostCard({ entry }: { entry: PostEntry }) {
+function PostActions({
+  likeCount,
+  liked,
+  commentCount,
+  reposted,
+  onLike,
+  onComment,
+  onRepost,
+}: {
+  likeCount: number;
+  liked: boolean;
+  commentCount: number;
+  reposted: boolean;
+  onLike: () => void;
+  onComment: () => void;
+  onRepost: () => void;
+}) {
+  return (
+    <View className="mt-3 flex-row items-center gap-6 border-t border-brand-border pt-3">
+      <Pressable className="flex-row items-center gap-1.5 active:opacity-70" onPress={onLike}>
+        <Text className="text-base">{liked ? "❤️" : "🤍"}</Text>
+        <Text className="text-sm text-ink-muted">{likeCount}</Text>
+      </Pressable>
+      <Pressable className="flex-row items-center gap-1.5 active:opacity-70" onPress={onComment}>
+        <Text className="text-base">💬</Text>
+        <Text className="text-sm text-ink-muted">{commentCount}</Text>
+      </Pressable>
+      <Pressable className="flex-row items-center gap-1.5 active:opacity-70" onPress={onRepost}>
+        <Text className="text-base" style={{ opacity: reposted ? 1 : 0.55 }}>
+          🔁
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
+function PostCard({ entry, viewerId }: { entry: PostEntry; viewerId?: string }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const post = entry.post;
+  const like = useTogglePostLike();
+  const repost = useRepostPost();
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const isRepost = Boolean(post.repost_of_post_id);
+  const mine = post.user_id === viewerId;
+
+  function onRepost() {
+    if (isRepost) return;
+    Alert.alert("Repost", "Share this post with your followers?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Quote",
+        onPress: () => router.push(`/compose?repostOf=${post.id}`),
+      },
+      {
+        text: post.viewer_has_reposted ? "Already reposted" : "Repost",
+        onPress: () => {
+          if (post.viewer_has_reposted) return;
+          repost.mutate(
+            { postId: post.id },
+            {
+              onSuccess: (result) => {
+                if (result.error) Alert.alert("Couldn't repost", result.error);
+              },
+            }
+          );
+        },
+      },
+    ]);
+  }
+
+  function onMore() {
+    if (!mine) return;
+    Alert.alert("Post", undefined, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          const result = await deletePost(post.id);
+          if (result.error) Alert.alert("Couldn't delete", result.error);
+          else queryClient.invalidateQueries({ queryKey: ["home-feed"] });
+        },
+      },
+    ]);
+  }
+
   return (
     <CardShell>
-      <AuthorRow entry={entry} action="shared a post" />
-      <Text className="mt-3 leading-5 text-ink">{entry.body}</Text>
-      {entry.book ? (
+      <View className="flex-row items-center">
+        <Avatar url={entry.author.avatarUrl} name={entry.author.name} size={40} />
+        <View className="ml-3 flex-1">
+          <Text className="font-semibold text-ink" numberOfLines={1}>
+            {entry.author.name}
+          </Text>
+          <Text className="text-xs text-ink-muted">
+            {isRepost ? "reposted" : "shared a post"}
+          </Text>
+        </View>
+        <Text className="text-xs text-ink-muted">{timeAgo(entry.createdAt)}</Text>
+        {mine ? (
+          <Pressable onPress={onMore} className="ml-2 active:opacity-60">
+            <Text className="text-lg text-ink-muted">⋯</Text>
+          </Pressable>
+        ) : (
+          <Text className="ml-2 text-lg text-ink-muted">⋯</Text>
+        )}
+      </View>
+
+      {post.body ? <MentionText body={post.body} className="mt-3 leading-5 text-ink" /> : null}
+
+      {post.image_url ? (
+        <View className="mt-3">
+          <AttachmentImage url={post.image_url} />
+        </View>
+      ) : null}
+
+      {isRepost && post.repost_of ? (
+        <RepostPreview original={post.repost_of} />
+      ) : isRepost ? (
+        <View className="mt-3 rounded-xl border border-brand-border bg-background p-3">
+          <Text className="text-sm text-ink-muted">The original post is unavailable.</Text>
+        </View>
+      ) : null}
+
+      {post.book && !isRepost ? (
         <Pressable
           className="mt-3 flex-row items-center gap-3 rounded-xl bg-primary/10 p-2 active:opacity-80"
-          onPress={() => router.push(`/book/${entry.book!.id}`)}
+          onPress={() => post.book && router.push(`/book/${post.book.id}`)}
         >
-          <BookCover url={entry.book.coverUrl} title={entry.book.title} sizeClassName="w-10 h-14" />
+          <BookCover
+            url={post.book.cover_url}
+            title={post.book.title}
+            sizeClassName="w-10 h-14"
+            saved
+            ribbonSize={14}
+          />
           <View className="flex-1">
             <Text className="font-medium text-ink" numberOfLines={1}>
-              {entry.book.title}
+              {post.book.title}
             </Text>
-            {entry.book.author ? (
+            {post.book.author ? (
               <Text className="text-xs text-ink-muted" numberOfLines={1}>
-                {entry.book.author}
+                {post.book.author}
               </Text>
             ) : null}
           </View>
         </Pressable>
       ) : null}
-      <ActionRow likeCount={0} liked={false} />
+
+      <PostActions
+        likeCount={post.like_count}
+        liked={post.viewer_has_liked}
+        commentCount={post.comment_count}
+        reposted={post.viewer_has_reposted}
+        onLike={() => like.mutate({ postId: post.id, liked: post.viewer_has_liked })}
+        onComment={() => setCommentsOpen(true)}
+        onRepost={onRepost}
+      />
+
+      <PostCommentsSheet
+        postId={post.id}
+        visible={commentsOpen}
+        onClose={() => setCommentsOpen(false)}
+      />
     </CardShell>
   );
 }
@@ -235,6 +381,6 @@ function DiscussionCard({ entry }: { entry: DiscussionEntry }) {
 export function FeedPostCard({ entry }: { entry: FeedEntry }) {
   const viewerId = useAuthStore((s) => s.user?.id);
   if (entry.kind === "review") return <ReviewCard entry={entry} viewerId={viewerId} />;
-  if (entry.kind === "post") return <PostCard entry={entry} />;
+  if (entry.kind === "post") return <PostCard entry={entry} viewerId={viewerId} />;
   return <DiscussionCard entry={entry} />;
 }

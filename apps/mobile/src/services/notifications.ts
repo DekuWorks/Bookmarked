@@ -72,6 +72,164 @@ export async function markAllNotificationsRead(userId: string): Promise<void> {
     .is("read_at", null);
 }
 
+// ---- Notification creation (mirrors apps/web/src/lib/services/notifications.ts)
+// All go through the `create_notification` RPC, which no-ops on self-notify,
+// respects per-user prefs, and dedups on metadata_json->>'dedup_key'.
+
+/** Deep link stored on post-engagement notifications (matches web postFeedPath). */
+export function postFeedPath(postId: string): string {
+  return `/feed/?post=${postId}`;
+}
+
+export async function getActorDisplayName(userId: string): Promise<string> {
+  const { data } = await supabase
+    .from("profiles")
+    .select("display_name, username")
+    .eq("id", userId)
+    .maybeSingle();
+  return data?.display_name?.trim() || data?.username?.trim() || "A reader";
+}
+
+async function createNotification(params: {
+  recipientId: string;
+  type: "message" | "follow" | "feed";
+  title: string;
+  body: string;
+  actorId: string;
+  linkUrl: string;
+  metadata: Record<string, unknown>;
+}): Promise<void> {
+  try {
+    await supabase.rpc("create_notification", {
+      p_user_id: params.recipientId,
+      p_type: params.type,
+      p_title: params.title,
+      p_body: params.body,
+      p_actor_id: params.actorId,
+      p_link_url: params.linkUrl,
+      p_metadata: params.metadata,
+    });
+  } catch {
+    // Notifications are best-effort; never block the underlying mutation.
+  }
+}
+
+export async function createMentionNotification(input: {
+  recipientId: string;
+  actorId: string;
+  actorDisplayName: string;
+  linkUrl: string;
+  preview: string;
+  dedupKey: string;
+  postId?: string;
+}): Promise<void> {
+  await createNotification({
+    recipientId: input.recipientId,
+    type: "feed",
+    title: `${input.actorDisplayName} mentioned you`,
+    body: input.preview.slice(0, 160),
+    actorId: input.actorId,
+    linkUrl: input.linkUrl,
+    metadata: {
+      notification_kind: "mention",
+      dedup_key: input.dedupKey,
+      ...(input.postId ? { post_id: input.postId } : {}),
+    },
+  });
+}
+
+export async function createPostLikeNotification(input: {
+  recipientId: string;
+  actorId: string;
+  actorDisplayName: string;
+  postId: string;
+}): Promise<void> {
+  await createNotification({
+    recipientId: input.recipientId,
+    type: "feed",
+    title: `${input.actorDisplayName} liked your post`,
+    body: "Tap to view the post.",
+    actorId: input.actorId,
+    linkUrl: postFeedPath(input.postId),
+    metadata: {
+      post_id: input.postId,
+      notification_kind: "post_like",
+      dedup_key: `post_like:${input.postId}:${input.actorId}`,
+    },
+  });
+}
+
+export async function createPostCommentNotification(input: {
+  recipientId: string;
+  actorId: string;
+  actorDisplayName: string;
+  postId: string;
+  commentId: string;
+  preview: string;
+}): Promise<void> {
+  await createNotification({
+    recipientId: input.recipientId,
+    type: "feed",
+    title: `${input.actorDisplayName} commented on your post`,
+    body: input.preview.slice(0, 160) || "Tap to view the comment.",
+    actorId: input.actorId,
+    linkUrl: postFeedPath(input.postId),
+    metadata: {
+      post_id: input.postId,
+      comment_id: input.commentId,
+      notification_kind: "post_comment",
+      dedup_key: `post_comment:${input.commentId}`,
+    },
+  });
+}
+
+export async function createPostCommentReactionNotification(input: {
+  recipientId: string;
+  actorId: string;
+  actorDisplayName: string;
+  postId: string;
+  commentId: string;
+}): Promise<void> {
+  await createNotification({
+    recipientId: input.recipientId,
+    type: "feed",
+    title: `${input.actorDisplayName} reacted to your comment`,
+    body: "Tap to view the comment.",
+    actorId: input.actorId,
+    linkUrl: postFeedPath(input.postId),
+    metadata: {
+      post_id: input.postId,
+      comment_id: input.commentId,
+      notification_kind: "post_comment_reaction",
+      dedup_key: `post_comment_reaction:${input.commentId}:${input.actorId}`,
+    },
+  });
+}
+
+export async function createPostCommentReplyNotification(input: {
+  recipientId: string;
+  actorId: string;
+  actorDisplayName: string;
+  postId: string;
+  replyId: string;
+  preview: string;
+}): Promise<void> {
+  await createNotification({
+    recipientId: input.recipientId,
+    type: "feed",
+    title: `${input.actorDisplayName} replied to your comment`,
+    body: input.preview.slice(0, 160) || "Tap to view the reply.",
+    actorId: input.actorId,
+    linkUrl: postFeedPath(input.postId),
+    metadata: {
+      post_id: input.postId,
+      reply_id: input.replyId,
+      notification_kind: "post_comment_reply",
+      dedup_key: `post_comment_reply:${input.replyId}`,
+    },
+  });
+}
+
 /** Compact relative timestamp, mirroring web `formatNotificationTimestamp`. */
 export function formatNotificationTimestamp(iso: string): string {
   const date = new Date(iso);

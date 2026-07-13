@@ -230,10 +230,12 @@ export async function getMessages(conversationId: string): Promise<MessageWithSe
 
 export async function sendMessage(
   conversationId: string,
-  body: string
+  body: string,
+  attachmentUrl?: string | null
 ): Promise<{ message?: Message; error?: string }> {
   const trimmed = body.trim();
-  if (!trimmed) return { error: "Message cannot be empty." };
+  const attachment = attachmentUrl?.trim() || null;
+  if (!trimmed && !attachment) return { error: "Message cannot be empty." };
 
   try {
     const user = await requireUser();
@@ -253,7 +255,7 @@ export async function sendMessage(
         conversation_id: conversationId,
         sender_id: user.id,
         body: trimmed,
-        attachment_url: null,
+        attachment_url: attachment,
       })
       .select("*")
       .single();
