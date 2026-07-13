@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import type { CatalogDoc } from "./isbndb";
 import type {
   BookClub,
   BookClubBook,
@@ -6,6 +7,7 @@ import type {
   BookClubMemberWithProfile,
   BookClubPostWithAuthor,
   BookClubSummary,
+  BookClubVisibility,
   BookClubWithDetails,
   MessageProfile,
   PostAuthor,
@@ -17,13 +19,14 @@ import type {
  * (`book_clubs`, `book_club_members`, `book_club_posts`) and RLS. Uses batched
  * `.in(...)` hydration instead of deep joins to avoid RLS recursion.
  *
- * Scope for the mobile foundation: read (discover / my clubs / detail / members
- * / discussions) + join / leave / post discussion. Owner management (create,
- * edit, set current book, remove member, delete) stays on the web app for now.
+ * Scope: read (discover / my clubs / detail / members / discussions) + join /
+ * leave / post discussion, plus full owner management (create, edit, set
+ * current book, remove member, delete club, delete discussion) mirroring web.
  */
 
 const PROFILE_SELECT = "id, username, display_name, avatar_url";
 const BOOK_SELECT = "id, title, author, cover_url";
+const ISBNDB_SOURCE = "isbndb" as const;
 
 async function requireUser() {
   const {
@@ -280,7 +283,7 @@ export async function leaveClub(clubId: string): Promise<{ error?: string }> {
       .maybeSingle();
 
     if (club?.owner_id === user.id) {
-      return { error: "Owners can't leave their own club. Manage it on the web app." };
+      return { error: "Owners can't leave their own club. Delete it instead." };
     }
 
     const { error } = await supabase
@@ -324,6 +327,206 @@ export async function createDiscussion(
     return {};
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Could not post discussion." };
+  }
+}
+
+/**
+ * Resolve an ISBNdb catalog result into a shared `books` row id so it can be a
+ * club's current book. Mirrors the web upsert-by-ISBN flow (books RLS allows
+ * authenticated select/insert) without the server-side cover/metadata
+ * enrichment those services do on web.
+ */
+export async function ensureCatalogBook(
+  doc: CatalogDoc
+): Promise<{ bookId?: string; error?: string }> {
+  const title = doc.title?.trim();
+  const isbn = doc.isbn?.[0]?.trim() || doc.key?.trim();
+  if (!title || !isbn) return { error: "Invalid book selection." };
+
+  try {
+    await requireUser();
+
+    const { data: existing, error: existingError } = await supabase
+      .from("books")
+      .select("id")
+      .eq("isbn", isbn)
+      .maybeSingle();
+
+    if (existingError) return { error: existingError.message };
+    if (existing?.id) return { bookId: existing.id };
+
+    const author = doc.author_name?.filter(Boolean).join(", ") || null;
+
+    const { data: inserted, error: insertError } = await supabase
+      .from("books")
+      .insert({
+        external_source: ISBNDB_SOURCE,
+        external_id: isbn,
+        title,
+        author,
+        cover_url: doc.cover_url ?? null,
+        isbn,
+        page_count: doc.number_of_pages_median ?? null,
+        published_date: doc.first_publish_year ? String(doc.first_publish_year) : null,
+        description: doc.synopsis ?? null,
+      })
+      .select("id")
+      .single();
+
+    if (insertError || !inserted) {
+      return { error: insertError?.message ?? "Could not save book." };
+    }
+
+    return { bookId: inserted.id };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Could not save book." };
+  }
+}
+
+export type CreateClubInput = {
+  name: string;
+  description?: string | null;
+  visibility?: BookClubVisibility;
+  currentBookId?: string | null;
+};
+
+export async function createClub(
+  input: CreateClubInput
+): Promise<{ clubId?: string; error?: string }> {
+  const name = input.name.trim();
+  if (!name) return { error: "Club name is required." };
+
+  try {
+    const user = await requireUser();
+
+    const { data: club, error: clubError } = await supabase
+      .from("book_clubs")
+      .insert({
+        owner_id: user.id,
+        name,
+        description: input.description?.trim() || null,
+        visibility: input.visibility ?? "public",
+        current_book_id: input.currentBookId ?? null,
+      })
+      .select("id")
+      .single();
+
+    if (clubError || !club) {
+      return { error: clubError?.message ?? "Could not create club." };
+    }
+
+    const { error: memberError } = await supabase.from("book_club_members").insert({
+      club_id: club.id,
+      user_id: user.id,
+      role: "owner",
+    });
+
+    if (memberError) return { error: memberError.message };
+
+    return { clubId: club.id };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Could not create club." };
+  }
+}
+
+export type UpdateClubInput = {
+  name?: string;
+  description?: string | null;
+  visibility?: BookClubVisibility;
+};
+
+export async function updateClub(
+  clubId: string,
+  input: UpdateClubInput
+): Promise<{ error?: string }> {
+  try {
+    await requireUser();
+
+    const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (input.name !== undefined) {
+      const name = input.name.trim();
+      if (!name) return { error: "Club name is required." };
+      patch.name = name;
+    }
+    if (input.description !== undefined) patch.description = input.description?.trim() || null;
+    if (input.visibility !== undefined) patch.visibility = input.visibility;
+
+    const { error } = await supabase.from("book_clubs").update(patch).eq("id", clubId);
+    if (error) return { error: error.message };
+    return {};
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Could not update club." };
+  }
+}
+
+export async function setCurrentBook(
+  clubId: string,
+  bookId: string | null
+): Promise<{ error?: string }> {
+  try {
+    await requireUser();
+
+    const { error } = await supabase
+      .from("book_clubs")
+      .update({ current_book_id: bookId, updated_at: new Date().toISOString() })
+      .eq("id", clubId);
+
+    if (error) return { error: error.message };
+    return {};
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Could not set current book." };
+  }
+}
+
+export async function removeMember(
+  clubId: string,
+  memberUserId: string
+): Promise<{ error?: string }> {
+  try {
+    const user = await requireUser();
+
+    if (memberUserId === user.id) {
+      return leaveClub(clubId);
+    }
+
+    const { error } = await supabase
+      .from("book_club_members")
+      .delete()
+      .eq("club_id", clubId)
+      .eq("user_id", memberUserId);
+
+    if (error) return { error: error.message };
+    return {};
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Could not remove member." };
+  }
+}
+
+export async function deleteClub(clubId: string): Promise<{ error?: string }> {
+  try {
+    await requireUser();
+    const { error } = await supabase.from("book_clubs").delete().eq("id", clubId);
+    if (error) return { error: error.message };
+    return {};
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Could not delete club." };
+  }
+}
+
+export async function deleteDiscussion(postId: string): Promise<{ error?: string }> {
+  try {
+    const user = await requireUser();
+
+    const { error } = await supabase
+      .from("book_club_posts")
+      .delete()
+      .eq("id", postId)
+      .eq("user_id", user.id);
+
+    if (error) return { error: error.message };
+    return {};
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Could not delete discussion." };
   }
 }
 

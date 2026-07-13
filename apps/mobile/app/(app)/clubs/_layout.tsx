@@ -13,6 +13,7 @@ export default function ClubsLayout() {
     >
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="[id]" options={{ title: "Club", headerBackTitle: "Clubs" }} />
+      <Stack.Screen name="new" options={{ title: "Start a club", headerBackTitle: "Clubs" }} />
     </Stack>
   );
 }

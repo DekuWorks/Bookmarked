@@ -1,4 +1,4 @@
-import { Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { Avatar } from "./Avatar";
 import { BookCover } from "./BookCover";
 import { timeAgo } from "../utils";
@@ -8,7 +8,14 @@ function authorName(author: BookClubPostWithAuthor["author"]): string {
   return author.display_name?.trim() || author.username?.trim() || "Reader";
 }
 
-export function ClubDiscussionCard({ post }: { post: BookClubPostWithAuthor }) {
+type Props = {
+  post: BookClubPostWithAuthor;
+  canDelete?: boolean;
+  deleting?: boolean;
+  onDelete?: () => void;
+};
+
+export function ClubDiscussionCard({ post, canDelete, deleting, onDelete }: Props) {
   return (
     <View className="rounded-2xl border border-brand-border bg-surface p-4 mb-3">
       <View className="flex-row items-center gap-3">
@@ -19,6 +26,20 @@ export function ClubDiscussionCard({ post }: { post: BookClubPostWithAuthor }) {
           </Text>
           <Text className="text-xs text-ink-muted">{timeAgo(post.created_at)}</Text>
         </View>
+        {canDelete ? (
+          <Pressable
+            accessibilityRole="button"
+            disabled={deleting}
+            onPress={onDelete}
+            className="rounded-full bg-primary/15 px-3 py-1.5 active:opacity-80"
+          >
+            {deleting ? (
+              <ActivityIndicator size="small" color="#642F37" />
+            ) : (
+              <Text className="text-xs font-semibold text-puce-red">Delete</Text>
+            )}
+          </Pressable>
+        ) : null}
       </View>
 
       <Text className="text-ink mt-3 leading-6">{post.body}</Text>

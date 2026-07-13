@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { FlatList, Pressable, RefreshControl, Text, View } from "react-native";
+import { useRouter } from "expo-router";
 import { BrandHeader } from "../../../src/components/BrandHeader";
+import { Button } from "../../../src/components/Button";
 import { ClubCard } from "../../../src/components/ClubCard";
 import { EmptyState } from "../../../src/components/EmptyState";
 import { LoadingState } from "../../../src/components/LoadingState";
@@ -14,6 +16,7 @@ const TAB_OPTIONS: { id: ClubsTab; label: string }[] = [
 ];
 
 export default function ClubsRoute() {
+  const router = useRouter();
   const [tab, setTab] = useState<ClubsTab>("discover");
   const discover = useDiscoverClubs();
   const mine = useMyClubs();
@@ -28,28 +31,38 @@ export default function ClubsRoute() {
         subtitle="Read together and join the conversation."
       />
 
-      <View className="flex-row gap-2 px-5 pt-4 pb-1">
-        {TAB_OPTIONS.map((option) => {
-          const isActive = tab === option.id;
-          return (
-            <Pressable
-              key={option.id}
-              accessibilityRole="tab"
-              onPress={() => setTab(option.id)}
-              className={`rounded-full px-4 py-2 ${
-                isActive ? "bg-puce-red" : "bg-primary/15"
-              }`}
-            >
-              <Text
-                className={`text-sm font-semibold ${
-                  isActive ? "text-white" : "text-puce-red"
+      <View className="flex-row items-center justify-between gap-2 px-5 pt-4 pb-1">
+        <View className="flex-row gap-2">
+          {TAB_OPTIONS.map((option) => {
+            const isActive = tab === option.id;
+            return (
+              <Pressable
+                key={option.id}
+                accessibilityRole="tab"
+                onPress={() => setTab(option.id)}
+                className={`rounded-full px-4 py-2 ${
+                  isActive ? "bg-puce-red" : "bg-primary/15"
                 }`}
               >
-                {option.label}
-              </Text>
-            </Pressable>
-          );
-        })}
+                <Text
+                  className={`text-sm font-semibold ${
+                    isActive ? "text-white" : "text-puce-red"
+                  }`}
+                >
+                  {option.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push("/(app)/clubs/new")}
+          className="rounded-full bg-puce-red px-4 py-2 active:opacity-80"
+        >
+          <Text className="text-sm font-semibold text-white">+ New</Text>
+        </Pressable>
       </View>
 
       {active.isLoading ? (
@@ -78,12 +91,26 @@ export default function ClubsRoute() {
             tab === "discover" ? (
               <EmptyState
                 title="No public clubs yet"
-                description="Start a club on the web app and invite readers to join the conversation."
+                description="Start a club and invite readers to join the conversation."
+                action={
+                  <Button
+                    title="Start a club"
+                    variant="primary"
+                    onPress={() => router.push("/(app)/clubs/new")}
+                  />
+                }
               />
             ) : (
               <EmptyState
                 title="You haven't joined any clubs"
-                description="Browse the Discover tab to find a club to join."
+                description="Browse the Discover tab or start your own club."
+                action={
+                  <Button
+                    title="Start a club"
+                    variant="primary"
+                    onPress={() => router.push("/(app)/clubs/new")}
+                  />
+                }
               />
             )
           }
