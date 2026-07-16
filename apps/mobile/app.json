@@ -15,15 +15,33 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.dekuworks.bookmarked",
-      "icon": "./assets/brand/icon.png"
+      "icon": "./assets/brand/icon.png",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Bookmarked needs access to your photos so you can attach images to posts, comments, and messages.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "privacyManifests": {
+        "NSPrivacyAccessedAPITypes": [
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
+            "NSPrivacyAccessedAPITypeReasons": [
+              "CA92.1"
+            ]
+          }
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/brand/logo-circle.png",
         "backgroundColor": "#C6B1DC"
       },
+      "package": "com.dekuworks.bookmarked",
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -38,6 +56,13 @@
           "photosPermission": "Bookmarked needs access to your photos so you can attach images to posts, comments, and messages."
         }
       ]
-    ]
+    ],
+    "owner": "dekuworks",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "766e1107-214a-4856-a372-441c5d68c530"
+      }
+    }
   }
 }
