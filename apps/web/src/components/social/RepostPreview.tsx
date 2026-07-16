@@ -47,9 +47,9 @@ export function RepostPreview({ post, linkToPost = true }: Props) {
         ) : null}
       </div>
       {post.body.trim() ? (
-        <p className="text-sm leading-relaxed text-text">
+        <div className="text-sm leading-relaxed text-text">
           <MentionText body={post.body} />
-        </p>
+        </div>
       ) : null}
       {post.image_url ? (
         <a

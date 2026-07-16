@@ -255,20 +255,20 @@ export function ReviewCard({
           {review.review_body ? (
             review.has_spoilers ? (
               <div className="group relative">
-                <p
+                <div
                   className="cursor-default select-none text-sm leading-relaxed text-text blur-md transition-[filter] duration-200 group-hover:blur-none group-focus-within:blur-none"
                   tabIndex={0}
                 >
-                  <MentionText body={review.review_body} />
-                </p>
+                  <MentionText body={review.review_body} blurProfanity={false} />
+                </div>
                 <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-xs font-medium text-text-muted opacity-100 transition-opacity group-hover:opacity-0 group-focus-within:opacity-0">
                   Hover to reveal spoilers
                 </p>
               </div>
             ) : (
-              <p className="text-sm leading-relaxed text-text">
+              <div className="text-sm leading-relaxed text-text">
                 <MentionText body={review.review_body} />
-              </p>
+              </div>
             )
           ) : (
             <p className="text-sm text-text-muted italic">Rating only — no written review.</p>

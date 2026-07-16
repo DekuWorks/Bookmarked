@@ -17,6 +17,7 @@ import type { Profile } from "@/types";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { ProfileShelfPreview } from "@/components/profile/ProfileShelfPreview";
 import { ProfileNotesSection } from "@/components/profile/ProfileNotesSection";
+import { ProfanityBlur } from "@/components/social/ProfanityBlur";
 import { ProfilePostsSection } from "@/components/social/ProfilePostsSection";
 import { ProfileClubsSection } from "@/components/profile/ProfileClubsSection";
 import { FollowStats } from "@/components/social/FollowStats";
@@ -131,7 +132,9 @@ function ReaderProfileContent() {
         </div>
 
         {profile.bio ? (
-          <p className="mt-4 leading-relaxed text-text">{profile.bio}</p>
+          <ProfanityBlur text={profile.bio} className="mt-4">
+            <p className="leading-relaxed text-text">{profile.bio}</p>
+          </ProfanityBlur>
         ) : null}
 
         {profile.favorite_genres?.length ? (

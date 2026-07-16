@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ProfanityBlur } from "@/components/social/ProfanityBlur";
 import { readerProfilePath } from "@/lib/routes/reader";
 import { parseMentionSegments } from "@/lib/utils/mentions";
 import { cn } from "@/lib/utils/cn";
@@ -8,12 +9,14 @@ import { cn } from "@/lib/utils/cn";
 type Props = {
   body: string;
   className?: string;
+  /** When false, skip profanity blur (e.g. nested inside another gate). Default true. */
+  blurProfanity?: boolean;
 };
 
-export function MentionText({ body, className }: Props) {
+export function MentionText({ body, className, blurProfanity = true }: Props) {
   const segments = parseMentionSegments(body);
 
-  return (
+  const content = (
     <span className={cn("whitespace-pre-wrap", className)}>
       {segments.map((segment, index) => {
         if (segment.type === "text") {
@@ -32,4 +35,8 @@ export function MentionText({ body, className }: Props) {
       })}
     </span>
   );
+
+  if (!blurProfanity) return content;
+
+  return <ProfanityBlur text={body}>{content}</ProfanityBlur>;
 }

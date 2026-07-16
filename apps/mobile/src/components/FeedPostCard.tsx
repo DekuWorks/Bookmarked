@@ -7,6 +7,7 @@ import { BookCover } from "./BookCover";
 import { FeelingChip } from "./FeelingChip";
 import { MentionText } from "./MentionText";
 import { PostCommentsSheet } from "./PostCommentsSheet";
+import { ProfanityBlur } from "./ProfanityBlur";
 import { RepostPreview } from "./RepostPreview";
 import { StarRating } from "./StarRating";
 import { timeAgo } from "../utils";
@@ -149,7 +150,9 @@ function ReviewCard({ entry, viewerId }: { entry: ReviewEntry; viewerId?: string
             </Text>
           </Pressable>
         ) : (
-          <Text className="mt-3 leading-5 text-ink">{entry.reviewBody}</Text>
+          <ProfanityBlur text={entry.reviewBody} className="mt-3">
+            <Text className="leading-5 text-ink">{entry.reviewBody}</Text>
+          </ProfanityBlur>
         )
       ) : null}
 
@@ -356,9 +359,11 @@ function DiscussionCard({ entry }: { entry: DiscussionEntry }) {
           <BookCover url={entry.book.coverUrl} title={entry.book.title} sizeClassName="w-14 h-20" />
         ) : null}
         <View className="flex-1">
-          <Text className="font-bold text-ink" numberOfLines={3}>
-            {entry.body}
-          </Text>
+          <ProfanityBlur text={entry.body}>
+            <Text className="font-bold text-ink" numberOfLines={3}>
+              {entry.body}
+            </Text>
+          </ProfanityBlur>
           {entry.book ? (
             <Text className="mt-1 text-xs text-ink-muted" numberOfLines={1}>
               {entry.book.title}

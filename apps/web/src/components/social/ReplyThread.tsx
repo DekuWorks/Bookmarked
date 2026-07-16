@@ -189,9 +189,9 @@ function ReplyItem<T extends ReplyNode>({
         <div className="space-y-2">
           {reply.attachment_url ? <CommentAttachment url={reply.attachment_url} /> : null}
           {reply.body.trim() ? (
-            <p className="text-sm leading-relaxed text-text">
+            <div className="text-sm leading-relaxed text-text">
               <MentionText body={reply.body} />
-            </p>
+            </div>
           ) : null}
         </div>
 

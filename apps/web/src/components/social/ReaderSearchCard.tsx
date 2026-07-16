@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { FollowButton } from "@/components/social/FollowButton";
+import { ProfanityBlur } from "@/components/social/ProfanityBlur";
 import { readerProfilePath } from "@/lib/routes/reader";
 import type { ReaderSearchResult } from "@/lib/services/feedSearch";
 
@@ -23,7 +24,9 @@ export function ReaderSearchCard({ reader }: Props) {
       <p className="font-semibold text-puce-red group-hover:underline">{displayName}</p>
       {username ? <p className="text-sm text-text-muted">@{username}</p> : null}
       {reader.bio ? (
-        <p className="mt-1 line-clamp-2 text-sm text-text-muted">{reader.bio}</p>
+        <ProfanityBlur text={reader.bio} className="mt-1">
+          <p className="line-clamp-2 text-sm text-text-muted">{reader.bio}</p>
+        </ProfanityBlur>
       ) : null}
       {reader.favorite_genres?.length ? (
         <div className="mt-2 flex flex-wrap gap-1.5">

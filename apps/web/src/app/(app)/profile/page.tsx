@@ -18,6 +18,7 @@ import {
   fetchReadingStreakTimestamps,
 } from "@/lib/services/readingInsights";
 import { ReadingStreakCard } from "@/components/profile/ReadingStreakCard";
+import { ProfanityBlur } from "@/components/social/ProfanityBlur";
 import { readerProfilePath } from "@/lib/routes/reader";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import type { Profile } from "@/types";
@@ -107,7 +108,9 @@ export default function ProfilePage() {
         </div>
         <ReadingStreakCard streak={readingStreak} className="mt-6" />
         {profile?.bio ? (
-          <p className="mt-4 leading-relaxed text-text">{profile.bio}</p>
+          <ProfanityBlur text={profile.bio} className="mt-4">
+            <p className="leading-relaxed text-text">{profile.bio}</p>
+          </ProfanityBlur>
         ) : null}
         {profile?.favorite_genres?.length ? (
           <div className="mt-4 flex flex-wrap justify-center gap-2">

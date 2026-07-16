@@ -6,6 +6,7 @@ import { BookCover } from "@/components/books/BookCover";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
+import { ProfanityBlur } from "@/components/social/ProfanityBlur";
 import { deleteDiscussion } from "@/lib/services/bookClubs";
 import { bookDetailsPath } from "@/lib/routes/book";
 import { authorPagePath } from "@/lib/routes/author";
@@ -91,7 +92,9 @@ export function ClubDiscussionCard({ post, viewerId, onDeleted }: Props) {
             ) : null}
           </div>
 
-          <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-text">{post.body}</p>
+          <ProfanityBlur text={post.body} className="mt-2">
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-text">{post.body}</p>
+          </ProfanityBlur>
 
           {post.book ? (
             <div className="mt-3 flex items-center gap-3 rounded-lg border border-border p-3 hover:border-primary/40">

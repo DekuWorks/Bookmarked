@@ -232,9 +232,9 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
               ) : null}
 
               {localPost.body.trim() ? (
-                <p className="mt-2 text-sm leading-relaxed text-text">
+                <div className="mt-2 text-sm leading-relaxed text-text">
                   <MentionText body={localPost.body} />
-                </p>
+                </div>
               ) : null}
 
               {localPost.image_url ? (

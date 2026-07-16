@@ -5,6 +5,7 @@ import { Avatar } from "../../../src/components/Avatar";
 import { BookCover } from "../../../src/components/BookCover";
 import { EmptyState } from "../../../src/components/EmptyState";
 import { LoadingState } from "../../../src/components/LoadingState";
+import { ProfanityBlur } from "../../../src/components/ProfanityBlur";
 import { ScreenHeader } from "../../../src/components/ScreenHeader";
 import { getFollowCounts, followUser, isFollowing, unfollowUser } from "../../../src/services/follows";
 import { getUserLibraryBooks, groupBooksByShelf } from "../../../src/services/library";
@@ -95,7 +96,9 @@ export default function ReaderScreen() {
           <Text className="mt-2 text-xl font-bold text-ink">{name}</Text>
           {reader.username ? <Text className="text-ink-muted">@{reader.username}</Text> : null}
           {reader.bio ? (
-            <Text className="mt-2 text-center leading-5 text-ink">{reader.bio}</Text>
+            <ProfanityBlur text={reader.bio} className="mt-2 w-full">
+              <Text className="text-center leading-5 text-ink">{reader.bio}</Text>
+            </ProfanityBlur>
           ) : null}
           {countsQuery.data ? (
             <Text className="mt-2 text-xs text-ink-muted">

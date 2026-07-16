@@ -2,6 +2,7 @@ import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Avatar } from "./Avatar";
 import { BookCover } from "./BookCover";
+import { ProfanityBlur } from "./ProfanityBlur";
 import { timeAgo } from "../utils";
 import type { BookClubPostWithAuthor } from "../types";
 
@@ -53,7 +54,9 @@ export function ClubDiscussionCard({ post, canDelete, deleting, onDelete }: Prop
         ) : null}
       </View>
 
-      <Text className="text-ink mt-3 leading-6">{post.body}</Text>
+      <ProfanityBlur text={post.body} className="mt-3">
+        <Text className="text-ink leading-6">{post.body}</Text>
+      </ProfanityBlur>
 
       {post.book ? (
         <Pressable

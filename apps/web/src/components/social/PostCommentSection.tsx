@@ -207,9 +207,9 @@ function CommentItem({
             <CommentAttachment url={comment.attachment_url} />
           ) : null}
           {comment.body.trim() ? (
-            <p className="text-sm leading-relaxed text-text">
+            <div className="text-sm leading-relaxed text-text">
               <MentionText body={comment.body} />
-            </p>
+            </div>
           ) : null}
         </div>
       )}

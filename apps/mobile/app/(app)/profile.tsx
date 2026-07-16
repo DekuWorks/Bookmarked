@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { Avatar } from "../../src/components/Avatar";
 import { Button } from "../../src/components/Button";
+import { ProfanityBlur } from "../../src/components/ProfanityBlur";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { ShelfBadge } from "../../src/components/ShelfBadge";
 import { supabase } from "../../src/services/supabase";
@@ -29,7 +30,9 @@ export default function ProfileRoute() {
       </View>
 
       {profile?.bio ? (
-        <Text className="text-ink mt-5 leading-6 text-center px-2">{profile.bio}</Text>
+        <ProfanityBlur text={profile.bio} className="mt-5 px-2">
+          <Text className="text-ink leading-6 text-center">{profile.bio}</Text>
+        </ProfanityBlur>
       ) : null}
 
       {profile?.favorite_genres?.length ? (

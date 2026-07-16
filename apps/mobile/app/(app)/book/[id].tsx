@@ -7,6 +7,7 @@ import { Button } from "../../../src/components/Button";
 import { EmptyState } from "../../../src/components/EmptyState";
 import { FeelingChip } from "../../../src/components/FeelingChip";
 import { LoadingState } from "../../../src/components/LoadingState";
+import { ProfanityBlur } from "../../../src/components/ProfanityBlur";
 import { ProgressBar } from "../../../src/components/ProgressBar";
 import { RateReviewSheet } from "../../../src/components/RateReviewSheet";
 import { ReadingNotesSection } from "../../../src/components/ReadingNotesSection";
@@ -67,7 +68,9 @@ function ReviewItem({ review }: { review: Review }) {
             <Text className="text-sm font-medium text-puce-red">Spoiler review (tap to view)</Text>
           </Pressable>
         ) : (
-          <Text className="mt-2 leading-5 text-ink">{review.review_body}</Text>
+          <ProfanityBlur text={review.review_body} className="mt-2">
+            <Text className="leading-5 text-ink">{review.review_body}</Text>
+          </ProfanityBlur>
         )
       ) : null}
       {review.feelings?.length ? (
