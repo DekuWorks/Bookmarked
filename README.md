@@ -66,11 +66,27 @@ The deploy workflow fails fast with a clear error if either Supabase public secr
 
 **Static hosting notes:** Book details use `/book?id={uuid}` (static-safe query route). Auth and data run client-side via Supabase.
 
+**Supabase Auth URL configuration** (Dashboard → Authentication → URL Configuration) — required for signup confirmation and password reset emails:
+
+| Setting | Value |
+|---------|--------|
+| **Site URL** | `https://bookmarked.online` |
+| **Redirect URLs** | `https://bookmarked.online/**` |
+| | `https://www.bookmarked.online/**` |
+| | `http://localhost:3000/**` |
+| | `http://127.0.0.1:3000/**` |
+
+Code sends `emailRedirectTo` → `/profile/setup/` and password-reset `redirectTo` → `/reset-password/`. Without these allow-list entries, Supabase rejects the redirect and the email link fails.
+
 ### Key routes
 
 | Route | Description |
 |-------|-------------|
 | `/` | Landing page |
+| `/login` | Sign in |
+| `/signup` | Create account |
+| `/forgot-password` | Request password reset email |
+| `/reset-password` | Set a new password from the email link |
 | `/search` | ISBNdb book search |
 | `/book?id={id}` | Book details, progress, reviews |
 | `/library` | Full library (bookshelf / grid) |

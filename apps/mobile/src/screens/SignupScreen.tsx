@@ -5,6 +5,7 @@ import { BrandLogo } from "../components/BrandLogo";
 import { Button } from "../components/Button";
 import { Input } from "../components/Input";
 import { ScreenContainer } from "../components/ScreenContainer";
+import { webAuthRedirect } from "../constants/env";
 import { supabase } from "../services/supabase";
 
 export function SignupScreen() {
@@ -16,13 +17,27 @@ export function SignupScreen() {
   const [notice, setNotice] = useState<string | null>(null);
 
   async function onSubmit() {
+    const trimmedEmail = email.trim();
     setError(null);
     setNotice(null);
+
+    if (!trimmedEmail || !password) {
+      setError("Email and password are required.");
+      return;
+    }
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
     setLoading(true);
     try {
       const { data, error: signError } = await supabase.auth.signUp({
-        email: email.trim(),
+        email: trimmedEmail,
         password,
+        options: {
+          emailRedirectTo: webAuthRedirect("/profile/setup/"),
+        },
       });
       if (signError) {
         setError(signError.message);

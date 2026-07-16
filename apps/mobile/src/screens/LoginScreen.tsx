@@ -15,11 +15,18 @@ export function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
 
   async function onSubmit() {
+    const trimmedEmail = email.trim();
     setError(null);
+
+    if (!trimmedEmail || !password) {
+      setError("Email and password are required.");
+      return;
+    }
+
     setLoading(true);
     try {
       const { error: signError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
+        email: trimmedEmail,
         password,
       });
       if (signError) {

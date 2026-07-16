@@ -3,6 +3,7 @@ import {
   applyRememberMePreference,
   parseRememberMeFromForm,
 } from "@/lib/auth/rememberMe";
+import { authRedirectUrl } from "@/lib/auth/siteUrl";
 import { parsePreferredLanguage } from "@/lib/constants/languages";
 
 function normalizeAppPath(path: string): string {
@@ -67,11 +68,21 @@ export async function signup(
     return { error: "Email and password are required." };
   }
 
+  if (password.length < 6) {
+    return { error: "Password must be at least 6 characters." };
+  }
+
   applyRememberMePreference(parseRememberMeFromForm(formData));
   resetBrowserClient();
 
   const supabase = createClient();
-  const { data, error } = await supabase.auth.signUp({ email, password });
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: authRedirectUrl("/profile/setup/"),
+    },
+  });
 
   if (error) {
     return { error: error.message };
@@ -84,6 +95,71 @@ export async function signup(
   return {
     success: "Check your email to confirm your account, then log in.",
   };
+}
+
+export async function requestPasswordReset(
+  _prev: AuthActionState,
+  formData: FormData
+): Promise<AuthActionState> {
+  const email = String(formData.get("email") ?? "").trim();
+
+  if (!email) {
+    return { error: "Email is required." };
+  }
+
+  const supabase = createClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: authRedirectUrl("/reset-password/"),
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  return {
+    success:
+      "If an account exists for this email, you will receive reset instructions shortly.",
+  };
+}
+
+export async function updatePassword(
+  _prev: AuthActionState,
+  formData: FormData
+): Promise<AuthActionState> {
+  const password = String(formData.get("password") ?? "");
+  const confirm = String(formData.get("confirm") ?? "");
+
+  if (!password || !confirm) {
+    return { error: "Enter and confirm your new password." };
+  }
+
+  if (password.length < 6) {
+    return { error: "Password must be at least 6 characters." };
+  }
+
+  if (password !== confirm) {
+    return { error: "Passwords do not match." };
+  }
+
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    return {
+      error:
+        "This reset link is invalid or has expired. Request a new password reset email.",
+    };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  return { redirect: "/dashboard/" };
 }
 
 export async function saveProfile(

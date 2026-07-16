@@ -5,6 +5,7 @@ import { BrandLogo } from "../components/BrandLogo";
 import { Button } from "../components/Button";
 import { Input } from "../components/Input";
 import { ScreenContainer } from "../components/ScreenContainer";
+import { webAuthRedirect } from "../constants/env";
 import { supabase } from "../services/supabase";
 
 export function ForgotPasswordScreen() {
@@ -15,18 +16,31 @@ export function ForgotPasswordScreen() {
   const [error, setError] = useState<string | null>(null);
 
   async function onSubmit() {
+    const trimmedEmail = email.trim();
     setError(null);
     setMessage(null);
+
+    if (!trimmedEmail) {
+      setError("Email is required.");
+      return;
+    }
+
     setLoading(true);
     try {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-        email.trim()
+        trimmedEmail,
+        {
+          // Opens the web reset page (static export). Mobile deep-link reset is not wired yet.
+          redirectTo: webAuthRedirect("/reset-password/"),
+        }
       );
       if (resetError) {
         setError(resetError.message);
         return;
       }
-      setMessage("If an account exists for this email, you will receive reset instructions.");
+      setMessage(
+        "If an account exists for this email, you will receive reset instructions. Open the link on the web to choose a new password, then return here to log in."
+      );
     } finally {
       setLoading(false);
     }

@@ -138,6 +138,9 @@ match the web `feed-header-gradient`.
 
 - Email/password auth (sign up, log in, forgot password), session persistence
   and auto-refresh, auth guard + profile-setup redirect.
+- Password reset emails open the **web** `/reset-password/` page
+  (`EXPO_PUBLIC_SITE_URL`, default `https://bookmarked.online`). After resetting
+  on the web, return to the app and log in with the new password.
 - Bottom-tab navigation shell with brand styling.
 - Feed: read-only list of recent public reading activity.
 - Library: user's books grouped by shelf (Want to Read / Reading / Read).

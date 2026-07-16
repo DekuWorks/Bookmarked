@@ -42,7 +42,12 @@ export function LoginForm({ redirect }: Props) {
       <Button type="submit" variant="primary" className="w-full" loading={pending}>
         Log in
       </Button>
-      <p className="mt-6 text-center text-sm text-text-muted">
+      <p className="mt-4 text-center text-sm text-text-muted">
+        <Link href="/forgot-password" className="font-medium text-primary hover:underline">
+          Forgot password?
+        </Link>
+      </p>
+      <p className="mt-4 text-center text-sm text-text-muted">
         No account?{" "}
         <Link href="/signup" className="font-medium text-primary hover:underline">
           Sign up
