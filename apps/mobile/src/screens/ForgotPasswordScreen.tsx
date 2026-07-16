@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
+import { BrandLogo } from "../components/BrandLogo";
 import { Button } from "../components/Button";
 import { Input } from "../components/Input";
 import { ScreenContainer } from "../components/ScreenContainer";
@@ -33,8 +34,12 @@ export function ForgotPasswordScreen() {
 
   return (
     <ScreenContainer scroll>
-      <View className="pt-8 pb-4">
-        <Text className="text-3xl font-bold text-ink">Reset password</Text>
+      <View className="items-center pt-12 pb-2">
+        <BrandLogo size="large" />
+      </View>
+
+      <View className="pb-4 pt-6">
+        <Text className="text-2xl font-bold text-ink">Reset password</Text>
         <Text className="text-ink-muted mt-2">
           Enter your email and we will send a reset link.
         </Text>

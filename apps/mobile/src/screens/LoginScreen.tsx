@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
+import { BrandLogo } from "../components/BrandLogo";
 import { Button } from "../components/Button";
 import { Input } from "../components/Input";
 import { ScreenContainer } from "../components/ScreenContainer";
@@ -33,9 +34,12 @@ export function LoginScreen() {
 
   return (
     <ScreenContainer scroll>
-      <View className="pt-10 pb-4">
-        <Text className="text-4xl font-bold text-puce-red">Bookmarked</Text>
-        <Text className="text-2xl font-bold text-ink mt-6">Welcome back</Text>
+      <View className="items-center pt-12 pb-2">
+        <BrandLogo size="large" />
+      </View>
+
+      <View className="pb-4 pt-6">
+        <Text className="text-2xl font-bold text-ink">Welcome back</Text>
         <Text className="text-ink-muted mt-2">Sign in to continue to Bookmarked.</Text>
       </View>
 
