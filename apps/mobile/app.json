@@ -8,7 +8,7 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/brand/logo-mark.png",
+      "image": "./assets/brand/logo-circle.png",
       "resizeMode": "contain",
       "backgroundColor": "#EDE6F4"
     },
@@ -19,7 +19,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/brand/logo-mark.png",
+        "foregroundImage": "./assets/brand/logo-circle.png",
         "backgroundColor": "#EDE6F4"
       },
       "edgeToEdgeEnabled": true,
