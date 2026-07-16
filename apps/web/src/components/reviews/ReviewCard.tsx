@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { ContentReactionBar } from "@/components/social/ContentReactionBar";
 import { MentionText } from "@/components/social/MentionText";
@@ -21,6 +22,7 @@ import {
   likeReview,
   listReviewReplies,
 } from "@/lib/services/reviewEngagement";
+import { readerProfilePath } from "@/lib/routes/reader";
 import { readNumberLabel } from "@/lib/utils/ratings";
 import type { ReactionCounts, Review, ReviewReplyWithAuthor } from "@/types";
 import type { ThreadNode } from "@/lib/utils/threadReplies";
@@ -43,6 +45,8 @@ const ASPECT_LABELS: { key: keyof Review; label: string }[] = [
 type Props = {
   review: Review;
   displayName: string;
+  /** When set, display name links to the reviewer's public profile. */
+  profileUsername?: string | null;
   isOwnReview?: boolean;
   bookId?: string;
   viewerId?: string | null;
@@ -52,6 +56,7 @@ type Props = {
 export function ReviewCard({
   review,
   displayName,
+  profileUsername,
   isOwnReview = false,
   bookId,
   viewerId,
@@ -74,6 +79,9 @@ export function ReviewCard({
 
   const reviewId = review.id;
   const canEngage = Boolean(viewerId && reviewId && !isOwnReview);
+  const profileHref = profileUsername?.trim()
+    ? readerProfilePath(profileUsername.trim())
+    : null;
 
   const loadReactions = useCallback(async () => {
     if (!reviewId) return;
@@ -147,7 +155,16 @@ export function ReviewCard({
   return (
     <article className="rounded-xl border border-border bg-surface p-4">
       <div className="mb-2 flex flex-wrap items-center gap-2">
-        <span className="font-semibold text-puce-red">{displayName}</span>
+        {profileHref ? (
+          <Link
+            href={profileHref}
+            className="font-semibold text-puce-red hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
+          >
+            {displayName}
+          </Link>
+        ) : (
+          <span className="font-semibold text-puce-red">{displayName}</span>
+        )}
         {!isEditing && review.rating != null ? (
           <span className="inline-flex items-center gap-1.5">
             <StarDisplay rating={Number(review.rating)} />

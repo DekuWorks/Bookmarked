@@ -10,6 +10,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Avatar } from "./Avatar";
 import { AttachmentImage } from "./AttachmentImage";
@@ -50,6 +51,7 @@ function authorName(a: { display_name: string | null; username: string | null })
 
 export function PostCommentsSheet({ postId, visible, onClose, onChanged }: Props) {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const viewerId = useAuthStore((s) => s.user?.id);
   const [comments, setComments] = useState<PostCommentWithAuthor[]>([]);
   const [reactions, setReactions] = useState<Map<string, ReactionCounts>>(new Map());
@@ -180,15 +182,26 @@ export function PostCommentsSheet({ postId, visible, onClose, onChanged }: Props
     setExpanded((prev) => ({ ...prev, [commentId]: replies }));
   }
 
+  function goToAuthor(username: string | null | undefined) {
+    const trimmed = username?.trim();
+    if (!trimmed) return;
+    onClose();
+    router.push(`/reader/${trimmed}`);
+  }
+
   function renderReply(commentId: string, node: ReplyNode, depth: number) {
     const mine = node.user_id === viewerId;
     return (
       <View key={node.id} style={{ marginLeft: 12 + depth * 12 }} className="mt-2">
-        <View className="flex-row items-center">
+        <Pressable
+          onPress={() => goToAuthor(node.author.username)}
+          disabled={!node.author.username?.trim()}
+          className="flex-row items-center active:opacity-80"
+        >
           <Avatar url={node.author.avatar_url} name={authorName(node.author)} size={20} />
           <Text className="ml-2 text-xs font-semibold text-ink">{authorName(node.author)}</Text>
           <Text className="ml-2 text-[11px] text-ink-muted">{timeAgo(node.created_at)}</Text>
-        </View>
+        </Pressable>
         {node.body ? <MentionText body={node.body} className="mt-1 text-sm text-ink" /> : null}
         {node.attachment_url ? (
           <View className="mt-1 w-40">
@@ -246,7 +259,11 @@ export function PostCommentsSheet({ postId, visible, onClose, onChanged }: Props
                   const replies = expanded[comment.id];
                   return (
                     <View key={comment.id} className="mb-4 border-b border-brand-border pb-3">
-                      <View className="flex-row items-center">
+                      <Pressable
+                        onPress={() => goToAuthor(comment.author.username)}
+                        disabled={!comment.author.username?.trim()}
+                        className="flex-row items-center active:opacity-80"
+                      >
                         <Avatar
                           url={comment.author.avatar_url}
                           name={authorName(comment.author)}
@@ -258,7 +275,7 @@ export function PostCommentsSheet({ postId, visible, onClose, onChanged }: Props
                         <Text className="ml-2 text-[11px] text-ink-muted">
                           {timeAgo(comment.created_at)}
                         </Text>
-                      </View>
+                      </Pressable>
                       {comment.body ? (
                         <MentionText body={comment.body} className="mt-1 text-sm text-ink" />
                       ) : null}

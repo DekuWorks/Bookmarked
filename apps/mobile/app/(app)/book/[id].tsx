@@ -32,13 +32,21 @@ const SHELVES: { status: ShelfStatus; label: string }[] = [
 ];
 
 function ReviewItem({ review }: { review: Review }) {
+  const router = useRouter();
   const [revealed, setRevealed] = useState(false);
   const name = review.profiles?.display_name?.trim() || review.profiles?.username?.trim() || "Reader";
+  const username = review.profiles?.username?.trim();
   const hidden = review.has_spoilers && !revealed;
   return (
     <View className="mb-3 rounded-2xl border border-brand-border bg-surface p-3">
       <View className="flex-row items-center justify-between">
-        <Text className="font-semibold text-ink">{name}</Text>
+        <Pressable
+          onPress={() => username && router.push(`/reader/${username}`)}
+          disabled={!username}
+          className="active:opacity-80"
+        >
+          <Text className="font-semibold text-ink">{name}</Text>
+        </Pressable>
         {review.read_number > 1 ? (
           <Text className="text-xs text-primary-dark">Read #{review.read_number}</Text>
         ) : null}

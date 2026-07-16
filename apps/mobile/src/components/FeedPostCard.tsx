@@ -30,8 +30,21 @@ function AuthorRow({
   entry: FeedEntry;
   action: string;
 }) {
+  const router = useRouter();
+  const username = entry.author.username?.trim();
+
+  function goToProfile() {
+    if (username) router.push(`/reader/${username}`);
+  }
+
   return (
-    <View className="flex-row items-center">
+    <Pressable
+      onPress={goToProfile}
+      disabled={!username}
+      className="flex-row items-center active:opacity-80"
+      accessibilityRole={username ? "link" : undefined}
+      accessibilityLabel={username ? `View ${entry.author.name}'s profile` : undefined}
+    >
       <Avatar url={entry.author.avatarUrl} name={entry.author.name} size={40} />
       <View className="ml-3 flex-1">
         <Text className="font-semibold text-ink" numberOfLines={1}>
@@ -41,7 +54,7 @@ function AuthorRow({
       </View>
       <Text className="text-xs text-ink-muted">{timeAgo(entry.createdAt)}</Text>
       <Text className="ml-2 text-lg text-ink-muted">⋯</Text>
-    </View>
+    </Pressable>
   );
 }
 

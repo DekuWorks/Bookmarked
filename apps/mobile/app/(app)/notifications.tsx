@@ -17,11 +17,62 @@ import { TAB_BAR_SPACE, useTabBarScroll } from "../../src/navigation/TabBarScrol
 /** Map a web-style link_url to a mobile route where possible. */
 function mapLinkToRoute(linkUrl: string | null): string | null {
   if (!linkUrl) return null;
+
+  try {
+    const url = new URL(linkUrl, "https://bookmarked.local");
+    const path = url.pathname.replace(/\/+$/, "") || "/";
+    const params = url.searchParams;
+
+    const username = params.get("username");
+    if (path.endsWith("/reader") && username) {
+      return `/reader/${encodeURIComponent(username)}`;
+    }
+
+    const bookId = params.get("id");
+    if (path.endsWith("/book") && bookId) {
+      return `/book/${bookId}`;
+    }
+
+    const clubId = params.get("id");
+    if ((path.endsWith("/clubs/club") || path.endsWith("/club")) && clubId) {
+      return `/clubs/${clubId}`;
+    }
+
+    const threadId = params.get("id");
+    if (path.includes("/messages/thread") && threadId) {
+      return `/messages/${threadId}`;
+    }
+
+    const postId = params.get("post");
+    if (path.endsWith("/feed") && postId) {
+      return "/feed";
+    }
+  } catch {
+    // Fall through to path-based matching below.
+  }
+
+  const readerMatch = linkUrl.match(/[?&]username=([^&#]+)/);
+  if (linkUrl.includes("/reader") && readerMatch) {
+    return `/reader/${decodeURIComponent(readerMatch[1])}`;
+  }
+
+  const bookQuery = linkUrl.match(/\/book\/?\?id=([^&#]+)/);
+  if (bookQuery) return `/book/${bookQuery[1]}`;
+
   const bookMatch = linkUrl.match(/\/book\/([^/?#]+)/);
   if (bookMatch) return `/book/${bookMatch[1]}`;
-  const clubMatch = linkUrl.match(/\/clubs\/([^/?#]+)/);
-  if (clubMatch) return `/clubs/${clubMatch[1]}`;
+
+  const clubMatch = linkUrl.match(/\/clubs\/(?:club\/)?(?:\?id=)?([^/?&#]+)/);
+  if (clubMatch && clubMatch[1] !== "club") return `/clubs/${clubMatch[1]}`;
+
+  const clubQuery = linkUrl.match(/\/clubs\/club\/?\?id=([^&#]+)/);
+  if (clubQuery) return `/clubs/${clubQuery[1]}`;
+
+  const threadMatch = linkUrl.match(/\/messages\/thread\/?\?id=([^&#]+)/);
+  if (threadMatch) return `/messages/${threadMatch[1]}`;
+
   if (linkUrl.startsWith("/messages")) return "/messages";
+  if (linkUrl.includes("/feed")) return "/feed";
   return null;
 }
 
@@ -53,22 +104,42 @@ export default function NotificationsScreen() {
           onScroll={onScroll}
           scrollEventThrottle={16}
           contentContainerStyle={{ padding: 16, paddingBottom: TAB_BAR_SPACE, flexGrow: 1 }}
-          renderItem={({ item }) => (
+          renderItem={({ item }) => {
+            const actorUsername = item.actor?.username?.trim();
+            return (
             <Pressable
               onPress={() => {
                 if (!item.read_at) markRead.mutate(item.id);
                 const route = mapLinkToRoute(item.link_url);
-                if (route) router.push(route as never);
+                if (route) {
+                  router.push(route as never);
+                  return;
+                }
+                if (actorUsername) router.push(`/reader/${actorUsername}`);
               }}
               className={`mb-2 flex-row items-center gap-3 rounded-2xl border p-3 active:opacity-80 ${
                 item.read_at ? "border-brand-border bg-surface" : "border-primary/40 bg-primary/10"
               }`}
             >
-              <Avatar
-                url={item.actor?.avatar_url}
-                name={item.actor?.display_name ?? item.actor?.username ?? "?"}
-                size={40}
-              />
+              <Pressable
+                onPress={(e) => {
+                  e.stopPropagation?.();
+                  if (actorUsername) router.push(`/reader/${actorUsername}`);
+                }}
+                disabled={!actorUsername}
+                accessibilityRole={actorUsername ? "link" : undefined}
+                accessibilityLabel={
+                  actorUsername
+                    ? `View ${item.actor?.display_name ?? actorUsername}'s profile`
+                    : undefined
+                }
+              >
+                <Avatar
+                  url={item.actor?.avatar_url}
+                  name={item.actor?.display_name ?? item.actor?.username ?? "?"}
+                  size={40}
+                />
+              </Pressable>
               <View className="flex-1">
                 {item.title ? (
                   <Text className="font-semibold text-ink" numberOfLines={1}>
@@ -86,7 +157,8 @@ export default function NotificationsScreen() {
               </View>
               {!item.read_at ? <View className="h-2.5 w-2.5 rounded-full bg-rust" /> : null}
             </Pressable>
-          )}
+            );
+          }}
           ListEmptyComponent={
             <EmptyState
               title="No notifications"

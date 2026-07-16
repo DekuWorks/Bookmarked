@@ -11,6 +11,7 @@ import {
   unpinConversation,
 } from "@/lib/services/messages";
 import { messagesInboxPath } from "@/lib/routes/messages";
+import { readerProfilePath } from "@/lib/routes/reader";
 import { profileDisplayName } from "@/lib/utils/messaging";
 import { useToast } from "@/components/ui/Toast";
 import type { ConversationWithParticipants } from "@/types";
@@ -39,6 +40,8 @@ export function ConversationHeader({
     conversation.type === "direct"
       ? conversation.participants.find((p) => p.user_id !== currentUserId)
       : null;
+  const peerUsername = otherParticipant?.profile.username?.trim() || null;
+  const peerHref = peerUsername ? readerProfilePath(peerUsername) : null;
 
   async function handlePinToggle() {
     setPinning(true);
@@ -65,19 +68,45 @@ export function ConversationHeader({
           ← Inbox
         </Link>
 
-        {otherParticipant ? <UserAvatar profile={otherParticipant.profile} size="sm" /> : null}
+        {otherParticipant ? (
+          peerHref ? (
+            <Link
+              href={peerHref}
+              className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
+              aria-label={`View ${title}'s profile`}
+            >
+              <UserAvatar profile={otherParticipant.profile} size="sm" />
+            </Link>
+          ) : (
+            <UserAvatar profile={otherParticipant.profile} size="sm" />
+          )
+        ) : null}
 
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-lg font-semibold text-puce-red">{title}</h1>
-          {conversation.type === "group" ? (
-            <p className="truncate text-xs text-text-muted">
-              {conversation.participants
-                .map((p) => profileDisplayName(p.profile))
-                .join(", ")}
-            </p>
-          ) : otherParticipant?.profile.username ? (
-            <p className="text-xs text-text-muted">@{otherParticipant.profile.username}</p>
-          ) : null}
+          {peerHref ? (
+            <Link
+              href={peerHref}
+              className="block rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
+            >
+              <h1 className="truncate text-lg font-semibold text-puce-red hover:underline">
+                {title}
+              </h1>
+              {peerUsername ? (
+                <p className="text-xs text-text-muted">@{peerUsername}</p>
+              ) : null}
+            </Link>
+          ) : (
+            <>
+              <h1 className="truncate text-lg font-semibold text-puce-red">{title}</h1>
+              {conversation.type === "group" ? (
+                <p className="truncate text-xs text-text-muted">
+                  {conversation.participants
+                    .map((p) => profileDisplayName(p.profile))
+                    .join(", ")}
+                </p>
+              ) : null}
+            </>
+          )}
         </div>
 
         <button

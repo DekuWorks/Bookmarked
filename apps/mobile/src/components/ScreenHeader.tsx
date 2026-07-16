@@ -7,12 +7,14 @@ type Props = {
   title: string;
   /** Show a back chevron (defaults to true). */
   back?: boolean;
+  /** Optional press handler for the title (e.g. open peer profile). */
+  onTitlePress?: () => void;
   /** Optional right-aligned actions. */
   right?: ReactNode;
 };
 
 /** Plain screen header with an optional back button + title, matching mockup detail screens. */
-export function ScreenHeader({ title, back = true, right }: Props) {
+export function ScreenHeader({ title, back = true, onTitlePress, right }: Props) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -34,9 +36,21 @@ export function ScreenHeader({ title, back = true, right }: Props) {
         ) : (
           <View className="w-2" />
         )}
-        <Text className="flex-1 text-lg font-bold text-puce-red" numberOfLines={1}>
-          {title}
-        </Text>
+        {onTitlePress ? (
+          <Pressable
+            onPress={onTitlePress}
+            className="flex-1 active:opacity-70"
+            accessibilityRole="link"
+          >
+            <Text className="text-lg font-bold text-puce-red" numberOfLines={1}>
+              {title}
+            </Text>
+          </Pressable>
+        ) : (
+          <Text className="flex-1 text-lg font-bold text-puce-red" numberOfLines={1}>
+            {title}
+          </Text>
+        )}
         {right ? <View className="flex-row items-center">{right}</View> : null}
       </View>
     </View>

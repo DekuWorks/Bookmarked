@@ -339,14 +339,24 @@ export default function ClubDetailRoute() {
               isOwner && member.role !== "owner" && member.user_id !== userId;
             return (
               <View key={member.id} className="flex-row items-center gap-3">
-                <Avatar
-                  url={member.profile.avatar_url}
-                  name={memberName(member)}
-                  size={32}
-                />
-                <Text className="text-ink flex-1" numberOfLines={1}>
-                  {memberName(member)}
-                </Text>
+                <Pressable
+                  onPress={() => {
+                    const username = member.profile.username?.trim();
+                    if (username) router.push(`/reader/${username}`);
+                  }}
+                  disabled={!member.profile.username?.trim()}
+                  className="flex-row items-center gap-3 flex-1 active:opacity-80"
+                  accessibilityRole={member.profile.username ? "link" : undefined}
+                >
+                  <Avatar
+                    url={member.profile.avatar_url}
+                    name={memberName(member)}
+                    size={32}
+                  />
+                  <Text className="text-ink flex-1" numberOfLines={1}>
+                    {memberName(member)}
+                  </Text>
+                </Pressable>
                 {member.role === "owner" ? (
                   <Text className="text-[11px] font-semibold text-puce-red">Owner</Text>
                 ) : null}

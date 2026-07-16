@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { UserAvatar } from "@/components/messages/UserAvatar";
 import {
@@ -11,6 +12,7 @@ import {
   searchProfilesForMessaging,
 } from "@/lib/services/messages";
 import { messagesInboxPath } from "@/lib/routes/messages";
+import { readerProfilePath } from "@/lib/routes/reader";
 import { profileDisplayName } from "@/lib/utils/messaging";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
@@ -169,15 +171,39 @@ export function GroupSettingsModal({
         <div className="mt-6">
           <p className="text-sm font-medium text-puce-red">Members</p>
           <ul className="mt-2 space-y-2">
-            {conversation.participants.map((participant) => (
+            {conversation.participants.map((participant) => {
+              const username = participant.profile.username?.trim() || null;
+              const href = username ? readerProfilePath(username) : null;
+              const name = profileDisplayName(participant.profile);
+              return (
               <li key={participant.id} className="flex items-center justify-between gap-2">
                 <div className="flex min-w-0 items-center gap-2">
-                  <UserAvatar profile={participant.profile} size="sm" />
+                  {href ? (
+                    <Link
+                      href={href}
+                      className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
+                      aria-label={`View ${name}'s profile`}
+                    >
+                      <UserAvatar profile={participant.profile} size="sm" />
+                    </Link>
+                  ) : (
+                    <UserAvatar profile={participant.profile} size="sm" />
+                  )}
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-text">
-                      {profileDisplayName(participant.profile)}
-                      {participant.user_id === currentUserId ? " (you)" : ""}
-                    </p>
+                    {href ? (
+                      <Link
+                        href={href}
+                        className="truncate text-sm font-medium text-text hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
+                      >
+                        {name}
+                        {participant.user_id === currentUserId ? " (you)" : ""}
+                      </Link>
+                    ) : (
+                      <p className="truncate text-sm font-medium text-text">
+                        {name}
+                        {participant.user_id === currentUserId ? " (you)" : ""}
+                      </p>
+                    )}
                     {participant.role === "owner" ? (
                       <p className="text-xs text-text-muted">Owner</p>
                     ) : null}
@@ -197,7 +223,8 @@ export function GroupSettingsModal({
                   </Button>
                 ) : null}
               </li>
-            ))}
+              );
+            })}
           </ul>
         </div>
 

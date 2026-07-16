@@ -142,6 +142,7 @@ export function BookReviewSection({
                       review.profiles?.username ??
                       "Reader"
                     }
+                    profileUsername={review.profiles?.username}
                     viewerId={user?.id ?? null}
                     onReviewChange={onReviewsChange}
                   />

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   Alert,
   FlatList,
@@ -29,6 +29,7 @@ import { useAuthStore } from "../../../src/store/authStore";
 export default function ThreadScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const conversationId = String(id);
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const userId = useAuthStore((s) => s.user?.id);
   const listRef = useRef<FlatList>(null);
@@ -50,6 +51,13 @@ export default function ThreadScreen() {
   const title = conversation.data
     ? conversationDisplayName(conversation.data, userId as string)
     : "Conversation";
+
+  const peerUsername =
+    conversation.data?.type === "direct"
+      ? conversation.data.participants
+          .find((p) => p.user_id !== userId)
+          ?.profile.username?.trim() || null
+      : null;
 
   // Header occupies insets.top + ~58px; offset the keyboard-avoider by that so
   // the docked compose bar rises cleanly with the keyboard on iOS.
@@ -86,7 +94,14 @@ export default function ThreadScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <ScreenHeader title={title} />
+      <ScreenHeader
+        title={title}
+        onTitlePress={
+          peerUsername
+            ? () => router.push(`/reader/${peerUsername}`)
+            : undefined
+        }
+      />
       {messages.isLoading ? (
         <LoadingState message="Loading messages…" />
       ) : (

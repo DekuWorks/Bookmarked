@@ -174,26 +174,35 @@ export default function SearchScreen() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={listPadding}
           renderItem={({ item }) => (
-            <Pressable
-              onPress={() => openDm(item.id)}
-              className="mb-2 flex-row items-center gap-3 rounded-2xl border border-brand-border bg-surface p-3 active:opacity-80"
-            >
-              <Avatar url={item.avatar_url} name={item.display_name ?? item.username} size={44} />
-              <View className="flex-1">
-                <Text className="font-semibold text-ink" numberOfLines={1}>
-                  {item.display_name?.trim() || item.username?.trim() || "Reader"}
-                </Text>
-                {item.username ? (
-                  <Text className="text-sm text-ink-muted">@{item.username}</Text>
-                ) : null}
-              </View>
-              <Text className="text-sm font-semibold text-primary-dark">Message</Text>
-            </Pressable>
+            <View className="mb-2 flex-row items-center gap-3 rounded-2xl border border-brand-border bg-surface p-3">
+              <Pressable
+                onPress={() => {
+                  const username = item.username?.trim();
+                  if (username) router.push(`/reader/${username}`);
+                }}
+                disabled={!item.username?.trim()}
+                className="flex-row items-center gap-3 flex-1 active:opacity-80"
+                accessibilityRole={item.username ? "link" : undefined}
+              >
+                <Avatar url={item.avatar_url} name={item.display_name ?? item.username} size={44} />
+                <View className="flex-1">
+                  <Text className="font-semibold text-ink" numberOfLines={1}>
+                    {item.display_name?.trim() || item.username?.trim() || "Reader"}
+                  </Text>
+                  {item.username ? (
+                    <Text className="text-sm text-ink-muted">@{item.username}</Text>
+                  ) : null}
+                </View>
+              </Pressable>
+              <Pressable onPress={() => openDm(item.id)} className="active:opacity-70">
+                <Text className="text-sm font-semibold text-primary-dark">Message</Text>
+              </Pressable>
+            </View>
           )}
           ListEmptyComponent={
             <EmptyState
               title="Find readers"
-              description="Search by name or @username to message people."
+              description="Search by name or @username to open a profile or message someone."
             />
           }
         />

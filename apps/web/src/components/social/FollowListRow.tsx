@@ -21,7 +21,18 @@ export function FollowListRow({ user, viewerId, onNavigate }: Props) {
 
   return (
     <li className="flex items-center gap-3 rounded-lg border border-border bg-background px-3 py-3">
-      <ProfileAvatar profile={user} size="md" className="shrink-0" />
+      {username ? (
+        <Link
+          href={readerProfilePath(username)}
+          onClick={onNavigate}
+          className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
+          aria-label={`View ${displayName}'s profile`}
+        >
+          <ProfileAvatar profile={user} size="md" />
+        </Link>
+      ) : (
+        <ProfileAvatar profile={user} size="md" className="shrink-0" />
+      )}
       <div className="min-w-0 flex-1">
         {username ? (
           <Link

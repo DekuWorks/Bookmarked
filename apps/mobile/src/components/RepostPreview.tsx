@@ -15,20 +15,26 @@ export function RepostPreview({ original }: { original: PostWithAuthor }) {
   const router = useRouter();
   const name =
     original.author.display_name?.trim() || original.author.username?.trim() || "Reader";
+  const username = original.author.username?.trim();
 
   return (
     <View className="mt-3 rounded-xl border border-brand-border bg-background p-3">
-      <View className="flex-row items-center">
+      <Pressable
+        onPress={() => username && router.push(`/reader/${username}`)}
+        disabled={!username}
+        className="flex-row items-center active:opacity-80"
+        accessibilityRole={username ? "link" : undefined}
+      >
         <Avatar url={original.author.avatar_url} name={name} size={24} />
         <Text className="ml-2 text-sm font-semibold text-ink" numberOfLines={1}>
           {name}
         </Text>
-        {original.author.username ? (
+        {username ? (
           <Text className="ml-1 text-xs text-ink-muted" numberOfLines={1}>
-            @{original.author.username}
+            @{username}
           </Text>
         ) : null}
-      </View>
+      </Pressable>
 
       {original.body ? (
         <MentionText body={original.body} className="mt-2 leading-5 text-ink" />
