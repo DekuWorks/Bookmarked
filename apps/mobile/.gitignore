@@ -34,5 +34,10 @@ yarn-error.*
 .env
 .env*.local
 
+# ASC / EAS local secrets (never commit; also blocked in metro.config.js)
+.env.asc.local
+.eas/.env*
+!.eas/.env*.example
+
 # typescript
 *.tsbuildinfo
