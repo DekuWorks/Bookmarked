@@ -5,7 +5,6 @@ import { Avatar } from "../../../../src/components/Avatar";
 import { BookCover } from "../../../../src/components/BookCover";
 import { ClubCard } from "../../../../src/components/ClubCard";
 import { EmptyState } from "../../../../src/components/EmptyState";
-import { FeedCard } from "../../../../src/components/FeedCard";
 import { FollowStats } from "../../../../src/components/FollowStats";
 import { LoadingState } from "../../../../src/components/LoadingState";
 import { ProfanityBlur } from "../../../../src/components/ProfanityBlur";
@@ -14,7 +13,6 @@ import { ReadingStreakCard } from "../../../../src/components/ReadingStreakCard"
 import { ScreenHeader } from "../../../../src/components/ScreenHeader";
 import { SectionCard } from "../../../../src/components/SectionCard";
 import { useFollowCounts, useIsFollowing, useMutuals } from "../../../../src/hooks/useFollows";
-import { useReaderActivity } from "../../../../src/hooks/useFeed";
 import {
   readerLibraryPath,
   readerProfilePath,
@@ -52,7 +50,6 @@ export default function ReaderScreen() {
   const countsQuery = useFollowCounts(reader?.id);
   const mutualsQuery = useMutuals(reader?.id, !isSelf);
   const followingQuery = useIsFollowing(reader?.id, !isSelf);
-  const activityQuery = useReaderActivity(reader?.id);
 
   const streakQuery = useQuery({
     queryKey: ["reader-streak", reader?.id],
@@ -127,7 +124,6 @@ export default function ReaderScreen() {
   const genres = reader.favorite_genres?.filter((g) => g.trim()) ?? [];
   const notes = notesQuery.data ?? [];
   const clubs = clubsQuery.data ?? [];
-  const activity = activityQuery.data ?? [];
 
   return (
     <View className="flex-1 bg-background">
@@ -285,24 +281,6 @@ export default function ReaderScreen() {
             <View>
               {clubs.slice(0, 5).map((club) => (
                 <ClubCard key={club.id} club={club} />
-              ))}
-            </View>
-          )}
-        </SectionCard>
-
-        <SectionCard title="Recent activity">
-          {activityQuery.isLoading ? (
-            <Text className="text-sm text-ink-muted">Loading activity…</Text>
-          ) : activity.length === 0 ? (
-            <Text className="text-sm text-ink-muted">
-              {isSelf
-                ? "Your public activity will show here. Add books and write reviews to share with followers."
-                : "No visible activity yet."}
-            </Text>
-          ) : (
-            <View>
-              {activity.map((item) => (
-                <FeedCard key={item.id} item={item} />
               ))}
             </View>
           )}
