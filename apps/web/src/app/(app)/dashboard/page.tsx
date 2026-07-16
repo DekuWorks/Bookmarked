@@ -126,7 +126,11 @@ export default function DashboardPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <DashboardCard title="Reading goal">
-          <ReadingGoalPanel status={readingGoal} variant="compact" />
+          <ReadingGoalPanel
+            status={readingGoal}
+            variant="compact"
+            onSaved={() => void loadDashboard()}
+          />
         </DashboardCard>
 
         <DashboardCard title="Quick actions">

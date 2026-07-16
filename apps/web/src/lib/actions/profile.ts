@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/client";
 export type ProfileActionState = {
   error?: string;
   success?: string;
+  /** Saved target after a successful set; null after clear. */
+  goal?: number | null;
 };
 
 export async function updateYearlyReadingGoal(
@@ -26,22 +28,30 @@ export async function updateYearlyReadingGoal(
 
     if (error) return { error: "Could not clear your reading goal." };
 
-    return { success: "Reading goal cleared." };
+    return { success: "Reading goal cleared.", goal: null };
   }
 
   const raw = formData.get("goal");
   const goal = Number(raw);
 
   if (!Number.isFinite(goal) || goal < 1 || goal > 500) {
-    return { error: "Enter a goal between 1 and 500 books." };
+    return { error: "Enter a whole number between 1 and 500 books." };
+  }
+
+  const rounded = Math.round(goal);
+  if (Math.abs(goal - rounded) > 1e-9) {
+    return { error: "Enter a whole number between 1 and 500 books." };
   }
 
   const { error } = await supabase
     .from("profiles")
-    .update({ yearly_reading_goal: Math.round(goal) })
+    .update({ yearly_reading_goal: rounded })
     .eq("id", user.id);
 
   if (error) return { error: "Could not save your reading goal." };
 
-  return { success: `Goal set: ${Math.round(goal)} books in ${new Date().getFullYear()}.` };
+  return {
+    success: `Goal set: ${rounded} books in ${new Date().getFullYear()}.`,
+    goal: rounded,
+  };
 }

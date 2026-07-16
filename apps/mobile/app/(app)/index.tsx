@@ -8,7 +8,7 @@ import { CoverTile } from "../../src/components/CoverTile";
 import { EmptyState } from "../../src/components/EmptyState";
 import { ScreenGradientWash } from "../../src/components/ScreenGradientWash";
 import { LoadingState } from "../../src/components/LoadingState";
-import { ProgressBar } from "../../src/components/ProgressBar";
+import { ReadingGoalPanel } from "../../src/components/ReadingGoalPanel";
 import { SectionCard } from "../../src/components/SectionCard";
 import { useProfile } from "../../src/hooks/useProfile";
 import { getUserLibraryBooks } from "../../src/services/library";
@@ -41,7 +41,7 @@ function QuickLink({ icon, label, onPress }: { icon: string; label: string; onPr
 export default function HomeReadingRoom() {
   const router = useRouter();
   const userId = useAuthStore((s) => s.user?.id);
-  const { data: profile } = useProfile();
+  const { data: profile, refetch: refetchProfile } = useProfile();
   const { onScroll } = useTabBarScroll();
 
   const library = useQuery({
@@ -92,6 +92,7 @@ export default function HomeReadingRoom() {
             onRefresh={() => {
               library.refetch();
               trending.refetch();
+              void refetchProfile();
             }}
             tintColor="#642F37"
           />
@@ -138,24 +139,7 @@ export default function HomeReadingRoom() {
         </SectionCard>
 
         <SectionCard title="Reading goal" emoji="🎯">
-          {goal.target ? (
-            <View className="gap-2">
-              <Text className="text-ink">
-                {goal.completed} of {goal.target} books in {goal.year}
-              </Text>
-              <ProgressBar percent={goal.percent ?? 0} />
-              <Text className="text-xs text-ink-muted">
-                {goal.met ? "Goal met — congratulations!" : `${goal.remaining} to go this year`}
-              </Text>
-            </View>
-          ) : (
-            <View className="gap-2">
-              <Text className="text-ink">{goal.completed} books read in {goal.year}</Text>
-              <Text className="text-xs text-ink-muted">
-                Set a yearly goal from your profile to track progress.
-              </Text>
-            </View>
-          )}
+          <ReadingGoalPanel status={goal} />
         </SectionCard>
 
         <View className="flex-row gap-3">

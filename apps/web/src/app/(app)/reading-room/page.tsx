@@ -10,6 +10,7 @@ import { ReadingRoomSection } from "@/components/reading-room/ReadingRoomSection
 import { CurrentlyReadingRow } from "@/components/reading-room/CurrentlyReadingRow";
 import { BookMiniGrid } from "@/components/reading-room/BookMiniGrid";
 import { ReadingActivityPanel } from "@/components/analytics/ReadingActivityPanel";
+import { ReadingGoalPanel } from "@/components/reading-goal/ReadingGoalPanel";
 import { SuggestedShelvesPanel } from "@/components/shelves/SuggestedShelvesPanel";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
@@ -75,6 +76,13 @@ export default function ReadingRoomPage() {
 
       <ReadingRoomSection title="Currently reading" emoji="📖">
         <CurrentlyReadingRow items={data.currentlyReading} onItemsChange={loadReadingRoom} />
+      </ReadingRoomSection>
+
+      <ReadingRoomSection title="Reading goal" emoji="🎯">
+        <ReadingGoalPanel
+          status={data.readingGoal}
+          onSaved={() => void loadReadingRoom()}
+        />
       </ReadingRoomSection>
 
       <SuggestedShelvesPanel

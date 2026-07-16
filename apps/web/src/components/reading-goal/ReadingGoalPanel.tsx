@@ -14,18 +14,43 @@ import { cn } from "@/lib/utils/cn";
 
 const initial: ProfileActionState = {};
 
+function withTarget(status: ReadingGoalStatus, target: number | null): ReadingGoalStatus {
+  if (target == null || target <= 0) {
+    return {
+      ...status,
+      target: null,
+      percent: null,
+      remaining: null,
+      met: false,
+    };
+  }
+  const percent = Math.min(100, Math.round((status.completed / target) * 1000) / 10);
+  const remaining = Math.max(0, target - status.completed);
+  return {
+    ...status,
+    target,
+    percent,
+    remaining,
+    met: status.completed >= target,
+  };
+}
+
 type Props = {
   status: ReadingGoalStatus;
   variant?: "default" | "compact";
   className?: string;
+  /** Called after a successful save/clear so parents can reload profile data. */
+  onSaved?: () => void;
 };
 
 export function ReadingGoalPanel({
   status,
   variant = "default",
   className,
+  onSaved,
 }: Props) {
   const toast = useToast();
+  const [localStatus, setLocalStatus] = useState(status);
   const [editing, setEditing] = useState(!status.target);
   const [goalInput, setGoalInput] = useState(
     status.target ? String(status.target) : ""
@@ -37,23 +62,39 @@ export function ReadingGoalPanel({
   );
 
   useEffect(() => {
+    setLocalStatus(status);
+    if (!editing) {
+      setGoalInput(status.target ? String(status.target) : "");
+    }
+  }, [status, editing]);
+
+  useEffect(() => {
     if (action.error) toast.error(action.error);
     if (action.success) {
       toast.success(action.success);
+      if (action.goal != null) {
+        setLocalStatus((prev) => withTarget(prev, action.goal!));
+      }
       setEditing(false);
+      onSaved?.();
     }
-  }, [action, toast]);
+    // Intentionally depend on action identity only — avoid re-firing on local edits.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- action result side-effects
+  }, [action, toast, onSaved]);
 
   useEffect(() => {
     if (clearAction.error) toast.error(clearAction.error);
     if (clearAction.success) {
       toast.success(clearAction.success);
+      setLocalStatus((prev) => withTarget(prev, null));
       setGoalInput("");
       setEditing(true);
+      onSaved?.();
     }
-  }, [clearAction, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- clearAction result side-effects
+  }, [clearAction, toast, onSaved]);
 
-  const hasGoal = status.target != null && status.target > 0;
+  const hasGoal = localStatus.target != null && localStatus.target > 0;
   const compact = variant === "compact";
 
   return (
@@ -67,22 +108,23 @@ export function ReadingGoalPanel({
         <div className="space-y-3">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <p className={cn("font-medium text-puce-red", compact && "text-sm")}>
-              {status.completed} of {status.target} books in {status.year}
+              {localStatus.completed} of {localStatus.target} books in{" "}
+              {localStatus.year}
             </p>
-            {status.met ? (
+            {localStatus.met ? (
               <span className="rounded-full bg-primary/25 px-2.5 py-0.5 text-xs font-semibold text-puce-red">
                 Goal reached!
               </span>
             ) : (
               <p className="text-sm text-text-muted">
-                {status.remaining} to go
+                {localStatus.remaining} to go
               </p>
             )}
           </div>
           <ProgressBar
-            value={status.completed}
-            max={status.target ?? 100}
-            label={`${status.percent}% of your ${status.year} goal`}
+            value={localStatus.completed}
+            max={localStatus.target ?? 100}
+            label={`${localStatus.percent}% of your ${localStatus.year} goal`}
           />
           <div className="flex flex-wrap gap-2">
             <Button
@@ -90,7 +132,7 @@ export function ReadingGoalPanel({
               variant="ghost"
               size="sm"
               onClick={() => {
-                setGoalInput(String(status.target));
+                setGoalInput(String(localStatus.target));
                 setEditing(true);
               }}
             >
@@ -109,13 +151,13 @@ export function ReadingGoalPanel({
           <input type="hidden" name="action" value="set" />
           <p className={cn("text-text-muted", compact ? "text-sm" : "text-sm")}>
             {hasGoal
-              ? `Update your ${status.year} reading goal.`
-              : `Set how many books you want to finish in ${status.year}.`}
+              ? `Update your ${localStatus.year} reading goal.`
+              : `Set how many books you want to finish in ${localStatus.year}.`}
           </p>
           {!hasGoal && !compact ? (
             <p className="text-sm text-text">
-              You&apos;ve read <strong>{status.completed}</strong> book
-              {status.completed === 1 ? "" : "s"} so far this year.
+              You&apos;ve read <strong>{localStatus.completed}</strong> book
+              {localStatus.completed === 1 ? "" : "s"} so far this year.
             </p>
           ) : null}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
@@ -125,6 +167,7 @@ export function ReadingGoalPanel({
               type="number"
               min={1}
               max={500}
+              step={1}
               placeholder="e.g. 24"
               value={goalInput}
               onChange={(e) => setGoalInput(e.target.value)}
