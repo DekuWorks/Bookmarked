@@ -6,7 +6,6 @@ import { BookCover } from "../../../../src/components/BookCover";
 import { ClubCard } from "../../../../src/components/ClubCard";
 import { EmptyState } from "../../../../src/components/EmptyState";
 import { FeedCard } from "../../../../src/components/FeedCard";
-import { FeedPostCard } from "../../../../src/components/FeedPostCard";
 import { FollowStats } from "../../../../src/components/FollowStats";
 import { LoadingState } from "../../../../src/components/LoadingState";
 import { ProfanityBlur } from "../../../../src/components/ProfanityBlur";
@@ -23,18 +22,15 @@ import {
 import { getUserClubs } from "../../../../src/services/bookClubs";
 import { followUser, unfollowUser } from "../../../../src/services/follows";
 import { createDirectConversation } from "../../../../src/services/messages";
-import { listPostsByUser } from "../../../../src/services/posts";
 import { getProfileByUsername } from "../../../../src/services/profile";
 import {
   computeReadingStreak,
   fetchReadingStreakTimestamps,
 } from "../../../../src/services/readingInsights";
 import { listProfileNotesForUser } from "../../../../src/services/readingNotes";
-import type { PostEntry } from "../../../../src/services/socialFeed";
 import { useAuthStore } from "../../../../src/store/authStore";
 import { timeAgo } from "../../../../src/utils";
 
-const POSTS_PREVIEW_LIMIT = 3;
 const NOTES_PREVIEW_LIMIT = 5;
 
 export default function ReaderScreen() {
@@ -81,15 +77,6 @@ export default function ReaderScreen() {
     enabled: Boolean(reader?.id && viewerId),
   });
 
-  const canViewPosts = Boolean(isSelf || followingQuery.data);
-  const postsLocked =
-    !isSelf && followingQuery.isFetched && !followingQuery.data;
-  const postsQuery = useQuery({
-    queryKey: ["reader-posts", reader?.id, viewerId, canViewPosts],
-    queryFn: () => listPostsByUser(reader!.id, viewerId!, POSTS_PREVIEW_LIMIT + 1),
-    enabled: Boolean(reader?.id && viewerId && canViewPosts),
-  });
-
   async function toggleFollow() {
     if (!reader || !viewerId) return;
     const result = followingQuery.data
@@ -106,7 +93,6 @@ export default function ReaderScreen() {
     queryClient.invalidateQueries({ queryKey: ["shared-following"] });
     queryClient.invalidateQueries({ queryKey: ["mutuals"] });
     queryClient.invalidateQueries({ queryKey: ["home-feed"] });
-    queryClient.invalidateQueries({ queryKey: ["reader-posts", reader.id] });
   }
 
   async function message() {
@@ -139,24 +125,9 @@ export default function ReaderScreen() {
 
   const name = reader.display_name?.trim() || reader.username?.trim() || "Reader";
   const genres = reader.favorite_genres?.filter((g) => g.trim()) ?? [];
-  const posts = postsQuery.data ?? [];
-  const visiblePosts = posts.slice(0, POSTS_PREVIEW_LIMIT);
   const notes = notesQuery.data ?? [];
   const clubs = clubsQuery.data ?? [];
   const activity = activityQuery.data ?? [];
-
-  const postEntries: PostEntry[] = visiblePosts.map((post) => ({
-    kind: "post",
-    id: post.id,
-    createdAt: post.created_at,
-    author: {
-      id: post.author.id,
-      name: post.author.display_name?.trim() || post.author.username?.trim() || "Reader",
-      username: post.author.username,
-      avatarUrl: post.author.avatar_url,
-    },
-    post,
-  }));
 
   return (
     <View className="flex-1 bg-background">
@@ -315,39 +286,6 @@ export default function ReaderScreen() {
               {clubs.slice(0, 5).map((club) => (
                 <ClubCard key={club.id} club={club} />
               ))}
-            </View>
-          )}
-        </SectionCard>
-
-        <SectionCard title="Posts">
-          {postsLocked ? (
-            <View className="rounded-xl border border-dashed border-brand-border bg-background px-4 py-8">
-              <Text className="text-center font-medium text-puce-red">Posts are for followers</Text>
-              <Text className="mt-2 text-center text-sm text-ink-muted">
-                Follow {name} to see their posts here.
-              </Text>
-            </View>
-          ) : postsQuery.isLoading || (!isSelf && followingQuery.isLoading) ? (
-            <Text className="text-sm text-ink-muted">Loading posts…</Text>
-          ) : postEntries.length === 0 ? (
-            <Text className="text-sm text-ink-muted">
-              {isSelf
-                ? "Share a reading thought from your feed."
-                : `${name} hasn't shared any posts yet.`}
-            </Text>
-          ) : (
-            <View>
-              {postEntries.map((entry) => (
-                <FeedPostCard key={entry.id} entry={entry} />
-              ))}
-              {posts.length > POSTS_PREVIEW_LIMIT ? (
-                <Pressable
-                  onPress={() => router.push("/feed")}
-                  className="mt-1 self-center active:opacity-70"
-                >
-                  <Text className="text-sm font-medium text-primary-dark">See more posts</Text>
-                </Pressable>
-              ) : null}
             </View>
           )}
         </SectionCard>
