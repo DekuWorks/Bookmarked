@@ -65,6 +65,22 @@ export function groupBooksByShelf(books: LibraryBookRow[]): ShelfGroup[] {
   }));
 }
 
+/** Profile shelf preview — top N covers per shelf (web uses 4; mobile defaults to 3). */
+export function buildShelfPreview(
+  books: LibraryBookRow[],
+  limitPerShelf = 3
+): ShelfGroup[] {
+  return groupBooksByShelf(books).map((shelf) => ({
+    ...shelf,
+    items: shelf.items.slice(0, limitPerShelf),
+  }));
+}
+
+export function buildFullShelves(books: LibraryBookRow[]): ShelfGroup[] {
+  return groupBooksByShelf(books);
+}
+
+
 // ---- Sorting (mirrors web useShelfSort) --------------------------------------
 
 export type ShelfSort =

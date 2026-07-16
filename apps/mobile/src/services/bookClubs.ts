@@ -154,6 +154,31 @@ export async function getMyClubs(viewerId: string): Promise<BookClubSummary[]> {
   return summarizeClubs((data ?? []) as ClubRow[], viewerId);
 }
 
+/** Clubs a profile user belongs to (for public reader profiles). RLS filters private clubs. */
+export async function getUserClubs(
+  targetUserId: string,
+  viewerId: string
+): Promise<BookClubSummary[]> {
+  const { data: memberships, error: membershipError } = await supabase
+    .from("book_club_members")
+    .select("club_id")
+    .eq("user_id", targetUserId);
+
+  if (membershipError) throw membershipError;
+
+  const clubIds = (memberships ?? []).map((row) => row.club_id);
+  if (!clubIds.length) return [];
+
+  const { data, error } = await supabase
+    .from("book_clubs")
+    .select("*")
+    .in("id", clubIds)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return summarizeClubs((data ?? []) as ClubRow[], viewerId);
+}
+
 export async function getClub(
   clubId: string,
   viewerId: string

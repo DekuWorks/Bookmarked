@@ -90,6 +90,15 @@ async function enrichNotesWithBooks(notes: ReadingNote[]): Promise<ReadingNoteWi
   }));
 }
 
+/** Profile notes — own profile returns all; others rely on RLS (public + friends_only). */
+export async function listProfileNotesForUser(
+  userId: string,
+  options: { isOwnProfile?: boolean; limit?: number } = {}
+): Promise<ReadingNoteWithBook[]> {
+  const limit = options.limit ?? 50;
+  return searchNotesWithBooks({ userId, limit });
+}
+
 export async function searchNotesWithBooks(
   filters: ReadingNoteSearchFilters
 ): Promise<ReadingNoteWithBook[]> {

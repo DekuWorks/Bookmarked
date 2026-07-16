@@ -28,12 +28,31 @@ function mapLinkToRoute(linkUrl: string | null): string | null {
       return `/reader/${encodeURIComponent(username)}`;
     }
 
+    // Web public library: /reader-library/?username=&shelf=
+    if (path.includes("/reader-library") && username) {
+      const shelf = params.get("shelf");
+      if (shelf) {
+        return `/reader/${encodeURIComponent(username)}/library/${encodeURIComponent(shelf)}`;
+      }
+      return `/reader/${encodeURIComponent(username)}/library`;
+    }
+
     // Mobile follow-list deep links: /reader/:username/followers|following|mutuals
     const followListMatch = path.match(
       /\/reader\/([^/]+)\/(followers|following|mutuals)$/
     );
     if (followListMatch) {
       return `/reader/${encodeURIComponent(decodeURIComponent(followListMatch[1]))}/${followListMatch[2]}`;
+    }
+
+    // Mobile library: /reader/:username/library(/:shelf)
+    const libraryMatch = path.match(/\/reader\/([^/]+)\/library(?:\/([^/]+))?$/);
+    if (libraryMatch) {
+      const user = encodeURIComponent(decodeURIComponent(libraryMatch[1]));
+      const shelf = libraryMatch[2];
+      return shelf
+        ? `/reader/${user}/library/${encodeURIComponent(decodeURIComponent(shelf))}`
+        : `/reader/${user}/library`;
     }
 
     const bookId = params.get("id");

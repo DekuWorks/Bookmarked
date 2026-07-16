@@ -31,3 +31,19 @@ export const SHELF_CONFIG: {
     description: "Books you've finished and shelved.",
   },
 ];
+
+export function shelfSlugToStatus(slug: string): ShelfStatus | null {
+  return SHELF_CONFIG.find((s) => s.slug === slug)?.status ?? null;
+}
+
+export function shelfStatusToSlug(status: ShelfStatus): ShelfSlug {
+  return SHELF_CONFIG.find((s) => s.status === status)?.slug ?? "want-to-read";
+}
+
+export function getShelfConfig(status: ShelfStatus) {
+  return SHELF_CONFIG.find((s) => s.status === status)!;
+}
+
+export function getShelfConfigBySlug(slug: string) {
+  return SHELF_CONFIG.find((s) => s.slug === slug) ?? null;
+}

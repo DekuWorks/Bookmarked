@@ -376,6 +376,24 @@ export async function deletePost(postId: string): Promise<{ error?: string }> {
   return {};
 }
 
+export async function listPostsByUser(
+  profileUserId: string,
+  viewerId: string,
+  limit = 20
+): Promise<PostWithAuthor[]> {
+  const { data, error } = await supabase
+    .from("posts")
+    .select(POST_SELECT)
+    .eq("user_id", profileUserId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) return [];
+  const rows = (data ?? []) as RawPostRow[];
+  if (!rows.length) return [];
+  return hydratePosts(rows, viewerId);
+}
+
 export async function listFeedPosts(
   viewerId: string,
   followingIds: string[] | null,

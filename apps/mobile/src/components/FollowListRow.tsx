@@ -2,6 +2,7 @@ import { Alert, Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Avatar } from "./Avatar";
 import { useToggleFollow } from "../hooks/useFollows";
+import { readerProfilePath } from "../lib/readerProfile";
 import type { FollowListUser } from "../services/follows";
 import { useAuthStore } from "../store/authStore";
 
@@ -22,7 +23,7 @@ export function FollowListRow({ user }: Props) {
 
   function openProfile() {
     if (!username) return;
-    router.push(`/reader/${encodeURIComponent(username)}`);
+    router.push(readerProfilePath(username));
   }
 
   async function onToggleFollow() {
