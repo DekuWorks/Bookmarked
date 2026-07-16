@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/brand/logo-circle.png",
       "resizeMode": "contain",
-      "backgroundColor": "#EDE6F4"
+      "backgroundColor": "#C6B1DC"
     },
     "ios": {
       "supportsTablet": true,
@@ -20,7 +20,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/brand/logo-circle.png",
-        "backgroundColor": "#EDE6F4"
+        "backgroundColor": "#C6B1DC"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
