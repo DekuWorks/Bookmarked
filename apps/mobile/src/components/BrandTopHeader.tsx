@@ -14,8 +14,8 @@ type Props = {
  * wordmark and (on Feed) the segmented tabs with no divider/border/shadow.
  *
  * The brand lockup renders the transparent ribbon-B mark AS the "B" glyph,
- * immediately followed by "OOKMARKED" in the same high-contrast serif and the
- * same dusty purple as the logo's B, so it reads as one word / one color.
+ * immediately followed by "ookmarked" in the same high-contrast serif and the
+ * same dusty purple as the logo's B, so it reads as "Bookmarked" like the site.
  */
 export function BrandTopHeader({ children }: Props) {
   const insets = useSafeAreaInsets();
@@ -37,7 +37,7 @@ export function BrandTopHeader({ children }: Props) {
               color: BRAND_WORDMARK,
             }}
           >
-            OOKMARKED
+            ookmarked
           </Text>
         </View>
         <View className="absolute right-0">

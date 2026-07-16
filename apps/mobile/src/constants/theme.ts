@@ -56,6 +56,6 @@ export const SERIF_DISPLAY_FONT = "PlayfairDisplay_800ExtraBold";
  * Wordmark color — the dusty purple of the "B" glyph in
  * assets/brand/logo-mark.png (sampled #715B8B / srgb(113,91,139); text uses
  * #715B8A — 1 blue channel off, visually identical), so the logo-as-B and the
- * "OOKMARKED" text read as one consistent color.
+ * "ookmarked" text read as one consistent color.
  */
 export const BRAND_WORDMARK = "#715B8A";
