@@ -112,11 +112,16 @@ export async function getCustomShelfGroupsWithBooks(
 
 export async function createCustomShelf(
   userId: string,
-  input: { name: string; genre?: string | null }
+  input: { name: string; genre?: string | null; visibility?: ShelfVisibility }
 ): Promise<{ shelf?: UserShelf; error?: string }> {
   const trimmedName = input.name.trim();
   if (!trimmedName) return { error: "Shelf name is required." };
   if (trimmedName.length > 80) return { error: "Shelf name must be 80 characters or fewer." };
+
+  const visibility = input.visibility ?? "public";
+  if (!["public", "followers", "private"].includes(visibility)) {
+    return { error: "Invalid shelf visibility." };
+  }
 
   const baseSlug = slugifyShelfName(trimmedName);
   if (isReservedShelfSlug(baseSlug)) {
@@ -126,12 +131,41 @@ export async function createCustomShelf(
   const slug = await uniqueSlugForUser(userId, baseSlug);
   const { data, error } = await supabase
     .from("user_shelves")
-    .insert({ user_id: userId, name: trimmedName, slug, genre: input.genre?.trim() || null })
+    .insert({
+      user_id: userId,
+      name: trimmedName,
+      slug,
+      genre: input.genre?.trim() || null,
+      visibility,
+    })
     .select("*")
     .single();
 
   if (error) return { error: error.message };
   return { shelf: data as UserShelf };
+}
+
+export async function updateCustomShelfVisibility(
+  shelfId: string,
+  visibility: ShelfVisibility
+): Promise<{ error?: string }> {
+  const { error } = await supabase
+    .from("user_shelves")
+    .update({ visibility, updated_at: new Date().toISOString() })
+    .eq("id", shelfId);
+  if (error) return { error: error.message };
+  return {};
+}
+
+export async function listUserCustomShelves(userId: string): Promise<UserShelf[]> {
+  const { data, error } = await supabase
+    .from("user_shelves")
+    .select("*")
+    .eq("user_id", userId)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as UserShelf[];
 }
 
 export async function addBookToCustomShelf(

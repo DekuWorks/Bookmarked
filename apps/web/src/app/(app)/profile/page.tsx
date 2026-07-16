@@ -11,6 +11,7 @@ import { AvatarUpload } from "@/components/profile/AvatarUpload";
 import { LanguagePreferencePanel } from "@/components/profile/LanguagePreferencePanel";
 import { NotificationPreferencesPanel } from "@/components/notifications/NotificationPreferencesPanel";
 import { LibraryImportPanel } from "@/components/profile/LibraryImportPanel";
+import { ShelfPrivacyPanel } from "@/components/profile/ShelfPrivacyPanel";
 import { getFollowCounts, type FollowCounts } from "@/lib/services/follows";
 import {
   computeReadingStreak,
@@ -150,7 +151,7 @@ export default function ProfilePage() {
           >
             <span className="text-lg font-semibold text-puce-red">Account settings</span>
             <span className="mt-1 block text-sm text-text-muted group-open:hidden">
-              Notifications, language, and library import
+              Notifications, language, library import, and shelf privacy
             </span>
           </summary>
           <div className="space-y-6 border-t border-border px-6 pb-6 pt-4">
@@ -170,6 +171,8 @@ export default function ProfilePage() {
           </div>
         </details>
       ) : null}
+
+      {profile ? <ShelfPrivacyPanel profile={profile} /> : null}
     </div>
   );
 }

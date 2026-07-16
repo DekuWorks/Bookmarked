@@ -42,6 +42,11 @@ export default function ProfileRoute() {
 
       <View className="mt-8 gap-2">
         <ProfileLink icon="📚" label="My Books" onPress={() => router.push("/library")} />
+        <ProfileLink
+          icon="🔒"
+          label="Shelf privacy"
+          onPress={() => router.push("/shelf-privacy")}
+        />
         <ProfileLink icon="📝" label="Reading Notes" onPress={() => router.push("/notes")} />
         <ProfileLink icon="♣️" label="Book Clubs" onPress={() => router.push("/clubs")} />
         <ProfileLink icon="🔔" label="Notifications" onPress={() => router.push("/notifications")} />

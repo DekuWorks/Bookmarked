@@ -158,12 +158,16 @@ export async function getCustomShelfBySlug(
 export type CustomShelfInput = {
   name: string;
   genre?: string | null;
+  visibility?: ShelfVisibility;
 };
 
 export type ValidatedCustomShelfInput = {
   name: string;
   genre: string | null;
+  visibility: ShelfVisibility;
 };
+
+const VALID_VISIBILITIES = new Set<ShelfVisibility>(["public", "followers", "private"]);
 
 export function validateCustomShelfInput(
   input: CustomShelfInput
@@ -181,6 +185,11 @@ export function validateCustomShelfInput(
     return { ok: false, error: "Genre must be 80 characters or fewer." };
   }
 
+  const visibility = input.visibility ?? "public";
+  if (!VALID_VISIBILITIES.has(visibility)) {
+    return { ok: false, error: "Invalid shelf visibility." };
+  }
+
   const baseSlug = slugifyShelfName(trimmedName);
   if (isReservedShelfSlug(baseSlug)) {
     return {
@@ -189,7 +198,7 @@ export function validateCustomShelfInput(
     };
   }
 
-  return { ok: true, value: { name: trimmedName, genre } };
+  return { ok: true, value: { name: trimmedName, genre, visibility } };
 }
 
 export type CreateCustomShelfOptions = {
@@ -206,7 +215,7 @@ export async function createCustomShelf(
     return { error: validated.error };
   }
 
-  const { name: trimmedName, genre } = validated.value;
+  const { name: trimmedName, genre, visibility } = validated.value;
 
   const supabase = createClient();
   const {
@@ -232,6 +241,7 @@ export async function createCustomShelf(
       name: trimmedName,
       slug,
       genre,
+      visibility,
     })
     .select("*")
     .single();
