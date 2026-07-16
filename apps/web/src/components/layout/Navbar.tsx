@@ -54,14 +54,14 @@ export function Navbar({ variant = "public" }: Props) {
         {isApp ? (
           <AppNavLink
             href="/dashboard/"
-            className="shrink-0 text-xl font-bold tracking-tight text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2 rounded-sm"
+            className="shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2 rounded-sm"
           >
             <BrandLogo />
           </AppNavLink>
         ) : (
           <Link
             href="/"
-            className="shrink-0 text-xl font-bold tracking-tight text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2 rounded-sm"
+            className="shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2 rounded-sm"
           >
             <BrandLogo />
           </Link>

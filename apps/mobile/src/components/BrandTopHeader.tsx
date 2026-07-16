@@ -13,9 +13,9 @@ type Props = {
  * `ScreenGradientWash`, so the lavender→peach→tint gradient shows behind the
  * wordmark and (on Feed) the segmented tabs with no divider/border/shadow.
  *
- * The brand lockup renders the circular logo mark AS the "B" glyph, immediately
- * followed by "OOKMARKED" in the same high-contrast serif and the same dusty
- * purple as the logo's B, so it reads as one word / one typeface / one color.
+ * The brand lockup renders the transparent ribbon-B mark AS the "B" glyph,
+ * immediately followed by "OOKMARKED" in the same high-contrast serif and the
+ * same dusty purple as the logo's B, so it reads as one word / one color.
  */
 export function BrandTopHeader({ children }: Props) {
   const insets = useSafeAreaInsets();
@@ -26,7 +26,7 @@ export function BrandTopHeader({ children }: Props) {
         <View className="flex-row items-center">
           <Image
             source={require("../../assets/brand/logo-mark.png")}
-            style={{ width: 32, height: 32, marginRight: -1 }}
+            style={{ width: 30, height: 29, marginRight: -1 }}
             resizeMode="contain"
           />
           <Text
