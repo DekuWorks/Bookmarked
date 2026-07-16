@@ -2,15 +2,18 @@ import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { Avatar } from "../../src/components/Avatar";
 import { Button } from "../../src/components/Button";
+import { FollowStats } from "../../src/components/FollowStats";
 import { ProfanityBlur } from "../../src/components/ProfanityBlur";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { ShelfBadge } from "../../src/components/ShelfBadge";
-import { supabase } from "../../src/services/supabase";
+import { useFollowCounts } from "../../src/hooks/useFollows";
 import { useProfile } from "../../src/hooks/useProfile";
+import { supabase } from "../../src/services/supabase";
 
 export default function ProfileRoute() {
   const router = useRouter();
   const { data: profile } = useProfile();
+  const countsQuery = useFollowCounts(profile?.id);
 
   async function signOut() {
     await supabase.auth.signOut();
@@ -18,6 +21,8 @@ export default function ProfileRoute() {
   }
 
   const name = profile?.display_name || profile?.username || "Profile";
+  const handle = profile?.username?.trim();
+  const readerBase = handle ? `/reader/${encodeURIComponent(handle)}` : null;
 
   return (
     <ScreenContainer scroll>
@@ -26,6 +31,16 @@ export default function ProfileRoute() {
         <Text className="text-2xl font-bold text-ink mt-4">{name}</Text>
         {profile?.username ? (
           <Text className="text-ink-muted mt-1">@{profile.username}</Text>
+        ) : null}
+        {countsQuery.data && readerBase ? (
+          <View className="mt-4 items-center">
+            <FollowStats
+              counts={countsQuery.data}
+              onFollowersPress={() => router.push(`${readerBase}/followers`)}
+              onFollowingPress={() => router.push(`${readerBase}/following`)}
+              size="md"
+            />
+          </View>
         ) : null}
       </View>
 

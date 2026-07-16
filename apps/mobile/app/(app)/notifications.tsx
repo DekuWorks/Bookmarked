@@ -28,6 +28,14 @@ function mapLinkToRoute(linkUrl: string | null): string | null {
       return `/reader/${encodeURIComponent(username)}`;
     }
 
+    // Mobile follow-list deep links: /reader/:username/followers|following|mutuals
+    const followListMatch = path.match(
+      /\/reader\/([^/]+)\/(followers|following|mutuals)$/
+    );
+    if (followListMatch) {
+      return `/reader/${encodeURIComponent(decodeURIComponent(followListMatch[1]))}/${followListMatch[2]}`;
+    }
+
     const bookId = params.get("id");
     if (path.endsWith("/book") && bookId) {
       return `/book/${bookId}`;

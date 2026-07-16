@@ -114,6 +114,32 @@ async function createNotification(params: {
   }
 }
 
+/** Deep link for a reader's public profile (matches web readerProfilePath shape for mapLinkToRoute). */
+export function readerProfilePath(username: string): string {
+  return `/reader/?username=${encodeURIComponent(username)}`;
+}
+
+export async function createFollowNotification(input: {
+  recipientId: string;
+  actorId: string;
+  actorDisplayName: string;
+  actorUsername: string | null;
+}): Promise<void> {
+  const link = input.actorUsername
+    ? readerProfilePath(input.actorUsername)
+    : "/feed/";
+
+  await createNotification({
+    recipientId: input.recipientId,
+    type: "follow",
+    title: `${input.actorDisplayName} followed you`,
+    body: "Tap to view their profile.",
+    actorId: input.actorId,
+    linkUrl: link,
+    metadata: {},
+  });
+}
+
 export async function createMentionNotification(input: {
   recipientId: string;
   actorId: string;

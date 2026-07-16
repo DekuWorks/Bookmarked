@@ -1,17 +1,19 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
-import { Avatar } from "../../../src/components/Avatar";
-import { BookCover } from "../../../src/components/BookCover";
-import { EmptyState } from "../../../src/components/EmptyState";
-import { LoadingState } from "../../../src/components/LoadingState";
-import { ProfanityBlur } from "../../../src/components/ProfanityBlur";
-import { ScreenHeader } from "../../../src/components/ScreenHeader";
-import { getFollowCounts, followUser, isFollowing, unfollowUser } from "../../../src/services/follows";
-import { getUserLibraryBooks, groupBooksByShelf } from "../../../src/services/library";
-import { createDirectConversation } from "../../../src/services/messages";
-import { getProfileByUsername } from "../../../src/services/profile";
-import { useAuthStore } from "../../../src/store/authStore";
+import { Avatar } from "../../../../src/components/Avatar";
+import { BookCover } from "../../../../src/components/BookCover";
+import { EmptyState } from "../../../../src/components/EmptyState";
+import { FollowStats } from "../../../../src/components/FollowStats";
+import { LoadingState } from "../../../../src/components/LoadingState";
+import { ProfanityBlur } from "../../../../src/components/ProfanityBlur";
+import { ScreenHeader } from "../../../../src/components/ScreenHeader";
+import { useFollowCounts, useIsFollowing, useMutuals } from "../../../../src/hooks/useFollows";
+import { followUser, unfollowUser } from "../../../../src/services/follows";
+import { getUserLibraryBooks, groupBooksByShelf } from "../../../../src/services/library";
+import { createDirectConversation } from "../../../../src/services/messages";
+import { getProfileByUsername } from "../../../../src/services/profile";
+import { useAuthStore } from "../../../../src/store/authStore";
 
 export default function ReaderScreen() {
   const { username } = useLocalSearchParams<{ username: string }>();
@@ -27,6 +29,7 @@ export default function ReaderScreen() {
   });
   const reader = profileQuery.data;
   const isSelf = reader?.id === viewerId;
+  const readerPath = `/reader/${encodeURIComponent(reader?.username ?? handle)}`;
 
   const shelvesQuery = useQuery({
     queryKey: ["reader-library", reader?.id],
@@ -34,26 +37,26 @@ export default function ReaderScreen() {
     enabled: Boolean(reader?.id),
   });
 
-  const countsQuery = useQuery({
-    queryKey: ["follow-counts", reader?.id],
-    queryFn: () => getFollowCounts(reader!.id),
-    enabled: Boolean(reader?.id),
-  });
-
-  const followingQuery = useQuery({
-    queryKey: ["is-following", viewerId, reader?.id],
-    queryFn: () => isFollowing(viewerId as string, reader!.id),
-    enabled: Boolean(viewerId) && Boolean(reader?.id) && !isSelf,
-  });
+  const countsQuery = useFollowCounts(reader?.id);
+  const mutualsQuery = useMutuals(reader?.id, !isSelf);
+  const followingQuery = useIsFollowing(reader?.id, !isSelf);
 
   async function toggleFollow() {
-    if (!reader) return;
+    if (!reader || !viewerId) return;
     const result = followingQuery.data
       ? await unfollowUser(reader.id)
       : await followUser(reader.id);
-    if (result.error) Alert.alert("Error", result.error);
+    if (result.error) {
+      Alert.alert("Error", result.error);
+      return;
+    }
     queryClient.invalidateQueries({ queryKey: ["is-following", viewerId, reader.id] });
     queryClient.invalidateQueries({ queryKey: ["follow-counts", reader.id] });
+    queryClient.invalidateQueries({ queryKey: ["follow-counts", viewerId] });
+    queryClient.invalidateQueries({ queryKey: ["follow-list"] });
+    queryClient.invalidateQueries({ queryKey: ["shared-following"] });
+    queryClient.invalidateQueries({ queryKey: ["mutuals"] });
+    queryClient.invalidateQueries({ queryKey: ["home-feed"] });
   }
 
   async function message() {
@@ -100,10 +103,20 @@ export default function ReaderScreen() {
               <Text className="text-center leading-5 text-ink">{reader.bio}</Text>
             </ProfanityBlur>
           ) : null}
+
           {countsQuery.data ? (
-            <Text className="mt-2 text-xs text-ink-muted">
-              {countsQuery.data.followers} followers · {countsQuery.data.following} following
-            </Text>
+            <View className="mt-3 items-center">
+              <FollowStats
+                counts={countsQuery.data}
+                mutualsCount={isSelf ? undefined : (mutualsQuery.data?.length ?? 0)}
+                onFollowersPress={() => router.push(`${readerPath}/followers`)}
+                onFollowingPress={() => router.push(`${readerPath}/following`)}
+                onMutualsPress={
+                  isSelf ? undefined : () => router.push(`${readerPath}/mutuals`)
+                }
+                size="md"
+              />
+            </View>
           ) : null}
 
           {!isSelf ? (
