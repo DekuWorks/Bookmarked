@@ -1,0 +1,13 @@
+LOGIN REQUIRED
+Bookmarked + uses email and password authentication (Supabase Auth).
+
+Demo account: None provided.
+Reviewers can create a free account in-app via Sign Up (email + password), then complete a short profile setup (username).
+
+SUPPORT
+Website: https://bookmarked.online
+Privacy: https://bookmarked.online/privacy
+Email: general@bookmarked.online
+
+NOTES
+No in-app purchases or subscriptions in this build. Core features (library/shelves, feed, clubs, messages, notes, reviews, reading goals) are available after sign-in.
