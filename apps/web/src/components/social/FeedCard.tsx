@@ -53,7 +53,7 @@ export function FeedCard({ item }: Props) {
   );
 
   return (
-    <article className="flex gap-4 rounded-2xl border border-border bg-surface p-5 shadow-sm transition hover:border-primary/30 hover:shadow-md">
+    <article className="flex gap-4 rounded-2xl border border-border bg-surface p-5 shadow-sm transition hover:border-primary/30 hover:shadow-md sm:gap-5 sm:p-6">
       {showBookCover ? (
         item.bookId ? (
           <Link
@@ -109,7 +109,7 @@ export function FeedCard({ item }: Props) {
           </p>
         ) : null}
         {reviewRating != null ? (
-          <div className="mt-2">
+          <div className="mt-2.5 rounded-lg bg-background/80 px-3 py-2">
             <StarDisplay rating={reviewRating} showNumeric />
           </div>
         ) : null}

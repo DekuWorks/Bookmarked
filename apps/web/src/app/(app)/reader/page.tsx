@@ -5,33 +5,27 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { FollowButton } from "@/components/social/FollowButton";
 import { ProfileMessageButton } from "@/components/messages/ProfileMessageButton";
-import { FeedCard } from "@/components/social/FeedCard";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { getFollowCounts, isFollowing, type FollowCounts } from "@/lib/services/follows";
 import { getProfileByUsername } from "@/lib/services/profile";
-import { fetchReaderActivity } from "@/lib/services/socialFeed";
-import type { FeedItem } from "@/lib/services/socialFeed";
 import type { Profile } from "@/types";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { ProfileShelfPreview } from "@/components/profile/ProfileShelfPreview";
-import { ProfileNotesSection } from "@/components/profile/ProfileNotesSection";
 import { ProfanityBlur } from "@/components/social/ProfanityBlur";
-import { ProfilePostsSection } from "@/components/social/ProfilePostsSection";
-import { ProfileClubsSection } from "@/components/profile/ProfileClubsSection";
 import { FollowStats } from "@/components/social/FollowStats";
 import {
   computeReadingStreak,
   fetchReadingStreakTimestamps,
 } from "@/lib/services/readingInsights";
 import { ReadingStreakCard } from "@/components/profile/ReadingStreakCard";
+import { readerLibraryPath } from "@/lib/routes/readerLibrary";
 
 type ReaderData = {
   profile: Profile;
   counts: FollowCounts;
   following: boolean;
-  activity: FeedItem[];
   readingStreak: ReturnType<typeof computeReadingStreak>;
 };
 
@@ -56,10 +50,9 @@ function ReaderProfileContent() {
         return;
       }
 
-      const [counts, isFollowingUser, activity, streakTimestamps] = await Promise.all([
+      const [counts, isFollowingUser, streakTimestamps] = await Promise.all([
         getFollowCounts(profile.id),
         user.id === profile.id ? Promise.resolve(false) : isFollowing(user.id, profile.id),
-        fetchReaderActivity(profile.id, user.id),
         fetchReadingStreakTimestamps(profile.id),
       ]);
 
@@ -67,7 +60,6 @@ function ReaderProfileContent() {
         profile,
         counts,
         following: isFollowingUser,
-        activity,
         readingStreak: computeReadingStreak(streakTimestamps),
       });
       setFollowing(isFollowingUser);
@@ -100,9 +92,10 @@ function ReaderProfileContent() {
     );
   }
 
-  const { profile, counts, activity, readingStreak } = data;
+  const { profile, counts, readingStreak } = data;
   const isSelf = user.id === profile.id;
   const displayName = profile.display_name?.trim() || profile.username || "Reader";
+  const libraryHref = profile.username ? readerLibraryPath(profile.username) : null;
 
   return (
     <div className="mx-auto max-w-2xl space-y-8 text-center">
@@ -161,55 +154,21 @@ function ReaderProfileContent() {
         <ReadingStreakCard streak={readingStreak} className="mt-6" />
       </header>
 
-      <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
-        <h2 className="mb-4 text-lg font-semibold text-puce-red">Shelves</h2>
+      <section className="rounded-xl border border-border bg-surface p-6 text-left shadow-sm">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold text-puce-red">Shelves</h2>
+          {libraryHref && !isSelf ? (
+            <Link href={libraryHref} className="text-sm font-medium text-primary hover:underline">
+              View full library
+            </Link>
+          ) : null}
+        </div>
         <ProfileShelfPreview
           ownerId={profile.id}
           username={profile.username}
           isOwnProfile={isSelf}
+          previewLimit={3}
         />
-      </section>
-
-      <section className="rounded-xl border border-border bg-surface p-6 text-left shadow-sm">
-        <h2 className="mb-4 text-lg font-semibold text-puce-red">Reading Notes</h2>
-        <ProfileNotesSection userId={profile.id} isOwnProfile={isSelf} />
-      </section>
-
-      <section className="rounded-xl border border-border bg-surface p-6 text-left shadow-sm">
-        <h2 className="mb-4 text-lg font-semibold text-puce-red">Book Clubs</h2>
-        <ProfileClubsSection
-          profileUserId={profile.id}
-          viewerId={user.id}
-          isOwnProfile={isSelf}
-        />
-      </section>
-
-      <ProfilePostsSection
-        profileUserId={profile.id}
-        viewerId={user.id}
-        isOwnProfile={isSelf}
-        isFollowing={following}
-        displayName={displayName}
-        className="rounded-xl border border-border bg-surface p-6 text-left shadow-sm"
-      />
-
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-puce-red">Recent activity</h2>
-        {activity.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-border bg-background px-6 py-10 text-center text-sm text-text-muted">
-            {isSelf
-              ? "Your public activity will show here. Add books and write reviews to share with followers."
-              : "No visible activity yet."}
-          </p>
-        ) : (
-          <ul className="space-y-4">
-            {activity.map((item) => (
-              <li key={item.id}>
-                <FeedCard item={item} />
-              </li>
-            ))}
-          </ul>
-        )}
       </section>
 
       <p className="text-center text-sm text-text-muted">

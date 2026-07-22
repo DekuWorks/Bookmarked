@@ -9,6 +9,7 @@ import { FeedPostCard } from "../components/FeedPostCard";
 import { LoadingState } from "../components/LoadingState";
 import { ScreenGradientWash } from "../components/ScreenGradientWash";
 import { SegmentedTabs } from "../components/SegmentedTabs";
+import { TrendingBooksSection } from "../components/TrendingBooksSection";
 import { useHomeFeed, type FeedTab } from "../hooks/useFeed";
 import { useProfile } from "../hooks/useProfile";
 import { TAB_BAR_SPACE, useTabBarScroll } from "../navigation/TabBarScroll";
@@ -71,7 +72,14 @@ export function FeedScreen() {
         refreshControl={
           <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#642F37" />
         }
-        ListHeaderComponent={tab === "clubs" ? null : <Composer />}
+        ListHeaderComponent={
+          tab === "clubs" ? null : (
+            <View>
+              {tab === "for-you" ? <TrendingBooksSection /> : null}
+              <Composer />
+            </View>
+          )
+        }
         ListEmptyComponent={
           isLoading ? (
             <LoadingState message="Loading your feed…" />
