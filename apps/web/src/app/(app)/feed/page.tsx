@@ -225,7 +225,7 @@ function FeedContent() {
       ) : (
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] lg:items-start">
           <div className="space-y-6">
-          <div className="pill-tabs" role="tablist" aria-label="Feed content">
+          <div className="pill-tabs overflow-x-auto" role="tablist" aria-label="Feed content">
             {viewOptions.map((option) => (
               <Link
                 key={option.id}
@@ -233,14 +233,14 @@ function FeedContent() {
                 role="tab"
                 aria-selected={feedView === option.id}
                 data-active={feedView === option.id ? "true" : "false"}
-                className="pill-tab"
+                className="pill-tab shrink-0"
               >
                 {option.label}
               </Link>
             ))}
           </div>
 
-          <div className="pill-tabs" role="tablist" aria-label="Feed type">
+          <div className="pill-tabs overflow-x-auto" role="tablist" aria-label="Feed type">
             {tabOptions.map((option) => (
               <Link
                 key={option.id}
@@ -248,7 +248,7 @@ function FeedContent() {
                 role="tab"
                 aria-selected={tab === option.id}
                 data-active={tab === option.id ? "true" : "false"}
-                className="pill-tab"
+                className="pill-tab shrink-0"
               >
                 {option.label}
               </Link>
