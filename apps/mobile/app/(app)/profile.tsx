@@ -3,7 +3,9 @@ import { Pressable, Text, View } from "react-native";
 import { Avatar } from "../../src/components/Avatar";
 import { FollowStats } from "../../src/components/FollowStats";
 import { ProfanityBlur } from "../../src/components/ProfanityBlur";
+import { PremiumBadge } from "../../src/components/PremiumBadge";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
+import { useSubscription } from "../../src/hooks/useSubscription";
 import { ShelfBadge } from "../../src/components/ShelfBadge";
 import { useFollowCounts } from "../../src/hooks/useFollows";
 import { useProfile } from "../../src/hooks/useProfile";
@@ -11,6 +13,7 @@ import { useProfile } from "../../src/hooks/useProfile";
 export default function ProfileRoute() {
   const router = useRouter();
   const { data: profile } = useProfile();
+  const { isPremium } = useSubscription();
   const countsQuery = useFollowCounts(profile?.id);
 
   const name = profile?.display_name || profile?.username || "Profile";
@@ -33,7 +36,10 @@ export default function ProfileRoute() {
 
       <View className="items-center pt-4">
         <Avatar url={profile?.avatar_url} name={name} size={88} />
-        <Text className="text-2xl font-bold text-ink mt-4">{name}</Text>
+        <View className="mt-4 flex-row items-center gap-2">
+          <Text className="text-2xl font-bold text-ink">{name}</Text>
+          {isPremium ? <PremiumBadge compact /> : null}
+        </View>
         {profile?.username ? (
           <Text className="text-ink-muted mt-1">@{profile.username}</Text>
         ) : null}
@@ -64,6 +70,9 @@ export default function ProfileRoute() {
       ) : null}
 
       <View className="mt-8 gap-2">
+        {!isPremium ? (
+          <ProfileLink icon="✨" label="Upgrade to Premium" onPress={() => router.push("/upgrade")} />
+        ) : null}
         <ProfileLink icon="📚" label="My Books" onPress={() => router.push("/library")} />
         <ProfileLink icon="📝" label="Reading Notes" onPress={() => router.push("/notes")} />
         <ProfileLink icon="♣️" label="Book Clubs" onPress={() => router.push("/clubs")} />

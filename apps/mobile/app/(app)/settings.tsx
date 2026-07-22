@@ -51,6 +51,12 @@ export default function SettingsRoute() {
 
         <View className="gap-2 mb-6">
           <SettingsLink
+            icon="✨"
+            label="Bookmarked Premium"
+            description="Advanced analytics, AI insights, and early access"
+            onPress={() => router.push("/upgrade")}
+          />
+          <SettingsLink
             icon="✏️"
             label="Edit profile"
             description="Name, bio, avatar, and favorite genres"

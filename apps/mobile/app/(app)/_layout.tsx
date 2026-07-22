@@ -51,6 +51,7 @@ export default function AppTabsLayout() {
         <Tabs.Screen name="reader" options={{ href: null }} />
         <Tabs.Screen name="shelf-privacy" options={{ href: null }} />
         <Tabs.Screen name="settings" options={{ href: null }} />
+        <Tabs.Screen name="upgrade" options={{ href: null }} />
       </Tabs>
     </TabBarScrollProvider>
   );

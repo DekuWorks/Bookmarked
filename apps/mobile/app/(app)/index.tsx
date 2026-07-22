@@ -9,6 +9,7 @@ import { EmptyState } from "../../src/components/EmptyState";
 import { ScreenGradientWash } from "../../src/components/ScreenGradientWash";
 import { LoadingState } from "../../src/components/LoadingState";
 import { ReadingGoalPanel } from "../../src/components/ReadingGoalPanel";
+import { ReadingInsightsSection } from "../../src/components/ReadingInsightsSection";
 import { SectionCard } from "../../src/components/SectionCard";
 import { useProfile } from "../../src/hooks/useProfile";
 import { getUserLibraryBooks } from "../../src/services/library";
@@ -141,6 +142,8 @@ export default function HomeReadingRoom() {
         <SectionCard title="Reading goal" emoji="🎯">
           <ReadingGoalPanel status={goal} />
         </SectionCard>
+
+        <ReadingInsightsSection />
 
         <View className="flex-row gap-3">
           <QuickLink icon="📚" label="My Books" onPress={() => router.push("/library")} />
