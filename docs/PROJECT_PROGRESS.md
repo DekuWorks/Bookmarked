@@ -15,9 +15,13 @@
 | 2 | Reading Room depth | ✅ Complete | Finish workflow, mood tags, mobile parity, reviews tab polish |
 | 3 | Community | ✅ Complete | Feed polish, trending (web + mobile), public profile dedup |
 | 4 | Premium architecture | 🟡 In progress | Gates + mobile parity + webhook stub; live billing TBD |
-| 5 | UI refresh | 🟡 In progress | Search/forms/nav polish; surface cards on feed/messages |
-| 6 | Performance | 🟡 In progress | Audit doc, lazy gif picker, feed N+1 fix, skeleton loaders |
-| 7 | Mobile app parity | 🟡 In progress | Finish → rate prompt parity shipped; premium gates added |
+| 5 | UI refresh | ✅ Complete | Search/forms/nav polish; surface cards on feed/messages |
+| 6 | Performance | ✅ Complete | Audit doc, lazy gif picker, feed N+1 fix, skeleton loaders |
+| 7 | Database | ✅ Complete | Schema audit, indexes, unique constraints, `DATABASE_SCHEMA.md` |
+| 8 | Security | ✅ Complete | RLS fixes, private message attachments, `SECURITY_AUDIT.md` |
+| 9 | Responsive QA | ✅ Complete | Mobile layout fixes, `RESPONSIVE_QA.md` checklist |
+| 10 | Production hardening | ✅ Complete | SEO metadata, validation, route audit, env docs |
+| — | Mobile app parity | 🟡 In progress | Finish → rate prompt parity shipped; premium gates added |
 
 Legend: ✅ Complete · 🟡 In progress · ⚪ Not started · 🔴 Blocked
 
@@ -203,6 +207,57 @@ Incremental polish on high-traffic pages. Purple palette and gradients on header
 
 ---
 
+## Phase 7 — Database ✅
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Schema audit (tables, FKs, indexes, constraints) | ✅ | 44 migrations; see `DATABASE_SCHEMA.md` |
+| Duplicate prevention | ✅ | Books, shelves (name+slug), reviews (per read), user_books |
+| Hot-path indexes | ✅ | Migration `20260723120000_phase7_schema_indexes.sql` |
+| Schema documentation | ✅ | `docs/DATABASE_SCHEMA.md` |
+
+---
+
+## Phase 8 — Security ✅
+
+| Item | Status | Notes |
+|------|--------|-------|
+| RLS audit (all user-data tables) | ✅ | See `SECURITY_AUDIT.md` |
+| Activity visibility RLS fix | ✅ | `activity_visible_to_viewer()` |
+| Private message attachments | ✅ | Bucket private + signed URLs (web + mobile) |
+| `post_likes` / note categories RLS | ✅ | Visibility-gated SELECT |
+| Auth flow verification | ✅ | Login, signup, forgot/reset password |
+| Input validation | ✅ | Length limits on messages, posts, reviews, passwords |
+| Rate limiting stub | ✅ | `rate-limit-stub` Edge Function |
+| Security documentation | ✅ | `docs/SECURITY_AUDIT.md` |
+
+---
+
+## Phase 9 — Responsive QA ✅
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Key pages audit | ✅ | Dashboard, Reading Room, Library, Feed, Profile, Messages, Search, Book, Auth |
+| Message composer / bottom nav overlap | ✅ | Sticky offset on mobile |
+| Feed pill tab overflow | ✅ | Horizontal scroll |
+| Mobile app spot-check | ✅ | Library + feed layouts OK |
+| QA documentation | ✅ | `docs/RESPONSIVE_QA.md` |
+
+---
+
+## Phase 10 — Production hardening ✅
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Route audit (30 pages) | ✅ | All `apps/web/src/app/**/page.tsx` resolve |
+| SEO metadata on key pages | ✅ | Per-route `layout.tsx` metadata |
+| Accessibility | ✅ | Nav `aria-label`, bottom nav `aria-current`, modal focus trap |
+| Env validation | ✅ | `scripts/validate-env.mjs` — `NEXT_PUBLIC_SUPABASE_*` required |
+| Performance regression check | ✅ | Phase 6 optimizations preserved |
+| Progress tracker update | ✅ | This file |
+
+---
+
 ## Pre-refinement baseline (MVP — complete)
 
 Auth, search, library, reviews, feed, follows, clubs, messaging, notifications, import, deploy — all ✅.
@@ -214,6 +269,9 @@ Auth, search, library, reviews, feed, follows, clubs, messaging, notifications, 
 | Doc | Path |
 |-----|------|
 | Architecture (comprehensive) | `docs/BOOKMARKED_ARCHITECTURE.md` |
+| Database schema | `docs/DATABASE_SCHEMA.md` |
+| Security audit | `docs/SECURITY_AUDIT.md` |
+| Responsive QA | `docs/RESPONSIVE_QA.md` |
 | Technical debt | `docs/TECHNICAL_DEBT.md` |
 | Performance audit | `docs/PERFORMANCE_AUDIT.md` |
 | Master task list (MVP era) | `docs/project/MASTER_TASK_LIST.md` |

@@ -63,4 +63,20 @@ if (!process.env.ISBNDB_API_KEY?.trim()) {
   );
 }
 
+/**
+ * Required environment variables (documented for Phase 10):
+ *
+ * Build-time (required):
+ * - NEXT_PUBLIC_SUPABASE_URL
+ * - NEXT_PUBLIC_SUPABASE_ANON_KEY
+ *
+ * Build-time (optional):
+ * - NEXT_PUBLIC_GIPHY_API_KEY — GIF search in composer
+ *
+ * Supabase project secrets (not in web build):
+ * - ISBNDB_API_KEY — Edge Function catalog proxy
+ * - SUBSCRIPTION_WEBHOOK_SECRET — billing webhook stub
+ * - RATE_LIMIT_STUB_SECRET — rate-limit stub (optional)
+ */
+
 console.log("Supabase environment variables validated.");
