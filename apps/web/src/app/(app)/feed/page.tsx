@@ -8,6 +8,7 @@ import { FeedSearchBar } from "@/components/social/FeedSearchBar";
 import { FeedSearchResults } from "@/components/social/FeedSearchResults";
 import { PostCard } from "@/components/social/PostCard";
 import { PostComposer } from "@/components/social/PostComposer";
+import { TrendingNewsletterPanel } from "@/components/trending/TrendingNewsletterPanel";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
@@ -221,7 +222,8 @@ function FeedContent() {
           error={searchError}
         />
       ) : (
-        <>
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] lg:items-start">
+          <div className="space-y-6">
           <div className="pill-tabs" role="tablist" aria-label="Feed content">
             {viewOptions.map((option) => (
               <Link
@@ -296,7 +298,7 @@ function FeedContent() {
                   )}
                 </div>
               ) : (
-                <ul className="space-y-4">
+                <ul className="space-y-6">
                   {posts.map((post) => (
                     <li key={post.id}>
                       <PostCard
@@ -350,7 +352,7 @@ function FeedContent() {
               )}
             </div>
           ) : (
-            <ul className="space-y-4">
+            <ul className="space-y-6">
               {activityItems.map((item) => (
                 <li key={item.id}>
                   <FeedCard item={item} />
@@ -361,13 +363,27 @@ function FeedContent() {
 
           {feedView === "activity" && tab === "for-you" && activityItems && activityItems.length > 0 ? (
             <p className="text-center text-xs text-text-muted">
-              For You ranks public activity by recency, your genres, and readers you follow.{" "}
+              Activity is sorted by most recent.{" "}
               <Link href="/profile/setup" className="text-primary hover:underline">
                 Update your genres
-              </Link>
+              </Link>{" "}
+              to improve book recommendations elsewhere.
             </p>
           ) : null}
-        </>
+          </div>
+
+          <aside className="hidden lg:block">
+            <section className="sticky top-24 rounded-2xl border border-border bg-surface/90 p-5 shadow-sm">
+              <h2 className="text-lg font-semibold text-puce-red">Trending</h2>
+              <p className="mt-1 text-sm text-text-muted">
+                What readers are shelving and reviewing this week.
+              </p>
+              <div className="mt-4">
+                <TrendingNewsletterPanel />
+              </div>
+            </section>
+          </aside>
+        </div>
       )}
     </div>
   );

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { BookCover } from "@/components/books/BookCover";
+import { StarDisplay } from "@/components/reviews/StarDisplay";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import { feedItemHref } from "@/lib/routes/activity";
 import { authorPagePath } from "@/lib/routes/author";
@@ -33,6 +34,12 @@ export function FeedCard({ item }: Props) {
     isFeedEligibleEvent(item.event_type) || Boolean(item.bookId || item.coverUrl);
   const isFinishedBookEvent =
     item.event_type === "book_finished" || item.event_type === "reading_finished";
+  const isReviewEvent =
+    item.event_type === "review_created" || item.event_type === "review_added";
+  const reviewRating =
+    isReviewEvent && typeof item.metadata_json?.rating === "number"
+      ? Number(item.metadata_json.rating)
+      : null;
   const showBookmarkBadge = Boolean(item.bookId) || isFinishedBookEvent;
 
   const cover = (
@@ -46,7 +53,7 @@ export function FeedCard({ item }: Props) {
   );
 
   return (
-    <article className="flex gap-4 rounded-xl border border-border bg-surface p-4 shadow-sm transition hover:border-primary/30 hover:shadow-md">
+    <article className="flex gap-4 rounded-2xl border border-border bg-surface p-5 shadow-sm transition hover:border-primary/30 hover:shadow-md">
       {showBookCover ? (
         item.bookId ? (
           <Link
@@ -74,7 +81,7 @@ export function FeedCard({ item }: Props) {
       )}
 
       <div className="min-w-0 flex-1">
-        <p className="text-sm text-text">
+        <p className="text-base leading-relaxed text-text">
           {profileHref ? (
             <Link
               href={profileHref}
@@ -101,7 +108,12 @@ export function FeedCard({ item }: Props) {
             </Link>
           </p>
         ) : null}
-        <div className="mt-2 flex flex-wrap items-center gap-2">
+        {reviewRating != null ? (
+          <div className="mt-2">
+            <StarDisplay rating={reviewRating} showNumeric />
+          </div>
+        ) : null}
+        <div className="mt-3 flex flex-wrap items-center gap-2">
           <Link
             href={activityHref}
             className="text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"

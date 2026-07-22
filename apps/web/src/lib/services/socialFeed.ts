@@ -283,42 +283,9 @@ export async function fetchFollowingFeed(
   return buildFeedItems(selected, selectedActivity);
 }
 
-function scoreForYouItem(
-  row: RawFeedRow,
-  viewerId: string,
-  followingSet: Set<string>,
-  viewerGenres: string[]
-): number {
-  let score = 0;
-  const ageHours =
-    (Date.now() - new Date(row.created_at).getTime()) / (1000 * 60 * 60);
-  score += Math.max(0, 48 - ageHours);
-
-  if (followingSet.has(row.user_id)) score += 12;
-  if (row.user_id === viewerId) score -= 20;
-
-  const subjects = Array.isArray(row.metadata_json?.subjects)
-    ? (row.metadata_json?.subjects as string[])
-    : [];
-  const genreMatches = viewerGenres.filter((genre) =>
-    subjects.some((subject) => subject.toLowerCase().includes(genre.toLowerCase()))
-  ).length;
-  score += genreMatches * 8;
-
-  if (row.event_type === "review_created" || row.event_type === "review_added") {
-    score += 6;
-  }
-  if (row.event_type === "book_finished" || row.event_type === "reading_finished") {
-    score += 5;
-  }
-  if (row.event_type === "book_added") score += 3;
-
-  return score;
-}
-
 export async function fetchForYouFeed(
   viewerId: string,
-  viewerGenres: string[] | null | undefined,
+  _viewerGenres: string[] | null | undefined,
   limit = 30
 ): Promise<FeedItem[]> {
   const [followingIds, supabase] = await Promise.all([
@@ -327,7 +294,6 @@ export async function fetchForYouFeed(
   ]);
 
   const followingSet = new Set(followingIds);
-  const genres = viewerGenres ?? [];
 
   const { data, error } = await supabase
     .from("activity_events")
@@ -340,20 +306,14 @@ export async function fetchForYouFeed(
 
   const activityRows = (data ?? []) as ActivityRow[];
   const withProfiles = await attachProfilesToActivity(activityRows);
-  const ranked = filterVisibleRows(withProfiles, viewerId, followingSet)
-    .map((row) => ({
-      row,
-      score: scoreForYouItem(row, viewerId, followingSet, genres),
-    }))
-    .sort((a, b) => b.score - a.score || b.row.created_at.localeCompare(a.row.created_at))
+  const visible = filterVisibleRows(withProfiles, viewerId, followingSet)
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
     .slice(0, limit);
+  const selectedActivity = visible
+    .map((row) => activityRows.find((activity) => activity.id === row.id))
+    .filter((row): row is ActivityRow => Boolean(row));
 
-  const selectedRows = ranked.map(({ row }) => row);
-  const selectedActivity = ranked.map(({ row }) =>
-    activityRows.find((activity) => activity.id === row.id)
-  ).filter((row): row is ActivityRow => Boolean(row));
-
-  return buildFeedItems(selectedRows, selectedActivity);
+  return buildFeedItems(visible, selectedActivity);
 }
 
 export async function fetchReaderActivity(

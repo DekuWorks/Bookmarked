@@ -14,10 +14,13 @@ export function CommunityRatingDisplay({ rating, className }: Props) {
   return (
     <div
       className={cn("inline-flex flex-wrap items-center justify-center gap-2", className)}
-      aria-label={`Community rating ${rating.averageRating} based on ${countLabel}`}
+      aria-label={`Bookmarked rating ${rating.averageRating} based on ${countLabel}`}
     >
+      <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+        Bookmarked rating
+      </span>
       <StarDisplay rating={rating.averageRating} showNumeric />
-      <span className="text-text-muted">based on {countLabel}</span>
+      <span className="text-text-muted">({countLabel})</span>
     </div>
   );
 }
