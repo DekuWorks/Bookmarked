@@ -158,6 +158,9 @@ export default function ProfilePage() {
             <SettingsIcon />
             Account settings
           </ButtonLink>
+          <ButtonLink href="/upgrade/" variant="secondary" size="sm">
+            Premium
+          </ButtonLink>
           <LogoutButton />
         </div>
       </section>

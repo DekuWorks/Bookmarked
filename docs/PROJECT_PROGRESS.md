@@ -13,9 +13,10 @@
 | 0 | Audit & documentation | ✅ Complete | All four Phase 0 docs delivered |
 | 1 | Navigation redesign | ✅ Complete | Dashboard, Library, Reading Room tabs, mobile bottom nav |
 | 2 | Reading Room depth | ✅ Complete | Finish workflow, mood tags, mobile parity, reviews tab polish |
-| 3 | Community | 🟡 In progress | Feed polish + trending sidebar; messaging/clubs exist; events calendar deferred |
-| 4 | Mobile app parity | 🟡 In progress | Finish → rate prompt parity shipped |
-| 5 | Performance & QA | ⚪ Not started | Full responsive QA after nav redesign |
+| 3 | Community | ✅ Complete | Feed polish, trending (web + mobile), public profile dedup |
+| 4 | Premium architecture | 🟡 In progress | Subscription schema, feature gates, upgrade page; billing TBD |
+| 5 | Mobile app parity | 🟡 In progress | Finish → rate prompt parity shipped |
+| 6 | Performance & QA | ⚪ Not started | Full responsive QA after nav redesign |
 
 Legend: ✅ Complete · 🟡 In progress · ⚪ Not started · 🔴 Blocked
 
@@ -72,7 +73,7 @@ Dashboard, Library, Reading Room tabs, Profile cleanup, and mobile bottom nav �
 
 ---
 
-## Phase 3 — Community 🟡
+## Phase 3 — Community ✅
 
 ### 3.1 Feed
 
@@ -102,16 +103,48 @@ Dashboard, Library, Reading Room tabs, Profile cleanup, and mobile bottom nav �
 | Item | Status | Notes |
 |------|--------|-------|
 | Trending books / most shelved / most reviewed | ✅ | `fetchTrendingSections` on Feed sidebar |
+| Mobile trending section | ✅ | `TrendingBooksSection` on mobile For You feed |
 | Bookmarked community rating on book pages | ✅ | `CommunityRatingDisplay` (web + mobile) |
+| Public profile deduplication | ✅ | `/reader/` — identity + top-3 shelf preview only |
 
 ### 3.5 Remaining Phase 3 work
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Mobile trending section | ⚪ | Feed sidebar is web-only |
 | Events calendar UI | ⚪ | Deferred |
-| Public profile deduplication | ⚪ | Shelves/feed on `/reader/` profiles |
 | Personalized activity ranking toggle | ⚪ | Replaced with chronological for clarity |
+
+---
+
+## Phase 4 — Premium architecture 🟡
+
+### 4.1 Data model
+
+| Item | Status | Notes |
+|------|--------|-------|
+| `user_subscriptions` table | ✅ | Migration `20260722120000_user_subscriptions.sql` |
+| RLS (owner-only read/write) | ✅ | Separate table — not on public `profiles` select |
+| Profile backfill trigger | ✅ | Auto-create row on profile insert |
+
+### 4.2 Feature gating
+
+| Item | Status | Notes |
+|------|--------|-------|
+| `canAccessFeature()` helper | ✅ | `packages/utils/subscription.ts` |
+| `useSubscription` hook (web) | ✅ | `apps/web/src/lib/hooks/useSubscription.ts` |
+| Premium lock component | ✅ | `PremiumFeatureLock` |
+| Upgrade modal | ✅ | `UpgradeModal` |
+| Upgrade page | ✅ | `/upgrade/` |
+| Advanced analytics gate | ✅ | Reading Room → Progress → Activity heatmap |
+| AI insights placeholder gate | ✅ | Reading Room → Progress → AI insights section |
+
+### 4.3 Remaining Phase 4 work
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Stripe / App Store billing integration | ⚪ | Upgrade page is informational until provider wired |
+| Mobile premium UI | ⚪ | Types shared; gates not yet on mobile |
+| Admin / webhook subscription updates | ⚪ | Service-role path for payment events |
 
 ---
 

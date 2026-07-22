@@ -5,6 +5,8 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AnalyticsGrid } from "@/components/analytics/AnalyticsGrid";
 import { ReadingActivityPanel } from "@/components/analytics/ReadingActivityPanel";
+import { AiInsightsPanel } from "@/components/premium/AiInsightsPanel";
+import { PremiumFeatureLock } from "@/components/premium/PremiumFeatureLock";
 import { BookCover } from "@/components/books/BookCover";
 import { NotesSearchForm } from "@/components/notes/NotesSearchForm";
 import { NotesSearchResultCard } from "@/components/notes/NotesSearchResultCard";
@@ -26,6 +28,7 @@ import {
 import { cn } from "@/lib/utils/cn";
 import { formatReviewDate } from "@/lib/utils/locale";
 import { usePreferredLocale } from "@/lib/hooks/usePreferredLocale";
+import { useSubscription } from "@/lib/hooks/useSubscription";
 
 export type ReadingRoomTab =
   | "overview"
@@ -97,6 +100,9 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
   const searchParams = useSearchParams();
   const tab = parseTab(searchParams.get("tab"));
   const locale = usePreferredLocale();
+  const { canAccess, loading: subscriptionLoading } = useSubscription(userId);
+  const hasAdvancedAnalytics = canAccess("advanced_analytics");
+  const hasAiInsights = canAccess("ai_insights");
   const [sessions, setSessions] = useState<UserReadingSession[] | null>(null);
   const [reviews, setReviews] = useState<UserReviewWithBook[] | null>(null);
   const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("all");
@@ -240,7 +246,34 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
             <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
               <h2 className="text-lg font-semibold text-puce-red">Activity</h2>
               <div className="mt-4">
-                <ReadingActivityPanel userId={userId} />
+                {subscriptionLoading ? (
+                  <LoadingState message="Checking subscription…" />
+                ) : hasAdvancedAnalytics ? (
+                  <ReadingActivityPanel userId={userId} />
+                ) : (
+                  <PremiumFeatureLock
+                    title="Advanced reading analytics"
+                    description="Unlock reading heatmaps, pace trends, and weekly activity charts with Premium."
+                    compact
+                  />
+                )}
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
+              <h2 className="text-lg font-semibold text-puce-red">AI insights</h2>
+              <div className="mt-4">
+                {subscriptionLoading ? (
+                  <LoadingState message="Checking subscription…" />
+                ) : hasAiInsights ? (
+                  <AiInsightsPanel />
+                ) : (
+                  <PremiumFeatureLock
+                    title="AI reading insights"
+                    description="Get personalized reflections and reading patterns powered by your journal."
+                    compact
+                  />
+                )}
               </div>
             </section>
           </div>

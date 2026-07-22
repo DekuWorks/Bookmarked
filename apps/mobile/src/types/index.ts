@@ -11,6 +11,14 @@ export type ShelfStatus = SharedShelfStatus;
 export type LibraryViewMode = SharedLibraryViewMode;
 
 export type {
+  SubscriptionTier,
+  SubscriptionStatus,
+  SubscriptionProvider,
+  PremiumFeature,
+  UserSubscription,
+} from "../../../../packages/types";
+
+export type {
   UserBook,
   Review,
   ReviewRatingMode,

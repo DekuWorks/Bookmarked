@@ -44,6 +44,29 @@ export interface Profile {
   updated_at: string;
 }
 
+export type SubscriptionTier = "free" | "premium";
+
+export type SubscriptionStatus =
+  | "inactive"
+  | "active"
+  | "trialing"
+  | "past_due"
+  | "canceled";
+
+export type SubscriptionProvider = "stripe" | "apple" | "google" | "manual";
+
+export type PremiumFeature = "advanced_analytics" | "ai_insights";
+
+export interface UserSubscription {
+  user_id: string;
+  subscription_tier: SubscriptionTier;
+  subscription_status: SubscriptionStatus;
+  subscription_provider: SubscriptionProvider | null;
+  subscription_expires_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Book {
   id: string;
   external_source: string | null;
