@@ -34,7 +34,8 @@ export function ButtonLink({
   return (
     <Link
       className={cn(
-        "inline-flex items-center justify-center rounded-lg font-semibold transition-opacity",
+        "inline-flex items-center justify-center rounded-xl font-semibold transition-all duration-200",
+        "hover:-translate-y-0.5 hover:shadow-md active:translate-y-0",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2",
         variants[variant],
         sizes[size],

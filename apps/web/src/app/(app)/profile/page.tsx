@@ -19,8 +19,11 @@ import { ProfanityBlur } from "@/components/social/ProfanityBlur";
 import { readerProfilePath } from "@/lib/routes/reader";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import type { Profile } from "@/types";
-import { layout } from "@/lib/constants/layout";
 import { cn } from "@/lib/utils/cn";
+import { PremiumBadge } from "@/components/premium/PremiumBadge";
+import { useSubscription } from "@/lib/hooks/useSubscription";
+
+import { layout } from "@/lib/constants/layout";
 
 type ProfileData = {
   profile: Profile | null;
@@ -31,6 +34,7 @@ type ProfileData = {
 
 export default function ProfilePage() {
   const user = useAuthUser();
+  const { isPremium } = useSubscription(user?.id);
   const [data, setData] = useState<ProfileData | null>(null);
 
   const loadProfile = useCallback(async () => {
@@ -67,8 +71,8 @@ export default function ProfilePage() {
 
   return (
     <div className={layout.pageStack}>
-      <header className={cn(layout.pageHeader, "relative")}>
-        <div className="absolute right-0 top-0">
+      <header className={cn(layout.pageHeader, "relative -mx-4 feed-header-gradient px-4 pb-8 pt-2 sm:-mx-6 sm:px-6")}>
+        <div className="absolute right-0 top-2">
           <ButtonLink
             href="/profile/settings"
             variant="outline"
@@ -84,7 +88,7 @@ export default function ProfilePage() {
         <p className="mt-1 text-text-muted">{email}</p>
       </header>
 
-      <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
+      <section className="surface-card p-6">
         <div className="flex flex-col items-center gap-6">
           {profile ? (
             <AvatarUpload
@@ -100,9 +104,12 @@ export default function ProfilePage() {
             />
           ) : null}
           <div className="w-full text-center">
-            <p className="text-2xl font-semibold text-text">
-              {profile?.display_name || profile?.username || "Reader"}
-            </p>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <p className="text-2xl font-semibold text-text">
+                {profile?.display_name || profile?.username || "Reader"}
+              </p>
+              {isPremium ? <PremiumBadge /> : null}
+            </div>
             {profile?.username ? (
               <p className="text-text-muted">@{profile.username}</p>
             ) : null}
@@ -159,7 +166,7 @@ export default function ProfilePage() {
             Account settings
           </ButtonLink>
           <ButtonLink href="/upgrade/" variant="secondary" size="sm">
-            Premium
+            {isPremium ? "Premium" : "Upgrade"}
           </ButtonLink>
           <LogoutButton />
         </div>

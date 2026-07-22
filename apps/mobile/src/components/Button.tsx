@@ -15,7 +15,7 @@ export function Button({
   ...rest
 }: Props) {
   const base =
-    "rounded-xl px-4 py-3 items-center justify-center min-h-[48px] active:opacity-80";
+    "rounded-xl px-4 py-3 items-center justify-center min-h-[48px] active:scale-[0.98]";
   const variants = {
     primary: "bg-puce-red",
     secondary: "bg-primary",

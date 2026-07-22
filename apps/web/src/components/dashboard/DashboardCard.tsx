@@ -12,7 +12,7 @@ export function DashboardCard({ title, children, className, action }: Props) {
   return (
     <section
       className={cn(
-        "rounded-xl border border-border bg-surface p-5 shadow-sm",
+        "surface-card p-5",
         className
       )}
     >

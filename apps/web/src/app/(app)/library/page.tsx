@@ -85,20 +85,20 @@ export default function LibraryPage() {
 
   return (
     <div className={layout.pageStackWide}>
-      <header className="flex flex-col items-center gap-4 text-center">
-        <div>
-          <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Library</h1>
-          <p className="mx-auto mt-1 max-w-2xl text-pretty text-text-muted">
-            Organize your collection — browse shelves, switch views, and manage collections.
-          </p>
+      <header className="-mx-4 feed-header-gradient px-4 pb-8 pt-2 text-center sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+        <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Library</h1>
+        <p className="mx-auto mt-2 max-w-2xl text-pretty text-text-muted">
+          Organize your collection — browse shelves, switch views, and manage collections.
+        </p>
+        <div className="mt-5">
+          <ButtonLink href="/search/" variant="secondary">
+            Add books
+          </ButtonLink>
         </div>
-        <ButtonLink href="/search/" variant="secondary">
-          Add books
-        </ButtonLink>
       </header>
 
       {isEmpty ? (
-        <div className="rounded-xl border border-dashed border-border bg-surface p-12 text-center">
+        <div className="rounded-2xl border border-dashed border-border bg-surface p-12 text-center shadow-sm">
           <p className="text-lg font-medium text-text">Your library is empty</p>
           <p className="mt-2 text-text-muted">Search for books to add them to a shelf.</p>
           <ButtonLink href="/search/" variant="primary" className="mt-6">

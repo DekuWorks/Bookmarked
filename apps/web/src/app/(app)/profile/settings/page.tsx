@@ -1,6 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { ButtonLink } from "@/components/ui/ButtonLink";
+import { PremiumBadge } from "@/components/premium/PremiumBadge";
+import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useCallback, useEffect, useState } from "react";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { LanguagePreferencePanel } from "@/components/profile/LanguagePreferencePanel";
@@ -24,6 +27,7 @@ type SettingsData = {
 
 export default function ProfileSettingsPage() {
   const user = useAuthUser();
+  const { isPremium } = useSubscription(user?.id);
   const [data, setData] = useState<SettingsData | null>(null);
 
   const loadSettings = useCallback(async () => {
@@ -74,18 +78,37 @@ export default function ProfileSettingsPage() {
       </header>
 
       <div className="space-y-6">
-        <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
+        <section className="surface-card p-6">
+          <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:justify-between sm:text-left">
+            <div>
+              <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+                <h2 className="text-lg font-semibold text-puce-red">Bookmarked Premium</h2>
+                {isPremium ? <PremiumBadge compact /> : null}
+              </div>
+              <p className="mt-1 text-sm text-text-muted">
+                {isPremium
+                  ? "Your subscription is active. Premium features are unlocked."
+                  : "Unlock advanced analytics, AI insights, and early access."}
+              </p>
+            </div>
+            <ButtonLink href="/upgrade/" variant={isPremium ? "outline" : "primary"} size="sm">
+              {isPremium ? "View plan" : "Upgrade"}
+            </ButtonLink>
+          </div>
+        </section>
+
+        <section className="surface-card p-6">
           <ReadingGoalPanel
             status={readingGoal}
             onSaved={() => void loadSettings()}
           />
         </section>
 
-        <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
+        <section className="surface-card p-6">
           <NotificationPreferencesPanel profile={profile} embedded />
         </section>
 
-        <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
+        <section className="surface-card p-6">
           <LanguagePreferencePanel
             profile={profile}
             embedded
@@ -99,15 +122,15 @@ export default function ProfileSettingsPage() {
           />
         </section>
 
-        <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
+        <section className="surface-card p-6">
           <LibraryImportPanel userId={user.id} embedded />
         </section>
 
-        <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
+        <section className="surface-card p-6">
           <ShelfPrivacyPanel profile={profile} />
         </section>
 
-        <section className="rounded-xl border border-border bg-surface p-6 text-center shadow-sm">
+        <section className="surface-card p-6 text-center">
           <LogoutButton />
         </section>
       </div>
