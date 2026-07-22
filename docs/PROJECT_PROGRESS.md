@@ -15,8 +15,9 @@
 | 2 | Reading Room depth | ✅ Complete | Finish workflow, mood tags, mobile parity, reviews tab polish |
 | 3 | Community | ✅ Complete | Feed polish, trending (web + mobile), public profile dedup |
 | 4 | Premium architecture | 🟡 In progress | Gates + mobile parity + webhook stub; live billing TBD |
-| 5 | UI refresh | 🟡 In progress | Surface cards, gradient headers, button polish on high-traffic pages |
-| 6 | Mobile app parity | 🟡 In progress | Finish → rate prompt parity shipped; premium gates added |
+| 5 | UI refresh | 🟡 In progress | Search/forms/nav polish; surface cards on feed/messages |
+| 6 | Performance | 🟡 In progress | Audit doc, lazy gif picker, feed N+1 fix, skeleton loaders |
+| 7 | Mobile app parity | 🟡 In progress | Finish → rate prompt parity shipped; premium gates added |
 
 Legend: ✅ Complete · 🟡 In progress · ⚪ Not started · 🔴 Blocked
 
@@ -176,8 +177,29 @@ Incremental polish on high-traffic pages. Purple palette and gradients on header
 | Button hover polish | ✅ | `ButtonLink` lift + shadow |
 | Mobile SectionCard shadow | ✅ | Matches web card depth |
 | Mobile button press feedback | ✅ | Scale on press |
-| Search bars / forms sitewide | ⚪ | Incremental follow-up |
-| Nav / bottom bar polish | ⚪ | Incremental follow-up |
+| Search bars (web + mobile) | ✅ | Pill `.search-input`, focus glow, SVG icon on feed search |
+| Forms (auth, review) | ✅ | `.form-panel` on login/signup; rounded-xl inputs with shadow |
+| Nav / bottom bar polish | ✅ | Active pill states, navbar shadow, mobile tab highlight |
+| Feed / messages surface cards | ✅ | `FeedCard`, `PostComposer`, thread page use `.surface-card` |
+| Feed skeleton loaders | ✅ | `PostCardSkeleton` / `FeedCardSkeleton` replace blank spinners |
+| Mobile feed/library polish | ✅ | `ScreenGradientWash` on library; card shadows on feed posts |
+
+---
+
+## Phase 6 — Performance 🟡
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Performance audit doc | ✅ | `docs/PERFORMANCE_AUDIT.md` |
+| Gif picker code split | ✅ | `GifSearchPickerLazy` — dynamic import |
+| Feed hydration N+1 fix | ✅ | Map-based lookup in `hydrateFeedItems` |
+| Book cover lazy loading | ✅ | `loading="lazy"` on non-priority covers |
+| Messages fetch cap | ✅ | Last 200 messages per thread |
+| FeedCard memoization | ✅ | `React.memo` |
+| Feed skeleton loaders | ✅ | See Phase 5 |
+| Library virtualization | ⚪ | Deferred until large libraries reported |
+| Message cursor pagination | ⚪ | Deferred — 200-msg cap for now |
+| Bundle analyzer pass | ⚪ | Deferred |
 
 ---
 
@@ -193,6 +215,7 @@ Auth, search, library, reviews, feed, follows, clubs, messaging, notifications, 
 |-----|------|
 | Architecture (comprehensive) | `docs/BOOKMARKED_ARCHITECTURE.md` |
 | Technical debt | `docs/TECHNICAL_DEBT.md` |
+| Performance audit | `docs/PERFORMANCE_AUDIT.md` |
 | Master task list (MVP era) | `docs/project/MASTER_TASK_LIST.md` |
 
 **Last updated:** July 2026

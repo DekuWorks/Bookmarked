@@ -469,18 +469,24 @@ export async function getConversation(
   };
 }
 
-export async function getMessages(conversationId: string): Promise<MessageWithSender[]> {
+export async function getMessages(
+  conversationId: string,
+  limit = 200
+): Promise<MessageWithSender[]> {
   const supabase = createClient();
 
   const { data, error } = await supabase
     .from("messages")
     .select(`*, profiles!messages_sender_id_profiles_fkey (${PROFILE_SELECT})`)
     .eq("conversation_id", conversationId)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: false })
+    .limit(limit);
 
   if (error) throw error;
 
-  return ((data ?? []) as Array<Message & { profiles: MessageProfile | null }>).map((row) => ({
+  const rows = ((data ?? []) as Array<Message & { profiles: MessageProfile | null }>).reverse();
+
+  return rows.map((row) => ({
     id: row.id,
     conversation_id: row.conversation_id,
     sender_id: row.sender_id,

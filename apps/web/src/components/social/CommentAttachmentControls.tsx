@@ -2,7 +2,7 @@
 
 import { useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { GifSearchPicker } from "@/components/social/GifSearchPicker";
+import { GifSearchPicker } from "@/components/social/GifSearchPickerLazy";
 import { useToast } from "@/components/ui/Toast";
 import type { GiphySearchResult } from "@/lib/services/giphy";
 import { uploadPostImage, validatePostImageFile } from "@/lib/services/posts";

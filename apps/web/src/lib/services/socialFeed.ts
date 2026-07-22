@@ -164,12 +164,15 @@ export async function hydrateFeedItems(
       .select("id, book_id")
       .in("id", userBookIds);
 
-    for (const row of data ?? []) {
-      for (const item of items) {
-        const activity = rowById.get(item.id);
-        if (activity?.entity_type === "user_book" && activity.entity_id === row.id) {
-          bookIdByItemId.set(item.id, row.book_id);
-        }
+    const bookIdByUserBookId = new Map(
+      (data ?? []).map((row) => [row.id, row.book_id as string])
+    );
+
+    for (const item of items) {
+      const activity = rowById.get(item.id);
+      if (activity?.entity_type === "user_book" && activity.entity_id) {
+        const bookId = bookIdByUserBookId.get(activity.entity_id);
+        if (bookId) bookIdByItemId.set(item.id, bookId);
       }
     }
   }
@@ -180,12 +183,15 @@ export async function hydrateFeedItems(
       .select("id, book_id")
       .in("id", reviewIds);
 
-    for (const row of data ?? []) {
-      for (const item of items) {
-        const activity = rowById.get(item.id);
-        if (activity?.entity_type === "review" && activity.entity_id === row.id) {
-          bookIdByItemId.set(item.id, row.book_id);
-        }
+    const bookIdByReviewId = new Map(
+      (data ?? []).map((row) => [row.id, row.book_id as string])
+    );
+
+    for (const item of items) {
+      const activity = rowById.get(item.id);
+      if (activity?.entity_type === "review" && activity.entity_id) {
+        const bookId = bookIdByReviewId.get(activity.entity_id);
+        if (bookId) bookIdByItemId.set(item.id, bookId);
       }
     }
   }

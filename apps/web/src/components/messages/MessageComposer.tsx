@@ -3,7 +3,7 @@
 import { useState, type KeyboardEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Input";
-import { GifSearchPicker } from "@/components/social/GifSearchPicker";
+import { GifSearchPicker } from "@/components/social/GifSearchPickerLazy";
 import { useCommentAttachment } from "@/components/social/CommentAttachmentControls";
 import {
   uploadMessageAttachment,

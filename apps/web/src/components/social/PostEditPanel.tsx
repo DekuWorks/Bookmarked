@@ -11,7 +11,7 @@ import {
   uploadPostImage,
   validatePostImageFile,
 } from "@/lib/services/posts";
-import { GifSearchPicker } from "@/components/social/GifSearchPicker";
+import { GifSearchPicker } from "@/components/social/GifSearchPickerLazy";
 import type { GiphySearchResult } from "@/lib/services/giphy";
 import { isAllowedPostImageUrl, isGiphyImageUrl, resolveGiphyImageUrl } from "@/lib/utils/giphy";
 import type { PostWithAuthor } from "@/types";

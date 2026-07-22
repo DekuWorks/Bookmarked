@@ -71,6 +71,7 @@ export function BookCover({
             sizes={sizes}
             unoptimized
             priority={priority}
+            loading={priority ? undefined : "lazy"}
             onError={() => setImageError(true)}
           />
         ) : (
