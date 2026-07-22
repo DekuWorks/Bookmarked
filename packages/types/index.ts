@@ -366,6 +366,7 @@ export interface ReadingSession {
   pages_read: number;
   percent_complete: number;
   note: string | null;
+  mood: string | null;
   read_number: number;
   created_at: string;
 }

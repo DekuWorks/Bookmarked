@@ -9,6 +9,8 @@ import { FeelingChip } from "../../../src/components/FeelingChip";
 import { LoadingState } from "../../../src/components/LoadingState";
 import { ProfanityBlur } from "../../../src/components/ProfanityBlur";
 import { ProgressBar } from "../../../src/components/ProgressBar";
+import { MarkFinishedSheet } from "../../../src/components/MarkFinishedSheet";
+import { RateBookPromptSheet } from "../../../src/components/RateBookPromptSheet";
 import { RateReviewSheet } from "../../../src/components/RateReviewSheet";
 import { ReadingNotesSection } from "../../../src/components/ReadingNotesSection";
 import { SavedPill } from "../../../src/components/SavedPill";
@@ -92,6 +94,9 @@ export default function BookScreen() {
   const router = useRouter();
 
   const [rateOpen, setRateOpen] = useState(false);
+  const [finishOpen, setFinishOpen] = useState(false);
+  const [ratePromptOpen, setRatePromptOpen] = useState(false);
+  const [finishLoading, setFinishLoading] = useState(false);
   const [progressOpen, setProgressOpen] = useState(false);
   const [progressValue, setProgressValue] = useState("");
   const [dateOpen, setDateOpen] = useState(false);
@@ -120,10 +125,23 @@ export default function BookScreen() {
   }
 
   async function finish() {
+    setFinishOpen(true);
+  }
+
+  async function confirmFinish(finishedAt: string) {
     if (!userId || !book) return;
-    const result = await markFinished(userId, book);
-    if (result.error) Alert.alert("Error", result.error);
+    setFinishLoading(true);
+    const result = await markFinished(userId, book, { finishedAt });
+    setFinishLoading(false);
+    if (result.error) {
+      Alert.alert("Error", result.error);
+      return;
+    }
+    setFinishOpen(false);
     invalidate();
+    if (result.promptReview) {
+      setRatePromptOpen(true);
+    }
   }
 
   async function saveProgress() {
@@ -384,6 +402,25 @@ export default function BookScreen() {
         existingReview={ownReview}
         readNumber={readCount}
         onSaved={invalidate}
+      />
+
+      <MarkFinishedSheet
+        visible={finishOpen}
+        bookTitle={book.title}
+        startedAt={userBook?.started_at}
+        onClose={() => setFinishOpen(false)}
+        onConfirm={(finishedAt) => void confirmFinish(finishedAt)}
+        loading={finishLoading}
+      />
+
+      <RateBookPromptSheet
+        visible={ratePromptOpen}
+        bookTitle={book.title}
+        onSkip={() => setRatePromptOpen(false)}
+        onReviewNow={() => {
+          setRatePromptOpen(false);
+          setRateOpen(true);
+        }}
       />
 
       {/* Progress modal */}

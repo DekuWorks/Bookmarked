@@ -10,7 +10,9 @@ export type CreateReadingSessionInput = {
   pageEnd: number;
   percentComplete: number;
   note?: string | null;
+  mood?: string | null;
   readNumber?: number;
+  createdAt?: string;
 };
 
 export async function listReadingSessions(userBookId: string): Promise<ReadingSession[]> {
@@ -41,7 +43,9 @@ export async function createReadingSession(
       pages_read: pagesRead,
       percent_complete: input.percentComplete,
       note: input.note ?? null,
+      mood: input.mood ?? null,
       read_number: input.readNumber ?? 1,
+      ...(input.createdAt ? { created_at: input.createdAt } : {}),
     })
     .select("*")
     .single();

@@ -12,6 +12,7 @@ import { BookMiniGrid } from "@/components/reading-room/BookMiniGrid";
 import { CurrentlyReadingRow } from "@/components/reading-room/CurrentlyReadingRow";
 import { ReadingGoalPanel } from "@/components/reading-goal/ReadingGoalPanel";
 import { StarDisplay } from "@/components/reviews/StarDisplay";
+import { SessionMoodChip } from "@/components/books/SessionMoodPicker";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { bookDetailsPath } from "@/lib/routes/book";
@@ -59,6 +60,33 @@ function formatSessionDate(iso: string): string {
   });
 }
 
+type ReviewFilter = "all" | "rated" | "written";
+
+function groupReviewsByMonth(reviews: UserReviewWithBook[]): [string, UserReviewWithBook[]][] {
+  const groups = new Map<string, UserReviewWithBook[]>();
+
+  for (const review of reviews) {
+    const date = new Date(review.created_at);
+    const key = date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+    const list = groups.get(key) ?? [];
+    list.push(review);
+    groups.set(key, list);
+  }
+
+  return [...groups.entries()];
+}
+
+function filterReviews(reviews: UserReviewWithBook[], filter: ReviewFilter): UserReviewWithBook[] {
+  switch (filter) {
+    case "rated":
+      return reviews.filter((review) => review.rating != null);
+    case "written":
+      return reviews.filter((review) => Boolean(review.review_body?.trim()));
+    default:
+      return reviews;
+  }
+}
+
 type Props = {
   userId: string;
   data: ReadingRoomData;
@@ -71,6 +99,7 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
   const locale = usePreferredLocale();
   const [sessions, setSessions] = useState<UserReadingSession[] | null>(null);
   const [reviews, setReviews] = useState<UserReviewWithBook[] | null>(null);
+  const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("all");
   const [recentNotes, setRecentNotes] = useState<
     Awaited<ReturnType<typeof searchNotesWithBooks>>["notes"] | null
   >(null);
@@ -264,6 +293,11 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
                     {session.note ? (
                       <p className="mt-2 text-sm leading-relaxed text-text">{session.note}</p>
                     ) : null}
+                    {session.mood ? (
+                      <div className="mt-2">
+                        <SessionMoodChip mood={session.mood} />
+                      </div>
+                    ) : null}
                   </li>
                 ))}
               </ol>
@@ -313,6 +347,9 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
         {tab === "reviews" ? (
           <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6 text-left">
             <h2 className="text-center text-lg font-semibold text-puce-red">Your reviews</h2>
+            <p className="mt-1 text-center text-sm text-text-muted">
+              Ratings and reviews across your reading history.
+            </p>
             {reviews === null ? (
               <LoadingState message="Loading reviews…" />
             ) : reviews.length === 0 ? (
@@ -320,51 +357,123 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
                 Finish a book and share your thoughts from its detail page.
               </p>
             ) : (
-              <ul className="mt-6 space-y-4">
-                {reviews.map((review) => (
-                  <li
-                    key={review.id}
-                    className="rounded-lg border border-border bg-background/50 px-4 py-3"
-                  >
-                    <div className="flex gap-3">
-                      {review.books?.cover_url ? (
-                        <BookCover
-                          coverUrl={review.books.cover_url}
-                          title={review.books.title}
-                          author={review.books.author}
-                          className="h-16 w-11 shrink-0 rounded shadow-sm"
-                        />
-                      ) : null}
-                      <div className="min-w-0 flex-1">
-                        {review.books ? (
-                          <Link
-                            href={bookDetailsPath(review.books.id)}
-                            className="font-medium text-primary hover:underline"
-                          >
-                            {review.books.title}
-                          </Link>
-                        ) : (
-                          <p className="font-medium text-text">Review</p>
-                        )}
-                        {review.books?.author ? (
-                          <p className="text-xs text-text-muted">{review.books.author}</p>
-                        ) : null}
-                        <div className="mt-2 flex flex-wrap items-center gap-2">
-                          <StarDisplay rating={review.rating ?? 0} />
-                          <time className="text-xs text-text-muted" dateTime={review.created_at}>
-                            {formatReviewDate(review.created_at, locale)}
-                          </time>
+              <>
+                <div className="mt-4 flex flex-wrap justify-center gap-2">
+                  {(
+                    [
+                      { id: "all", label: "All" },
+                      { id: "rated", label: "Rated" },
+                      { id: "written", label: "With review" },
+                    ] as const
+                  ).map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => setReviewFilter(option.id)}
+                      className={cn(
+                        "rounded-full border px-3 py-1 text-xs font-medium transition",
+                        reviewFilter === option.id
+                          ? "border-puce-red bg-puce-red text-white"
+                          : "border-border bg-background text-text-muted hover:border-primary"
+                      )}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+
+                {filterReviews(reviews, reviewFilter).length === 0 ? (
+                  <p className="mt-6 text-center text-sm text-text-muted">
+                    No reviews match this filter.
+                  </p>
+                ) : (
+                  <div className="mt-6 space-y-8">
+                    {groupReviewsByMonth(filterReviews(reviews, reviewFilter)).map(
+                      ([month, monthReviews]) => (
+                        <div key={month}>
+                          <h3 className="text-sm font-semibold uppercase tracking-wide text-text-muted">
+                            {month}
+                          </h3>
+                          <ul className="mt-3 space-y-4">
+                            {monthReviews.map((review) => (
+                              <li
+                                key={review.id}
+                                className="rounded-lg border border-border bg-background/50 px-4 py-3"
+                              >
+                                <div className="flex gap-3">
+                                  {review.books?.cover_url ? (
+                                    <BookCover
+                                      coverUrl={review.books.cover_url}
+                                      title={review.books.title}
+                                      author={review.books.author}
+                                      className="h-16 w-11 shrink-0 rounded shadow-sm"
+                                    />
+                                  ) : null}
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      {review.books ? (
+                                        <Link
+                                          href={bookDetailsPath(review.books.id)}
+                                          className="font-medium text-primary hover:underline"
+                                        >
+                                          {review.books.title}
+                                        </Link>
+                                      ) : (
+                                        <p className="font-medium text-text">Review</p>
+                                      )}
+                                      {review.read_number > 1 ? (
+                                        <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-puce-red">
+                                          Read #{review.read_number}
+                                        </span>
+                                      ) : null}
+                                    </div>
+                                    {review.books?.author ? (
+                                      <p className="text-xs text-text-muted">{review.books.author}</p>
+                                    ) : null}
+                                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                                      {review.rating != null ? (
+                                        <StarDisplay rating={review.rating} />
+                                      ) : (
+                                        <span className="text-xs text-text-muted">No rating</span>
+                                      )}
+                                      {review.edition ? (
+                                        <span className="text-xs text-text-muted">· {review.edition}</span>
+                                      ) : null}
+                                      <time
+                                        className="text-xs text-text-muted"
+                                        dateTime={review.created_at}
+                                      >
+                                        {formatReviewDate(review.created_at, locale)}
+                                      </time>
+                                    </div>
+                                    {review.feelings?.length ? (
+                                      <div className="mt-2 flex flex-wrap gap-1.5">
+                                        {review.feelings.map((feeling) => (
+                                          <span
+                                            key={feeling}
+                                            className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-puce-red"
+                                          >
+                                            {feeling}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    ) : null}
+                                    {review.review_body ? (
+                                      <p className="mt-2 line-clamp-4 text-sm text-text-muted">
+                                        {review.review_body}
+                                      </p>
+                                    ) : null}
+                                  </div>
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
                         </div>
-                        {review.review_body ? (
-                          <p className="mt-2 line-clamp-3 text-sm text-text-muted">
-                            {review.review_body}
-                          </p>
-                        ) : null}
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+                      )
+                    )}
+                  </div>
+                )}
+              </>
             )}
           </section>
         ) : null}

@@ -1,3 +1,4 @@
+import { createReadingSession } from "./readingSessions";
 import { supabase } from "./supabase";
 import { SHELF_CONFIG } from "../constants/shelves";
 import {
@@ -241,26 +242,72 @@ export async function updateReadingProgress(
 
 export async function markFinished(
   userId: string,
-  book: { id: string; title: string; cover_url?: string | null; subjects?: string[] | null }
-): Promise<{ error?: string }> {
-  const { data: userBook, error } = await supabase
+  book: {
+    id: string;
+    title: string;
+    cover_url?: string | null;
+    subjects?: string[] | null;
+    page_count?: number | null;
+  },
+  options?: { finishedAt?: string }
+): Promise<{ error?: string; promptReview?: boolean }> {
+  const { data: userBook, error: fetchError } = await supabase
+    .from("user_books")
+    .select("id, progress_pages, started_at, read_count")
+    .eq("user_id", userId)
+    .eq("book_id", book.id)
+    .maybeSingle();
+
+  if (fetchError) return { error: fetchError.message };
+  if (!userBook) return { error: "Add this book to your library first." };
+
+  const now = new Date().toISOString();
+  const finishedRaw = options?.finishedAt?.trim() ?? "";
+  const finished_at = finishedRaw
+    ? new Date(`${finishedRaw}T12:00:00.000Z`).toISOString()
+    : now;
+
+  if (finishedRaw && Number.isNaN(new Date(finishedRaw).getTime())) {
+    return { error: "Invalid finish date." };
+  }
+
+  if (userBook.started_at && finished_at < userBook.started_at) {
+    return { error: "Finish date cannot be before start date." };
+  }
+
+  const previousPage = Number(userBook.progress_pages) || 0;
+  const total = book.page_count ?? previousPage;
+  const finalPage = total > 0 ? total : previousPage;
+
+  const { error } = await supabase
     .from("user_books")
     .update({
       shelf_status: "read",
       progress_percent: 100,
-      finished_at: new Date().toISOString(),
+      progress_pages: finalPage,
+      finished_at,
+      started_at: userBook.started_at ?? finished_at,
       dnf: false,
-      updated_at: new Date().toISOString(),
+      updated_at: now,
     })
-    .eq("user_id", userId)
-    .eq("book_id", book.id)
-    .select("id")
-    .single();
+    .eq("id", userBook.id);
 
   if (error) return { error: error.message };
 
-  await recordBookActivity(userId, "book_finished", userBook?.id ?? null, book);
-  return {};
+  const sessionResult = await createReadingSession({
+    userId,
+    userBookId: userBook.id,
+    pageStart: previousPage,
+    pageEnd: finalPage,
+    percentComplete: 100,
+    readNumber: Number(userBook.read_count) || 1,
+    createdAt: finished_at,
+  });
+
+  if (sessionResult.error) return { error: sessionResult.error };
+
+  await recordBookActivity(userId, "book_finished", userBook.id, book);
+  return { promptReview: true };
 }
 
 /**

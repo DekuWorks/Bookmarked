@@ -9,6 +9,7 @@ export type CreateReadingSessionInput = {
   pageEnd: number;
   percentComplete: number;
   note?: string | null;
+  mood?: string | null;
   createdAt?: string;
   readNumber?: number;
 };
@@ -41,6 +42,7 @@ export async function createReadingSessionWithClient(
       pages_read: pagesRead,
       percent_complete: input.percentComplete,
       note: input.note ?? null,
+      mood: input.mood ?? null,
       read_number: input.readNumber ?? 1,
       ...(input.createdAt ? { created_at: input.createdAt } : {}),
     })
@@ -173,20 +175,44 @@ export async function getReadingPagesByDay(
   }));
 }
 
-export async function updateReadingSessionNote(
+export type UpdateReadingSessionInput = {
+  note?: string | null;
+  mood?: string | null;
+};
+
+export async function updateReadingSession(
   sessionId: string,
-  note: string | null
+  input: UpdateReadingSessionInput
 ): Promise<{ error?: string; session?: ReadingSession }> {
   const supabase = createClient();
-  const trimmed = note?.trim() ?? "";
+  const patch: { note?: string | null; mood?: string | null } = {};
+
+  if (input.note !== undefined) {
+    patch.note = input.note?.trim() ? input.note.trim() : null;
+  }
+  if (input.mood !== undefined) {
+    patch.mood = input.mood || null;
+  }
+
+  if (Object.keys(patch).length === 0) {
+    return { error: "Nothing to update." };
+  }
 
   const { data, error } = await supabase
     .from("reading_sessions")
-    .update({ note: trimmed || null })
+    .update(patch)
     .eq("id", sessionId)
     .select("*")
     .single();
 
   if (error) return { error: error.message };
   return { session: data as ReadingSession };
+}
+
+/** @deprecated Use updateReadingSession */
+export async function updateReadingSessionNote(
+  sessionId: string,
+  note: string | null
+): Promise<{ error?: string; session?: ReadingSession }> {
+  return updateReadingSession(sessionId, { note });
 }

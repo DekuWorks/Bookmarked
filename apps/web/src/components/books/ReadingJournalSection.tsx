@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { updateReadingSessionNote } from "@/lib/services/readingSessions";
+import { updateReadingSession } from "@/lib/services/readingSessions";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
+import { SessionMoodPicker, SessionMoodChip } from "@/components/books/SessionMoodPicker";
+import type { ReviewFeeling } from "@/lib/constants/reviewFeelings";
 import type { ReadingSession } from "@/types";
 
 export const READING_JOURNAL_PREVIEW_LIMIT = 5;
@@ -55,11 +57,12 @@ function SessionNoteEditor({ session, onSaved }: SessionNoteEditorProps) {
   const toast = useToast();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(session.note ?? "");
+  const [mood, setMood] = useState(session.mood ?? null);
   const [saving, setSaving] = useState(false);
 
   async function handleSave() {
     setSaving(true);
-    const result = await updateReadingSessionNote(session.id, draft);
+    const result = await updateReadingSession(session.id, { note: draft, mood });
     setSaving(false);
 
     if (result.error) {
@@ -69,32 +72,50 @@ function SessionNoteEditor({ session, onSaved }: SessionNoteEditorProps) {
 
     if (result.session) onSaved(result.session);
     setEditing(false);
-    toast.success("Note saved");
+    toast.success("Journal entry saved");
   }
 
-  if (!editing && !session.note) {
+  async function handleMoodChange(nextMood: ReviewFeeling | null) {
+    setMood(nextMood);
+    const result = await updateReadingSession(session.id, { mood: nextMood });
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+    if (result.session) onSaved(result.session);
+  }
+
+  if (!editing && !session.note && !session.mood) {
     return (
-      <button
-        type="button"
-        onClick={() => setEditing(true)}
-        className="mt-1 text-xs font-medium text-primary hover:underline"
-      >
-        Add note
-      </button>
+      <div className="mt-2 space-y-2">
+        <SessionMoodPicker value={mood} onChange={(value) => void handleMoodChange(value)} />
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="text-xs font-medium text-primary hover:underline"
+        >
+          Add note
+        </button>
+      </div>
     );
   }
 
   if (!editing) {
     return (
-      <div className="mt-1">
-        <p className="text-sm italic text-text-muted">&ldquo;{session.note}&rdquo;</p>
+      <div className="mt-1 space-y-2">
+        {session.mood ? <SessionMoodChip mood={session.mood} /> : null}
+        {session.note ? (
+          <p className="text-sm italic text-text-muted">&ldquo;{session.note}&rdquo;</p>
+        ) : null}
+        <SessionMoodPicker value={mood} onChange={(value) => void handleMoodChange(value)} />
         <button
           type="button"
           onClick={() => {
             setDraft(session.note ?? "");
+            setMood(session.mood ?? null);
             setEditing(true);
           }}
-          className="mt-1 text-xs font-medium text-primary hover:underline"
+          className="text-xs font-medium text-primary hover:underline"
         >
           Edit note
         </button>
@@ -104,6 +125,7 @@ function SessionNoteEditor({ session, onSaved }: SessionNoteEditorProps) {
 
   return (
     <div className="mt-2 space-y-2">
+      <SessionMoodPicker value={mood} onChange={setMood} disabled={saving} />
       <textarea
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
@@ -122,6 +144,7 @@ function SessionNoteEditor({ session, onSaved }: SessionNoteEditorProps) {
           variant="ghost"
           onClick={() => {
             setDraft(session.note ?? "");
+            setMood(session.mood ?? null);
             setEditing(false);
           }}
         >
