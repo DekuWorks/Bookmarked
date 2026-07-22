@@ -188,11 +188,56 @@ Generally good baseline (skip link, focus-visible, 44px touch targets, semantic 
 
 ---
 
+## Billing & subscriptions
+
+### Premium gates without live payments
+
+**Impact:** Medium — architecture is ready; revenue not yet enabled.
+
+- `user_subscriptions` table with RLS (owner read/write only).
+- Feature gates via `canAccessFeature()` for `advanced_analytics` and `ai_insights`.
+- Web: `useSubscription`, `/upgrade/`, `PremiumFeatureLock` in Reading Room Progress tab.
+- Mobile: `useSubscription`, `/(app)/upgrade`, `ReadingInsightsSection` gates on home.
+- **No Stripe, App Store, or Google Play SDK integration yet.**
+
+### Webhook stub
+
+**Impact:** Low until billing goes live.
+
+`supabase/functions/subscription-webhook/` accepts POST with:
+
+- Header: `x-subscription-webhook-secret` (must match `SUBSCRIPTION_WEBHOOK_SECRET`)
+- Body: `{ user_id, subscription_tier?, subscription_status?, subscription_provider?, subscription_expires_at? }`
+- Query: `?provider=stripe|apple|google`
+
+Uses service role to upsert `user_subscriptions`. **Does not verify Stripe/App Store signatures** — must be added before production.
+
+### Stripe (web) — not started
+
+Required env (future):
+
+- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (or relay via Edge Function)
+- Checkout Session or Customer Portal
+- Map `customer.metadata.user_id` → webhook payload
+
+Note: static GitHub Pages export cannot host Next.js API routes; Stripe webhooks should target the Supabase Edge Function (or a separate relay).
+
+### App Store / Google Play (mobile) — not started
+
+Required:
+
+- App Store Connect / Play Console subscription products
+- `expo-in-app-purchases` or RevenueCat
+- Server-side receipt validation → `subscription-webhook` with `provider=apple|google`
+
+---
+
 ## Priority matrix (recommended order)
 
 | Priority | Item | Effort |
 |----------|------|--------|
 | P0 | Complete Phase 1 navigation redesign | Medium |
+| P1 | Wire Stripe + App Store billing to `subscription-webhook` | High |
 | P1 | Unify reading-life data loading (shared hook or React Query on web) | Medium |
 | P2 | Remove dead components (`LibraryAnalyticsPanel` or wire it intentionally) | Low |
 | P2 | Update `MASTER_TASK_LIST.md` ISBNdb references | Low |

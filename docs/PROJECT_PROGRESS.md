@@ -14,9 +14,9 @@
 | 1 | Navigation redesign | ✅ Complete | Dashboard, Library, Reading Room tabs, mobile bottom nav |
 | 2 | Reading Room depth | ✅ Complete | Finish workflow, mood tags, mobile parity, reviews tab polish |
 | 3 | Community | ✅ Complete | Feed polish, trending (web + mobile), public profile dedup |
-| 4 | Premium architecture | 🟡 In progress | Subscription schema, feature gates, upgrade page; billing TBD |
-| 5 | Mobile app parity | 🟡 In progress | Finish → rate prompt parity shipped |
-| 6 | Performance & QA | ⚪ Not started | Full responsive QA after nav redesign |
+| 4 | Premium architecture | 🟡 In progress | Gates + mobile parity + webhook stub; live billing TBD |
+| 5 | UI refresh | 🟡 In progress | Surface cards, gradient headers, button polish on high-traffic pages |
+| 6 | Mobile app parity | 🟡 In progress | Finish → rate prompt parity shipped; premium gates added |
 
 Legend: ✅ Complete · 🟡 In progress · ⚪ Not started · 🔴 Blocked
 
@@ -142,9 +142,42 @@ Dashboard, Library, Reading Room tabs, Profile cleanup, and mobile bottom nav �
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Stripe / App Store billing integration | ⚪ | Upgrade page is informational until provider wired |
-| Mobile premium UI | ⚪ | Types shared; gates not yet on mobile |
-| Admin / webhook subscription updates | ⚪ | Service-role path for payment events |
+| Stripe checkout (web) | ⚪ | Upgrade page is informational until `STRIPE_*` keys wired |
+| App Store / Google Play (mobile) | ⚪ | Upgrade screen scaffolded; IAP not integrated |
+| Webhook signature verification | ⚪ | `subscription-webhook` Edge Function stub deployed path only |
+| Admin manual grant UI | ⚪ | Service-role / SQL updates for now |
+
+### 4.4 Billing scaffold (July 2026)
+
+| Item | Status | Notes |
+|------|--------|-------|
+| `subscription-webhook` Edge Function | ✅ | Stub upserts `user_subscriptions` via service role |
+| Webhook secret header | ✅ | `x-subscription-webhook-secret` + `SUBSCRIPTION_WEBHOOK_SECRET` |
+| Mobile `useSubscription` hook | ✅ | Mirrors web; TanStack Query |
+| Mobile premium gates | ✅ | `ReadingInsightsSection` on Reading Room home |
+| Mobile upgrade screen | ✅ | `/(app)/upgrade` from settings + profile |
+| Premium badge (web + mobile) | ✅ | Profile + settings when subscribed |
+| Upgrade page copy | ✅ | Feature list, cross-platform note, billing providers named |
+
+---
+
+## Phase 5 — UI refresh 🟡
+
+Incremental polish on high-traffic pages. Purple palette and gradients on headers/heroes only; cards stay white.
+
+| Item | Status | Notes |
+|------|--------|-------|
+| `.surface-card` utility | ✅ | Shared rounded corners, shadow, hover depth |
+| Dashboard cards | ✅ | `DashboardCard` uses surface-card |
+| Library header | ✅ | `feed-header-gradient` hero |
+| Profile header + cards | ✅ | Gradient header, surface-card sections |
+| Feed | ✅ | Already uses gradient header (prior work) |
+| Reading Room | ✅ | Existing `reading-room-bg` gradient |
+| Button hover polish | ✅ | `ButtonLink` lift + shadow |
+| Mobile SectionCard shadow | ✅ | Matches web card depth |
+| Mobile button press feedback | ✅ | Scale on press |
+| Search bars / forms sitewide | ⚪ | Incremental follow-up |
+| Nav / bottom bar polish | ⚪ | Incremental follow-up |
 
 ---
 
