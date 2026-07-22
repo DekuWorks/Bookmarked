@@ -304,25 +304,30 @@ function PostCard({ entry, viewerId }: { entry: PostEntry; viewerId?: string }) 
 
       {post.book && !isRepost ? (
         <Pressable
-          className="mt-3 flex-row items-center gap-3 rounded-xl bg-primary/10 p-2 active:opacity-80"
+          className="mt-3 overflow-hidden rounded-xl border border-brand-border bg-background active:opacity-80"
           onPress={() => post.book && router.push(`/book/${post.book.id}`)}
         >
-          <BookCover
-            url={post.book.cover_url}
-            title={post.book.title}
-            sizeClassName="w-10 h-14"
-            saved
-            ribbonSize={14}
-          />
-          <View className="flex-1">
-            <Text className="font-medium text-ink" numberOfLines={1}>
-              {post.book.title}
-            </Text>
-            {post.book.author ? (
-              <Text className="text-xs text-ink-muted" numberOfLines={1}>
-                {post.book.author}
+          <View className="flex-row items-stretch gap-3 p-3">
+            <BookCover
+              url={post.book.cover_url}
+              title={post.book.title}
+              sizeClassName="w-14 h-[5.25rem]"
+              saved
+              ribbonSize={16}
+            />
+            <View className="flex-1 justify-center py-0.5">
+              <Text className="text-[10px] font-bold uppercase tracking-widest text-primary-dark">
+                Book
               </Text>
-            ) : null}
+              <Text className="mt-1 text-base font-semibold leading-snug text-ink" numberOfLines={2}>
+                {post.book.title}
+              </Text>
+              {post.book.author ? (
+                <Text className="mt-1 text-sm text-ink-muted" numberOfLines={1}>
+                  {post.book.author}
+                </Text>
+              ) : null}
+            </View>
           </View>
         </Pressable>
       ) : null}

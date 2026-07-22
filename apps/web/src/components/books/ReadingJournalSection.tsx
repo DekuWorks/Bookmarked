@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { updateReadingSession } from "@/lib/services/readingSessions";
 import { Button } from "@/components/ui/Button";
+import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 import { useToast } from "@/components/ui/Toast";
 import { SessionMoodPicker, SessionMoodChip } from "@/components/books/SessionMoodPicker";
 import type { ReviewFeeling } from "@/lib/constants/reviewFeelings";
@@ -170,22 +171,28 @@ export function ReadingJournalSection({ sessions, loading, onSessionUpdate }: Pr
     ? sessions
     : sessions.slice(0, READING_JOURNAL_PREVIEW_LIMIT);
 
-  return (
-    <section id="reading-journal" className="rounded-xl border border-border bg-surface p-5">
-      <h2 className="text-lg font-semibold text-puce-red">Reading journal</h2>
-      <p className="mt-1 text-sm text-text-muted">
-        Your reading history for this book — newest first.
-      </p>
+  const badge = loading
+    ? undefined
+    : sessions.length === 0
+      ? "Empty"
+      : `${sessions.length} ${sessions.length === 1 ? "entry" : "entries"}`;
 
+  return (
+    <CollapsibleSection
+      id="reading-journal"
+      title="Reading journal"
+      description="Your reading history for this book — newest first."
+      badge={badge}
+    >
       {loading ? (
-        <p className="mt-4 text-sm text-text-muted">Loading journal…</p>
+        <p className="text-sm text-text-muted">Loading journal…</p>
       ) : sessions.length === 0 ? (
-        <p className="mt-4 text-sm text-text-muted">
+        <p className="text-sm text-text-muted">
           No reading sessions yet. Save progress to start your journal.
         </p>
       ) : (
         <>
-          <ol className="mt-4 space-y-0">
+          <ol className="space-y-0">
             {visibleSessions.map((session) => (
               <li
                 key={session.id}
@@ -220,6 +227,6 @@ export function ReadingJournalSection({ sessions, loading, onSessionUpdate }: Pr
           ) : null}
         </>
       )}
-    </section>
+    </CollapsibleSection>
   );
 }

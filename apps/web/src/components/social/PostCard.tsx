@@ -2,13 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { BookCover } from "@/components/books/BookCover";
+import { FeedBookAttachment } from "@/components/social/FeedBookAttachment";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { Button } from "@/components/ui/Button";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import { useToast } from "@/components/ui/Toast";
-import { bookDetailsPath } from "@/lib/routes/book";
-import { authorPagePath } from "@/lib/routes/author";
 import { postFeedPath } from "@/lib/routes/posts";
 import { readerProfilePath } from "@/lib/routes/reader";
 import {
@@ -265,35 +263,8 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
               ) : null}
 
               {localPost.book ? (
-                <div className="mt-3 flex items-center gap-3 rounded-lg border border-border p-3 hover:border-primary/40">
-                  <Link
-                    href={bookDetailsPath(localPost.book.id)}
-                    className="h-20 w-14 shrink-0 overflow-hidden rounded-md shadow-sm"
-                  >
-                    <BookCover
-                      title={localPost.book.title}
-                      coverUrl={localPost.book.cover_url}
-                      className="h-full w-full"
-                      bookmarked
-                      bookmarkBadgeSize="md"
-                    />
-                  </Link>
-                  <div className="min-w-0">
-                    <Link
-                      href={bookDetailsPath(localPost.book.id)}
-                      className="block font-medium text-puce-red hover:underline"
-                    >
-                      {localPost.book.title}
-                    </Link>
-                    {localPost.book.author ? (
-                      <Link
-                        href={authorPagePath(localPost.book.author)}
-                        className="text-sm text-text-muted hover:text-primary hover:underline"
-                      >
-                        {localPost.book.author}
-                      </Link>
-                    ) : null}
-                  </div>
+                <div className="mt-3">
+                  <FeedBookAttachment book={localPost.book} />
                 </div>
               ) : null}
             </>

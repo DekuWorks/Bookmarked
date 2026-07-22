@@ -2,10 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BookCover } from "@/components/books/BookCover";
+import { FeedBookAttachment } from "@/components/social/FeedBookAttachment";
 import { MentionText } from "@/components/social/MentionText";
-import { bookDetailsPath } from "@/lib/routes/book";
-import { authorPagePath } from "@/lib/routes/author";
 import { postFeedPath } from "@/lib/routes/posts";
 import { readerProfilePath } from "@/lib/routes/reader";
 import type { PostWithAuthor } from "@/types";
@@ -73,32 +71,8 @@ export function RepostPreview({ post, linkToPost = true }: Props) {
         </a>
       ) : null}
       {post.book ? (
-        <div
-          className="mt-2 flex items-center gap-3 rounded-md border border-border p-2 hover:border-primary/40"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <Link
-            href={bookDetailsPath(post.book.id)}
-            className="h-16 w-11 shrink-0 overflow-hidden rounded shadow-sm"
-          >
-            <BookCover title={post.book.title} coverUrl={post.book.cover_url} className="h-full w-full" bookmarked bookmarkBadgeSize="md" />
-          </Link>
-          <div className="min-w-0">
-            <Link
-              href={bookDetailsPath(post.book.id)}
-              className="block truncate text-sm font-medium text-puce-red hover:underline"
-            >
-              {post.book.title}
-            </Link>
-            {post.book.author ? (
-              <Link
-                href={authorPagePath(post.book.author)}
-                className="block truncate text-xs text-text-muted hover:text-primary hover:underline"
-              >
-                {post.book.author}
-              </Link>
-            ) : null}
-          </div>
+        <div className="mt-2" onClick={(event) => event.stopPropagation()}>
+          <FeedBookAttachment book={post.book} variant="compact" />
         </div>
       ) : null}
     </>
