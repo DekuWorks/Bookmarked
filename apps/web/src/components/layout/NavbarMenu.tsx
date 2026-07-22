@@ -32,6 +32,8 @@ type Props = {
   useAppNavLinks?: boolean;
   /** Center nav links between logo and actions (public landing). */
   centerNav?: boolean;
+  /** Hide hamburger drawer on mobile (e.g. when bottom nav is used). */
+  hideMobileDrawer?: boolean;
 };
 
 const linkBase =
@@ -74,6 +76,7 @@ export function NavbarMenu({
   mobileFooter,
   useAppNavLinks = false,
   centerNav = false,
+  hideMobileDrawer = false,
 }: Props) {
   const drawerFooter = mobileFooter ?? footer;
   const [open, setOpen] = useState(false);
@@ -217,6 +220,7 @@ export function NavbarMenu({
       {/* Mobile menu toggle (actions render in desktop row above) */}
       <div className="relative z-[110] flex items-center gap-1 md:hidden">
         {actions ? <div className="flex items-center">{actions}</div> : null}
+        {!hideMobileDrawer ? (
         <button
           type="button"
           className={cn(
@@ -247,9 +251,10 @@ export function NavbarMenu({
             )}
           </svg>
         </button>
+        ) : null}
       </div>
 
-      {mobileDrawer}
+      {!hideMobileDrawer ? mobileDrawer : null}
     </>
   );
 }

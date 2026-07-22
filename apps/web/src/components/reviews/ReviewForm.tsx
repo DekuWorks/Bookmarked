@@ -11,6 +11,7 @@ import {
   sanitizeRatingEmoji,
 } from "@/lib/constants/reviewEmojis";
 import { cn } from "@/lib/utils/cn";
+import { BOOK_EDITION_PRESETS } from "@/lib/constants/bookEditions";
 import type { Review, ReviewRatingMode } from "@/types";
 
 const ASPECT_FIELDS = [
@@ -46,7 +47,18 @@ export function ReviewForm({
   const [mode, setMode] = useState<ReviewRatingMode>(initial?.rating_mode ?? "regular");
   const [rating, setRating] = useState(initial?.rating ? Number(initial.rating) : 0);
   const [ratingEmoji, setRatingEmoji] = useState(initial?.rating_emoji ?? "");
-  const [edition, setEdition] = useState(initial?.edition ?? "");
+  const initialPreset =
+    initial?.edition &&
+    BOOK_EDITION_PRESETS.includes(initial.edition as (typeof BOOK_EDITION_PRESETS)[number])
+      ? initial.edition
+      : "";
+  const [editionPreset, setEditionPreset] = useState(initialPreset);
+  const [customEdition, setCustomEdition] = useState(
+    initial?.edition && !initialPreset ? initial.edition : ""
+  );
+  const [editionMode, setEditionMode] = useState<"preset" | "custom" | "none">(
+    initial?.edition ? (initialPreset ? "preset" : "custom") : "none"
+  );
   const [reviewBody, setReviewBody] = useState(initial?.review_body ?? "");
   const [hasSpoilers, setHasSpoilers] = useState(Boolean(initial?.has_spoilers));
   const [feelings, setFeelings] = useState<string[]>(initial?.feelings ?? []);
@@ -65,6 +77,20 @@ export function ReviewForm({
     );
   }
 
+  function pickEdition(value: string) {
+    if (!value) {
+      setEditionMode("none");
+      setEditionPreset("");
+      return;
+    }
+    setEditionPreset(value);
+    setEditionMode("preset");
+    setCustomEdition("");
+  }
+
+  const editionValue =
+    editionMode === "custom" ? customEdition.trim() : editionMode === "preset" ? editionPreset : "";
+
   function pickEmoji(emoji: string) {
     setRatingEmoji((current) => (current === emoji ? "" : emoji));
   }
@@ -76,7 +102,7 @@ export function ReviewForm({
       <input type="hidden" name="rating_mode" value={mode} />
       <input type="hidden" name="rating" value={rating || ""} />
       <input type="hidden" name="rating_emoji" value={sanitizeRatingEmoji(ratingEmoji) ?? ""} />
-      <input type="hidden" name="edition" value={edition} />
+      <input type="hidden" name="edition" value={editionValue} />
       {reviewId ? <input type="hidden" name="review_id" value={reviewId} /> : null}
       {feelings.map((feeling) => (
         <input key={feeling} type="hidden" name="feelings" value={feeling} />
@@ -168,12 +194,59 @@ export function ReviewForm({
         </div>
       </div>
 
-      <Input
-        label="Edition (optional)"
-        value={edition}
-        onChange={(e) => setEdition(e.target.value)}
-        placeholder="Hardcover, audiobook, translation…"
-      />
+      <div>
+        <p className="mb-1.5 text-sm font-medium text-text">
+          Edition <span className="font-normal text-text-muted">(optional)</span>
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {BOOK_EDITION_PRESETS.map((preset) => {
+            const active = editionMode === "preset" && editionPreset === preset;
+            return (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => pickEdition(active ? "" : preset)}
+                className={cn(
+                  "rounded-full border px-3 py-1 text-xs font-medium transition",
+                  active
+                    ? "border-puce-red bg-puce-red text-white"
+                    : "border-border bg-background text-text-muted hover:border-primary"
+                )}
+              >
+                {preset}
+              </button>
+            );
+          })}
+          <button
+            type="button"
+            onClick={() => {
+              if (editionMode === "custom") {
+                setEditionMode("none");
+                setCustomEdition("");
+              } else {
+                setEditionMode("custom");
+                setEditionPreset("");
+              }
+            }}
+            className={cn(
+              "rounded-full border px-3 py-1 text-xs font-medium transition",
+              editionMode === "custom"
+                ? "border-puce-red bg-puce-red text-white"
+                : "border-border bg-background text-text-muted hover:border-primary"
+            )}
+          >
+            Other
+          </button>
+        </div>
+        {editionMode === "custom" ? (
+          <Input
+            className="mt-2"
+            value={customEdition}
+            onChange={(e) => setCustomEdition(e.target.value)}
+            placeholder="Translation, special edition…"
+          />
+        ) : null}
+      </div>
 
       {mode === "advanced" ? (
         <>

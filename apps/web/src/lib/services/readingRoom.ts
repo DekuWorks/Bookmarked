@@ -14,6 +14,11 @@ import {
   type LibraryBookRow,
   type ShelfGroup,
 } from "@/lib/services/library";
+import type { Book, Review } from "@/types";
+
+export type UserReviewWithBook = Review & {
+  books: Pick<Book, "id" | "title" | "author" | "cover_url"> | null;
+};
 
 export type ReadingRoomData = {
   currentlyReading: LibraryBookRow[];
@@ -66,4 +71,25 @@ export async function getReadingRoomData(
     readingGoal: computeReadingGoal(books, yearlyReadingGoal),
     shelves: groupBooksByShelf(books),
   };
+}
+
+export async function listUserReviews(
+  userId: string,
+  limit = 50
+): Promise<UserReviewWithBook[]> {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("reviews")
+    .select("*, books(id, title, author, cover_url)")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("[readingRoom] list user reviews failed:", error);
+    return [];
+  }
+
+  return (data ?? []) as UserReviewWithBook[];
 }

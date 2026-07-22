@@ -1,17 +1,16 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { useToast } from "@/components/ui/Toast";
+import { MarkFinishedDialog } from "@/components/books/MarkFinishedDialog";
+import { RateBookPrompt } from "@/components/books/RateBookPrompt";
 import { TransferReadingStatsModal } from "@/components/books/TransferReadingStatsModal";
 import { cn } from "@/lib/utils/cn";
-import {
-  markBookFinished,
-  updateReadingProgress,
-  type BookActionState,
-} from "@/lib/actions/book";
+import { updateReadingProgress, type BookActionState } from "@/lib/actions/book";
+import { useActionState } from "react";
 
 const initial: BookActionState = {};
 
@@ -42,7 +41,9 @@ type Props = {
   progressPercent: number;
   startedAt?: string | null;
   finishedAt?: string | null;
+  hasReviewForCurrentRead?: boolean;
   onProgressChange?: () => void;
+  onReviewNow?: () => void;
 };
 
 export function ReadingProgressPanel({
@@ -54,7 +55,9 @@ export function ReadingProgressPanel({
   progressPercent,
   startedAt,
   finishedAt,
+  hasReviewForCurrentRead = false,
   onProgressChange,
+  onReviewNow,
 }: Props) {
   const toast = useToast();
   const [page, setPage] = useState(String(currentPage || ""));
@@ -65,12 +68,10 @@ export function ReadingProgressPanel({
   const [editing, setEditing] = useState(false);
   const [clientError, setClientError] = useState<string | null>(null);
   const [transferOpen, setTransferOpen] = useState(false);
+  const [finishOpen, setFinishOpen] = useState(false);
+  const [ratePromptOpen, setRatePromptOpen] = useState(false);
   const [progressAction, submitProgress, saving] = useActionState(
     updateReadingProgress,
-    initial
-  );
-  const [finishAction, submitFinish, finishing] = useActionState(
-    markBookFinished,
     initial
   );
 
@@ -105,13 +106,14 @@ export function ReadingProgressPanel({
     }
   }, [progressAction, toast, onProgressChange]);
 
-  useEffect(() => {
-    if (finishAction.error) toast.error(finishAction.error);
-    if (finishAction.success) {
-      toast.success(finishAction.success);
-      onProgressChange?.();
-    }
-  }, [finishAction, toast, onProgressChange]);
+  function handleFinished() {
+    onProgressChange?.();
+  }
+
+  function handleReviewNow() {
+    setRatePromptOpen(false);
+    onReviewNow?.();
+  }
 
   function commitPreview() {
     setEditing(false);
@@ -254,23 +256,40 @@ export function ReadingProgressPanel({
       </form>
 
       {!isFinished ? (
-        <form
-          action={submitFinish}
+        <div
           className={cn(
             "mt-4 border-t border-border pt-4",
             atFullProgress && "rounded-lg bg-primary/10 px-3 pb-3"
           )}
         >
-          <input type="hidden" name="book_id" value={bookId} />
           <Button
-            type="submit"
+            type="button"
             variant={atFullProgress ? "secondary" : "outline"}
-            loading={finishing}
+            onClick={() => setFinishOpen(true)}
           >
             Mark as finished
           </Button>
-        </form>
+        </div>
       ) : null}
+
+      <MarkFinishedDialog
+        open={finishOpen}
+        onClose={() => setFinishOpen(false)}
+        bookId={bookId}
+        bookTitle={bookTitle}
+        startedAt={startedAt}
+        onFinished={handleFinished}
+        onPromptReview={() => {
+          if (!hasReviewForCurrentRead) setRatePromptOpen(true);
+        }}
+      />
+
+      <RateBookPrompt
+        open={ratePromptOpen}
+        bookTitle={bookTitle}
+        onSkip={() => setRatePromptOpen(false)}
+        onReviewNow={handleReviewNow}
+      />
 
       <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-4">
         <Button

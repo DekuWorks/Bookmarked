@@ -13,14 +13,13 @@ type Props = {
 };
 
 const APP_LINKS: NavLinkItem[] = [
-  { href: "/dashboard/", label: "Dashboard" },
-  { href: "/feed/", label: "Feed" },
   {
     href: "/reading-room/",
-    label: "Reading Room",
+    label: "Home",
     className: "font-semibold text-royal-orange hover:text-rust",
   },
-  { href: "/notes/", label: "Notes" },
+  { href: "/dashboard/", label: "Dashboard" },
+  { href: "/feed/", label: "Feed" },
   { href: "/library/", label: "Library" },
   { href: "/search/", label: "Search" },
   { href: "/clubs/", label: "Book Clubs" },
@@ -53,7 +52,7 @@ export function Navbar({ variant = "public" }: Props) {
       >
         {isApp ? (
           <AppNavLink
-            href="/dashboard/"
+            href="/reading-room/"
             className="shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2 rounded-sm"
           >
             <BrandLogo />
@@ -71,6 +70,7 @@ export function Navbar({ variant = "public" }: Props) {
           links={isApp ? APP_LINKS : PUBLIC_LINKS}
           actions={isApp ? <NotificationBell /> : null}
           centerNav={!isApp}
+          hideMobileDrawer={isApp}
           footer={
             isApp ? (
               <LogoutButton />

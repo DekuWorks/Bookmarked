@@ -115,6 +115,7 @@ function BookDetailsContent() {
   } = data;
   const currentShelf = (userBook?.shelf_status as ShelfStatus | undefined) ?? null;
   const readCount = Number(userBook?.read_count) || 1;
+  const hasReviewForCurrentRead = ownReviews.some((r) => r.read_number === readCount);
   const canRefreshFromCatalog = Boolean(book.external_id || book.isbn);
 
   const handleRefreshMetadata = async () => {
@@ -291,7 +292,14 @@ function BookDetailsContent() {
           progressPercent={Number(userBook?.progress_percent) || 0}
           startedAt={userBook?.started_at}
           finishedAt={userBook?.finished_at}
+          hasReviewForCurrentRead={hasReviewForCurrentRead}
           onProgressChange={loadBookDetails}
+          onReviewNow={() => {
+            document.getElementById("book-reviews")?.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }}
         />
       </div>
 

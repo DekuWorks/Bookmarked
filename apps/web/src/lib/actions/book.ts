@@ -21,6 +21,8 @@ export type BookActionState = {
   error?: string;
   success?: string;
   bookId?: string;
+  /** Set after markBookFinished when the UI should offer a review prompt. */
+  promptReview?: boolean;
 };
 
 type UserBookRow = {
@@ -272,6 +274,17 @@ export async function markBookFinished(
   const previousPage = Number(userBook.progress_pages) || 0;
   const finalPage = total > 0 ? total : previousPage;
   const now = new Date().toISOString();
+  const finishedRaw = String(formData.get("finished_at") ?? "").trim();
+  const parsedFinish = parseDateInput(finishedRaw);
+  const finished_at = parsedFinish ?? now;
+
+  if (finishedRaw && !parsedFinish) {
+    return { error: "Invalid finish date." };
+  }
+
+  if (userBook.started_at && finished_at < userBook.started_at) {
+    return { error: "Finish date cannot be before start date." };
+  }
 
   const { error } = await supabase
     .from("user_books")
@@ -279,8 +292,8 @@ export async function markBookFinished(
       shelf_status: "read",
       progress_pages: finalPage,
       progress_percent: 100,
-      finished_at: now,
-      started_at: userBook.started_at ?? now,
+      finished_at,
+      started_at: userBook.started_at ?? finished_at,
       updated_at: now,
     })
     .eq("id", userBook.id);
@@ -294,6 +307,7 @@ export async function markBookFinished(
     pageEnd: finalPage,
     percentComplete: 100,
     readNumber: Number(userBook.read_count) || 1,
+    createdAt: finished_at,
   });
 
   if (sessionResult.error) return { error: sessionResult.error };
@@ -308,7 +322,7 @@ export async function markBookFinished(
     metadata_json: activityMetadata(book.title, bookActivityContext(book)),
   });
 
-  return { success: "Book Completed 🎉" };
+  return { success: "Book Completed 🎉", promptReview: true };
 }
 
 export async function removeFromShelf(

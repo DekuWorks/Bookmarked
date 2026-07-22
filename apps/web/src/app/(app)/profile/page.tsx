@@ -171,11 +171,10 @@ export default function ProfilePage() {
               }
             />
             <LibraryImportPanel userId={user.id} embedded />
+            <ShelfPrivacyPanel profile={profile} />
           </div>
         </details>
       ) : null}
-
-      {profile ? <ShelfPrivacyPanel profile={profile} /> : null}
     </div>
   );
 }

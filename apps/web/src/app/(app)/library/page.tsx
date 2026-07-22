@@ -5,7 +5,6 @@ import { getProfile } from "@/lib/services/profile";
 import { getUserLibraryBooks, groupBooksByShelf } from "@/lib/services/library";
 import { LibraryOrganizePanel } from "@/components/library/LibraryOrganizePanel";
 import { CustomShelfCollectionsPanel } from "@/components/library/CustomShelfCollectionsPanel";
-import { SuggestedShelvesPanel } from "@/components/shelves/SuggestedShelvesPanel";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
@@ -13,6 +12,7 @@ import { useUserBooksRealtime } from "@/lib/hooks/useUserBooksRealtime";
 import { useStaleCatalogRefresh } from "@/lib/hooks/useStaleCatalogRefresh";
 import type { LibraryViewMode } from "@/types";
 import type { LibraryBookRow, ShelfGroup } from "@/lib/services/library";
+import { layout } from "@/lib/constants/layout";
 
 type LibraryData = {
   books: LibraryBookRow[];
@@ -20,8 +20,6 @@ type LibraryData = {
   preferredView: LibraryViewMode;
   userId: string;
 };
-
-import { layout } from "@/lib/constants/layout";
 
 export default function LibraryPage() {
   const user = useAuthUser();
@@ -91,10 +89,10 @@ export default function LibraryPage() {
         <div>
           <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Library</h1>
           <p className="mx-auto mt-1 max-w-2xl text-pretty text-text-muted">
-            Your digital home library — browse shelves, track progress, and explore your collection.
+            Organize your collection — browse shelves, switch views, and manage collections.
           </p>
         </div>
-        <ButtonLink href="/search" variant="secondary">
+        <ButtonLink href="/search/" variant="secondary">
           Add books
         </ButtonLink>
       </header>
@@ -103,7 +101,7 @@ export default function LibraryPage() {
         <div className="rounded-xl border border-dashed border-border bg-surface p-12 text-center">
           <p className="text-lg font-medium text-text">Your library is empty</p>
           <p className="mt-2 text-text-muted">Search for books to add them to a shelf.</p>
-          <ButtonLink href="/search" variant="primary" className="mt-6">
+          <ButtonLink href="/search/" variant="primary" className="mt-6">
             Search books
           </ButtonLink>
         </div>
@@ -112,8 +110,6 @@ export default function LibraryPage() {
           <LibraryOrganizePanel initialView={preferredView} shelves={shelves} />
         </Suspense>
       )}
-
-      <SuggestedShelvesPanel userId={userId} className="pt-2" />
 
       <CustomShelfCollectionsPanel userId={userId} className="pt-4" />
     </div>
