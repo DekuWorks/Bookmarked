@@ -1,24 +1,17 @@
 import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { Avatar } from "../../src/components/Avatar";
-import { Button } from "../../src/components/Button";
 import { FollowStats } from "../../src/components/FollowStats";
 import { ProfanityBlur } from "../../src/components/ProfanityBlur";
 import { ScreenContainer } from "../../src/components/ScreenContainer";
 import { ShelfBadge } from "../../src/components/ShelfBadge";
 import { useFollowCounts } from "../../src/hooks/useFollows";
 import { useProfile } from "../../src/hooks/useProfile";
-import { supabase } from "../../src/services/supabase";
 
 export default function ProfileRoute() {
   const router = useRouter();
   const { data: profile } = useProfile();
   const countsQuery = useFollowCounts(profile?.id);
-
-  async function signOut() {
-    await supabase.auth.signOut();
-    router.replace("/(auth)/login");
-  }
 
   const name = profile?.display_name || profile?.username || "Profile";
   const handle = profile?.username?.trim();
@@ -26,7 +19,19 @@ export default function ProfileRoute() {
 
   return (
     <ScreenContainer scroll>
-      <View className="items-center pt-6">
+      <View className="flex-row items-center justify-end pt-2">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Account settings"
+          onPress={() => router.push("/settings")}
+          className="flex-row items-center gap-2 rounded-full border border-brand-border bg-surface px-4 py-2 active:opacity-80"
+        >
+          <Text className="text-base">⚙️</Text>
+          <Text className="font-semibold text-puce-red">Settings</Text>
+        </Pressable>
+      </View>
+
+      <View className="items-center pt-4">
         <Avatar url={profile?.avatar_url} name={name} size={88} />
         <Text className="text-2xl font-bold text-ink mt-4">{name}</Text>
         {profile?.username ? (
@@ -60,19 +65,10 @@ export default function ProfileRoute() {
 
       <View className="mt-8 gap-2">
         <ProfileLink icon="📚" label="My Books" onPress={() => router.push("/library")} />
-        <ProfileLink
-          icon="🔒"
-          label="Shelf privacy"
-          onPress={() => router.push("/shelf-privacy")}
-        />
         <ProfileLink icon="📝" label="Reading Notes" onPress={() => router.push("/notes")} />
         <ProfileLink icon="♣️" label="Book Clubs" onPress={() => router.push("/clubs")} />
-        <ProfileLink icon="🔔" label="Notifications" onPress={() => router.push("/notifications")} />
       </View>
 
-      <View className="mt-8">
-        <Button title="Log out" variant="ghost" onPress={signOut} />
-      </View>
       <View className="h-24" />
     </ScreenContainer>
   );

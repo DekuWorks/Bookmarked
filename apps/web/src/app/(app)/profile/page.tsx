@@ -8,10 +8,7 @@ import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { FollowStats } from "@/components/social/FollowStats";
 import { AvatarUpload } from "@/components/profile/AvatarUpload";
-import { LanguagePreferencePanel } from "@/components/profile/LanguagePreferencePanel";
-import { NotificationPreferencesPanel } from "@/components/notifications/NotificationPreferencesPanel";
-import { LibraryImportPanel } from "@/components/profile/LibraryImportPanel";
-import { ShelfPrivacyPanel } from "@/components/profile/ShelfPrivacyPanel";
+import { SettingsIcon } from "@/components/icons/SettingsIcon";
 import { getFollowCounts, type FollowCounts } from "@/lib/services/follows";
 import {
   computeReadingStreak,
@@ -70,7 +67,19 @@ export default function ProfilePage() {
 
   return (
     <div className={layout.pageStack}>
-      <header className={layout.pageHeader}>
+      <header className={cn(layout.pageHeader, "relative")}>
+        <div className="absolute right-0 top-0">
+          <ButtonLink
+            href="/profile/settings"
+            variant="outline"
+            size="sm"
+            className="inline-flex items-center gap-2"
+            aria-label="Account settings"
+          >
+            <SettingsIcon />
+            <span className="hidden sm:inline">Settings</span>
+          </ButtonLink>
+        </div>
         <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Profile</h1>
         <p className="mt-1 text-text-muted">{email}</p>
       </header>
@@ -140,41 +149,18 @@ export default function ProfilePage() {
           <ButtonLink href="/profile/setup" variant="outline" size="sm">
             Edit profile
           </ButtonLink>
+          <ButtonLink
+            href="/profile/settings"
+            variant="secondary"
+            size="sm"
+            className="inline-flex items-center gap-2"
+          >
+            <SettingsIcon />
+            Account settings
+          </ButtonLink>
           <LogoutButton />
         </div>
       </section>
-
-      {profile ? (
-        <details className="group rounded-xl border border-border bg-surface text-left shadow-sm">
-          <summary
-            className={cn(
-              "cursor-pointer list-none p-6 text-center",
-              "[&::-webkit-details-marker]:hidden"
-            )}
-          >
-            <span className="text-lg font-semibold text-puce-red">Account settings</span>
-            <span className="mt-1 block text-sm text-text-muted group-open:hidden">
-              Notifications, language, library import, and shelf privacy
-            </span>
-          </summary>
-          <div className="space-y-6 border-t border-border px-6 pb-6 pt-4">
-            <NotificationPreferencesPanel profile={profile} embedded />
-            <LanguagePreferencePanel
-              profile={profile}
-              embedded
-              onLanguageChange={(preferred_language) =>
-                setData((current) =>
-                  current && current.profile
-                    ? { ...current, profile: { ...current.profile, preferred_language } }
-                    : current
-                )
-              }
-            />
-            <LibraryImportPanel userId={user.id} embedded />
-            <ShelfPrivacyPanel profile={profile} />
-          </div>
-        </details>
-      ) : null}
     </div>
   );
 }
