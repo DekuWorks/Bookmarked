@@ -30,10 +30,10 @@ export function BookmarkedShelfBadge({ className, size = "md" }: Props) {
       aria-hidden
     >
       <Image
-        src="/images/bookmark-ribbon.png"
+        src="/images/bookmark-ribbon.png?v=2"
         alt=""
         fill
-        className="object-contain drop-shadow-[0_1px_3px_rgba(0,0,0,0.28)]"
+        className="object-contain object-right-top"
         sizes="2rem"
         unoptimized
       />

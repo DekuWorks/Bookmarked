@@ -15,16 +15,7 @@ type Props = {
 export function BookmarkRibbon({ size = 20 }: Props) {
   const height = size / RIBBON_ASPECT;
   return (
-    <View
-      accessibilityLabel="Saved to Bookmarked"
-      style={{
-        shadowColor: "#000",
-        shadowOpacity: 0.25,
-        shadowRadius: 2,
-        shadowOffset: { width: 0, height: 1 },
-        elevation: 3,
-      }}
-    >
+    <View accessibilityLabel="Saved to Bookmarked">
       <Image
         source={require("../../assets/brand/bookmark-ribbon.png")}
         style={{ width: size, height }}
