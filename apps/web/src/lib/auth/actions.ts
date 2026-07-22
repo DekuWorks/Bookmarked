@@ -72,6 +72,10 @@ export async function signup(
     return { error: "Password must be at least 6 characters." };
   }
 
+  if (password.length > 128) {
+    return { error: "Password must be 128 characters or fewer." };
+  }
+
   applyRememberMePreference(parseRememberMeFromForm(formData));
   resetBrowserClient();
 
@@ -135,6 +139,10 @@ export async function updatePassword(
 
   if (password.length < 6) {
     return { error: "Password must be at least 6 characters." };
+  }
+
+  if (password.length > 128) {
+    return { error: "Password must be 128 characters or fewer." };
   }
 
   if (password !== confirm) {

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
+import { MAX_REVIEW_BODY_LENGTH } from "@/lib/constants/validation";
 import { StarRating } from "@/components/reviews/StarRating";
 import { REVIEW_FEELINGS } from "@/lib/constants/reviewFeelings";
 import {
@@ -300,6 +301,7 @@ export function ReviewForm({
         value={reviewBody}
         onChange={(e) => setReviewBody(e.target.value)}
         placeholder="What did you think?"
+        maxLength={MAX_REVIEW_BODY_LENGTH}
       />
 
       <label className="flex items-center gap-2 text-sm text-text">

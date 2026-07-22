@@ -3,6 +3,7 @@
 import { useState, type KeyboardEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Input";
+import { MAX_MESSAGE_BODY_LENGTH } from "@/lib/constants/validation";
 import { GifSearchPicker } from "@/components/social/GifSearchPickerLazy";
 import { useCommentAttachment } from "@/components/social/CommentAttachmentControls";
 import {
@@ -62,7 +63,7 @@ export function MessageComposer({ conversationId, onSend, disabled }: Props) {
   const isDisabled = disabled || sending;
 
   return (
-    <div className="sticky bottom-0 border-t border-border bg-surface px-4 py-3">
+    <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] border-t border-border bg-surface px-4 py-3 md:bottom-0">
       <div className="mx-auto flex max-w-3xl flex-col gap-2">
         {attachment.imagePreview ? (
           <div className="relative inline-block w-fit">
@@ -130,6 +131,7 @@ export function MessageComposer({ conversationId, onSend, disabled }: Props) {
             onKeyDown={handleKeyDown}
             placeholder="Write a message…"
             rows={2}
+            maxLength={MAX_MESSAGE_BODY_LENGTH}
             disabled={isDisabled}
             className="min-h-[72px] flex-1 resize-none"
           />

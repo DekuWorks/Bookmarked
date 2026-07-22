@@ -1,4 +1,8 @@
 import { supabase } from "./supabase";
+import {
+  MESSAGE_ATTACHMENT_BUCKET,
+  parseMessageAttachmentPath,
+} from "../../../../packages/utils/messageAttachments";
 import type {
   ConversationPreview,
   ConversationWithParticipants,
@@ -16,6 +20,38 @@ import type {
  */
 
 const PROFILE_SELECT = "id, username, display_name, avatar_url";
+const MESSAGE_ATTACHMENT_SIGNED_URL_TTL_SEC = 3600;
+
+async function signMessageAttachmentUrl(value: string | null): Promise<string | null> {
+  if (!value) return null;
+
+  const path = parseMessageAttachmentPath(value);
+  if (!path) return value;
+
+  const { data, error } = await supabase.storage
+    .from(MESSAGE_ATTACHMENT_BUCKET)
+    .createSignedUrl(path, MESSAGE_ATTACHMENT_SIGNED_URL_TTL_SEC);
+
+  if (error || !data?.signedUrl) {
+    console.error("[messages] signed URL failed:", error?.message ?? "unknown");
+    return value.startsWith("http") ? value : null;
+  }
+
+  return data.signedUrl;
+}
+
+async function signMessageAttachmentFields<T extends { attachment_url: string | null }>(
+  messages: T[]
+): Promise<T[]> {
+  if (!messages.length) return messages;
+
+  return Promise.all(
+    messages.map(async (message) => ({
+      ...message,
+      attachment_url: await signMessageAttachmentUrl(message.attachment_url),
+    }))
+  );
+}
 
 type ParticipantRow = {
   id: string;
@@ -149,7 +185,7 @@ export async function getConversations(userId: string): Promise<ConversationPrev
     messagesByConversation.set(message.conversation_id, list);
   }
 
-  return sortConversations(
+  const sorted = sortConversations(
     ((conversations ?? []) as ConversationPreview[]).map((conversation) => ({
       ...conversation,
       participants: participantsByConversation.get(conversation.id) ?? [],
@@ -161,6 +197,21 @@ export async function getConversations(userId: string): Promise<ConversationPrev
       ),
       pinnedAt: pinnedByConversation.get(conversation.id) ?? null,
     }))
+  );
+
+  return Promise.all(
+    sorted.map(async (conversation) => {
+      if (!conversation.latestMessage?.attachment_url) return conversation;
+
+      const attachment_url = await signMessageAttachmentUrl(
+        conversation.latestMessage.attachment_url
+      );
+
+      return {
+        ...conversation,
+        latestMessage: { ...conversation.latestMessage, attachment_url },
+      };
+    })
   );
 }
 
@@ -210,22 +261,24 @@ export async function getMessages(conversationId: string): Promise<MessageWithSe
 
   if (error) throw error;
 
-  return ((data ?? []) as Array<Message & { profiles: MessageProfile | null }>).map((row) => ({
-    id: row.id,
-    conversation_id: row.conversation_id,
-    sender_id: row.sender_id,
-    body: row.body,
-    attachment_url: row.attachment_url ?? null,
-    created_at: row.created_at,
-    updated_at: row.updated_at,
-    deleted_at: row.deleted_at,
-    sender: row.profiles ?? {
-      id: row.sender_id,
-      username: null,
-      display_name: null,
-      avatar_url: null,
-    },
-  }));
+  return signMessageAttachmentFields(
+    ((data ?? []) as Array<Message & { profiles: MessageProfile | null }>).map((row) => ({
+      id: row.id,
+      conversation_id: row.conversation_id,
+      sender_id: row.sender_id,
+      body: row.body,
+      attachment_url: row.attachment_url ?? null,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      deleted_at: row.deleted_at,
+      sender: row.profiles ?? {
+        id: row.sender_id,
+        username: null,
+        display_name: null,
+        avatar_url: null,
+      },
+    }))
+  );
 }
 
 export async function sendMessage(

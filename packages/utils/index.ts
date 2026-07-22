@@ -9,3 +9,8 @@ export {
   isPremiumSubscriber,
   type SubscriptionAccess,
 } from "./subscription";
+
+export {
+  MESSAGE_ATTACHMENT_BUCKET,
+  parseMessageAttachmentPath,
+} from "./messageAttachments";

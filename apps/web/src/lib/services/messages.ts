@@ -1,5 +1,10 @@
 import { createClient } from "@/lib/supabase/client";
 import { createMessageNotifications } from "@/lib/services/notifications";
+import { MAX_MESSAGE_BODY_LENGTH } from "@/lib/constants/validation";
+import {
+  MESSAGE_ATTACHMENT_BUCKET,
+  parseMessageAttachmentPath,
+} from "@/lib/utils/messageAttachments";
 import type {
   ConversationPreview,
   ConversationWithParticipants,
@@ -10,7 +15,7 @@ import type {
 
 const PROFILE_SELECT = "id, username, display_name, avatar_url";
 
-const MESSAGE_ATTACHMENT_BUCKET = "message-attachments";
+const MESSAGE_ATTACHMENT_SIGNED_URL_TTL_SEC = 3600;
 const MAX_MESSAGE_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 const MESSAGE_ATTACHMENT_TYPES = new Set([
   "image/jpeg",
@@ -31,6 +36,43 @@ type ParticipantRow = {
   pinned_at: string | null;
   profiles: MessageProfile | null;
 };
+
+async function signMessageAttachmentUrl(
+  supabase: ReturnType<typeof createClient>,
+  value: string | null
+): Promise<string | null> {
+  if (!value) return null;
+
+  const path = parseMessageAttachmentPath(value);
+  if (!path) return value;
+
+  const { data, error } = await supabase.storage
+    .from(MESSAGE_ATTACHMENT_BUCKET)
+    .createSignedUrl(path, MESSAGE_ATTACHMENT_SIGNED_URL_TTL_SEC);
+
+  if (error || !data?.signedUrl) {
+    console.error("[messages] signed URL failed:", error?.message ?? "unknown");
+    return value.startsWith("http") ? value : null;
+  }
+
+  return data.signedUrl;
+}
+
+async function signMessageAttachmentFields<T extends { attachment_url: string | null }>(
+  supabase: ReturnType<typeof createClient>,
+  messages: T[]
+): Promise<T[]> {
+  if (!messages.length) return messages;
+
+  const signed = await Promise.all(
+    messages.map(async (message) => ({
+      ...message,
+      attachment_url: await signMessageAttachmentUrl(supabase, message.attachment_url),
+    }))
+  );
+
+  return signed;
+}
 
 async function requireUser() {
   const supabase = createClient();
@@ -411,7 +453,7 @@ export async function getConversations(userId: string): Promise<ConversationPrev
     messagesByConversation.set(message.conversation_id, list);
   }
 
-  return sortConversations(
+  const sorted = sortConversations(
     ((conversations ?? []) as ConversationPreview[]).map((conversation) => {
       const participants = participantsByConversation.get(conversation.id) ?? [];
       const latestMessage = latestByConversation.get(conversation.id) ?? null;
@@ -428,6 +470,22 @@ export async function getConversations(userId: string): Promise<ConversationPrev
         latestMessage,
         unreadCount,
         pinnedAt: pinnedByConversation.get(conversation.id) ?? null,
+      };
+    })
+  );
+
+  return Promise.all(
+    sorted.map(async (conversation) => {
+      if (!conversation.latestMessage?.attachment_url) return conversation;
+
+      const attachment_url = await signMessageAttachmentUrl(
+        supabase,
+        conversation.latestMessage.attachment_url
+      );
+
+      return {
+        ...conversation,
+        latestMessage: { ...conversation.latestMessage, attachment_url },
       };
     })
   );
@@ -486,7 +544,7 @@ export async function getMessages(
 
   const rows = ((data ?? []) as Array<Message & { profiles: MessageProfile | null }>).reverse();
 
-  return rows.map((row) => ({
+  const mapped = rows.map((row) => ({
     id: row.id,
     conversation_id: row.conversation_id,
     sender_id: row.sender_id,
@@ -502,6 +560,8 @@ export async function getMessages(
       avatar_url: null,
     },
   }));
+
+  return signMessageAttachmentFields(supabase, mapped);
 }
 
 export function validateMessageAttachmentFile(file: File): string | null {
@@ -557,8 +617,7 @@ export async function uploadMessageAttachment(
 
     if (uploadError) return { error: uploadError.message };
 
-    const { data } = supabase.storage.from(MESSAGE_ATTACHMENT_BUCKET).getPublicUrl(path);
-    return { url: data.publicUrl };
+    return { url: path };
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : "Could not upload image.",
@@ -574,6 +633,9 @@ export async function sendMessage(
   const trimmed = body.trim();
   const attachment = attachmentUrl?.trim() || null;
   if (!trimmed && !attachment) return { error: "Message cannot be empty." };
+  if (trimmed.length > MAX_MESSAGE_BODY_LENGTH) {
+    return { error: `Message must be ${MAX_MESSAGE_BODY_LENGTH} characters or fewer.` };
+  }
 
   try {
     const { supabase, user } = await requireUser();

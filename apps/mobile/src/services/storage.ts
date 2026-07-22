@@ -1,5 +1,6 @@
 import * as ImagePicker from "expo-image-picker";
 import { supabase } from "./supabase";
+import { MESSAGE_ATTACHMENT_BUCKET } from "../../../../packages/utils/messageAttachments";
 
 /**
  * Image picking + Supabase Storage uploads for posts, comments, and messages.
@@ -10,7 +11,7 @@ import { supabase } from "./supabase";
  */
 
 export const POST_IMAGE_BUCKET = "post-images";
-export const MESSAGE_ATTACHMENT_BUCKET = "message-attachments";
+export { MESSAGE_ATTACHMENT_BUCKET };
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB (matches bucket limit)
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 
@@ -101,7 +102,8 @@ async function uploadBase64(
   bucket: string,
   path: string,
   base64: string,
-  contentType: string
+  contentType: string,
+  options?: { returnPath?: boolean }
 ): Promise<{ url?: string; error?: string }> {
   const bytes = base64ToBytes(base64);
   const { error } = await supabase.storage.from(bucket).upload(path, bytes, {
@@ -109,6 +111,11 @@ async function uploadBase64(
     upsert: false,
   });
   if (error) return { error: error.message };
+
+  if (options?.returnPath) {
+    return { url: path };
+  }
+
   const { data } = supabase.storage.from(bucket).getPublicUrl(path);
   return { url: data.publicUrl };
 }
@@ -143,5 +150,7 @@ export async function uploadMessageAttachment(
   if (!user) return { error: "You must be signed in." };
 
   const path = `${conversationId}/${user.id}/${randomId()}.${extForMime(image.mimeType)}`;
-  return uploadBase64(MESSAGE_ATTACHMENT_BUCKET, path, image.base64, image.mimeType);
+  return uploadBase64(MESSAGE_ATTACHMENT_BUCKET, path, image.base64, image.mimeType, {
+    returnPath: true,
+  });
 }

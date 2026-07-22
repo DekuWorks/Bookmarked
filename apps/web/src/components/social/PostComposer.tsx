@@ -20,6 +20,7 @@ import { GifSearchPicker } from "@/components/social/GifSearchPickerLazy";
 import type { GiphySearchResult } from "@/lib/services/giphy";
 import { isAllowedPostImageUrl, resolveGiphyImageUrl } from "@/lib/utils/giphy";
 import { cn } from "@/lib/utils/cn";
+import { MAX_POST_BODY_LENGTH } from "@/lib/constants/validation";
 
 type Props = {
   userId: string;
@@ -414,6 +415,7 @@ export function PostComposer({ userId, onPostCreated }: Props) {
         }}
         placeholder="Share a reading thought, recommendation, or update… Use @ to mention someone."
         minHeightClassName="min-h-[100px]"
+        maxLength={MAX_POST_BODY_LENGTH}
         className="mb-3"
       />
 

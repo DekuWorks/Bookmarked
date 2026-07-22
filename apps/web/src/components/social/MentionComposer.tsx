@@ -13,6 +13,7 @@ type Props = {
   className?: string;
   viewerId: string;
   minHeightClassName?: string;
+  maxLength?: number;
 };
 
 function activeMentionQuery(value: string, cursor: number): string | null {
@@ -28,6 +29,7 @@ export function MentionComposer({
   className,
   viewerId,
   minHeightClassName = "min-h-[80px]",
+  maxLength,
 }: Props) {
   const [suggestions, setSuggestions] = useState<MessageProfile[]>([]);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
@@ -135,6 +137,7 @@ export function MentionComposer({
           if (query) void loadSuggestions(query);
         }}
         placeholder={placeholder}
+        maxLength={maxLength}
         className={cn("mb-0", minHeightClassName, className)}
       />
 
