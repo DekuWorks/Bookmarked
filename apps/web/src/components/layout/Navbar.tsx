@@ -42,7 +42,7 @@ export function Navbar({ variant = "public" }: Props) {
       className={cn(
         "sticky top-0 z-[100] border-b backdrop-blur",
         isApp
-          ? "border-border/70 bg-background/90"
+          ? "border-border/70 bg-surface/95 shadow-sm backdrop-blur-md"
           : "border-transparent bg-transparent"
       )}
     >

@@ -57,11 +57,13 @@ export function ShelfSearchFilter({
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="mx-auto w-full max-w-4xl rounded-xl border border-border bg-surface p-4 shadow-sm">
+      <div className="mx-auto w-full max-w-4xl surface-card p-4">
         <p className="mb-3 text-center text-sm font-medium text-puce-red">Organize shelf</p>
         <div className="grid gap-3 sm:grid-cols-2">
           <Input
             label="Search this shelf"
+            variant="search"
+            hideLabel
             name="shelf-search"
             placeholder="Filter by title or author"
             value={query}

@@ -11,6 +11,7 @@ import { PostComposer } from "@/components/social/PostComposer";
 import { TrendingNewsletterPanel } from "@/components/trending/TrendingNewsletterPanel";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
+import { FeedCardSkeleton, PostCardSkeleton } from "@/components/ui/Skeleton";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { useActivityFeedRealtime } from "@/lib/hooks/useActivityFeedRealtime";
 import { usePostsRealtime } from "@/lib/hooks/usePostsRealtime";
@@ -272,7 +273,13 @@ function FeedContent() {
               />
 
               {!posts ? (
-                <LoadingState message="Loading posts…" />
+                <ul className="space-y-6" aria-busy="true" aria-label="Loading posts">
+                  {Array.from({ length: 3 }).map((_, index) => (
+                    <li key={index}>
+                      <PostCardSkeleton />
+                    </li>
+                  ))}
+                </ul>
               ) : posts.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-border bg-background px-6 py-12 text-center">
                   {tab === "following" ? (
@@ -317,7 +324,13 @@ function FeedContent() {
               )}
             </>
           ) : !activityItems ? (
-            <LoadingState message="Loading activity…" />
+            <ul className="space-y-6" aria-busy="true" aria-label="Loading activity">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <li key={index}>
+                  <FeedCardSkeleton />
+                </li>
+              ))}
+            </ul>
           ) : activityItems.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border bg-background px-6 py-12 text-center">
               {tab === "following" ? (
@@ -373,7 +386,7 @@ function FeedContent() {
           </div>
 
           <aside className="hidden lg:block">
-            <section className="sticky top-24 rounded-2xl border border-border bg-surface/90 p-5 shadow-sm">
+            <section className="sticky top-24 surface-card p-5">
               <h2 className="text-lg font-semibold text-puce-red">Trending</h2>
               <p className="mt-1 text-sm text-text-muted">
                 What readers are shelving and reviewing this week.

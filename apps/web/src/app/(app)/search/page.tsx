@@ -18,7 +18,7 @@ function SearchContent() {
 
   return (
     <div className={layout.pageStackWide}>
-      <header className={layout.pageHeader}>
+      <header className={`${layout.pageHeader} feed-header-gradient -mx-4 px-4 pb-8 pt-2 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8`}>
         <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Search books</h1>
         <p className="mx-auto mt-1 max-w-2xl text-pretty text-text-muted">
           Powered by ISBNdb. Add titles to your shelves from results.
@@ -36,7 +36,7 @@ function SearchContent() {
         <div className="space-y-8">
           <p className="text-text-muted">Enter a title or author to start searching.</p>
           {user ? (
-            <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
+            <section className="surface-card p-6">
               <h2 className="text-lg font-semibold text-puce-red">Because you read…</h2>
               <div className="mt-4">
                 <BecauseYouReadPanel userId={user.id} />

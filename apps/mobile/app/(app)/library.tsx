@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BookCover } from "../../src/components/BookCover";
 import { EmptyState } from "../../src/components/EmptyState";
 import { LoadingState } from "../../src/components/LoadingState";
+import { ScreenGradientWash } from "../../src/components/ScreenGradientWash";
 import { useLibraryBooks } from "../../src/hooks/useLibrary";
 import { TAB_BAR_SPACE, useTabBarScroll } from "../../src/navigation/TabBarScroll";
 import type { LibraryBookRow } from "../../src/services/library";
@@ -166,6 +167,7 @@ export default function MyBooksScreen() {
 
   return (
     <View className="flex-1 bg-background">
+      <ScreenGradientWash />
       {/* Header */}
       <View style={{ paddingTop: insets.top + 8 }} className="bg-background px-4 pb-2">
         <View className="flex-row items-center">

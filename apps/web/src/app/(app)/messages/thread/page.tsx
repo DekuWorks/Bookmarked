@@ -158,7 +158,7 @@ function MessageThreadContent() {
   if (!user || !conversation || messages === null) return null;
 
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-8rem)] max-w-3xl flex-col rounded-xl border border-border bg-background shadow-sm">
+    <div className="mx-auto flex min-h-[calc(100vh-8rem)] max-w-3xl flex-col surface-card">
       <ConversationHeader
         conversation={conversation}
         currentUserId={user.id}

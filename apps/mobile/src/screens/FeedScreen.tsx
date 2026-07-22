@@ -24,7 +24,7 @@ function Composer() {
   const router = useRouter();
   const { data: profile } = useProfile();
   return (
-    <View className="mb-4 flex-row items-center gap-3 rounded-full border border-brand-border bg-surface px-3 py-2">
+    <View className="mb-4 flex-row items-center gap-3 rounded-full border border-brand-border bg-surface px-3 py-2 shadow-sm">
       <Avatar url={profile?.avatar_url} name={profile?.display_name ?? profile?.username} size={36} />
       <Pressable
         onPress={() => router.push("/compose")}

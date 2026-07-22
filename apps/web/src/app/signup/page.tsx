@@ -16,7 +16,9 @@ export default function SignupPage() {
             <p className="mt-2 text-text-muted">Start tracking your reading on the web.</p>
           </div>
           <div className="mt-8 w-full flex justify-center">
-            <SignupForm />
+            <div className="form-panel w-full max-w-md">
+              <SignupForm />
+            </div>
           </div>
         </main>
       </div>

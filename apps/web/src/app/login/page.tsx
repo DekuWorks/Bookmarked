@@ -39,7 +39,9 @@ export default function LoginPage() {
             <p className="mt-2 text-text-muted">Sign in to your Bookmarked account.</p>
           </div>
           <div className="mt-8 flex w-full justify-center">
-            <LoginForm redirect={redirect} />
+            <div className="form-panel w-full max-w-md">
+              <LoginForm redirect={redirect} />
+            </div>
           </div>
         </main>
       </div>

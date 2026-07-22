@@ -54,7 +54,10 @@ function TabItem({
       onPress={onPress}
       className="flex-1 items-center justify-center py-1"
     >
-      <View>
+      <View
+        className={`items-center rounded-2xl px-3 py-1 ${focused ? "bg-primary/15" : ""}`}
+        style={focused ? { shadowColor: "#642F37", shadowOpacity: 0.12, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } } : undefined}
+      >
         <Ionicons name={focused ? iconFocused : icon} size={23} color={color} />
         {badge ? (
           <View className="absolute -right-1.5 -top-0.5 h-2.5 w-2.5 rounded-full border border-white bg-rust" />

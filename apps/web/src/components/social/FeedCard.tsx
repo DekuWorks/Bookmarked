@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { memo } from "react";
 import { BookCover } from "@/components/books/BookCover";
 import { StarDisplay } from "@/components/reviews/StarDisplay";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
@@ -26,7 +27,7 @@ function readerHref(item: FeedItem): string | null {
   return username ? readerProfilePath(username) : null;
 }
 
-export function FeedCard({ item }: Props) {
+export const FeedCard = memo(function FeedCard({ item }: Props) {
   const locale = usePreferredLocale();
   const profileHref = readerHref(item);
   const activityHref = feedItemHref(item);
@@ -53,7 +54,7 @@ export function FeedCard({ item }: Props) {
   );
 
   return (
-    <article className="flex gap-4 rounded-2xl border border-border bg-surface p-5 shadow-sm transition hover:border-primary/30 hover:shadow-md sm:gap-5 sm:p-6">
+    <article className="surface-card flex gap-4 p-5 sm:gap-5 sm:p-6">
       {showBookCover ? (
         item.bookId ? (
           <Link
@@ -132,4 +133,4 @@ export function FeedCard({ item }: Props) {
       </div>
     </article>
   );
-}
+});

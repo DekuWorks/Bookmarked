@@ -16,7 +16,7 @@ import {
   saveDraft,
 } from "@/lib/services/postDrafts";
 import type { PostDraft } from "@/types";
-import { GifSearchPicker } from "@/components/social/GifSearchPicker";
+import { GifSearchPicker } from "@/components/social/GifSearchPickerLazy";
 import type { GiphySearchResult } from "@/lib/services/giphy";
 import { isAllowedPostImageUrl, resolveGiphyImageUrl } from "@/lib/utils/giphy";
 import { cn } from "@/lib/utils/cn";
@@ -345,7 +345,7 @@ export function PostComposer({ userId, onPostCreated }: Props) {
   const canSubmit = Boolean(body.trim() || hasAttachment);
 
   return (
-    <section className="rounded-xl border border-border bg-surface p-4 shadow-sm">
+    <section className="surface-card p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-semibold text-puce-red">Create a post</h2>
 

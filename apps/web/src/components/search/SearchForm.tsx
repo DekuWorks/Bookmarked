@@ -31,6 +31,8 @@ export function SearchForm() {
       <div className="min-w-0 w-full flex-1 sm:max-w-md">
         <Input
           label="Search books"
+          variant="search"
+          hideLabel
           name="q"
           placeholder="Title, author, or ISBN"
           value={q}
@@ -40,7 +42,7 @@ export function SearchForm() {
           <p className="-mt-2 text-xs text-primary">ISBN detected — searching by ISBN</p>
         ) : null}
       </div>
-      <Button type="submit" variant="secondary" className="w-full sm:mb-4 sm:w-auto">
+      <Button type="submit" variant="secondary" className="w-full sm:mb-0 sm:w-auto">
         Search
       </Button>
     </form>

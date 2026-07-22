@@ -41,6 +41,15 @@ const linkBase =
 
 const APP_HEADER_ID = "app-header";
 
+function isActivePath(pathname: string, href: string): boolean {
+  const normalized = href.replace(/\/$/, "");
+  const current = pathname.replace(/\/$/, "");
+  if (normalized === "/reading-room") {
+    return current === "/reading-room" || current === "/dashboard";
+  }
+  return current === normalized || current.startsWith(`${normalized}/`);
+}
+
 function NavItem({
   href,
   className,
@@ -150,7 +159,9 @@ export function NavbarMenu({
               className="relative max-h-full overflow-y-auto border-b border-border bg-surface shadow-lg outline-none"
             >
               <nav className={cn(layout.container, "flex flex-col gap-1 py-4")}>
-                {links.map((link) => (
+                {links.map((link) => {
+                  const active = useAppNavLinks && isActivePath(pathname ?? "", link.href);
+                  return (
                   <NavItem
                     key={link.href}
                     href={link.href}
@@ -159,13 +170,15 @@ export function NavbarMenu({
                     className={cn(
                       linkBase,
                       "text-base text-puce-red hover:bg-primary/10",
+                      active && "nav-link-active",
                       link.className
                     )}
                   >
                     {link.label}
                     {link.href.includes("/messages/") ? <MessagesUnreadBadge /> : null}
                   </NavItem>
-                ))}
+                  );
+                })}
                 {drawerFooter ? (
                   <div className="mt-3 flex flex-col gap-2 border-t border-border pt-4">
                     {drawerFooter}
@@ -193,7 +206,9 @@ export function NavbarMenu({
             centerNav && "flex-1 justify-center"
           )}
         >
-          {links.map((link) => (
+          {links.map((link) => {
+            const active = useAppNavLinks && isActivePath(pathname ?? "", link.href);
+            return (
             <NavItem
               key={link.href}
               href={link.href}
@@ -201,13 +216,15 @@ export function NavbarMenu({
               className={cn(
                 linkBase,
                 "text-puce-red hover:bg-primary/10 hover:text-rust",
+                active && "nav-link-active",
                 link.className
               )}
             >
               {link.label}
               {link.href.includes("/messages/") ? <MessagesUnreadBadge /> : null}
             </NavItem>
-          ))}
+            );
+          })}
         </div>
         {footer || actions ? (
           <div className="flex shrink-0 items-center gap-2">

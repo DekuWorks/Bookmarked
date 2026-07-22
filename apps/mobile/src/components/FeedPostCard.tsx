@@ -20,7 +20,9 @@ import type { DiscussionEntry, FeedEntry, PostEntry, ReviewEntry } from "../serv
 
 function CardShell({ children }: { children: React.ReactNode }) {
   return (
-    <View className="mb-4 rounded-2xl border border-brand-border bg-surface p-4">{children}</View>
+    <View className="mb-4 rounded-2xl border border-brand-border bg-surface p-4 shadow-md">
+      {children}
+    </View>
   );
 }
 

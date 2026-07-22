@@ -96,7 +96,7 @@ export function ReviewForm({
   }
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction} className="space-y-5">
       <input type="hidden" name="book_id" value={bookId} />
       <input type="hidden" name="read_number" value={readNumber} />
       <input type="hidden" name="rating_mode" value={mode} />
