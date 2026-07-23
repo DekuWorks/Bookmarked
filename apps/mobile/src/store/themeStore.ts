@@ -12,6 +12,8 @@ export const themeColors = {
   light: {
     background: "#F4EEFA",
     surface: "#FCFAFE",
+    /** Opaque equivalent of primary/10 on background — stat cards must not show the header wash through. */
+    statTile: "#F4E6F4",
     ink: "#1A1A1A",
     inkMuted: "#6B6B6B",
     border: "#E5DFEB",
@@ -20,6 +22,7 @@ export const themeColors = {
   dark: {
     background: "#1A1326",
     surface: "#261C34",
+    statTile: "#2C2337",
     ink: "#F4EFFA",
     inkMuted: "#B5A8C4",
     border: "#3A2F4A",
