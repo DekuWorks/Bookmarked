@@ -213,8 +213,8 @@ Generally good baseline (skip link, focus-visible, 44px touch targets). Gaps:
 | Feature | Status | Notes |
 |---------|--------|-------|
 | Events calendar | Not started | Clubs exist; no calendar UI |
-| Feed search (mobile) | Web only | `feedSearch.ts` |
-| Goodreads import (mobile) | Web only | `goodreadsImport.ts` |
+| Feed search (mobile) | ✅ | `feedSearch.ts` + `FeedScreen` search UI |
+| Goodreads import (mobile) | ✅ | `goodreadsImport.ts` + `LibraryImportPanel` in settings |
 | Library virtualization | Deferred | |
 | Bundle analyzer pass | Deferred | |
 | SSR hosting evaluation | Deferred | Would remove static-export workarounds |
@@ -229,6 +229,7 @@ Generally good baseline (skip link, focus-visible, 44px touch targets). Gaps:
 | P1 | Sync `completeReadingSession` completion_tags to mobile | Low |
 | P1 | Extract shared services to `packages/` | High |
 | P1 | Wire Stripe + IAP to `subscription-webhook` with real verification | High |
+| P1 | Events calendar UI (clubs + community) | High |
 | P1 | Update `apps/mobile/README.md` status section | Low |
 | P2 | Mobile Reading Room Notes/Reviews/History tabs | Medium |
 | P2 | Adopt React Query on web OR accept duplicate-fetch pattern | Medium |

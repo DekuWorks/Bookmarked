@@ -1,10 +1,14 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ScrollView, useWindowDimensions, View, type LayoutChangeEvent } from "react-native";
 import { BrandTopHeader } from "../components/BrandTopHeader";
+import { FeedSearchBar } from "../components/FeedSearchBar";
+import { FeedSearchResults } from "../components/FeedSearchResults";
 import { FeedTabPanel } from "../components/FeedTabPanel";
 import { ScreenGradientWash } from "../components/ScreenGradientWash";
 import { SegmentedTabs } from "../components/SegmentedTabs";
 import { useTabBarScroll } from "../navigation/TabBarScroll";
+import { searchFeed, type FeedSearchResults as FeedSearchData } from "../services/feedSearch";
+import { useAuthStore } from "../store/authStore";
 import type { FeedTab } from "../hooks/useFeed";
 
 const TAB_OPTIONS: { id: FeedTab; label: string }[] = [
@@ -19,9 +23,44 @@ const FEED_WASH_HEIGHT_RATIO = 0.18;
 export function FeedScreen() {
   const { width } = useWindowDimensions();
   const pagerRef = useRef<ScrollView>(null);
+  const userId = useAuthStore((s) => s.user?.id);
   const [tab, setTab] = useState<FeedTab>("for-you");
   const [headerHeight, setHeaderHeight] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<FeedSearchData | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const { onScroll } = useTabBarScroll();
+
+  const isSearching = debouncedQuery.trim().length > 0;
+
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 350);
+    return () => clearTimeout(handle);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (!userId || !isSearching) {
+      setSearchResults(null);
+      setSearchError(null);
+      setSearchLoading(false);
+      return;
+    }
+
+    setSearchLoading(true);
+    setSearchError(null);
+
+    void searchFeed(debouncedQuery, userId)
+      .then(setSearchResults)
+      .catch((err) => {
+        setSearchError(err instanceof Error ? err.message : "Search failed.");
+        setSearchResults({ readers: [], books: [], posts: [] });
+      })
+      .finally(() => setSearchLoading(false));
+  }, [userId, debouncedQuery, isSearching]);
 
   const onHeaderLayout = useCallback((event: LayoutChangeEvent) => {
     const next = event.nativeEvent.layout.height;
@@ -45,17 +84,32 @@ export function FeedScreen() {
       />
       <View onLayout={onHeaderLayout}>
         <BrandTopHeader>
-          <SegmentedTabs
-            className="mt-3"
-            equalWidth
-            options={TAB_OPTIONS}
-            value={tab}
-            onChange={selectTab}
-          />
+          <View className="mt-3 px-1">
+            <FeedSearchBar value={searchQuery} onChange={setSearchQuery} />
+          </View>
+          {!isSearching ? (
+            <SegmentedTabs
+              className="mt-3"
+              equalWidth
+              options={TAB_OPTIONS}
+              value={tab}
+              onChange={selectTab}
+            />
+          ) : null}
         </BrandTopHeader>
       </View>
 
-      <ScrollView
+      {isSearching ? (
+        <View className="flex-1 px-4 pt-2">
+          <FeedSearchResults
+            query={debouncedQuery.trim()}
+            results={searchResults}
+            loading={searchLoading}
+            error={searchError}
+          />
+        </View>
+      ) : (
+        <ScrollView
         ref={pagerRef}
         horizontal
         pagingEnabled
@@ -73,6 +127,7 @@ export function FeedScreen() {
           <FeedTabPanel key={option.id} tab={option.id} width={width} onScroll={onScroll} />
         ))}
       </ScrollView>
+      )}
     </View>
   );
 }

@@ -7,6 +7,8 @@ import { env } from "../constants/env";
  * so the ISBNdb API key stays server-side — same proxy the web app uses.
  */
 
+export const ISBNDB_SOURCE = "isbndb" as const;
+
 export type CatalogDoc = {
   key: string;
   title: string;
@@ -38,6 +40,11 @@ type IsbndbBookResponse = { book?: IsbndbBook };
 
 function normalizeIsbn(raw: string): string {
   return raw.replace(/[-\s]/g, "").trim();
+}
+
+export function catalogExternalId(isbn: string | null | undefined): string | null {
+  const clean = normalizeIsbn(isbn ?? "");
+  return clean || null;
 }
 
 function isIsbnQuery(query: string): boolean {

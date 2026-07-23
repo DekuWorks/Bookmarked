@@ -299,6 +299,12 @@ export async function fetchReaderActivity(
   return buildItems(visible, profilesById);
 }
 
+/** Hydrate raw activity rows for feed search and other callers. */
+export async function hydrateActivityRows(rows: ActivityRow[]): Promise<FeedItem[]> {
+  const profilesById = await attachProfiles(rows);
+  return buildItems(rows, profilesById);
+}
+
 /** @deprecated Kept for the initial public feed; prefer fetchForYouFeed. */
 export async function fetchPublicFeed(limit = 30): Promise<FeedItem[]> {
   const { data, error } = await supabase

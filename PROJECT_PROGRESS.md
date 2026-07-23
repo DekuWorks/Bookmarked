@@ -107,7 +107,8 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Book clubs | ✅ | `20260713140000_book_clubs.sql` · `/clubs/` · mobile `clubs/` |
 | Trending sidebar / section | ✅ | `trending.ts` · `TrendingNewsletterPanel` (web) · `TrendingBooksSection` (mobile) |
 | Community rating on book pages | ✅ | `CommunityRatingDisplay` (web + mobile) |
-| Feed search | ✅ web · ⬜ mobile | `feedSearch.ts` — readers, books, posts |
+| Feed search | ✅ | `feedSearch.ts` — readers, books, posts (web + mobile) |
+| Goodreads import | ✅ | `goodreadsImport.ts` — web profile settings + mobile account settings |
 | Events calendar | ⬜ | Clubs exist; no calendar UI |
 | Notifications | ✅ | `notifications` table · bell + `/notifications/` |
 
@@ -210,8 +211,8 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Core reading loop | ✅ | ✅ | — |
 | Reading Room tabs | 6 tabs | 6 tabs | — |
 | Completion auto-tags | ✅ | ✅ | — |
-| Goodreads import | ✅ | ⬜ | `goodreadsImport.ts` web only |
-| Feed search | ✅ | ⬜ | — |
+| Goodreads import | ✅ | ✅ | — |
+| Feed search | ✅ | ✅ | — |
 | Public library browse | ✅ | ✅ | — |
 | Shared service code | 49 modules | 33 modules | 28同名 duplicated, not in `packages/` |
 
@@ -227,4 +228,16 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Database schema | `docs/DATABASE_SCHEMA.md` |
 | Master task list (MVP) | `docs/project/MASTER_TASK_LIST.md` |
 
-**Last updated:** July 23, 2026 (Phase 0 audit)
+**Last updated:** July 23, 2026 (Phase 3 mobile parity: feed search + Goodreads import)
+
+---
+
+## Next up (recommended)
+
+| Priority | Item | Notes |
+|----------|------|-------|
+| P1 | Events calendar | Clubs exist; no shared calendar UI — defer if multi-session |
+| P1 | Stripe checkout (web) | Needs `STRIPE_*` secrets + webhook verification in Edge Function |
+| P1 | App Store / Google Play IAP | Needs store SDK + receipt validation |
+| P2 | Extract duplicated services to `packages/` | 28 modules; high effort |
+| P2 | Library virtualization | Deferred until large libraries reported |
