@@ -3,7 +3,7 @@ import {
   buildCompletionUserBookPatch,
   resolvePageCount,
   type PageCountResolution,
-} from "../../../packages/utils/readingCompletion";
+} from "../utils/readingCompletion";
 import {
   activityMetadata,
   bookActivityContext,
