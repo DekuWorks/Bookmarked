@@ -62,8 +62,8 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Advanced category ratings | ✅ | `reviews.plot`, `characters`, etc. · `ReviewForm` advanced mode |
 | Feelings / mood tags | ✅ | `reviews.feelings` · `REVIEW_FEELINGS` constant |
 | Rating emoji (Fable-style) | ✅ | Migration `20260713130000_review_rating_emoji.sql` |
-| Reading Room reviews tab (web) | ✅ | `ReadingRoomTabs.tsx` — filters, monthly grouping |
-| Dedicated reviews UI (mobile) | ✅ | Reading Room reviews tab + book detail `RateReviewSheet` |
+| Reading Room reviews tab (web) | ✅ | `ReviewsPanel.tsx` — two-column cards, 5 filters, share-to-feed |
+| Dedicated reviews UI (mobile) | ✅ | `ReviewsPanel.tsx` parity + book detail `RateReviewSheet` |
 
 ### 2.3 Journal / Trail / Notes
 
@@ -74,7 +74,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Trail tab (web) | ✅ | `TrailPanel.tsx` — tab label **Journal** (legacy `?tab=journal` alias) |
 | Reading Room tabs (web) | ✅ | Overview, Progress, Journal, Notes, Reviews, History — `readingRoomTabs.ts` |
 | Reading Room tabs (mobile) | ✅ | Same 6 tabs — `apps/mobile/app/(app)/index.tsx` |
-| History tab | ✅ | Web + mobile history panels |
+| History tab | ✅ | `HistoryPanel.tsx` — Recently Finished Books, `finished_at` sort, library-style filters |
 
 ### 2.4 Streaks & auto tags
 

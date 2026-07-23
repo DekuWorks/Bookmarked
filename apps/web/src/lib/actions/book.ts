@@ -158,7 +158,10 @@ export async function setBookShelfStatus(
       finishedAt: userBook?.finished_at ?? now,
       startedAt: saved.started_at ?? userBook?.started_at ?? now,
       manualPageCount,
-      source: "shelf_move",
+      source:
+        Number(userBook?.read_count) > 1 || Number(saved.read_count) > 1
+          ? "reread"
+          : "shelf_move",
       applyCompletionTags: true,
       completionTagsState: {
         read_count: saved.read_count ?? userBook?.read_count,
@@ -356,7 +359,7 @@ export async function markBookFinished(
     finishedAt: finished_at,
     startedAt: userBook.started_at ?? finished_at,
     manualPageCount,
-    source: "mark_finished",
+    source: Number(userBook.read_count) > 1 ? "reread" : "mark_finished",
     applyCompletionTags: true,
     completionTagsState: {
       read_count: userBook.read_count,

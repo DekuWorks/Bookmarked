@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { useRouter } from "expo-router";
 import { FlatList, Pressable, Text, View } from "react-native";
 import { CoverTile } from "../CoverTile";
@@ -5,6 +6,13 @@ import { LoadingState } from "../LoadingState";
 import { SectionCard } from "../SectionCard";
 import type { LibraryBookRow } from "../../services/library";
 import type { UserReadingSession } from "../../services/readingSessions";
+import {
+  DEFAULT_HISTORY_SORT,
+  filterFinishedHistoryBooks,
+  sortHistoryBooks,
+  type HistorySortMode,
+} from "../../../../../packages/utils/readingRoomHistory";
+import { HistorySortSelect } from "./HistorySortSelect";
 
 function formatSessionDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -15,26 +23,36 @@ function formatSessionDate(iso: string): string {
 }
 
 type Props = {
-  readBooks: LibraryBookRow[];
+  books: LibraryBookRow[];
   sessions: UserReadingSession[] | null;
 };
 
-export function HistoryPanel({ readBooks, sessions }: Props) {
+export function HistoryPanel({ books, sessions }: Props) {
   const router = useRouter();
+  const [sort, setSort] = useState<HistorySortMode>(DEFAULT_HISTORY_SORT);
+
+  const finishedBooks = useMemo(
+    () => sortHistoryBooks(filterFinishedHistoryBooks(books), sort),
+    [books, sort]
+  );
 
   return (
     <View className="gap-4">
-      <SectionCard title="Reading history" shelfIconId="read">
+      <SectionCard title="Recently Finished Books" shelfIconId="read">
         <Text className="text-sm text-ink-muted">
           Finished books and recent reading sessions.
         </Text>
 
-        {readBooks.length === 0 ? (
+        <View className="mt-4">
+          <HistorySortSelect value={sort} onChange={setSort} />
+        </View>
+
+        {finishedBooks.length === 0 ? (
           <Text className="mt-4 text-sm text-ink-muted">Books you finish will appear here.</Text>
         ) : (
           <FlatList
             horizontal
-            data={readBooks}
+            data={finishedBooks}
             keyExtractor={(item) => item.id}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ gap: 12, marginTop: 16 }}

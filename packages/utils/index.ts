@@ -76,6 +76,27 @@ export {
 } from "./aiInsights";
 
 export {
+  buildReviewSharePostBody,
+  filterReviews,
+  groupReviewsByMonth,
+  hasStarRating,
+  hasWrittenReview,
+  REVIEW_FILTER_OPTIONS,
+  type ReviewFilter,
+  type ReviewFilterable,
+  type ReviewShareInput,
+} from "./readingRoomReviews";
+
+export {
+  DEFAULT_HISTORY_SORT,
+  filterFinishedHistoryBooks,
+  HISTORY_SORT_OPTIONS,
+  sortHistoryBooks,
+  type HistorySortableBook,
+  type HistorySortMode,
+} from "./readingRoomHistory";
+
+export {
   MAX_BIO_LENGTH,
   MAX_DISPLAY_NAME_LENGTH,
   MAX_READING_GOAL,

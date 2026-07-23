@@ -130,13 +130,6 @@ export default function HomeReadingRoom() {
     [books]
   );
   const favorites = useMemo(() => books.filter((b) => b.is_favorite).slice(0, 8), [books]);
-  const readBooks = useMemo(
-    () =>
-      books
-        .filter((b) => b.shelf_status === "read")
-        .sort((a, b) => new Date(b.finished_at ?? 0).getTime() - new Date(a.finished_at ?? 0).getTime()),
-    [books]
-  );
   const goal = computeReadingGoal(books, profile?.yearly_reading_goal ?? null);
   const name = profile?.display_name?.trim() || profile?.username?.trim() || "reader";
   const continueReadingBook = currentlyReading.find((b) => b.books?.id);
@@ -310,7 +303,7 @@ export default function HomeReadingRoom() {
 
         {tab === "reviews" ? <ReviewsPanel reviews={reviews} /> : null}
 
-        {tab === "history" ? <HistoryPanel readBooks={readBooks} sessions={sessions} /> : null}
+        {tab === "history" ? <HistoryPanel books={books} sessions={sessions} /> : null}
       </Animated.ScrollView>
     </View>
   );

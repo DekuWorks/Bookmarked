@@ -1,20 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import dynamic from "next/dynamic";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AnalyticsGrid } from "@/components/analytics/AnalyticsGrid";
 import { ReadingActivityPanel } from "@/components/analytics/ReadingActivityPanel";
 import { AiInsightsPanel } from "@/components/premium/AiInsightsPanel";
 import { PremiumFeatureLock } from "@/components/premium/PremiumFeatureLock";
-import { BookCover } from "@/components/books/BookCover";
 import { NotesSearchForm } from "@/components/notes/NotesSearchForm";
 import { NotesSearchResultCard } from "@/components/notes/NotesSearchResultCard";
 import { BookMiniGrid } from "@/components/reading-room/BookMiniGrid";
 import { CurrentlyReadingRow } from "@/components/reading-room/CurrentlyReadingRow";
 import { ShelfIcon } from "@/components/shelves/ShelfIcon";
 import { ReadingGoalPanel } from "@/components/reading-goal/ReadingGoalPanel";
-import { StarDisplay } from "@/components/reviews/StarDisplay";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { TrailPanel } from "@/components/reading-room/TrailPanel";
 import { ButtonLink } from "@/components/ui/ButtonLink";
@@ -26,9 +25,6 @@ import {
   listUserReadingSessions,
   type UserReadingSession,
 } from "@/lib/services/readingSessions";
-import { cn } from "@/lib/utils/cn";
-import { formatReviewDate } from "@/lib/utils/locale";
-import { usePreferredLocale } from "@/lib/hooks/usePreferredLocale";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { LoadingState } from "@/components/ui/LoadingState";
 import {
@@ -37,36 +33,18 @@ import {
   readingRoomTabHref,
   type ReadingRoomTab,
 } from "@/lib/reading-room/readingRoomTabs";
-import { formatSessionDate } from "@/lib/reading-room/trail";
 
 export type { ReadingRoomTab };
 
-type ReviewFilter = "all" | "rated" | "written";
+const ReviewsPanel = dynamic(
+  () => import("@/components/reading-room/ReviewsPanel").then((m) => ({ default: m.ReviewsPanel })),
+  { loading: () => <LoadingState message="Loading reviews…" /> }
+);
 
-function groupReviewsByMonth(reviews: UserReviewWithBook[]): [string, UserReviewWithBook[]][] {
-  const groups = new Map<string, UserReviewWithBook[]>();
-
-  for (const review of reviews) {
-    const date = new Date(review.created_at);
-    const key = date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
-    const list = groups.get(key) ?? [];
-    list.push(review);
-    groups.set(key, list);
-  }
-
-  return [...groups.entries()];
-}
-
-function filterReviews(reviews: UserReviewWithBook[], filter: ReviewFilter): UserReviewWithBook[] {
-  switch (filter) {
-    case "rated":
-      return reviews.filter((review) => review.rating != null);
-    case "written":
-      return reviews.filter((review) => Boolean(review.review_body?.trim()));
-    default:
-      return reviews;
-  }
-}
+const HistoryPanel = dynamic(
+  () => import("@/components/reading-room/HistoryPanel").then((m) => ({ default: m.HistoryPanel })),
+  { loading: () => <LoadingState message="Loading history…" /> }
+);
 
 type Props = {
   userId: string;
@@ -77,16 +55,18 @@ type Props = {
 function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
   const searchParams = useSearchParams();
   const tab = parseReadingRoomTab(searchParams.get("tab"));
-  const locale = usePreferredLocale();
   const { canAccess, loading: subscriptionLoading } = useSubscription(userId);
   const hasAdvancedAnalytics = canAccess("advanced_analytics");
   const hasAiInsights = canAccess("ai_insights");
   const [sessions, setSessions] = useState<UserReadingSession[] | null>(null);
   const [reviews, setReviews] = useState<UserReviewWithBook[] | null>(null);
-  const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("all");
   const [recentNotes, setRecentNotes] = useState<
     Awaited<ReturnType<typeof searchNotesWithBooks>>["notes"] | null
   >(null);
+  const libraryBooks = useMemo(
+    () => data.shelves.flatMap((shelf) => shelf.items),
+    [data.shelves]
+  );
 
   const continueReadingBook = data.currentlyReading.find((b) => b.books?.id);
   const continueReadingHref = continueReadingBook?.books?.id
@@ -320,181 +300,10 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
           </div>
         ) : null}
 
-        {tab === "reviews" ? (
-          <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6 text-left">
-            <h2 className="text-center text-lg font-semibold text-puce-red">Your reviews</h2>
-            <p className="mt-1 text-center text-sm text-text-muted">
-              Ratings and reviews across your reading history.
-            </p>
-            {reviews === null ? (
-              <LoadingState message="Loading reviews…" />
-            ) : reviews.length === 0 ? (
-              <p className="mt-6 text-center text-sm text-text-muted">
-                Finish a book and share your thoughts from its detail page.
-              </p>
-            ) : (
-              <>
-                <div className="mt-4 flex flex-wrap justify-center gap-2">
-                  {(
-                    [
-                      { id: "all", label: "All" },
-                      { id: "rated", label: "Rated" },
-                      { id: "written", label: "With review" },
-                    ] as const
-                  ).map((option) => (
-                    <button
-                      key={option.id}
-                      type="button"
-                      onClick={() => setReviewFilter(option.id)}
-                      className={cn(
-                        "rounded-full border px-3 py-1 text-xs font-medium transition",
-                        reviewFilter === option.id
-                          ? "border-puce-red bg-puce-red text-white"
-                          : "border-border bg-background text-text-muted hover:border-primary"
-                      )}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-
-                {filterReviews(reviews, reviewFilter).length === 0 ? (
-                  <p className="mt-6 text-center text-sm text-text-muted">
-                    No reviews match this filter.
-                  </p>
-                ) : (
-                  <div className="mt-6 space-y-8">
-                    {groupReviewsByMonth(filterReviews(reviews, reviewFilter)).map(
-                      ([month, monthReviews]) => (
-                        <div key={month}>
-                          <h3 className="text-sm font-semibold uppercase tracking-wide text-text-muted">
-                            {month}
-                          </h3>
-                          <ul className="mt-3 space-y-4">
-                            {monthReviews.map((review) => (
-                              <li
-                                key={review.id}
-                                className="rounded-lg border border-border bg-background/50 px-4 py-3"
-                              >
-                                <div className="flex gap-3">
-                                  {review.books?.cover_url ? (
-                                    <BookCover
-                                      coverUrl={review.books.cover_url}
-                                      title={review.books.title}
-                                      author={review.books.author}
-                                      className="h-16 w-11 shrink-0 rounded shadow-sm"
-                                    />
-                                  ) : null}
-                                  <div className="min-w-0 flex-1">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                      {review.books ? (
-                                        <Link
-                                          href={bookDetailsPath(review.books.id)}
-                                          className="font-medium text-primary hover:underline"
-                                        >
-                                          {review.books.title}
-                                        </Link>
-                                      ) : (
-                                        <p className="font-medium text-text">Review</p>
-                                      )}
-                                      {review.read_number > 1 ? (
-                                        <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-puce-red">
-                                          Read #{review.read_number}
-                                        </span>
-                                      ) : null}
-                                    </div>
-                                    {review.books?.author ? (
-                                      <p className="text-xs text-text-muted">{review.books.author}</p>
-                                    ) : null}
-                                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                                      {review.rating != null ? (
-                                        <StarDisplay rating={review.rating} />
-                                      ) : (
-                                        <span className="text-xs text-text-muted">No rating</span>
-                                      )}
-                                      {review.edition ? (
-                                        <span className="text-xs text-text-muted">· {review.edition}</span>
-                                      ) : null}
-                                      <time
-                                        className="text-xs text-text-muted"
-                                        dateTime={review.created_at}
-                                      >
-                                        {formatReviewDate(review.created_at, locale)}
-                                      </time>
-                                    </div>
-                                    {review.feelings?.length ? (
-                                      <div className="mt-2 flex flex-wrap gap-1.5">
-                                        {review.feelings.map((feeling) => (
-                                          <span
-                                            key={feeling}
-                                            className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-puce-red"
-                                          >
-                                            {feeling}
-                                          </span>
-                                        ))}
-                                      </div>
-                                    ) : null}
-                                    {review.review_body ? (
-                                      <p className="mt-2 line-clamp-4 text-sm text-text-muted">
-                                        {review.review_body}
-                                      </p>
-                                    ) : null}
-                                  </div>
-                                </div>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )
-                    )}
-                  </div>
-                )}
-              </>
-            )}
-          </section>
-        ) : null}
+        {tab === "reviews" ? <ReviewsPanel reviews={reviews} /> : null}
 
         {tab === "history" ? (
-          <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
-            <h2 className="text-lg font-semibold text-puce-red">Reading history</h2>
-            <p className="mt-1 text-sm text-text-muted">
-              Finished books and recent reading sessions.
-            </p>
-            <div className="mt-6">
-              <BookMiniGrid
-                items={data.shelves.find((s) => s.status === "read")?.items ?? []}
-                emptyMessage="Books you finish will appear here."
-                emptyAction={{ label: "Browse library", href: "/library/read/" }}
-              />
-            </div>
-            {sessions === null ? (
-              <LoadingState message="Loading sessions…" />
-            ) : sessions.length > 0 ? (
-              <div className="mt-8 text-left">
-                <h3 className="text-center text-base font-semibold text-puce-red">
-                  Recent sessions
-                </h3>
-                <ol className="mt-4 max-h-80 space-y-2 overflow-y-auto">
-                  {sessions.slice(0, 20).map((session) => (
-                    <li
-                      key={session.id}
-                      className={cn(
-                        "flex flex-wrap items-center justify-between gap-2 rounded-lg",
-                        "border border-border/60 bg-background/40 px-3 py-2 text-sm"
-                      )}
-                    >
-                      <span className="font-medium text-text">
-                        {session.bookTitle ?? "Session"}
-                      </span>
-                      <span className="text-text-muted">
-                        {formatSessionDate(session.created_at)} · {session.pages_read} pages
-                      </span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            ) : null}
-          </section>
+          <HistoryPanel books={libraryBooks} sessions={sessions} />
         ) : null}
       </div>
     </div>

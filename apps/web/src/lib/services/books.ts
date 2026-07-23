@@ -293,7 +293,7 @@ export async function addCatalogBookToShelf(
       finishedAt: now,
       startedAt: userBook.started_at ?? now,
       manualPageCount,
-      source: "search_add",
+      source: Number(existingUserBook?.read_count) > 1 ? "reread" : "search_add",
       applyCompletionTags: Boolean(existingUserBook),
       completionTagsState: existingUserBook
         ? {

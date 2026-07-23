@@ -1,39 +1,21 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { FlatList, Pressable, Text, View } from "react-native";
 import { BookCover } from "../BookCover";
 import { FeelingChip } from "../FeelingChip";
 import { LoadingState } from "../LoadingState";
 import { SectionCard } from "../SectionCard";
 import { StarRating } from "../StarRating";
 import type { UserReviewWithBook } from "../../services/readingRoom";
-
-type ReviewFilter = "all" | "rated" | "written";
-
-function groupReviewsByMonth(reviews: UserReviewWithBook[]): [string, UserReviewWithBook[]][] {
-  const groups = new Map<string, UserReviewWithBook[]>();
-
-  for (const review of reviews) {
-    const date = new Date(review.created_at);
-    const key = date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
-    const list = groups.get(key) ?? [];
-    list.push(review);
-    groups.set(key, list);
-  }
-
-  return [...groups.entries()];
-}
-
-function filterReviews(reviews: UserReviewWithBook[], filter: ReviewFilter): UserReviewWithBook[] {
-  switch (filter) {
-    case "rated":
-      return reviews.filter((review) => review.rating != null);
-    case "written":
-      return reviews.filter((review) => Boolean(review.review_body?.trim()));
-    default:
-      return reviews;
-  }
-}
+import {
+  filterReviews,
+  groupReviewsByMonth,
+  hasStarRating,
+  hasWrittenReview,
+  REVIEW_FILTER_OPTIONS,
+  type ReviewFilter,
+} from "../../../../../packages/utils/readingRoomReviews";
+import { ShareReviewButton } from "./ShareReviewButton";
 
 function formatReviewDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -71,19 +53,19 @@ export function ReviewsPanel({ reviews }: Props) {
         </Text>
       ) : (
         <>
-          <View className="mt-4 flex-row flex-wrap gap-2">
-            {(
-              [
-                { id: "all", label: "All" },
-                { id: "rated", label: "Rated" },
-                { id: "written", label: "With review" },
-              ] as const
-            ).map((option) => {
+          <View
+            className="mt-4 flex-row flex-wrap gap-2"
+            accessibilityRole="radiogroup"
+            accessibilityLabel="Filter reviews"
+          >
+            {REVIEW_FILTER_OPTIONS.map((option) => {
               const active = filter === option.id;
               return (
                 <Pressable
                   key={option.id}
                   onPress={() => setFilter(option.id)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: active }}
                   className={`rounded-full border px-3 py-1.5 ${
                     active ? "border-puce-red bg-puce-red" : "border-brand-border bg-background"
                   }`}
@@ -108,61 +90,99 @@ export function ReviewsPanel({ reviews }: Props) {
                     {month}
                   </Text>
                   <View className="mt-3 gap-3">
-                    {monthReviews.map((review) => (
-                      <Pressable
-                        key={review.id}
-                        onPress={() => review.books?.id && router.push(`/book/${review.books.id}`)}
-                        className="flex-row gap-3 rounded-xl border border-brand-border bg-background/70 p-3 active:opacity-80"
-                      >
-                        {review.books?.cover_url ? (
-                          <BookCover
-                            url={review.books.cover_url}
-                            title={review.books.title}
-                            sizeClassName="w-11 h-16"
-                          />
-                        ) : null}
-                        <View className="min-w-0 flex-1">
-                          <View className="flex-row flex-wrap items-center gap-2">
-                            <Text className="font-semibold text-primary-dark" numberOfLines={2}>
-                              {review.books?.title ?? "Review"}
-                            </Text>
-                            {review.read_number > 1 ? (
-                              <Text className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-puce-red">
-                                Read #{review.read_number}
-                              </Text>
+                    {monthReviews.map((review) => {
+                      const written = hasWrittenReview(review);
+                      const rated = hasStarRating(review);
+
+                      return (
+                        <View
+                          key={review.id}
+                          className="rounded-xl border border-brand-border bg-background/70 p-3"
+                        >
+                          <View className="flex-col gap-3 sm:flex-row">
+                            {review.books ? (
+                              <Pressable
+                                onPress={() =>
+                                  review.books?.id && router.push(`/book/${review.books.id}`)
+                                }
+                                className="self-center sm:self-start"
+                              >
+                                <BookCover
+                                  url={review.books.cover_url}
+                                  title={review.books.title}
+                                  sizeClassName="w-[80px] h-[120px]"
+                                />
+                              </Pressable>
                             ) : null}
-                          </View>
-                          {review.books?.author ? (
-                            <Text className="text-xs text-ink-muted">{review.books.author}</Text>
-                          ) : null}
-                          <View className="mt-2 flex-row flex-wrap items-center gap-2">
-                            {review.rating != null ? (
-                              <StarRating value={review.rating} showNumber />
-                            ) : (
-                              <Text className="text-xs text-ink-muted">No rating</Text>
-                            )}
-                            {review.edition ? (
-                              <Text className="text-xs text-ink-muted">· {review.edition}</Text>
-                            ) : null}
-                            <Text className="text-xs text-ink-muted">
-                              {formatReviewDate(review.created_at)}
-                            </Text>
-                          </View>
-                          {review.feelings?.length ? (
-                            <View className="mt-2 flex-row flex-wrap gap-2">
-                              {review.feelings.map((feeling, i) => (
-                                <FeelingChip key={feeling} label={feeling} index={i} />
-                              ))}
+
+                            <View className="min-w-0 flex-1">
+                              <View className="flex-row flex-wrap items-center gap-2">
+                                <Pressable
+                                  onPress={() =>
+                                    review.books?.id && router.push(`/book/${review.books.id}`)
+                                  }
+                                  className="min-w-0 flex-1 active:opacity-80"
+                                >
+                                  <Text className="font-semibold text-primary-dark">
+                                    {review.books?.title ?? "Review"}
+                                  </Text>
+                                </Pressable>
+                                {review.read_number > 1 ? (
+                                  <Text className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-puce-red">
+                                    Read #{review.read_number}
+                                  </Text>
+                                ) : null}
+                              </View>
+
+                              {review.books?.author ? (
+                                <Text className="text-xs text-ink-muted">{review.books.author}</Text>
+                              ) : null}
+
+                              <View className="mt-2 flex-row flex-wrap items-center gap-2">
+                                {rated ? (
+                                  <StarRating value={review.rating!} showNumber />
+                                ) : written ? (
+                                  <Text className="text-xs text-ink-muted">No star rating</Text>
+                                ) : null}
+                                {review.edition ? (
+                                  <Text className="text-xs text-ink-muted">· {review.edition}</Text>
+                                ) : null}
+                                {review.has_spoilers ? (
+                                  <Text className="rounded-full bg-rust/15 px-2 py-0.5 text-xs font-medium text-rust">
+                                    Spoilers
+                                  </Text>
+                                ) : null}
+                                <Text className="text-xs text-ink-muted">
+                                  {formatReviewDate(review.created_at)}
+                                </Text>
+                              </View>
+
+                              {review.feelings?.length ? (
+                                <View className="mt-2 flex-row flex-wrap gap-2">
+                                  {review.feelings.map((feeling, i) => (
+                                    <FeelingChip key={feeling} label={feeling} index={i} />
+                                  ))}
+                                </View>
+                              ) : null}
+
+                              {written ? (
+                                <Text className="mt-2 text-sm leading-relaxed text-ink-muted">
+                                  {review.review_body}
+                                </Text>
+                              ) : rated ? (
+                                <Text className="mt-2 text-sm italic text-ink-muted">
+                                  Rating only — no written review.
+                                </Text>
+                              ) : null}
+
+                              <View className="mt-3 flex-row justify-end">
+                                <ShareReviewButton review={review} />
+                              </View>
                             </View>
-                          ) : null}
-                          {review.review_body ? (
-                            <Text className="mt-2 text-sm text-ink-muted" numberOfLines={4}>
-                              {review.review_body}
-                            </Text>
-                          ) : null}
+                          </View>
                         </View>
-                      </Pressable>
-                    ))}
+                      );
+                    })}
                   </View>
                 </View>
               ))}
