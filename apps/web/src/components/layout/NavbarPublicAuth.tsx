@@ -51,14 +51,14 @@ export function NavbarPublicAuth({ layout = "inline" }: Props) {
   if (hasSession) {
     return (
       <Link
-        href="/dashboard"
+        href="/reading-room/"
         className={cn(
           linkClass,
           "bg-primary text-puce-red hover:opacity-90",
           stacked && "w-full"
         )}
       >
-        Dashboard
+        Reading Room
       </Link>
     );
   }

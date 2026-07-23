@@ -64,7 +64,7 @@ export function ProfileSetupForm() {
       <input
         type="hidden"
         name="redirect"
-        value={isEditing ? "/profile" : "/dashboard"}
+        value={isEditing ? "/profile" : "/reading-room"}
       />
       <Input
         label="Username"

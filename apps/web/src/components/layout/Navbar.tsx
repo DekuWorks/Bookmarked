@@ -18,7 +18,6 @@ const APP_LINKS: NavLinkItem[] = [
     label: "Home",
     className: "font-semibold text-royal-orange hover:text-rust",
   },
-  { href: "/dashboard/", label: "Dashboard" },
   { href: "/feed/", label: "Feed" },
   { href: "/library/", label: "Library" },
   { href: "/search/", label: "Search" },

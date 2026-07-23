@@ -134,7 +134,7 @@ function isActivePath(pathname: string, href: string): boolean {
   const normalized = href.replace(/\/$/, "");
   const current = pathname.replace(/\/$/, "");
   if (normalized === "/reading-room") {
-    return current === "/reading-room" || current === "/dashboard";
+    return current === "/reading-room";
   }
   return current === normalized || current.startsWith(`${normalized}/`);
 }

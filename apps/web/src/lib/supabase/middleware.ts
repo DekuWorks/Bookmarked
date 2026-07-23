@@ -71,7 +71,7 @@ export async function updateSession(request: NextRequest) {
 
     if (hasProfile && isProfileSetup) {
       const url = request.nextUrl.clone();
-      url.pathname = "/dashboard";
+      url.pathname = "/reading-room";
       return NextResponse.redirect(url);
     }
   }
@@ -84,7 +84,7 @@ export async function updateSession(request: NextRequest) {
       .maybeSingle();
 
     const url = request.nextUrl.clone();
-    url.pathname = profile?.username?.trim() ? "/dashboard" : "/profile/setup";
+    url.pathname = profile?.username?.trim() ? "/reading-room" : "/profile/setup";
     return NextResponse.redirect(url);
   }
 

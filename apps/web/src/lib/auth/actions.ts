@@ -59,7 +59,7 @@ export async function login(
     redirect:
       redirectTo && redirectTo.startsWith("/")
         ? normalizeAppPath(redirectTo)
-        : "/dashboard/",
+        : "/reading-room/",
   };
 }
 
@@ -173,7 +173,7 @@ export async function updatePassword(
     return { error: error.message };
   }
 
-  return { redirect: "/dashboard/" };
+  return { redirect: "/reading-room/" };
 }
 
 export async function saveProfile(
@@ -223,6 +223,6 @@ export async function saveProfile(
   const redirectTo = String(formData.get("redirect") ?? "").trim();
   return {
     success: "Profile saved.",
-    redirect: redirectTo.startsWith("/") ? normalizeAppPath(redirectTo) : "/dashboard/",
+    redirect: redirectTo.startsWith("/") ? normalizeAppPath(redirectTo) : "/reading-room/",
   };
 }

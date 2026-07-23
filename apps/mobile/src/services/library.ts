@@ -182,21 +182,38 @@ export async function setShelfStatus(
 ): Promise<{ error?: string }> {
   const { data: existing } = await supabase
     .from("user_books")
-    .select("id, shelf_status")
+    .select("id, shelf_status, progress_pages, read_count, started_at, finished_at")
     .eq("user_id", userId)
     .eq("book_id", book.id)
     .maybeSingle();
 
   if (existing?.shelf_status === shelfStatus) return {};
 
+  const { data: bookRow } = await supabase
+    .from("books")
+    .select("page_count")
+    .eq("id", book.id)
+    .maybeSingle();
+
+  const pageCount = bookRow?.page_count ?? 0;
+  const previousPage = Number(existing?.progress_pages) || 0;
+  const previousShelf = existing?.shelf_status ?? null;
+  const now = new Date().toISOString();
+
   const patch: Record<string, unknown> = {
     user_id: userId,
     book_id: book.id,
     shelf_status: shelfStatus,
-    updated_at: new Date().toISOString(),
+    updated_at: now,
   };
-  if (shelfStatus === "currently_reading") patch.started_at = new Date().toISOString();
-  if (shelfStatus === "read") patch.finished_at = new Date().toISOString();
+  if (shelfStatus === "currently_reading") patch.started_at = existing?.started_at ?? now;
+  if (shelfStatus === "read") {
+    patch.finished_at = existing?.finished_at ?? now;
+    if (!existing?.started_at) patch.started_at = now;
+    const finalPage = pageCount > 0 ? pageCount : previousPage;
+    patch.progress_pages = finalPage;
+    patch.progress_percent = 100;
+  }
 
   const { data: userBook, error } = await supabase
     .from("user_books")
@@ -206,10 +223,31 @@ export async function setShelfStatus(
 
   if (error) return { error: error.message };
 
-  const eventType: ActivityEventType = existing ? "shelf_updated" : "book_added";
+  if (shelfStatus === "read" && previousShelf !== "read") {
+    const finalPage = pageCount > 0 ? pageCount : previousPage;
+    if (finalPage > 0) {
+      const sessionResult = await createReadingSession({
+        userId,
+        userBookId: userBook.id,
+        pageStart: previousPage,
+        pageEnd: finalPage,
+        percentComplete: 100,
+        readNumber: Number(existing?.read_count) || 1,
+        createdAt: (patch.finished_at as string) ?? now,
+      });
+      if (sessionResult.error) return { error: sessionResult.error };
+    }
+  }
+
+  const eventType: ActivityEventType =
+    shelfStatus === "read" && previousShelf !== "read"
+      ? "book_finished"
+      : existing
+        ? "shelf_updated"
+        : "book_added";
   await recordBookActivity(userId, eventType, userBook?.id ?? null, book, {
     shelf_status: shelfStatus,
-    previous_shelf_status: existing?.shelf_status ?? null,
+    previous_shelf_status: previousShelf,
   });
 
   return {};

@@ -29,6 +29,48 @@ export async function listReadingSessions(userBookId: string): Promise<ReadingSe
   return (data ?? []) as ReadingSession[];
 }
 
+export type UserReadingSession = ReadingSession & {
+  bookTitle: string | null;
+  bookId: string | null;
+};
+
+type UserBookJoinRow = {
+  book_id: string;
+  books: { title: string } | { title: string }[] | null;
+};
+
+export async function listUserReadingSessions(
+  userId: string,
+  limit = 100
+): Promise<UserReadingSession[]> {
+  const { data, error } = await supabase
+    .from("reading_sessions")
+    .select("*, user_books(book_id, books(title))")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("[readingSessions] list user failed:", error);
+    return [];
+  }
+
+  return (data ?? []).map((row) => {
+    const { user_books: userBook, ...session } = row as ReadingSession & {
+      user_books: UserBookJoinRow | UserBookJoinRow[] | null;
+    };
+    const join = Array.isArray(userBook) ? userBook[0] : userBook;
+    const books = join?.books;
+    const book = Array.isArray(books) ? books[0] : books;
+
+    return {
+      ...(session as ReadingSession),
+      bookTitle: book?.title ?? null,
+      bookId: join?.book_id ?? null,
+    };
+  });
+}
+
 export async function createReadingSession(
   input: CreateReadingSessionInput
 ): Promise<{ error?: string; session?: ReadingSession }> {

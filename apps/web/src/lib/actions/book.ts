@@ -141,12 +141,19 @@ export async function setBookShelfStatus(
     updated_at: now,
   };
 
+  const previousShelf = userBook?.shelf_status ?? null;
+  const previousPage = Number(userBook?.progress_pages) || 0;
+  const pageCount = book.page_count ?? 0;
+
   if (shelf_status === "currently_reading" && !userBook?.started_at) {
     payload.started_at = now;
   }
   if (shelf_status === "read") {
     payload.finished_at = userBook?.finished_at ?? now;
     if (!userBook?.started_at) payload.started_at = now;
+    const finalPage = pageCount > 0 ? pageCount : previousPage;
+    payload.progress_pages = finalPage;
+    payload.progress_percent = 100;
   }
 
   const { data: saved, error } = await supabase
@@ -157,7 +164,31 @@ export async function setBookShelfStatus(
 
   if (error) return { error: error.message };
 
-  const event_type = userBook ? "shelf_updated" : "book_added";
+  if (shelf_status === "read" && previousShelf !== "read") {
+    const finalPage = pageCount > 0 ? pageCount : previousPage;
+    if (finalPage > 0) {
+      const sessionResult = await createReadingSessionWithClient(supabase, {
+        userId: user.id,
+        userBookId: saved.id,
+        pageStart: previousPage,
+        pageEnd: finalPage,
+        percentComplete: 100,
+        readNumber: Number(userBook?.read_count) || 1,
+        createdAt: (payload.finished_at as string) ?? now,
+      });
+      if (sessionResult.error) return { error: sessionResult.error };
+    }
+    if (userBook) {
+      await applyCompletionTagsForFinish(supabase, userBook);
+    }
+  }
+
+  const event_type =
+    shelf_status === "read" && previousShelf !== "read"
+      ? "book_finished"
+      : userBook
+        ? "shelf_updated"
+        : "book_added";
   await recordActivity(supabase, {
     user_id: user.id,
     event_type,
@@ -166,7 +197,7 @@ export async function setBookShelfStatus(
     metadata_json: activityMetadata(book.title, {
       ...bookActivityContext(book),
       shelf_status,
-      previous_shelf_status: userBook?.shelf_status ?? null,
+      previous_shelf_status: previousShelf,
     }),
   });
 
