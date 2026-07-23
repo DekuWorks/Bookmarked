@@ -84,6 +84,8 @@ export function MessageBubble({
 
   const canInteract = !deleted && !isEditing;
   const showActions = canInteract && (onReply || onToggleReaction || onDelete || onEdit);
+  const showReactions =
+    canInteract && Boolean(onToggleReaction) && Boolean(message.reactions?.length);
 
   return (
     <div className={cn("flex flex-col gap-1", isOwn ? "items-end" : "items-start")}>
@@ -122,46 +124,57 @@ export function MessageBubble({
             {editError ? <p className="text-xs text-rust">{editError}</p> : null}
           </div>
         ) : (
-          <div
-            className={cn(
-              "rounded-2xl text-sm leading-relaxed shadow-sm",
-              isAttachmentOnly ? "overflow-hidden p-1" : "px-4 py-2.5",
-              isOwn
-                ? "rounded-br-md bg-puce-red text-white"
-                : "rounded-bl-md border border-border bg-surface text-text",
-              deleted && "px-4 py-2.5 italic opacity-70"
-            )}
-          >
-            {deleted ? (
-              "Message deleted"
-            ) : (
-              <div className={cn(!isAttachmentOnly && "space-y-2")}>
-                {hasReply ? (
-                  <MessageReplyPreview reply={message.reply_to!} isOwn={isOwn} compact />
-                ) : null}
-                {hasAttachment ? (
-                  <CommentAttachment
-                    url={message.attachment_url!}
-                    className={cn(isAttachmentOnly && "rounded-xl")}
-                  />
-                ) : null}
-                {hasBody ? <p className={hasAttachment ? "px-1" : undefined}>{message.body}</p> : null}
-              </div>
-            )}
+          <div className={cn("relative", showReactions && "pb-2.5")}>
+            <div
+              className={cn(
+                "rounded-2xl text-sm leading-relaxed shadow-sm",
+                isAttachmentOnly ? "overflow-hidden p-1" : "px-4 py-2.5",
+                isOwn
+                  ? "rounded-br-md bg-puce-red text-white"
+                  : "rounded-bl-md border border-border bg-surface text-text",
+                deleted && "px-4 py-2.5 italic opacity-70"
+              )}
+            >
+              {deleted ? (
+                "Message deleted"
+              ) : (
+                <div className={cn(!isAttachmentOnly && "space-y-2")}>
+                  {hasReply ? (
+                    <MessageReplyPreview reply={message.reply_to!} isOwn={isOwn} compact />
+                  ) : null}
+                  {hasAttachment ? (
+                    <CommentAttachment
+                      url={message.attachment_url!}
+                      className={cn(isAttachmentOnly && "rounded-xl")}
+                    />
+                  ) : null}
+                  {hasBody ? <p className={hasAttachment ? "px-1" : undefined}>{message.body}</p> : null}
+                </div>
+              )}
+            </div>
+
+            {showReactions ? (
+              <MessageReactionBar
+                reactions={message.reactions!}
+                participantNames={participantNames}
+                onToggleReaction={(emoji) => onToggleReaction!(message.id, emoji)}
+                alignEnd={isOwn}
+                className={cn(
+                  "absolute bottom-0 z-10 translate-y-1/2",
+                  isOwn ? "right-2" : "left-2"
+                )}
+              />
+            ) : null}
           </div>
         )}
 
-        {canInteract && onToggleReaction && message.reactions?.length ? (
-          <MessageReactionBar
-            reactions={message.reactions}
-            participantNames={participantNames}
-            onToggleReaction={(emoji) => onToggleReaction(message.id, emoji)}
-            alignEnd={isOwn}
-          />
-        ) : null}
-
         {showActions ? (
-          <div className="relative z-30 mt-0.5 h-8 shrink-0">
+          <div
+            className={cn(
+              "relative z-30 h-8 shrink-0",
+              showReactions ? "mt-1" : "mt-0.5"
+            )}
+          >
             <div
               className={cn(
                 "absolute top-0 flex items-center gap-0.5 rounded-full border border-border bg-surface p-0.5 shadow-sm",

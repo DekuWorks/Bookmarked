@@ -9,6 +9,7 @@ type Props = {
   participantNames: Map<string, string>;
   onToggleReaction: (emoji: string) => void;
   alignEnd?: boolean;
+  className?: string;
 };
 
 export function MessageReactionBar({
@@ -16,13 +17,14 @@ export function MessageReactionBar({
   participantNames,
   onToggleReaction,
   alignEnd,
+  className,
 }: Props) {
   const [openEmoji, setOpenEmoji] = useState<string | null>(null);
 
   if (!reactions.length) return null;
 
   return (
-    <div className={cn("mt-1 flex flex-wrap gap-1", alignEnd ? "justify-end" : "justify-start")}>
+    <div className={cn("flex flex-wrap gap-1", alignEnd ? "justify-end" : "justify-start", className)}>
       {reactions.map((reaction) => {
         const names = reaction.user_ids
           .map((userId) => participantNames.get(userId))
