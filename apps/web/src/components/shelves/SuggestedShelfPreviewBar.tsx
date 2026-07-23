@@ -213,7 +213,7 @@ export function SuggestedShelfPreviewBar({
                         className="w-full"
                         sizes="64px"
                         bookmarked
-                        bookmarkBadgeSize="sm"
+                        bookmarkBadgeSize="small"
                       />
                     </Link>
                   </li>

@@ -108,7 +108,7 @@ export function ClubDiscussionCard({ post, viewerId, onDeleted }: Props) {
                   coverUrl={post.book.cover_url}
                   className="h-full w-full"
                   bookmarked
-                  bookmarkBadgeSize="md"
+                  bookmarkBadgeSize="medium"
                 />
               </Link>
               <div className="min-w-0">

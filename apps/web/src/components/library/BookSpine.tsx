@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BookmarkedShelfBadge } from "@/components/books/BookmarkedShelfBadge";
+import { SavedBookBadge } from "@/components/books/SavedBookBadge";
 import { cn } from "@/lib/utils/cn";
 import { authorPagePath } from "@/lib/routes/author";
 
@@ -84,7 +84,7 @@ export function BookSpine({
             </span>
           </div>
         </div>
-        {bookmarked ? <BookmarkedShelfBadge size="sm" /> : null}
+        {bookmarked ? <SavedBookBadge size="small" /> : null}
       </div>
     </div>
   );

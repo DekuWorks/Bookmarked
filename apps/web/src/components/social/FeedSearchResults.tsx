@@ -93,7 +93,7 @@ export function FeedSearchResults({ query, results, loading, error }: Props) {
                       coverUrl={book.cover_url}
                       className="h-full w-full"
                       bookmarked={Boolean(book.onShelf)}
-                      bookmarkBadgeSize="sm"
+                      bookmarkBadgeSize="small"
                     />
                   </div>
                   <div className="min-w-0">

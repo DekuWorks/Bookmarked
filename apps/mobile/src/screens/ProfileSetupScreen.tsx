@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, Text, View } from "react-native";
-import { BrandLogo } from "../components/BrandLogo";
+import { BookmarkedLogo } from "../components/BookmarkedLogo";
 import { Button } from "../components/Button";
 import { CircleAvatarPicker } from "../components/CircleAvatarPicker";
 import { Input } from "../components/Input";
@@ -146,7 +146,7 @@ export function ProfileSetupScreen({ mode = "setup" }: Props) {
     <>
       {mode === "setup" ? (
         <View className="items-center pt-12 pb-2">
-          <BrandLogo size="large" />
+          <BookmarkedLogo size="large" />
         </View>
       ) : null}
 

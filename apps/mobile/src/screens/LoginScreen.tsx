@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import { BrandLogo } from "../components/BrandLogo";
+import { BookmarkedLogo } from "../components/BookmarkedLogo";
 import { Button } from "../components/Button";
 import { Input } from "../components/Input";
 import { ScreenContainer } from "../components/ScreenContainer";
@@ -42,7 +42,7 @@ export function LoginScreen() {
   return (
     <ScreenContainer scroll>
       <View className="items-center pt-12 pb-2">
-        <BrandLogo size="large" />
+        <BookmarkedLogo size="large" />
       </View>
 
       <View className="pb-4 pt-6">

@@ -23,7 +23,7 @@
 | 10 | Production hardening | ✅ Complete | SEO metadata, validation, route audit, env docs |
 | — | Mobile app parity | 🟡 In progress | Finish → rate prompt parity shipped; premium gates added |
 | — | Custom shelf icons | ✅ Complete | PNG icons web + mobile; `docs/SHELF_ICON_AUDIT.md`, `DESIGN_SYSTEM.md`, `ASSET_GUIDE.md` |
-| — | Brand refresh | ✅ Complete | New wordmark + bookmark ribbon; `docs/ASSET_GUIDE.md`, `process-brand-assets.mjs` |
+| — | Brand refresh | ✅ Complete | Normalized branding paths, `BookmarkedLogo` + `SavedBookBadge`, `docs/BRANDING_ASSET_AUDIT.md` |
 
 Legend: ✅ Complete · 🟡 In progress · ⚪ Not started · 🔴 Blocked
 

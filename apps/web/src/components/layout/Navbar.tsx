@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AppNavLink } from "@/components/layout/AppNavLink";
-import { BrandLogo } from "@/components/layout/BrandLogo";
+import { BookmarkedLogo } from "@/components/layout/BookmarkedLogo";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { NavbarPublicAuth } from "@/components/layout/NavbarPublicAuth";
 import { NavbarMenu, type NavLinkItem } from "@/components/layout/NavbarMenu";
@@ -54,14 +54,14 @@ export function Navbar({ variant = "public" }: Props) {
             href="/reading-room/"
             className="shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2 rounded-sm"
           >
-            <BrandLogo />
+            <BookmarkedLogo priority />
           </AppNavLink>
         ) : (
           <Link
             href="/"
             className="shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2 rounded-sm"
           >
-            <BrandLogo />
+            <BookmarkedLogo priority />
           </Link>
         )}
 

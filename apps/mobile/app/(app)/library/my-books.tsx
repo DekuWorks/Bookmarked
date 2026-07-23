@@ -104,7 +104,7 @@ function BookRow({ row }: { row: LibraryBookRow }) {
       onPress={() => router.push(`/book/${book.id}`)}
       className="flex-row items-center gap-3 border-b border-brand-border py-3 active:opacity-80"
     >
-      <BookCover url={book.cover_url} title={book.title} sizeClassName="w-12 h-16" saved ribbonSize={16} />
+      <BookCover url={book.cover_url} title={book.title} sizeClassName="w-12 h-16" saved badgeSize="medium" />
       <View className="flex-1">
         <Text className="font-semibold text-ink" numberOfLines={1}>
           {book.title}
@@ -138,7 +138,7 @@ function BookGridTile({ row }: { row: LibraryBookRow }) {
       onPress={() => router.push(`/book/${book.id}`)}
       className="mb-4 w-1/3 items-center px-1 active:opacity-80"
     >
-      <BookCover url={book.cover_url} title={book.title} sizeClassName="w-24 h-36" saved ribbonSize={16} />
+      <BookCover url={book.cover_url} title={book.title} sizeClassName="w-24 h-36" saved badgeSize="medium" />
       <Text className="mt-1 w-full text-center text-xs font-medium text-ink" numberOfLines={2}>
         {book.title}
       </Text>

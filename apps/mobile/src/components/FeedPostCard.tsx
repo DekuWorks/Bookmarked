@@ -340,7 +340,7 @@ function PostCard({ entry, viewerId }: { entry: PostEntry; viewerId?: string }) 
               title={post.book.title}
               sizeClassName="w-14 h-[5.25rem]"
               saved
-              ribbonSize={16}
+              badgeSize="medium"
             />
             <View className="flex-1 justify-center py-0.5">
               <Text className="text-[10px] font-bold uppercase tracking-widest text-primary-dark">

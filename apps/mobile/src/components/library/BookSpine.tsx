@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { Image, Pressable, Text, View } from "react-native";
-import { BookmarkRibbon } from "../BookmarkRibbon";
+import { SavedBookBadge } from "../SavedBookBadge";
 
 const SPINE_COLORS = ["bg-puce-red", "bg-primary", "bg-primary/80", "bg-puce-red/80"];
 
@@ -58,7 +58,7 @@ export function BookSpine({ bookId, title, author, coverUrl, pageCount }: Props)
           </View>
         )}
         <View className="absolute -top-0.5 right-0.5">
-          <BookmarkRibbon size={14} />
+          <SavedBookBadge size="small" />
         </View>
       </View>
       {author ? (

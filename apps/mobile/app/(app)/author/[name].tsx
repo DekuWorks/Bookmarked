@@ -48,7 +48,7 @@ export default function AuthorScreen() {
                       title={book.title}
                       sizeClassName="w-12 h-16"
                       saved
-                      ribbonSize={14}
+                      badgeSize="small"
                     />
                     <View className="flex-1">
                       <Text className="font-semibold text-ink" numberOfLines={2}>

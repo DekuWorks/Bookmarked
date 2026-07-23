@@ -50,7 +50,7 @@ export function NotesSearchResultCard({ note }: Props) {
               className="h-full w-full"
               sizes="40px"
               bookmarked
-              bookmarkBadgeSize="sm"
+              bookmarkBadgeSize="small"
             />
           </div>
           <p className="line-clamp-2 text-sm font-semibold text-puce-red">{note.book.title}</p>

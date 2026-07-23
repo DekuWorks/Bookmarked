@@ -58,7 +58,7 @@ export const SANS_FONT_MEDIUM = "Geist_500Medium";
 export const SANS_FONT_BOLD = "Geist_700Bold";
 
 /**
- * Wordmark color — dusty purple sampled from `assets/brand/logo.png` (#715B8B).
+ * Wordmark color — dusty purple sampled from the horizontal wordmark (#715B8B).
  * Retained for legacy text accents; the brand lockup now uses the wordmark image.
  */
 export const BRAND_WORDMARK = "#715B8A";

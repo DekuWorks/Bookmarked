@@ -39,7 +39,7 @@ Custom PNG shelf icons replace emoji for the four built-in shelf states. Mapping
 | Reading Room — overview tabs | `apps/web/src/components/reading-room/ReadingRoomTabs.tsx` | ✅ |
 | Reading Room — section helper | `apps/web/src/components/reading-room/ReadingRoomSection.tsx` | ✅ |
 | Library service | `apps/web/src/lib/services/library.ts` | ✅ |
-| Saved-book bookmark overlay hook | `apps/web/src/components/books/BookmarkedShelfBadge.tsx` | ✅ (doc only) |
+| Saved-book bookmark overlay hook | `apps/web/src/components/books/SavedBookBadge.tsx` | ✅ |
 | Unit tests | `apps/web/src/lib/constants/shelfIcons.test.ts` | ✅ |
 | Custom shelf collections (generic 📚) | `CustomShelfSection.tsx`, etc. | ⬜ N/A — custom shelves |
 | Book cover placeholder | `BookCover.tsx` | ⬜ N/A — not a shelf icon |
@@ -68,7 +68,7 @@ Custom PNG shelf icons replace emoji for the four built-in shelf states. Mapping
 | Reading Room — overview | `apps/mobile/app/(app)/index.tsx` | ✅ |
 | All-books tabs | `apps/mobile/app/(app)/library/my-books.tsx` | ✅ |
 | Library service | `apps/mobile/src/services/library.ts` | ✅ |
-| Saved-book bookmark overlay hook | `apps/mobile/src/components/BookmarkRibbon.tsx` | ✅ (doc only) |
+| Saved-book bookmark overlay hook | `apps/mobile/src/components/SavedBookBadge.tsx` | ✅ |
 | Unit tests | `apps/mobile/src/constants/shelves.test.ts` | ✅ |
 | Custom shelf sections | `shelf-privacy.tsx` custom rows | ⬜ N/A — custom shelves |
 | Club cards / feed | `ClubCard.tsx`, etc. | ⬜ N/A — not built-in shelf icons |
@@ -77,7 +77,7 @@ Custom PNG shelf icons replace emoji for the four built-in shelf states. Mapping
 
 Purple B ribbon with larger sparkles (`11.png`):
 
-- **Web:** `apps/web/public/images/bookmark-ribbon.png` → `BookmarkedShelfBadge`
-- **Mobile:** `apps/mobile/assets/brand/bookmark-ribbon.png` → `BookmarkRibbon`
+- **Web:** `apps/web/public/assets/branding/bookmarked-saved-badge.png` → `SavedBookBadge`
+- **Mobile:** `apps/mobile/assets/branding/bookmarked-saved-badge.png` → `SavedBookBadge`
 
 Aspect ratio updated to `441/547`; sparkles use `overflow: visible` so they are not clipped.

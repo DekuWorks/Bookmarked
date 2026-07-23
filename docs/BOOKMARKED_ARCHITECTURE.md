@@ -222,7 +222,7 @@ Direct-to-Read and all finish paths call `completeReadingSession` (`apps/web/src
 | `NavbarMenu` | Desktop row + mobile drawer |
 | `MobileBottomNav` | Phase 1 — five-tab mobile nav |
 | `AppNavLink` | Static-safe full-page navigation |
-| `BrandLogo`, `Footer` | Branding |
+| `BookmarkedLogo`, `Footer` | Branding |
 
 ### 7.2 UI primitives (`components/ui/`)
 

@@ -56,7 +56,7 @@ export function RepostPreview({ original }: { original: PostWithAuthor }) {
             title={original.book.title}
             sizeClassName="w-8 h-12"
             saved
-            ribbonSize={12}
+            badgeSize="small"
           />
           <View className="flex-1">
             <Text className="text-sm font-medium text-ink" numberOfLines={1}>

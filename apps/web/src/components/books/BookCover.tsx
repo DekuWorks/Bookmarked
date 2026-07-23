@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { BookmarkedShelfBadge } from "@/components/books/BookmarkedShelfBadge";
+import { SavedBookBadge } from "@/components/books/SavedBookBadge";
 import { cn } from "@/lib/utils/cn";
 
-type BookmarkBadgeSize = "sm" | "md" | "lg";
+import type { SavedBookBadgeSize } from "@/lib/constants/brandAssets";
 
 type Props = {
   title: string;
@@ -16,7 +16,7 @@ type Props = {
   priority?: boolean;
   /** When true, shows the brand logo shelf badge on the cover. */
   bookmarked?: boolean;
-  bookmarkBadgeSize?: BookmarkBadgeSize;
+  bookmarkBadgeSize?: SavedBookBadgeSize;
 };
 
 function CoverPlaceholder({
@@ -54,7 +54,7 @@ export function BookCover({
   sizes = "(max-width: 768px) 50vw, 220px",
   priority,
   bookmarked = false,
-  bookmarkBadgeSize = "md",
+  bookmarkBadgeSize = "medium",
 }: Props) {
   const [imageError, setImageError] = useState(false);
   const showImage = coverUrl && !imageError;
@@ -78,7 +78,7 @@ export function BookCover({
           <CoverPlaceholder title={title} author={author} />
         )}
       </div>
-      {bookmarked ? <BookmarkedShelfBadge size={bookmarkBadgeSize} /> : null}
+      {bookmarked ? <SavedBookBadge size={bookmarkBadgeSize} /> : null}
     </div>
   );
 }

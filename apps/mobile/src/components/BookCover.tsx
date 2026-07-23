@@ -1,5 +1,5 @@
 import { Image, Text, View } from "react-native";
-import { BookmarkRibbon } from "./BookmarkRibbon";
+import { SavedBookBadge } from "./SavedBookBadge";
 
 type Props = {
   url?: string | null;
@@ -8,8 +8,8 @@ type Props = {
   sizeClassName?: string;
   /** Overlay the Bookmarked "B" ribbon (book is saved to a shelf). */
   saved?: boolean;
-  /** Ribbon size in px. */
-  ribbonSize?: number;
+  /** Badge size token. */
+  badgeSize?: "small" | "medium" | "large";
 };
 
 export function BookCover({
@@ -17,7 +17,7 @@ export function BookCover({
   title,
   sizeClassName = "w-16 h-24",
   saved,
-  ribbonSize = 20,
+  badgeSize = "medium",
 }: Props) {
   const cover = url ? (
     <Image
@@ -41,7 +41,7 @@ export function BookCover({
     <View className="relative" style={{ overflow: "visible" }}>
       {cover}
       <View className="absolute" style={{ top: -4, right: -4, overflow: "visible" }}>
-        <BookmarkRibbon size={ribbonSize} />
+        <SavedBookBadge size={badgeSize} />
       </View>
     </View>
   );

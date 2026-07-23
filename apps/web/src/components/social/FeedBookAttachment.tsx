@@ -39,7 +39,7 @@ export function FeedBookAttachment({ book, className, variant = "default" }: Pro
             coverUrl={book.cover_url}
             className="h-full w-full"
             bookmarked
-            bookmarkBadgeSize={compact ? "sm" : "md"}
+            bookmarkBadgeSize={compact ? "small" : "medium"}
           />
         </Link>
         <div className="flex min-w-0 flex-1 flex-col justify-center py-0.5">
