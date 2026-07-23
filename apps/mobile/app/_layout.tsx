@@ -1,7 +1,7 @@
 import "../global.css";
 import "react-native-gesture-handler";
 import { useEffect } from "react";
-import { Appearance } from "react-native";
+import { Appearance, View } from "react-native";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import {
@@ -21,6 +21,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "../src/lib/queryClient";
 import { useAuthBootstrap } from "../src/hooks/useAuth";
 import { useThemeStore } from "../src/store/themeStore";
+import { BACKGROUND_TINT } from "../src/constants/theme";
 
 SplashScreen.preventAutoHideAsync().catch(() => {
   /* no-op: splash may already be hidden */
@@ -67,7 +68,7 @@ export default function RootLayout() {
   }, [fontsLoaded, fontError]);
 
   if (!fontsLoaded && !fontError) {
-    return null;
+    return <View style={{ flex: 1, backgroundColor: BACKGROUND_TINT }} />;
   }
 
   return (

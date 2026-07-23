@@ -8,9 +8,9 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/brand/logo-circle.png",
+      "image": "./assets/brand/splash-logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#C6B1DC"
+      "backgroundColor": "#F4EEFA"
     },
     "ios": {
       "supportsTablet": true,
@@ -34,7 +34,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/brand/logo-circle.png",
-        "backgroundColor": "#C6B1DC"
+        "backgroundColor": "#F4EEFA"
       },
       "package": "com.dekuworks.bookmarked",
       "edgeToEdgeEnabled": true,
