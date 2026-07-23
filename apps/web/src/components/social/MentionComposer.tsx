@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/Input";
 import { searchProfilesForMessaging } from "@/lib/services/messages";
 import type { MessageProfile } from "@/types";
 import { cn } from "@/lib/utils/cn";
+import { activeMentionQuery as getActiveMentionQuery } from "@/lib/utils/mentions";
 
 type Props = {
   value: string;
@@ -15,12 +16,6 @@ type Props = {
   minHeightClassName?: string;
   maxLength?: number;
 };
-
-function activeMentionQuery(value: string, cursor: number): string | null {
-  const before = value.slice(0, cursor);
-  const match = before.match(/@([a-zA-Z0-9_]*)$/);
-  return match ? match[1] : null;
-}
 
 export function MentionComposer({
   value,
@@ -65,7 +60,7 @@ export function MentionComposer({
   function handleChange(nextValue: string) {
     onChange(nextValue);
     const cursor = textareaRef.current?.selectionStart ?? nextValue.length;
-    const query = activeMentionQuery(nextValue, cursor);
+    const query = getActiveMentionQuery(nextValue.slice(0, cursor));
     setMentionQuery(query);
 
     if (searchTimer.current) clearTimeout(searchTimer.current);
@@ -132,7 +127,7 @@ export function MentionComposer({
         onKeyDown={handleKeyDown}
         onClick={(event) => {
           const target = event.currentTarget;
-          const query = activeMentionQuery(target.value, target.selectionStart);
+          const query = getActiveMentionQuery(target.value.slice(0, target.selectionStart));
           setMentionQuery(query);
           if (query) void loadSuggestions(query);
         }}

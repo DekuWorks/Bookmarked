@@ -86,7 +86,7 @@ export default function ComposeRoute() {
   function insertMention(username: string) {
     const before = body.slice(0, selection.start);
     const after = body.slice(selection.start);
-    const replacedBefore = before.replace(/@([a-zA-Z0-9_]*)$/, `@${username} `);
+    const replacedBefore = before.replace(/@([a-zA-Z0-9_.]*)$/, `@${username} `);
     setBody((replacedBefore + after).slice(0, MAX));
     setMentionResults([]);
   }
