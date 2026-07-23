@@ -4,13 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import { useToast } from "@/components/ui/Toast";
 import { MarkFinishedDialog } from "@/components/books/MarkFinishedDialog";
 import { RateBookPrompt } from "@/components/books/RateBookPrompt";
 import { TransferReadingStatsModal } from "@/components/books/TransferReadingStatsModal";
 import { cn } from "@/lib/utils/cn";
 import { updateReadingProgress, type BookActionState } from "@/lib/actions/book";
 import { useActionState } from "react";
+import { useActionToast } from "@/lib/hooks/useActionToast";
 
 const initial: BookActionState = {};
 
@@ -59,7 +59,6 @@ export function ReadingProgressPanel({
   onProgressChange,
   onReviewNow,
 }: Props) {
-  const toast = useToast();
   const [page, setPage] = useState(String(currentPage || ""));
   const [total, setTotal] = useState(String(totalPages || ""));
   const [displayPercent, setDisplayPercent] = useState(progressPercent);
@@ -74,6 +73,11 @@ export function ReadingProgressPanel({
     updateReadingProgress,
     initial
   );
+  const onProgressChangeRef = useRef(onProgressChange);
+
+  useEffect(() => {
+    onProgressChangeRef.current = onProgressChange;
+  }, [onProgressChange]);
 
   // Track the last props we synced so we only pull server values into the
   // inputs when they *actually* change. Without this, toggling `editing`
@@ -98,13 +102,9 @@ export function ReadingProgressPanel({
     setDisplayPercent(progressPercent);
   }, [currentPage, totalPages, progressPercent, editing]);
 
-  useEffect(() => {
-    if (progressAction.error) toast.error(progressAction.error);
-    if (progressAction.success) {
-      toast.success(progressAction.success);
-      onProgressChange?.();
-    }
-  }, [progressAction, toast, onProgressChange]);
+  useActionToast(progressAction, () => {
+    onProgressChangeRef.current?.();
+  });
 
   function handleFinished() {
     onProgressChange?.();

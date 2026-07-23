@@ -3,8 +3,8 @@
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { ReviewCard } from "@/components/reviews/ReviewCard";
 import { ReviewForm } from "@/components/reviews/ReviewForm";
-import { useToast } from "@/components/ui/Toast";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { useActionToast } from "@/lib/hooks/useActionToast";
 import { saveReview, type BookActionState } from "@/lib/actions/book";
 import { readNumberLabel } from "@/lib/utils/ratings";
 import type { Review } from "@/types";
@@ -30,20 +30,13 @@ export function BookReviewSection({
   onReviewsChange,
 }: Props) {
   const user = useAuthUser();
-  const toast = useToast();
   const [state, formAction, pending] = useActionState(saveReview, initial);
   const [reviewTab, setReviewTab] = useState<ReviewTab>("all");
 
   const reviewForCurrentRead = ownReviews.find((r) => r.read_number === readNumber) ?? null;
   const canWriteReview = !reviewForCurrentRead;
 
-  useEffect(() => {
-    if (state.error) toast.error(state.error);
-    if (state.success) {
-      toast.success(state.success);
-      onReviewsChange?.();
-    }
-  }, [state, toast, onReviewsChange]);
+  useActionToast(state, onReviewsChange);
 
   const regularReviews = reviews.filter((r) => !r.has_spoilers);
   const spoilerReviews = reviews.filter((r) => r.has_spoilers);

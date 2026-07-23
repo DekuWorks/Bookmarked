@@ -9,6 +9,7 @@ import { ReplyThread } from "@/components/social/ReplyThread";
 import { ReviewForm } from "@/components/reviews/ReviewForm";
 import { StarDisplay } from "@/components/reviews/StarDisplay";
 import { useToast } from "@/components/ui/Toast";
+import { useActionToast } from "@/lib/hooks/useActionToast";
 import {
   deleteReview,
   saveReview,
@@ -103,23 +104,15 @@ export function ReviewCard({
     }
   }, [reviewId, toast]);
 
-  useEffect(() => {
-    if (saveState.error) toast.error(saveState.error);
-    if (saveState.success) {
-      toast.success(saveState.success);
-      setIsEditing(false);
-      onReviewChange?.();
-    }
-  }, [saveState, toast, onReviewChange]);
+  useActionToast(saveState, () => {
+    setIsEditing(false);
+    onReviewChange?.();
+  });
 
-  useEffect(() => {
-    if (deleteState.error) toast.error(deleteState.error);
-    if (deleteState.success) {
-      toast.success(deleteState.success);
-      setIsEditing(false);
-      onReviewChange?.();
-    }
-  }, [deleteState, toast, onReviewChange]);
+  useActionToast(deleteState, () => {
+    setIsEditing(false);
+    onReviewChange?.();
+  });
 
   useEffect(() => {
     if (canEngage) void loadReactions();

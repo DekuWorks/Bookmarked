@@ -1,11 +1,11 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
-import { useToast } from "@/components/ui/Toast";
 import { markBookFinished, type BookActionState } from "@/lib/actions/book";
+import { useActionToast } from "@/lib/hooks/useActionToast";
 
 const initial: BookActionState = {};
 
@@ -32,10 +32,23 @@ export function MarkFinishedDialog({
   onFinished,
   onPromptReview,
 }: Props) {
-  const toast = useToast();
   const [finishDate, setFinishDate] = useState(todayInputValue());
   const [clientError, setClientError] = useState<string | null>(null);
   const [state, formAction, pending] = useActionState(markBookFinished, initial);
+  const onFinishedRef = useRef(onFinished);
+  const onCloseRef = useRef(onClose);
+  const onPromptReviewRef = useRef(onPromptReview);
+  const promptReviewRef = useRef(state.promptReview);
+
+  useEffect(() => {
+    onFinishedRef.current = onFinished;
+    onCloseRef.current = onClose;
+    onPromptReviewRef.current = onPromptReview;
+  }, [onFinished, onClose, onPromptReview]);
+
+  useEffect(() => {
+    promptReviewRef.current = state.promptReview;
+  }, [state.promptReview]);
 
   useEffect(() => {
     if (!open) return;
@@ -43,15 +56,11 @@ export function MarkFinishedDialog({
     setClientError(null);
   }, [open]);
 
-  useEffect(() => {
-    if (state.error) toast.error(state.error);
-    if (state.success) {
-      toast.success(state.success);
-      onFinished?.();
-      onClose();
-      if (state.promptReview) onPromptReview?.();
-    }
-  }, [state, toast, onFinished, onClose, onPromptReview]);
+  useActionToast(state, () => {
+    onFinishedRef.current?.();
+    onCloseRef.current();
+    if (promptReviewRef.current) onPromptReviewRef.current?.();
+  });
 
   const startedDate = startedAt?.slice(0, 10) ?? "";
 

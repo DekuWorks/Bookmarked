@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { useToast } from "@/components/ui/Toast";
+import { useActionToast } from "@/lib/hooks/useActionToast";
 import { updateReadingDates, type BookActionState } from "@/lib/actions/book";
 
 const initial: BookActionState = {};
@@ -28,7 +28,6 @@ export function ReadingDatesEditor({
   finishedAt,
   onDatesChange,
 }: Props) {
-  const toast = useToast();
   const [started, setStarted] = useState(toDateInputValue(startedAt));
   const [finished, setFinished] = useState(toDateInputValue(finishedAt));
   const [clientError, setClientError] = useState<string | null>(null);
@@ -39,13 +38,7 @@ export function ReadingDatesEditor({
     setFinished(toDateInputValue(finishedAt));
   }, [startedAt, finishedAt]);
 
-  useEffect(() => {
-    if (state.error) toast.error(state.error);
-    if (state.success) {
-      toast.success(state.success);
-      onDatesChange?.();
-    }
-  }, [state, toast, onDatesChange]);
+  useActionToast(state, onDatesChange);
 
   if (!onShelf) return null;
 

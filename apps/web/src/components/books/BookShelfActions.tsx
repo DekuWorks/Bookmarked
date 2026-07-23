@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { ShelfSelectMenu } from "@/components/shelves/ShelfSelectMenu";
 import { AddToCustomShelfMenu } from "@/components/shelves/AddToCustomShelfMenu";
 import { useToast } from "@/components/ui/Toast";
+import { useActionToast } from "@/lib/hooks/useActionToast";
 import {
   removeFromShelf,
   setBookShelfStatus,
@@ -48,15 +49,8 @@ export function BookShelfActions({
       .catch((error) => console.error("[custom-shelf] membership load failed:", error));
   }, [user, bookId]);
 
-  useEffect(() => {
-    if (removeState.error) toast.error(removeState.error);
-    if (removeState.success) toast.success(removeState.success);
-  }, [removeState, toast]);
-
-  useEffect(() => {
-    if (favState.error) toast.error(favState.error);
-    if (favState.success) toast.success(favState.success);
-  }, [favState, toast]);
+  useActionToast(removeState);
+  useActionToast(favState);
 
   async function applyShelf(shelfStatus: ShelfStatus) {
     setPending(true);

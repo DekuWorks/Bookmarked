@@ -1,10 +1,10 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import { useToast } from "@/components/ui/Toast";
+import { useActionToast } from "@/lib/hooks/useActionToast";
 import {
   updateYearlyReadingGoal,
   type ProfileActionState,
@@ -49,7 +49,6 @@ export function ReadingGoalPanel({
   className,
   onSaved,
 }: Props) {
-  const toast = useToast();
   const [localStatus, setLocalStatus] = useState(status);
   const [editing, setEditing] = useState(!status.target);
   const [goalInput, setGoalInput] = useState(
@@ -60,6 +59,11 @@ export function ReadingGoalPanel({
     updateYearlyReadingGoal,
     initial
   );
+  const actionGoalRef = useRef(action.goal);
+
+  useEffect(() => {
+    actionGoalRef.current = action.goal;
+  }, [action.goal]);
 
   useEffect(() => {
     setLocalStatus(status);
@@ -68,31 +72,20 @@ export function ReadingGoalPanel({
     }
   }, [status, editing]);
 
-  useEffect(() => {
-    if (action.error) toast.error(action.error);
-    if (action.success) {
-      toast.success(action.success);
-      if (action.goal != null) {
-        setLocalStatus((prev) => withTarget(prev, action.goal!));
-      }
-      setEditing(false);
-      onSaved?.();
+  useActionToast(action, () => {
+    if (actionGoalRef.current != null) {
+      setLocalStatus((prev) => withTarget(prev, actionGoalRef.current!));
     }
-    // Intentionally depend on action identity only — avoid re-firing on local edits.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- action result side-effects
-  }, [action, toast, onSaved]);
+    setEditing(false);
+    onSaved?.();
+  });
 
-  useEffect(() => {
-    if (clearAction.error) toast.error(clearAction.error);
-    if (clearAction.success) {
-      toast.success(clearAction.success);
-      setLocalStatus((prev) => withTarget(prev, null));
-      setGoalInput("");
-      setEditing(true);
-      onSaved?.();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- clearAction result side-effects
-  }, [clearAction, toast, onSaved]);
+  useActionToast(clearAction, () => {
+    setLocalStatus((prev) => withTarget(prev, null));
+    setGoalInput("");
+    setEditing(true);
+    onSaved?.();
+  });
 
   const hasGoal = localStatus.target != null && localStatus.target > 0;
   const compact = variant === "compact";

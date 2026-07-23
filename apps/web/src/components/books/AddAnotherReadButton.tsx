@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState } from "react";
 import { Button } from "@/components/ui/Button";
-import { useToast } from "@/components/ui/Toast";
+import { useActionToast } from "@/lib/hooks/useActionToast";
 import { addAnotherRead, type BookActionState } from "@/lib/actions/book";
 
 const initial: BookActionState = {};
@@ -13,16 +13,9 @@ type Props = {
 };
 
 export function AddAnotherReadButton({ bookId, onStarted }: Props) {
-  const toast = useToast();
   const [state, formAction, pending] = useActionState(addAnotherRead, initial);
 
-  useEffect(() => {
-    if (state.error) toast.error(state.error);
-    if (state.success) {
-      toast.success(state.success);
-      onStarted?.();
-    }
-  }, [state, toast, onStarted]);
+  useActionToast(state, onStarted);
 
   return (
     <form action={formAction}>
