@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Alert, Linking, Pressable, Text, View } from "react-native";
-import * as DocumentPicker from "expo-document-picker";
 import { Button } from "./Button";
 import { importGoodreadsCsv, type ImportSummary } from "../services/goodreadsImport";
 
@@ -15,6 +14,17 @@ export function LibraryImportPanel({ userId, onImportComplete }: Props) {
   const [showDetails, setShowDetails] = useState(false);
 
   async function pickCsv() {
+    let DocumentPicker: typeof import("expo-document-picker");
+    try {
+      DocumentPicker = await import("expo-document-picker");
+    } catch {
+      Alert.alert(
+        "Rebuild required",
+        "Goodreads import needs a native rebuild. Run npm run ios from apps/mobile, then try again."
+      );
+      return;
+    }
+
     const result = await DocumentPicker.getDocumentAsync({
       type: ["text/csv", "text/comma-separated-values", "application/csv"],
       copyToCacheDirectory: true,
