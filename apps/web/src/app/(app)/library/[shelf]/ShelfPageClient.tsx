@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { getShelfConfigBySlug } from "@/lib/constants/shelves";
+import { ShelfIcon } from "@/components/shelves/ShelfIcon";
 import { getProfile } from "@/lib/services/profile";
 import {
   computeShelfStats,
@@ -87,7 +88,7 @@ export default function ShelfPageClient() {
             ← Back to library
           </Link>
           <h1 className="mt-2 flex items-center justify-center gap-2 text-3xl font-bold text-puce-red sm:text-4xl">
-            <span aria-hidden>{config.emoji}</span>
+            <ShelfIcon id={config.status} size="lg" labeled />
             {config.title}
           </h1>
           <p className="mx-auto mt-1 max-w-xl text-pretty text-text-muted">{config.description}</p>

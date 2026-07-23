@@ -16,6 +16,7 @@ import { RateReviewSheet } from "../../../src/components/RateReviewSheet";
 import { ReadingNotesSection } from "../../../src/components/ReadingNotesSection";
 import { SavedPill } from "../../../src/components/SavedPill";
 import { ScreenHeader } from "../../../src/components/ScreenHeader";
+import { ShelfIcon } from "../../../src/components/ShelfIcon";
 import { StarRating } from "../../../src/components/StarRating";
 import { getBookDetails } from "../../../src/services/bookDetails";
 import {
@@ -279,8 +280,9 @@ export default function BookScreen() {
               <Pressable
                 key={s.status}
                 onPress={() => changeShelf(s.status)}
-                className={`flex-1 items-center rounded-xl py-2.5 ${active ? "bg-puce-red" : "bg-primary/15"}`}
+                className={`flex-1 items-center gap-1 rounded-xl py-2.5 ${active ? "bg-puce-red" : "bg-primary/15"}`}
               >
+                <ShelfIcon id={s.status} size="sm" />
                 <Text className={`text-sm font-semibold ${active ? "text-white" : "text-puce-red"}`}>
                   {s.label}
                 </Text>
@@ -297,8 +299,9 @@ export default function BookScreen() {
                 userBook.dnf ? "bg-rust" : "bg-primary/15"
               }`}
             >
+              <ShelfIcon id="dnf" size="sm" />
               <Text className={`text-sm font-semibold ${userBook.dnf ? "text-white" : "text-puce-red"}`}>
-                {userBook.dnf ? "✓ Did not finish" : "Mark did not finish"}
+                {userBook.dnf ? "Did not finish" : "Mark DNF"}
               </Text>
             </Pressable>
             <Pressable

@@ -7,6 +7,7 @@ import { ShelfSearchFilter } from "@/components/library/ShelfSearchFilter";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { getShelfConfigBySlug } from "@/lib/constants/shelves";
+import { ShelfIcon } from "@/components/shelves/ShelfIcon";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { readerLibraryPath } from "@/lib/routes/readerLibrary";
 import { readerProfilePath } from "@/lib/routes/reader";
@@ -111,7 +112,7 @@ function ReaderShelfContent() {
             </Link>
           </p>
           <h1 className="mt-2 flex items-center justify-center gap-2 text-3xl font-bold text-puce-red sm:text-4xl">
-            <span aria-hidden>{config.emoji}</span>
+            <ShelfIcon id={config.status} size="lg" labeled />
             {config.title}
           </h1>
           <p className="mx-auto mt-1 max-w-xl text-pretty text-text-muted">

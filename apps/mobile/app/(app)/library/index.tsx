@@ -82,7 +82,7 @@ export default function LibraryScreen() {
                 <BookshelfSection
                   key={shelf.slug}
                   title={shelf.title}
-                  emoji={shelf.emoji}
+                  status={shelf.status}
                   slug={shelf.slug}
                   items={shelf.items}
                 />

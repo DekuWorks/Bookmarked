@@ -9,6 +9,8 @@ import { useSubscription } from "../../src/hooks/useSubscription";
 import { ShelfBadge } from "../../src/components/ShelfBadge";
 import { useFollowCounts } from "../../src/hooks/useFollows";
 import { useProfile } from "../../src/hooks/useProfile";
+import { ShelfIcon } from "../../src/components/ShelfIcon";
+import type { ShelfIconId } from "../../src/constants/shelfIcons";
 
 export default function ProfileRoute() {
   const router = useRouter();
@@ -74,7 +76,7 @@ export default function ProfileRoute() {
         {!isPremium ? (
           <ProfileLink icon="✨" label="Upgrade to Premium" onPress={() => router.push("/upgrade")} />
         ) : null}
-        <ProfileLink icon="📚" label="Library" onPress={() => router.push("/library")} />
+        <ProfileLink shelfIconId="want_to_read" label="Library" onPress={() => router.push("/library")} />
         <ProfileLink icon="📝" label="Reading Notes" onPress={() => router.push("/notes")} />
         <ProfileLink icon="♣️" label="Book Clubs" onPress={() => router.push("/clubs")} />
       </View>
@@ -86,10 +88,12 @@ export default function ProfileRoute() {
 
 function ProfileLink({
   icon,
+  shelfIconId,
   label,
   onPress,
 }: {
-  icon: string;
+  icon?: string;
+  shelfIconId?: ShelfIconId;
   label: string;
   onPress: () => void;
 }) {
@@ -98,7 +102,11 @@ function ProfileLink({
       onPress={onPress}
       className="flex-row items-center gap-3 rounded-2xl border border-brand-border bg-surface px-4 py-3 active:opacity-80"
     >
-      <Text className="text-lg">{icon}</Text>
+      {shelfIconId ? (
+        <ShelfIcon id={shelfIconId} size="sm" />
+      ) : (
+        <Text className="text-lg">{icon}</Text>
+      )}
       <Text className="flex-1 font-medium text-ink">{label}</Text>
       <Text className="text-ink-muted">›</Text>
     </Pressable>

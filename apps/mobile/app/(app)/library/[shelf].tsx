@@ -8,6 +8,8 @@ import { EmptyState } from "../../../src/components/EmptyState";
 import { LoadingState } from "../../../src/components/LoadingState";
 import { ScreenHeader } from "../../../src/components/ScreenHeader";
 import { getShelfConfigBySlug } from "../../../src/constants/shelves";
+import { ShelfIcon } from "../../../src/components/ShelfIcon";
+import { ShelfTitleRow } from "../../../src/components/ShelfTitleRow";
 import { useLibrary } from "../../../src/hooks/useLibrary";
 import { useLibraryViewMode } from "../../../src/hooks/useLibraryViewMode";
 
@@ -53,16 +55,14 @@ export default function LibraryShelfScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <ScreenHeader title={`${config.emoji} ${config.title}`} />
+      <ScreenHeader title={config.title} left={<ShelfIcon id={config.status} size="sm" labeled />} />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120, gap: 16 }}>
         <Pressable onPress={() => router.push("/library")} className="active:opacity-70">
           <Text className="text-sm text-primary-dark">← Back to library</Text>
         </Pressable>
 
         <View>
-          <Text className="text-2xl font-bold text-puce-red">
-            {config.emoji} {config.title}
-          </Text>
+          <ShelfTitleRow id={config.status} title={config.title} titleClassName="text-2xl font-bold text-puce-red" />
           <Text className="mt-1 text-sm text-ink-muted">{config.description}</Text>
           <Text className="mt-2 text-sm font-medium text-ink">
             {shelf.items.length} book{shelf.items.length === 1 ? "" : "s"}

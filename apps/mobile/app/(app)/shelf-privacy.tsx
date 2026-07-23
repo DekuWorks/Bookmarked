@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
   Alert,
   Pressable,
@@ -10,6 +10,7 @@ import {
 import { Button } from "../../src/components/Button";
 import { LoadingState } from "../../src/components/LoadingState";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
+import { ShelfTitleRow } from "../../src/components/ShelfTitleRow";
 import { SHELF_CONFIG } from "../../src/constants/shelves";
 import { SHELF_VISIBILITY_OPTIONS } from "../../src/constants/shelfVisibility";
 import { useProfile } from "../../src/hooks/useProfile";
@@ -180,7 +181,7 @@ export default function ShelfPrivacyScreen() {
         {SHELF_CONFIG.map((shelf) => (
           <VisibilityRow
             key={shelf.status}
-            title={`${shelf.emoji} ${shelf.title}`}
+            titleNode={<ShelfTitleRow id={shelf.status} title={shelf.title} />}
             subtitle={shelf.description}
             value={values[shelf.status]}
             onChange={(next) =>
@@ -283,18 +284,20 @@ export default function ShelfPrivacyScreen() {
 
 function VisibilityRow({
   title,
+  titleNode,
   subtitle,
   value,
   onChange,
 }: {
-  title: string;
+  title?: string;
+  titleNode?: ReactNode;
   subtitle: string;
   value: ShelfVisibility;
   onChange: (next: ShelfVisibility) => void;
 }) {
   return (
     <View className="mb-3 rounded-2xl border border-brand-border bg-surface p-4">
-      <Text className="font-semibold text-ink">{title}</Text>
+      {titleNode ?? <Text className="font-semibold text-ink">{title}</Text>}
       <Text className="text-xs text-ink-muted mt-0.5 mb-3">{subtitle}</Text>
       <View className="flex-row flex-wrap gap-2">
         {SHELF_VISIBILITY_OPTIONS.map((option) => (

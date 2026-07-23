@@ -1,9 +1,12 @@
 import type { ReactNode } from "react";
+import { ShelfIcon } from "@/components/shelves/ShelfIcon";
+import type { ShelfIconId } from "@/lib/constants/shelfIcons";
 import { cn } from "@/lib/utils/cn";
 
 type Props = {
   title: string;
   emoji?: string;
+  shelfIconId?: ShelfIconId;
   action?: ReactNode;
   children: ReactNode;
   className?: string;
@@ -12,6 +15,7 @@ type Props = {
 export function ReadingRoomSection({
   title,
   emoji,
+  shelfIconId,
   action,
   children,
   className,
@@ -25,7 +29,8 @@ export function ReadingRoomSection({
     >
       <div className="mb-4 flex flex-col items-center justify-center gap-3 text-center sm:flex-row sm:flex-wrap">
         <h2 className="flex items-center justify-center gap-2 text-lg font-semibold text-puce-red md:text-xl">
-          {emoji ? <span aria-hidden>{emoji}</span> : null}
+          {shelfIconId ? <ShelfIcon id={shelfIconId} size="md" /> : null}
+          {emoji && !shelfIconId ? <span aria-hidden>{emoji}</span> : null}
           {title}
         </h2>
         {action}

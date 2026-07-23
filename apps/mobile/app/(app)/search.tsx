@@ -17,6 +17,7 @@ import { searchClubs } from "../../src/services/bookClubs";
 import { createDirectConversation } from "../../src/services/messages";
 import { searchProfiles } from "../../src/services/profile";
 import { fetchTrendingSections } from "../../src/services/trending";
+import { ShelfIcon } from "../../src/components/ShelfIcon";
 import { TAB_BAR_SPACE, useTabBarScroll } from "../../src/navigation/TabBarScroll";
 import { useAuthStore } from "../../src/store/authStore";
 import type { CatalogDoc } from "../../src/services/isbndb";
@@ -252,8 +253,9 @@ export default function SearchScreen() {
                 key={choice.status}
                 disabled={saving}
                 onPress={() => addToShelf(choice.status)}
-                className="mb-2 rounded-xl bg-primary/10 px-4 py-3 active:opacity-80"
+                className="mb-2 flex-row items-center gap-3 rounded-xl bg-primary/10 px-4 py-3 active:opacity-80"
               >
+                <ShelfIcon id={choice.status} size="md" />
                 <Text className="font-medium text-puce-red">{choice.label}</Text>
               </Pressable>
             ))}

@@ -97,7 +97,8 @@ function ShelfPreviewRow({
 
   return (
     <SectionCard
-      title={`${shelf.emoji} ${shelf.title}`}
+      title={shelf.title}
+      shelfIconId={shelf.status}
       action={
         seeMoreHref ? (
           <Pressable onPress={() => router.push(seeMoreHref)} className="active:opacity-70">

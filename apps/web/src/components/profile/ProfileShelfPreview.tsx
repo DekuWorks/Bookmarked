@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BookMiniGrid } from "@/components/reading-room/BookMiniGrid";
+import { ShelfIcon } from "@/components/shelves/ShelfIcon";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { SHELF_CONFIG } from "@/lib/constants/shelves";
@@ -71,8 +72,9 @@ export function ProfileShelfPreview({
             className="rounded-xl border border-border bg-surface p-5 shadow-sm"
           >
             <div className="mb-4 flex items-center justify-between gap-3">
-              <h3 className="text-lg font-semibold text-puce-red">
-                {config.emoji} {config.title}
+              <h3 className="flex items-center gap-2 text-lg font-semibold text-puce-red">
+                <ShelfIcon id={config.status} size="md" />
+                {config.title}
               </h3>
               {seeMoreHref ? (
                 <Link href={seeMoreHref} className="text-sm font-medium text-primary hover:underline">

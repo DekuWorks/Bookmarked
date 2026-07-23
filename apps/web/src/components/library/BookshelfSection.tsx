@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BookSpine } from "@/components/library/BookSpine";
 import { EmptyShelfMessage } from "@/components/library/EmptyShelfMessage";
+import { ShelfIcon } from "@/components/shelves/ShelfIcon";
 import { bookDetailsPath } from "@/lib/routes/book";
 import { readerLibraryShelfPath } from "@/lib/routes/readerLibrary";
 import type { LibraryBookRow } from "@/lib/services/library";
@@ -8,7 +9,6 @@ import type { ShelfStatus } from "@/types";
 
 type Props = {
   title: string;
-  emoji: string;
   status: ShelfStatus;
   slug: string;
   items: LibraryBookRow[];
@@ -19,7 +19,6 @@ type Props = {
 
 export function BookshelfSection({
   title,
-  emoji,
   status,
   slug,
   items,
@@ -34,7 +33,7 @@ export function BookshelfSection({
     <section className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
       <div className="flex flex-col items-center justify-center gap-2 border-b border-border px-4 py-3 text-center sm:flex-row sm:justify-between">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-puce-red">
-          <span aria-hidden>{emoji}</span>
+          <ShelfIcon id={status} size="md" />
           {title}
           <span className="text-sm font-normal text-text-muted">({items.length})</span>
         </h2>

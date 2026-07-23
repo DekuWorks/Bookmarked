@@ -1,5 +1,6 @@
 import { BookCard } from "@/components/books/BookCard";
 import { EmptyShelfMessage } from "@/components/library/EmptyShelfMessage";
+import { ShelfIcon } from "@/components/shelves/ShelfIcon";
 import { bookDetailsPath } from "@/lib/routes/book";
 import type { ShelfGroup } from "@/lib/services/library";
 
@@ -13,7 +14,7 @@ export function LibraryGridView({ shelves }: Props) {
       {shelves.map((shelf) => (
         <section key={shelf.status}>
           <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold text-puce-red">
-            <span aria-hidden>{shelf.emoji}</span>
+            <ShelfIcon id={shelf.status} size="md" />
             {shelf.title}
           </h2>
           {shelf.items.length === 0 ? (

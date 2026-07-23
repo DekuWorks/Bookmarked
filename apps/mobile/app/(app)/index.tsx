@@ -11,6 +11,8 @@ import { ReadingGoalPanel } from "../../src/components/ReadingGoalPanel";
 import { ReadingInsightsSection } from "../../src/components/ReadingInsightsSection";
 import { SectionCard } from "../../src/components/SectionCard";
 import { SegmentedTabs } from "../../src/components/SegmentedTabs";
+import { ShelfIcon } from "../../src/components/ShelfIcon";
+import type { ShelfIconId } from "../../src/constants/shelfIcons";
 import { ActivityFeed } from "../../src/components/reading-room/ActivityFeed";
 import { TrailPanel } from "../../src/components/reading-room/TrailPanel";
 import { useProfile } from "../../src/hooks/useProfile";
@@ -30,13 +32,27 @@ const TAB_OPTIONS: { id: ReadingRoomTab; label: string }[] = [
   { id: "trail", label: "Trail" },
 ];
 
-function QuickLink({ icon, label, onPress }: { icon: string; label: string; onPress: () => void }) {
+function QuickLink({
+  icon,
+  shelfIconId,
+  label,
+  onPress,
+}: {
+  icon?: string;
+  shelfIconId?: ShelfIconId;
+  label: string;
+  onPress: () => void;
+}) {
   return (
     <Pressable
       onPress={onPress}
       className="flex-1 items-center rounded-2xl border border-brand-border bg-surface py-3 active:opacity-80"
     >
-      <Text className="text-xl">{icon}</Text>
+      {shelfIconId ? (
+        <ShelfIcon id={shelfIconId} size="md" />
+      ) : (
+        <Text className="text-xl">{icon}</Text>
+      )}
       <Text className="mt-1 text-xs font-medium text-puce-red">{label}</Text>
     </Pressable>
   );
@@ -137,7 +153,10 @@ export default function HomeReadingRoom() {
 
         {tab === "overview" ? (
           <>
-            <SectionCard title="Currently reading" emoji="📖" action={
+            <SectionCard
+              title="Currently reading"
+              shelfIconId="currently_reading"
+              action={
               <Pressable onPress={() => router.push("/library/reading")}>
                 <Text className="text-sm font-semibold text-primary-dark">View shelf ›</Text>
               </Pressable>
@@ -168,7 +187,7 @@ export default function HomeReadingRoom() {
 
             <View className="flex-row gap-3">
               <View className="flex-1">
-                <SectionCard title="Recently finished" emoji="✅">
+                <SectionCard title="Recently finished" shelfIconId="read">
                   {recentlyFinished.length === 0 ? (
                     <Text className="text-ink-muted">Books you finish will appear here.</Text>
                   ) : (
@@ -222,7 +241,7 @@ export default function HomeReadingRoom() {
               <View className="flex-row gap-3">
                 <QuickLink icon="🔍" label="Search" onPress={() => router.push("/search")} />
                 <QuickLink
-                  icon="📖"
+                  shelfIconId="currently_reading"
                   label="Continue"
                   onPress={() =>
                     continueReadingBook?.books?.id
@@ -230,7 +249,7 @@ export default function HomeReadingRoom() {
                       : router.push("/search")
                   }
                 />
-                <QuickLink icon="📚" label="Library" onPress={() => router.push("/library")} />
+                <QuickLink shelfIconId="want_to_read" label="Library" onPress={() => router.push("/library")} />
               </View>
             </SectionCard>
 

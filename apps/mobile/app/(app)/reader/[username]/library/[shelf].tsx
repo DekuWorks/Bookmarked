@@ -6,6 +6,8 @@ import { EmptyState } from "../../../../../src/components/EmptyState";
 import { LoadingState } from "../../../../../src/components/LoadingState";
 import { ScreenHeader } from "../../../../../src/components/ScreenHeader";
 import { getShelfConfigBySlug } from "../../../../../src/constants/shelves";
+import { ShelfIcon } from "../../../../../src/components/ShelfIcon";
+import { ShelfTitleRow } from "../../../../../src/components/ShelfTitleRow";
 import {
   readerLibraryPath,
   readerProfilePath,
@@ -78,7 +80,7 @@ export default function ReaderLibraryShelfScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <ScreenHeader title={`${config.emoji} ${config.title}`} />
+      <ScreenHeader title={config.title} left={<ShelfIcon id={config.status} size="sm" labeled />} />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120, gap: 16 }}>
         <Text className="text-sm text-ink-muted">
           <Text className="text-primary-dark" onPress={() => router.push(profilePath)}>
@@ -91,9 +93,7 @@ export default function ReaderLibraryShelfScreen() {
         </Text>
 
         <View>
-          <Text className="text-2xl font-bold text-puce-red">
-            {config.emoji} {config.title}
-          </Text>
+          <ShelfTitleRow id={config.status} title={config.title} titleClassName="text-2xl font-bold text-puce-red" />
           <Text className="mt-1 text-sm text-ink-muted">
             {displayName}&apos;s {config.title.toLowerCase()} shelf
           </Text>

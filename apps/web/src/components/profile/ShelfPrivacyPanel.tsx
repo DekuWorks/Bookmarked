@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { SHELF_CONFIG } from "@/lib/constants/shelves";
+import { ShelfIcon } from "@/components/shelves/ShelfIcon";
 import { createClient } from "@/lib/supabase/client";
 import {
   SHELF_VISIBILITY_OPTIONS,
@@ -147,8 +148,9 @@ export function ShelfPrivacyPanel({ profile }: Props) {
             className="flex flex-col gap-2 rounded-lg border border-border bg-background px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
           >
             <div>
-              <p className="font-medium text-text">
-                {shelf.emoji} {shelf.title}
+              <p className="flex items-center gap-2 font-medium text-text">
+                <ShelfIcon id={shelf.status} size="sm" />
+                {shelf.title}
               </p>
               <p className="text-xs text-text-muted">{shelf.description}</p>
             </div>

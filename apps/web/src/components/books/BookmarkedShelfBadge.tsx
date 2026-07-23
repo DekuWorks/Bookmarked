@@ -18,6 +18,12 @@ type Props = {
 /**
  * Bookmark ribbon for shelved books — lavender ribbon with purple B + sparkles,
  * positioned at the top-right of covers.
+ *
+ * ## Bookmark overlay replacement (pending design approval)
+ * When the larger-sparkles bookmark overlay asset is approved, replace:
+ * - Web: `apps/web/public/images/bookmark-ribbon.png`
+ * - Mobile: `apps/mobile/assets/brand/bookmark-ribbon.png`
+ * No component API changes are required — `BookmarkedShelfBadge` reads from those paths.
  */
 export function BookmarkedShelfBadge({ className, size = "md" }: Props) {
   return (

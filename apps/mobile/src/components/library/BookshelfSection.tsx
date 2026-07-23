@@ -2,11 +2,13 @@ import { useRouter } from "expo-router";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { libraryShelfPath } from "../../lib/libraryRoutes";
 import type { LibraryBookRow } from "../../services/library";
+import type { ShelfStatus } from "../../types";
+import { ShelfTitleRow } from "../ShelfTitleRow";
 import { BookSpine } from "./BookSpine";
 
 type Props = {
   title: string;
-  emoji: string;
+  status: ShelfStatus;
   slug: string;
   items: LibraryBookRow[];
   showHeaderLink?: boolean;
@@ -14,7 +16,7 @@ type Props = {
 
 export function BookshelfSection({
   title,
-  emoji,
+  status,
   slug,
   items,
   showHeaderLink = true,
@@ -24,10 +26,10 @@ export function BookshelfSection({
   return (
     <View className="overflow-hidden rounded-2xl border border-brand-border bg-surface shadow-md">
       <View className="flex-row items-center justify-between border-b border-brand-border px-4 py-3">
-        <Text className="text-base font-bold text-puce-red">
-          {emoji} {title}{" "}
+        <View className="flex-row items-center gap-2">
+          <ShelfTitleRow id={status} title={title} />
           <Text className="text-sm font-normal text-ink-muted">({items.length})</Text>
-        </Text>
+        </View>
         {showHeaderLink ? (
           <Pressable
             onPress={() => router.push(libraryShelfPath(slug))}

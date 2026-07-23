@@ -1,4 +1,5 @@
 import type { ShelfStatus } from "@/types";
+import { ShelfIcon } from "@/components/shelves/ShelfIcon";
 import { cn } from "@/lib/utils/cn";
 
 const config: Record<
@@ -29,11 +30,12 @@ export function ShelfBadge({ status, className }: Props) {
   return (
     <span
       className={cn(
-        "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium",
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium",
         badgeClass,
         className
       )}
     >
+      <ShelfIcon id={status} size="xs" />
       {label}
     </span>
   );

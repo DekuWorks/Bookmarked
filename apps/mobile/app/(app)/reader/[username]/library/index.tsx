@@ -97,7 +97,8 @@ export default function ReaderLibraryScreen() {
           shelves.map((shelf) => (
             <SectionCard
               key={shelf.slug}
-              title={`${shelf.emoji} ${shelf.title}`}
+              title={shelf.title}
+              shelfIconId={shelf.status}
               action={
                 <Pressable
                   onPress={() =>

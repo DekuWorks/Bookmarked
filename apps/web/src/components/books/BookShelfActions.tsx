@@ -15,6 +15,7 @@ import {
 } from "@/lib/actions/book";
 import { needsMissingPageCountPrompt } from "@/lib/services/completeReadingSession";
 import { SHELF_CONFIG } from "@/lib/constants/shelves";
+import { ShelfIcon } from "@/components/shelves/ShelfIcon";
 import { listCustomShelfIdsForBook } from "@/lib/services/customShelves";
 import { ShelfBadge } from "@/components/shelves/ShelfBadge";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
@@ -158,7 +159,10 @@ export function BookShelfActions({
                 loading={pending}
                 onClick={() => applyShelf(status)}
               >
-                {title}
+                <span className="inline-flex items-center gap-1.5">
+                  <ShelfIcon id={status} size="xs" />
+                  {title}
+                </span>
               </Button>
             ))}
             <Button

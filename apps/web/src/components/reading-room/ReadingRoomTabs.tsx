@@ -12,6 +12,7 @@ import { NotesSearchForm } from "@/components/notes/NotesSearchForm";
 import { NotesSearchResultCard } from "@/components/notes/NotesSearchResultCard";
 import { BookMiniGrid } from "@/components/reading-room/BookMiniGrid";
 import { CurrentlyReadingRow } from "@/components/reading-room/CurrentlyReadingRow";
+import { ShelfIcon } from "@/components/shelves/ShelfIcon";
 import { ReadingGoalPanel } from "@/components/reading-goal/ReadingGoalPanel";
 import { StarDisplay } from "@/components/reviews/StarDisplay";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
@@ -150,7 +151,10 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
         {tab === "overview" ? (
           <div className="space-y-8">
             <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
-              <h2 className="text-lg font-semibold text-puce-red">Currently reading</h2>
+              <h2 className="flex items-center gap-2 text-lg font-semibold text-puce-red">
+                <ShelfIcon id="currently_reading" size="md" />
+                Currently reading
+              </h2>
               <div className="mt-4">
                 <CurrentlyReadingRow
                   items={data.currentlyReading}
@@ -161,7 +165,10 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
 
             <div className="grid gap-6 lg:grid-cols-2">
               <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
-                <h2 className="text-lg font-semibold text-puce-red">Recently finished</h2>
+                <h2 className="flex items-center gap-2 text-lg font-semibold text-puce-red">
+                  <ShelfIcon id="read" size="md" />
+                  Recently finished
+                </h2>
                 <div className="mt-4">
                   <BookMiniGrid
                     items={data.recentlyFinished}

@@ -38,7 +38,6 @@ export type ShelfGroup = {
   status: ShelfStatus;
   title: string;
   slug: string;
-  emoji: string;
   items: LibraryBookRow[];
 };
 
@@ -61,7 +60,6 @@ export function groupBooksByShelf(books: LibraryBookRow[]): ShelfGroup[] {
     status: shelf.status,
     title: shelf.title,
     slug: shelf.slug,
-    emoji: shelf.emoji,
     items: books.filter((b) => b.shelf_status === shelf.status),
   }));
 }

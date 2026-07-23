@@ -15,7 +15,6 @@ export function BookshelfView({ shelves, username, showHeaderLink = true }: Prop
         <BookshelfSection
           key={shelf.status}
           title={shelf.title}
-          emoji={shelf.emoji}
           status={shelf.status}
           slug={shelf.slug}
           items={shelf.items}

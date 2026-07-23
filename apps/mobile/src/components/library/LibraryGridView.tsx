@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { CoverTile } from "../CoverTile";
+import { ShelfTitleRow } from "../ShelfTitleRow";
 import { libraryShelfPath } from "../../lib/libraryRoutes";
 import type { ShelfGroup } from "../../services/library";
 
@@ -20,10 +21,10 @@ export function LibraryGridView({ shelves, showHeaderLink = true }: Props) {
           className="rounded-2xl border border-brand-border bg-surface p-4 shadow-md"
         >
           <View className="mb-3 flex-row items-center justify-between">
-            <Text className="text-base font-bold text-puce-red">
-              {shelf.emoji} {shelf.title}{" "}
+            <View className="flex-row items-center gap-2">
+              <ShelfTitleRow id={shelf.status} title={shelf.title} />
               <Text className="text-sm font-normal text-ink-muted">({shelf.items.length})</Text>
-            </Text>
+            </View>
             {showHeaderLink ? (
               <Pressable
                 onPress={() => router.push(libraryShelfPath(shelf.slug))}
