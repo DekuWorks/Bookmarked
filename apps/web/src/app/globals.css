@@ -26,6 +26,19 @@
   --color-border: var(--color-border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-display);
+}
+
+.font-display {
+  font-family: var(--font-display), Georgia, "Times New Roman", serif;
+}
+
+/* Page titles & section headers — logo serif, body stays Geist */
+.app-shell-gradient h1,
+.app-shell-gradient h2.text-puce-red,
+.feed-header-gradient h1,
+.font-display {
+  font-family: var(--font-display), Georgia, "Times New Roman", serif;
 }
 
 html {

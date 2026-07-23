@@ -28,8 +28,8 @@ export function BrandLogo({ className }: Props) {
         aria-hidden
       />
       <span
-        className="text-[1.35rem] font-extrabold tracking-wide"
-        style={{ fontFamily: "Georgia, 'Times New Roman', serif", marginLeft: -1 }}
+        className="font-display text-[1.35rem] font-extrabold tracking-wide"
+        style={{ marginLeft: -1 }}
       >
         ookmarked
       </span>

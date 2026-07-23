@@ -25,7 +25,7 @@ export function FeedBookAttachment({ book, className, variant = "default" }: Pro
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-xl border border-border bg-background/80 transition hover:border-primary/35",
+        "overflow-hidden rounded-xl border border-primary/30 bg-gradient-to-br from-primary/20 via-primary/10 to-surface transition hover:border-primary/45 hover:shadow-sm",
         className
       )}
     >

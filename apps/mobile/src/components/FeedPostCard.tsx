@@ -304,7 +304,7 @@ function PostCard({ entry, viewerId }: { entry: PostEntry; viewerId?: string }) 
 
       {post.book && !isRepost ? (
         <Pressable
-          className="mt-3 overflow-hidden rounded-xl border border-brand-border bg-background active:opacity-80"
+          className="mt-3 overflow-hidden rounded-xl border border-primary/30 bg-primary/15 active:opacity-80"
           onPress={() => post.book && router.push(`/book/${post.book.id}`)}
         >
           <View className="flex-row items-stretch gap-3 p-3">

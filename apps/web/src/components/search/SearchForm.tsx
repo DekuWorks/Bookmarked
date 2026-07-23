@@ -4,9 +4,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import type { SearchMode } from "@/components/search/SearchModeTabs";
 import { isIsbnQuery } from "@/lib/utils/isbn";
 
-export function SearchForm() {
+type Props = {
+  mode?: SearchMode;
+};
+
+export function SearchForm({ mode = "books" }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [q, setQ] = useState(searchParams.get("q") ?? "");
@@ -18,10 +23,15 @@ export function SearchForm() {
 
     const params = new URLSearchParams(searchParams.toString());
     params.set("q", trimmed);
+    if (mode === "people") {
+      params.set("mode", "people");
+    } else {
+      params.delete("mode");
+    }
     router.push(`/search/?${params.toString()}`);
   }
 
-  const isbnHint = isIsbnQuery(q);
+  const isbnHint = mode === "books" && isIsbnQuery(q);
 
   return (
     <form
@@ -30,11 +40,13 @@ export function SearchForm() {
     >
       <div className="min-w-0 w-full flex-1 sm:max-w-md">
         <Input
-          label="Search books"
+          label={mode === "people" ? "Search readers" : "Search books"}
           variant="search"
           hideLabel
           name="q"
-          placeholder="Title, author, or ISBN"
+          placeholder={
+            mode === "people" ? "Name or @username" : "Title, author, or ISBN"
+          }
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
