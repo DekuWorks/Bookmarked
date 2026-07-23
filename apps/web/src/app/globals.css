@@ -229,10 +229,17 @@ body {
   border: 1px solid var(--color-border);
   background: color-mix(in srgb, var(--color-surface) 88%, transparent);
   padding: 0.25rem;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.pill-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .pill-tab {
   flex: 1;
+  min-height: 44px;
   border-radius: 9999px;
   padding: 0.5rem 1rem;
   text-align: center;
@@ -242,6 +249,10 @@ body {
     background-color 0.15s ease,
     color 0.15s ease,
     box-shadow 0.15s ease;
+}
+
+.pill-tab.shrink-0 {
+  flex: 0 0 auto;
 }
 
 .pill-tab[data-active="true"] {

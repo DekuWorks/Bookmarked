@@ -15,12 +15,12 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | 1 | Navigation | ✅ | Web + mobile primary nav shipped; `/dashboard/` redirects to Reading Room |
 | 2 | Reading depth | ✅ | Web + mobile parity: 6 Reading Room tabs, completion auto-tags, session notes |
 | 3 | Community | 🔄 | Feed, messaging, clubs, events calendar shipped; polish ongoing |
-| 4 | Premium | 🔄 | Schema + gates + webhook stub; Stripe / IAP not wired |
+| 4 | Premium | 🔄 | Stripe web + iOS IAP wired; Apple JWS verification pending |
 | 5 | UI refresh | ✅ | Gradients, surface cards, branding on web + mobile |
 | 6 | Performance | ✅ | Audit + N+1 fixes + lazy loading; virtualization deferred |
 | 7 | Database | ✅ | 55 migrations, indexes, `docs/DATABASE_SCHEMA.md` |
 | 8 | Security | ✅ | RLS hardening, private message attachments, `docs/SECURITY_AUDIT.md` |
-| 9 | Responsive QA | ✅ | Web responsive + mobile layout pass; `docs/RESPONSIVE_QA.md` |
+| 9 | Responsive QA | ✅ | Web responsive + mobile layout; premium/upgrade mobile pass |
 | 10 | Production hardening | ✅ | SEO metadata, env validation, route audit |
 
 ---
@@ -121,15 +121,17 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 
 | Item | Status | Notes / references |
 |------|--------|-------------------|
-| `user_subscriptions` table + RLS | ✅ | `20260722120000_user_subscriptions.sql` |
+| `user_subscriptions` table + RLS | ✅ | `20260722120000_user_subscriptions.sql` · `apple_original_transaction_id` (`20260723190000`) |
 | `canAccessFeature()` | ✅ | `packages/utils/subscription.ts` |
 | Web subscription hook + gates | ✅ | `useSubscription.ts` · `PremiumFeatureLock` · `/upgrade/` |
 | Mobile subscription hook + gates | ✅ | `apps/mobile/src/hooks/useSubscription.ts` · `/(app)/upgrade` |
 | Premium features gated | ✅ | `advanced_analytics`, `ai_insights` |
 | AI reading insights (OpenAI) | ✅ | `packages/utils/aiInsights.ts` · `supabase/functions/ai-insights` · web + mobile `AiInsightsPanel` · see `docs/AI_INSIGHTS.md` |
 | Stripe checkout (web) | 🔄 | `create-checkout-session` Edge Function + `/upgrade/` CTA; live when `STRIPE_*` secrets set — see `docs/STRIPE_SETUP.md` |
-| App Store / Google Play IAP | ⬜ | No SDK integration |
-| Webhook signature verification | 🔄 | Stripe HMAC + invoice events + `stripe_customer_id` mapping; Apple/Google relay still manual |
+| App Store IAP (iOS) | ✅ | `expo-iap` + `useAppleIap` + `apple-iap-verify` — see `docs/APP_STORE_IAP.md` |
+| Google Play IAP | ⬜ | Android uses web Stripe link from upgrade screen |
+| Mobile web upgrade UX | ✅ | `/upgrade/` responsive layout; Stripe checkout works in mobile Safari |
+| Webhook signature verification | 🔄 | Stripe HMAC; Apple ASN decodes JWS (full cert verification deferred) |
 | Admin grant UI | ⬜ | Manual SQL / service role |
 
 ---
@@ -193,6 +195,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Web responsive layouts | ✅ | Mobile-first Tailwind · bottom nav · `docs/RESPONSIVE_QA.md` |
 | Mobile layout spot-check | ✅ | Feed, library, messages, composer safe-area |
 | Message composer / tab bar overlap | ✅ | Sticky offsets |
+| Premium upgrade + pill tabs (mobile web) | ✅ | `/upgrade/` padding, pill-tab scroll, premium lock tap targets |
 
 ---
 
@@ -213,13 +216,21 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Area | Web | Mobile | Gap |
 |------|-----|--------|-----|
 | Core reading loop | ✅ | ✅ | — |
-| Reading Room tabs | 6 tabs | 6 tabs | — |
+| Reading Room tabs (6) | ✅ | ✅ | — |
+| AI insights | ✅ | ✅ | — |
+| Advanced analytics | ✅ `ReadingActivityPanel` | ✅ `ReadingActivityPanel` + heatmap | — |
 | Completion auto-tags | ✅ | ✅ | — |
-| Goodreads import | ✅ | ✅ | — |
+| Direct-to-Read page count | ✅ | ✅ | — |
 | Feed search | ✅ | ✅ | — |
+| Goodreads import | ✅ | ✅ | — |
 | Events calendar | ✅ | ✅ | — |
+| Pinned messages (single pin UI) | ✅ | ✅ | — |
+| Session notes on book detail | ✅ | ✅ | — |
+| Community ratings on trending | ✅ | ✅ | — |
+| Premium upgrade | ✅ Stripe | ✅ IAP + web link | Apple JWS verify pending |
+| Upgrade page (mobile web) | ✅ responsive | N/A (native screen) | — |
 | Public library browse | ✅ | ✅ | — |
-| Shared service code | 49 modules | 33 modules | `communityRating` + `trending` weights in `packages/utils` |
+| Shared service code | 49 modules | 33 modules | `communityRating` + trending in `packages/utils` |
 
 ---
 
@@ -233,7 +244,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Database schema | `docs/DATABASE_SCHEMA.md` |
 | Master task list (MVP) | `docs/project/MASTER_TASK_LIST.md` |
 
-**Last updated:** July 23, 2026 (Stripe checkout Edge Function; EAS iOS builds 8–9; trending + community ratings polish)
+**Last updated:** July 23, 2026 (dual-platform parity audit; iOS IAP upgrade flow; mobile analytics heatmap)
 
 ---
 
@@ -244,6 +255,6 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | P1 | Submit EAS build 8 to TestFlight | Auto-submit monitor running; `eas submit` after build 8 finishes |
 | P1 | EAS build 9 (trending/premium) | Started from `fbffabe+`; submit when finished |
 | P1 | Stripe secrets + deploy | Set `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`; deploy Edge Functions |
-| P1 | App Store / Google Play IAP | Needs store SDK + receipt validation |
+| P1 | App Store Connect + IAP sandbox test | Create `com.dekuworks.bookmarked.premium.monthly`; deploy `verify-apple-purchase`; see `docs/APP_STORE_IAP.md` |
 | P2 | Extract duplicated services to `packages/` | `communityRating` + trending weights moved; 25 modules remain |
 | P2 | Library virtualization | Deferred until large libraries reported |

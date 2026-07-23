@@ -45,6 +45,7 @@ type SubscriptionUpdate = {
   subscription_provider: SubscriptionProvider;
   subscription_expires_at: string | null;
   stripe_customer_id?: string | null;
+  apple_original_transaction_id?: string | null;
 };
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -333,6 +334,10 @@ Deno.serve(async (req) => {
     return upsertSubscription(userId, update);
   }
 
+  if (providerParam === "apple") {
+    return handleAppleServerNotification(rawBody);
+  }
+
   const webhookSecret = Deno.env.get("SUBSCRIPTION_WEBHOOK_SECRET")?.trim();
   if (!webhookSecret) {
     console.error("[subscription-webhook] SUBSCRIPTION_WEBHOOK_SECRET is not set");
@@ -370,3 +375,154 @@ Deno.serve(async (req) => {
 
   return upsertSubscription(payload.user_id, update);
 });
+
+function decodeJwsPayload(jws: string): Record<string, unknown> | null {
+  const parts = jws.split(".");
+  if (parts.length < 2) return null;
+
+  try {
+    const segment = parts[1];
+    const padded = segment + "=".repeat((4 - (segment.length % 4)) % 4);
+    const json = atob(padded.replace(/-/g, "+").replace(/_/g, "/"));
+    return JSON.parse(json) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+type AppleNotificationPayload = {
+  notificationType?: string;
+  subtype?: string;
+  data?: {
+    signedTransactionInfo?: string;
+    signedRenewalInfo?: string;
+  };
+};
+
+function subscriptionFromAppleNotification(
+  notification: AppleNotificationPayload
+): SubscriptionUpdate | null {
+  const signedTransaction = notification.data?.signedTransactionInfo;
+  if (!signedTransaction) return null;
+
+  const transaction = decodeJwsPayload(signedTransaction);
+  if (!transaction) return null;
+
+  const notificationType = notification.notificationType ?? "";
+  const expiresMs = transaction.expiresDate;
+  const expiresAt =
+    typeof expiresMs === "number" && Number.isFinite(expiresMs)
+      ? new Date(expiresMs).toISOString()
+      : null;
+
+  const originalTransactionId =
+    typeof transaction.originalTransactionId === "string"
+      ? transaction.originalTransactionId
+      : null;
+
+  const activeTypes = new Set([
+    "SUBSCRIBED",
+    "DID_RENEW",
+    "DID_CHANGE_RENEWAL_STATUS",
+    "OFFER_REDEEMED",
+  ]);
+  const inactiveTypes = new Set([
+    "EXPIRED",
+    "GRACE_PERIOD_EXPIRED",
+    "REVOKE",
+    "REFUND",
+    "REFUND_DECLINED",
+  ]);
+
+  if (activeTypes.has(notificationType)) {
+    return {
+      subscription_tier: "premium",
+      subscription_status: "active",
+      subscription_provider: "apple",
+      subscription_expires_at: expiresAt,
+      apple_original_transaction_id: originalTransactionId,
+    };
+  }
+
+  if (inactiveTypes.has(notificationType)) {
+    return {
+      subscription_tier: "free",
+      subscription_status: "canceled",
+      subscription_provider: "apple",
+      subscription_expires_at: expiresAt,
+      apple_original_transaction_id: originalTransactionId,
+    };
+  }
+
+  return null;
+}
+
+async function resolveUserIdForAppleOriginalTransaction(
+  originalTransactionId: string | null
+): Promise<string | null> {
+  if (!originalTransactionId) return null;
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")?.trim();
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim();
+  if (!supabaseUrl || !serviceRoleKey) return null;
+
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  const { data, error } = await supabase
+    .from("user_subscriptions")
+    .select("user_id")
+    .eq("apple_original_transaction_id", originalTransactionId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[subscription-webhook] apple transaction lookup failed:", error.message);
+    return null;
+  }
+
+  return data?.user_id ?? null;
+}
+
+async function handleAppleServerNotification(rawBody: string): Promise<Response> {
+  let envelope: { signedPayload?: string };
+  try {
+    envelope = JSON.parse(rawBody) as { signedPayload?: string };
+  } catch {
+    return jsonResponse({ error: "Invalid Apple notification JSON" }, 400);
+  }
+
+  const signedPayload = envelope.signedPayload?.trim();
+  if (!signedPayload) {
+    return jsonResponse({ error: "Missing signedPayload" }, 400);
+  }
+
+  const notification = decodeJwsPayload(signedPayload) as AppleNotificationPayload | null;
+  if (!notification) {
+    return jsonResponse({ error: "Could not decode signedPayload" }, 400);
+  }
+
+  const update = subscriptionFromAppleNotification(notification);
+  if (!update) {
+    return jsonResponse({
+      ok: true,
+      ignored: true,
+      type: notification.notificationType ?? "unknown",
+    });
+  }
+
+  const userId = await resolveUserIdForAppleOriginalTransaction(
+    update.apple_original_transaction_id ?? null
+  );
+
+  if (!userId) {
+    return jsonResponse({
+      ok: true,
+      ignored: true,
+      reason: "No user mapped for apple_original_transaction_id",
+      type: notification.notificationType ?? "unknown",
+    });
+  }
+
+  return upsertSubscription(userId, update);
+}

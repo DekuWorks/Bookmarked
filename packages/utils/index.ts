@@ -11,6 +11,15 @@ export {
 } from "./subscription";
 
 export {
+  IAP_ALLOWED_PREMIUM_SKUS,
+  IAP_PREMIUM_MONTHLY_ANDROID,
+  IAP_PREMIUM_MONTHLY_IOS,
+  IAP_PREMIUM_PRICE_LABEL,
+  isAllowedPremiumSku,
+  type IapPremiumSku,
+} from "./iap";
+
+export {
   MESSAGE_ATTACHMENT_BUCKET,
   parseMessageAttachmentPath,
 } from "./messageAttachments";

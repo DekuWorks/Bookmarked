@@ -34,6 +34,9 @@ Legend: ✅ Pass · 🟡 Minor · 🔴 Blocked
 3. **Bottom nav safe area** — Already uses `pb-[max(0.5rem,env(safe-area-inset-bottom))]` on `MobileBottomNav`.
 4. **App shell padding** — Main content `pb-24 md:pb-10` prevents content hidden behind bottom nav.
 5. **Modals** — `Modal` uses bottom-sheet on mobile (`items-end`, `rounded-t-2xl`, `max-h-[90vh]`).
+6. **Premium upgrade (mobile web)** — `/upgrade/` surface card uses `p-4 sm:p-6`; subscribe CTA full-width on narrow viewports.
+7. **Pill tabs** — `min-height: 44px`, horizontal scroll with hidden scrollbar; `.pill-tab.shrink-0` no longer stretches in scroll rows.
+8. **Premium lock CTA** — upgrade button `w-full max-w-xs` on mobile for tap targets.
 
 ### Mobile (Expo)
 

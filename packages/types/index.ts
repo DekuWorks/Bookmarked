@@ -64,6 +64,7 @@ export interface UserSubscription {
   subscription_provider: SubscriptionProvider | null;
   subscription_expires_at: string | null;
   stripe_customer_id?: string | null;
+  apple_original_transaction_id?: string | null;
   created_at: string;
   updated_at: string;
 }

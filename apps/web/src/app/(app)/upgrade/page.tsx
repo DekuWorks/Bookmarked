@@ -162,7 +162,7 @@ export default function UpgradePage() {
           </ButtonLink>
         </section>
       ) : (
-        <section className="surface-card p-6">
+        <section className="surface-card overflow-hidden p-4 sm:p-6">
           <div className="text-center">
             {checkoutUnavailable ? (
               <p className="text-sm font-medium uppercase tracking-wide text-primary">Coming soon</p>

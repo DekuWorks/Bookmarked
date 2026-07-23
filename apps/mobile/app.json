@@ -55,7 +55,8 @@
         {
           "photosPermission": "Bookmarked needs access to your photos so you can attach images to posts, comments, and messages."
         }
-      ]
+      ],
+      "expo-iap"
     ],
     "owner": "dekuworks",
     "extra": {

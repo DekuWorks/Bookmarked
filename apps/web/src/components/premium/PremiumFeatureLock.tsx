@@ -36,7 +36,7 @@ export function PremiumFeatureLock({
         <p className={cn("text-text-muted", compact ? "mt-2 text-sm" : "mt-3 text-sm leading-relaxed")}>
           {description}
         </p>
-        <ButtonLink href="/upgrade/" variant="primary" size="sm" className="mt-4">
+        <ButtonLink href="/upgrade/" variant="primary" size="sm" className="mt-4 w-full max-w-xs sm:w-auto">
           Upgrade to Premium
         </ButtonLink>
       </div>
