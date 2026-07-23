@@ -18,6 +18,7 @@ import { messagesInboxPath } from "@/lib/routes/messages";
 import { readerProfilePath } from "@/lib/routes/reader";
 import { profileDisplayName } from "@/lib/utils/messaging";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/utils/cn";
 import type { ConversationWithParticipants, MessageProfile } from "@/types";
@@ -182,12 +183,13 @@ export function GroupSettingsMenu({ conversation, currentUserId, onUpdated }: Pr
     <>
       {isOwner ? (
         <Section title="Group">
-          <div className="flex items-start gap-3">
+          <div className="surface-card space-y-4 p-4">
             <CircleAvatarUpload
               imageUrl={conversation.avatar_url}
               fallbackLabel={title}
               disabled={busy}
               size="md"
+              className="mx-auto w-full"
               onFileSelect={async (file) => {
                 const result = await uploadGroupAvatar(conversation.id, file);
                 if (result.error) throw new Error(result.error);
@@ -201,26 +203,24 @@ export function GroupSettingsMenu({ conversation, currentUserId, onUpdated }: Pr
                 onUpdated();
               }}
             />
-            <div className="min-w-0 flex-1 space-y-2">
-              <label className="sr-only" htmlFor="group-title">
-                Group name
-              </label>
-              <input
-                id="group-title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Group name"
-                className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
-              />
-              <Button
-                type="button"
-                size="sm"
-                disabled={busy || !title.trim()}
-                onClick={() => void handleRename()}
-              >
-                Save
-              </Button>
-            </div>
+            <Input
+              id="group-title"
+              label="Group name"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Group name"
+              disabled={busy}
+              className="mb-0"
+            />
+            <Button
+              type="button"
+              size="sm"
+              disabled={busy || !title.trim()}
+              onClick={() => void handleRename()}
+              className="w-full"
+            >
+              Save name
+            </Button>
           </div>
         </Section>
       ) : null}
