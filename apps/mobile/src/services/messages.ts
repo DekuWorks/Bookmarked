@@ -44,9 +44,9 @@ function mapReplyPreview(
   return {
     id: row.id,
     sender_id: row.sender_id,
-    body: row.body,
+    body: row.body ?? "",
     attachment_url: row.attachment_url ?? null,
-    deleted_at: row.deleted_at,
+    deleted_at: row.deleted_at ?? null,
     sender: row.profiles ?? {
       id: row.sender_id,
       username: null,
@@ -70,7 +70,7 @@ function mapMessageRow(
     id: row.id,
     conversation_id: row.conversation_id,
     sender_id: row.sender_id,
-    body: row.body,
+    body: row.body ?? "",
     attachment_url: row.attachment_url ?? null,
     reply_to_id: row.reply_to_id ?? null,
     created_at: row.created_at,
@@ -535,7 +535,8 @@ export function messageReplySnippet(
   message: Pick<MessageReplyPreview, "body" | "attachment_url" | "deleted_at">
 ): string {
   if (message.deleted_at) return "Message deleted";
-  if (message.body.trim()) return message.body.trim();
+  const body = message.body?.trim() ?? "";
+  if (body) return body;
   if (message.attachment_url) return "Photo";
   return "Message";
 }
