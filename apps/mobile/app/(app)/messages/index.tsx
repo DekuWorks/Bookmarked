@@ -123,7 +123,6 @@ export default function MessagesScreen() {
                         className={`flex-1 font-semibold ${item.unreadCount ? "text-puce-red" : "text-ink"}`}
                         numberOfLines={1}
                       >
-                        {isPinned ? "📌 " : ""}
                         {name}
                       </Text>
                       {item.latestMessage ? (
@@ -153,6 +152,7 @@ export default function MessagesScreen() {
                 <Pressable
                   onPress={() => handlePinToggle(item)}
                   accessibilityLabel={isPinned ? "Unpin conversation" : "Pin conversation"}
+                  accessibilityHint={isPinned ? "Pinned" : "Pin to top of list"}
                   className="items-center justify-center px-3 active:opacity-70"
                 >
                   <Text className={`text-lg ${isPinned ? "text-royal-orange" : "text-ink-muted"}`}>

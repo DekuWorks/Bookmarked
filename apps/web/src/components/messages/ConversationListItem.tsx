@@ -124,15 +124,14 @@ export function ConversationListItem({
         disabled={pinning}
         aria-pressed={isPinned}
         aria-label={isPinned ? "Unpin conversation" : "Pin conversation"}
-        title={isPinned ? "Unpin" : "Pin to top"}
+        title={isPinned ? "Pinned" : "Pin to top"}
         className={cn(
-          "flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-r-xl px-3 text-sm transition",
+          "flex min-h-[44px] shrink-0 items-center justify-center rounded-r-xl px-3 transition",
           "text-text-muted hover:bg-background hover:text-royal-orange",
           isPinned && "text-royal-orange"
         )}
       >
         <PinIcon filled={isPinned} />
-        {isPinned ? "Unpin" : "Pin"}
       </button>
     </div>
   );
