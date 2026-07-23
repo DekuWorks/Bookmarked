@@ -11,7 +11,7 @@ export default function AppTabsLayout() {
   const session = useAuthStore((s) => s.session);
   const { data: profile, isLoading } = useProfile();
 
-  if (!initialized || (session && isLoading)) {
+  if (!initialized) {
     return <LoadingState />;
   }
 
@@ -19,14 +19,16 @@ export default function AppTabsLayout() {
     return <Redirect href="/(auth)/login" />;
   }
 
-  if (!profile?.username?.trim()) {
+  if (!isLoading && !profile?.username?.trim()) {
     return <Redirect href="/(auth)/profile-setup" />;
   }
 
+  // Keep Tabs mounted while profile loads so tab screens never render outside
+  // the navigation tree (same class of bug as ThemeShell remounting nav context).
   return (
     <TabBarScrollProvider>
       <Tabs
-        tabBar={(props) => <FloatingTabBar {...props} />}
+        tabBar={(props) => (isLoading ? null : <FloatingTabBar {...props} />)}
         screenOptions={{
           headerShown: false,
           sceneStyle: { backgroundColor: BACKGROUND_TINT },

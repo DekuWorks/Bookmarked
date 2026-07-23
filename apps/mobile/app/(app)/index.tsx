@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { FlatList, Pressable, RefreshControl, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { BrandTopHeader } from "../../src/components/BrandTopHeader";
+import { StatTile } from "../../src/components/StatTile";
 import { CoverTile } from "../../src/components/CoverTile";
 import { EmptyState } from "../../src/components/EmptyState";
 import { ScreenGradientWash } from "../../src/components/ScreenGradientWash";
@@ -17,15 +18,6 @@ import { computeReadingGoal } from "../../src/services/readingGoal";
 import { fetchTrendingSections } from "../../src/services/trending";
 import { TAB_BAR_SPACE, useTabBarScroll } from "../../src/navigation/TabBarScroll";
 import { useAuthStore } from "../../src/store/authStore";
-
-function StatTile({ value, label }: { value: string | number; label: string }) {
-  return (
-    <View className="flex-1 items-center rounded-2xl border border-primary/25 bg-primary/10 px-2 py-3 shadow-sm">
-      <Text className="text-2xl font-black text-puce-red">{value}</Text>
-      <Text className="mt-0.5 text-center text-xs text-ink-muted">{label}</Text>
-    </View>
-  );
-}
 
 function QuickLink({ icon, label, onPress }: { icon: string; label: string; onPress: () => void }) {
   return (
