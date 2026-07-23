@@ -26,15 +26,7 @@ const MESSAGE_ATTACHMENT_SIGNED_URL_TTL_SEC = 3600;
 
 const MESSAGE_SELECT = `
   *,
-  profiles!messages_sender_id_profiles_fkey (${PROFILE_SELECT}),
-  reply_to:messages!reply_to_id (
-    id,
-    sender_id,
-    body,
-    attachment_url,
-    deleted_at,
-    profiles!messages_sender_id_profiles_fkey (${PROFILE_SELECT})
-  )
+  profiles!messages_sender_id_profiles_fkey (${PROFILE_SELECT})
 `;
 
 function mapReplyPreview(
@@ -66,10 +58,14 @@ function mapReplyPreview(
 
 type MessageRow = Message & {
   profiles: MessageProfile | null;
-  reply_to: Parameters<typeof mapReplyPreview>[0];
 };
 
-function mapMessageRow(row: MessageRow): MessageWithSender {
+type ReplyPreviewRow = Parameters<typeof mapReplyPreview>[0];
+
+function mapMessageRow(
+  row: MessageRow,
+  replyTo: MessageReplyPreview | null = null
+): MessageWithSender {
   return {
     id: row.id,
     conversation_id: row.conversation_id,
@@ -86,9 +82,34 @@ function mapMessageRow(row: MessageRow): MessageWithSender {
       display_name: null,
       avatar_url: null,
     },
-    reply_to: mapReplyPreview(row.reply_to),
+    reply_to: replyTo,
     reactions: [],
   };
+}
+
+async function fetchReplyPreviews(
+  replyToIds: string[]
+): Promise<Map<string, MessageReplyPreview>> {
+  const map = new Map<string, MessageReplyPreview>();
+  const uniqueIds = [...new Set(replyToIds.filter(Boolean))];
+  if (!uniqueIds.length) return map;
+
+  const { data, error } = await supabase
+    .from("messages")
+    .select(
+      `id, sender_id, body, attachment_url, deleted_at, profiles!messages_sender_id_profiles_fkey (${PROFILE_SELECT})`
+    )
+    .in("id", uniqueIds);
+
+  if (error) throw error;
+
+  for (const row of (data ?? []) as unknown as ReplyPreviewRow[]) {
+    if (!row) continue;
+    const preview = mapReplyPreview(row);
+    if (preview) map.set(row.id, preview);
+  }
+
+  return map;
 }
 
 async function fetchReactionSummaries(
@@ -379,7 +400,16 @@ export async function getMessages(
 
   if (error) throw error;
 
-  const mapped = ((data ?? []) as MessageRow[]).map(mapMessageRow);
+  const rows = (data ?? []) as MessageRow[];
+  const replyPreviews = await fetchReplyPreviews(
+    rows.map((row) => row.reply_to_id).filter((id): id is string => Boolean(id))
+  );
+  const mapped = rows.map((row) =>
+    mapMessageRow(
+      row,
+      row.reply_to_id ? (replyPreviews.get(row.reply_to_id) ?? null) : null
+    )
+  );
   const reactionsByMessage = await fetchReactionSummaries(
     mapped.map((message) => message.id),
     viewerId ?? null

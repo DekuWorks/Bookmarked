@@ -44,10 +44,14 @@ function mapReplyPreview(
 
 type MessageRow = Message & {
   profiles: MessageProfile | null;
-  reply_to: Parameters<typeof mapReplyPreview>[0];
 };
 
-function mapMessageRow(row: MessageRow): MessageWithSender {
+type ReplyPreviewRow = Parameters<typeof mapReplyPreview>[0];
+
+function mapMessageRow(
+  row: MessageRow,
+  replyTo: MessageReplyPreview | null = null
+): MessageWithSender {
   return {
     id: row.id,
     conversation_id: row.conversation_id,
@@ -64,9 +68,35 @@ function mapMessageRow(row: MessageRow): MessageWithSender {
       display_name: null,
       avatar_url: null,
     },
-    reply_to: mapReplyPreview(row.reply_to),
+    reply_to: replyTo,
     reactions: [],
   };
+}
+
+async function fetchReplyPreviews(
+  supabase: ReturnType<typeof createClient>,
+  replyToIds: string[]
+): Promise<Map<string, MessageReplyPreview>> {
+  const map = new Map<string, MessageReplyPreview>();
+  const uniqueIds = [...new Set(replyToIds.filter(Boolean))];
+  if (!uniqueIds.length) return map;
+
+  const { data, error } = await supabase
+    .from("messages")
+    .select(
+      `id, sender_id, body, attachment_url, deleted_at, profiles!messages_sender_id_profiles_fkey (${PROFILE_SELECT})`
+    )
+    .in("id", uniqueIds);
+
+  if (error) throw error;
+
+  for (const row of (data ?? []) as unknown as ReplyPreviewRow[]) {
+    if (!row) continue;
+    const preview = mapReplyPreview(row);
+    if (preview) map.set(row.id, preview);
+  }
+
+  return map;
 }
 
 async function fetchReactionSummaries(
@@ -139,15 +169,7 @@ const PROFILE_SELECT = "id, username, display_name, avatar_url";
 
 const MESSAGE_SELECT = `
   *,
-  profiles!messages_sender_id_profiles_fkey (${PROFILE_SELECT}),
-  reply_to:messages!reply_to_id (
-    id,
-    sender_id,
-    body,
-    attachment_url,
-    deleted_at,
-    profiles!messages_sender_id_profiles_fkey (${PROFILE_SELECT})
-  )
+  profiles!messages_sender_id_profiles_fkey (${PROFILE_SELECT})
 `;
 
 const MESSAGE_ATTACHMENT_SIGNED_URL_TTL_SEC = 3600;
@@ -678,7 +700,17 @@ export async function getMessages(
 
   if (error) throw error;
 
-  const mapped = ((data ?? []) as MessageRow[]).reverse().map(mapMessageRow);
+  const rows = ((data ?? []) as MessageRow[]).reverse();
+  const replyPreviews = await fetchReplyPreviews(
+    supabase,
+    rows.map((row) => row.reply_to_id).filter((id): id is string => Boolean(id))
+  );
+  const mapped = rows.map((row) =>
+    mapMessageRow(
+      row,
+      row.reply_to_id ? (replyPreviews.get(row.reply_to_id) ?? null) : null
+    )
+  );
   const withReactions = await attachReactionsToMessages(supabase, mapped, viewerId ?? null);
 
   return signMessageAttachmentFields(supabase, withReactions);
