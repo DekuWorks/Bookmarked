@@ -917,9 +917,9 @@ export async function toggleMessageReaction(
 }
 
 export function messageReplySnippet(
-  message: Pick<MessageReplyPreview, "body" | "attachment_url" | "deleted_at">
+  message: Pick<MessageReplyPreview, "body" | "attachment_url" | "deleted_at"> | null
 ): string {
-  if (message.deleted_at) return "Message deleted";
+  if (!message || message.deleted_at) return "Message deleted";
   const body = message.body?.trim() ?? "";
   if (body) return body;
   if (message.attachment_url) return "Photo";
@@ -930,9 +930,33 @@ export async function deleteMessage(messageId: string): Promise<{ error?: string
   try {
     const { supabase, user } = await requireUser();
 
+    const { data: message, error: fetchError } = await supabase
+      .from("messages")
+      .select("id, attachment_url")
+      .eq("id", messageId)
+      .eq("sender_id", user.id)
+      .maybeSingle();
+
+    if (fetchError) return { error: fetchError.message };
+    if (!message) return { error: "Message not found." };
+
+    const attachmentPath = message.attachment_url
+      ? parseMessageAttachmentPath(message.attachment_url)
+      : null;
+
+    if (attachmentPath) {
+      const { error: storageError } = await supabase.storage
+        .from(MESSAGE_ATTACHMENT_BUCKET)
+        .remove([attachmentPath]);
+
+      if (storageError) {
+        console.error("[messages] attachment delete failed:", storageError.message);
+      }
+    }
+
     const { error } = await supabase
       .from("messages")
-      .update({ deleted_at: new Date().toISOString() })
+      .delete()
       .eq("id", messageId)
       .eq("sender_id", user.id);
 

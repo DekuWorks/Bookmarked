@@ -1,6 +1,7 @@
 "use client";
 
 import { messageReplySnippet } from "@/lib/services/messages";
+import { isGiphyImageUrl } from "@/lib/utils/giphy";
 import { profileDisplayName } from "@/lib/utils/messaging";
 import type { MessageReplyPreview as MessageReplyPreviewType } from "@/types";
 import { cn } from "@/lib/utils/cn";
@@ -14,6 +15,8 @@ type Props = {
 
 export function MessageReplyPreview({ reply, isOwn, compact, onClear }: Props) {
   const snippet = messageReplySnippet(reply);
+  const thumbnailUrl = reply.deleted_at ? null : reply.attachment_url;
+  const isGif = thumbnailUrl ? isGiphyImageUrl(thumbnailUrl) : false;
 
   return (
     <div
@@ -25,13 +28,25 @@ export function MessageReplyPreview({ reply, isOwn, compact, onClear }: Props) {
         compact && "mb-2"
       )}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className={cn("font-semibold", isOwn ? "text-white" : "text-text")}>
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <p className={cn("truncate font-semibold", isOwn ? "text-white" : "text-text")}>
             {profileDisplayName(reply.sender)}
           </p>
-          <p className="truncate">{snippet}</p>
+          {snippet ? <p className="truncate">{snippet}</p> : null}
         </div>
+        {thumbnailUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={thumbnailUrl}
+            alt={isGif ? "GIF" : "Photo"}
+            className={cn(
+              "h-10 w-10 shrink-0 rounded border object-cover",
+              isOwn ? "border-white/30" : "border-border",
+              isGif && "object-contain bg-background/80"
+            )}
+          />
+        ) : null}
         {onClear ? (
           <button
             type="button"
