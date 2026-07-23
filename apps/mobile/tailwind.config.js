@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: "class",
   content: [
     "./app/**/*.{js,jsx,ts,tsx}",
     "./src/**/*.{js,jsx,ts,tsx}",
@@ -8,23 +9,20 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Bookmarked brand palette (mirrors apps/web globals.css design tokens)
         primary: {
-          DEFAULT: "#B89DBB", // lavender
+          DEFAULT: "var(--color-primary)",
           light: "#D5C3D7",
           dark: "#94789A",
         },
-        "puce-red": "#642F37",
+        "puce-red": "var(--color-puce-red)",
         rust: "#C0350F",
         "royal-orange": "#F3904B",
         "orange-yellow": "#F7C767",
-        // App-wide light lavender tint (mirrors web --color-background, nudged
-        // toward the mockup's visible purple tint). Cards use `surface`.
-        background: "#F4EEFA",
-        surface: "#FCFAFE",
-        ink: "#1A1A1A",
-        "ink-muted": "#6B6B6B",
-        "brand-border": "#E5DFEB",
+        background: "var(--color-background)",
+        surface: "var(--color-surface)",
+        ink: "var(--color-ink)",
+        "ink-muted": "var(--color-ink-muted)",
+        "brand-border": "var(--color-brand-border)",
       },
     },
   },

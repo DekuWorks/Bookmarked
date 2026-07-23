@@ -1,10 +1,7 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { StyleSheet, useWindowDimensions } from "react-native";
-import {
-  HEADER_GRADIENT,
-  HEADER_GRADIENT_LOCATIONS,
-  HEADER_WASH_HEIGHT_RATIO,
-} from "../constants/theme";
+import { HEADER_WASH_HEIGHT_RATIO } from "../constants/theme";
+import { useThemeColors } from "../store/themeStore";
 
 /**
  * Top-of-screen lavender→peach→tint background wash. Absolutely positioned so
@@ -16,12 +13,13 @@ import {
  */
 export function ScreenGradientWash() {
   const { height } = useWindowDimensions();
+  const colors = useThemeColors();
 
   return (
     <LinearGradient
       pointerEvents="none"
-      colors={HEADER_GRADIENT}
-      locations={HEADER_GRADIENT_LOCATIONS}
+      colors={[...colors.headerWash]}
+      locations={[0, 0.35, 0.85, 1]}
       start={{ x: 0.5, y: 0 }}
       end={{ x: 0.5, y: 1 }}
       style={[styles.wash, { height: Math.round(height * HEADER_WASH_HEIGHT_RATIO) }]}

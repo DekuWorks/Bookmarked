@@ -9,6 +9,7 @@ import { LogoutButton } from "@/components/auth/LogoutButton";
 import { LanguagePreferencePanel } from "@/components/profile/LanguagePreferencePanel";
 import { LibraryImportPanel } from "@/components/profile/LibraryImportPanel";
 import { ShelfPrivacyPanel } from "@/components/profile/ShelfPrivacyPanel";
+import { ThemePreferencePanel } from "@/components/theme/ThemePreferencePanel";
 import { NotificationPreferencesPanel } from "@/components/notifications/NotificationPreferencesPanel";
 import { ReadingGoalPanel } from "@/components/reading-goal/ReadingGoalPanel";
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -78,6 +79,8 @@ export default function ProfileSettingsPage() {
       </header>
 
       <div className="space-y-6">
+        <ThemePreferencePanel />
+
         <section className="surface-card p-6">
           <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:justify-between sm:text-left">
             <div>

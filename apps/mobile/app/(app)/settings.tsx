@@ -9,6 +9,7 @@ import { useProfile } from "../../src/hooks/useProfile";
 import { getUserLibraryBooks } from "../../src/services/library";
 import { computeReadingGoal } from "../../src/services/readingGoal";
 import { supabase } from "../../src/services/supabase";
+import { ThemePreferencePanel } from "../../src/components/ThemePreferencePanel";
 import { useAuthStore } from "../../src/store/authStore";
 
 export default function SettingsRoute() {
@@ -48,6 +49,8 @@ export default function SettingsRoute() {
         <Text className="text-sm text-ink-muted mb-6">
           Manage your account, notifications, reading goal, and privacy.
         </Text>
+
+        <ThemePreferencePanel />
 
         <View className="gap-2 mb-6">
           <SettingsLink

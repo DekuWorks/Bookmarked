@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Alert, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { BookCoverAmbience } from "../../../src/components/BookCoverAmbience";
 import { BookCover } from "../../../src/components/BookCover";
 import { Button } from "../../../src/components/Button";
 import { EmptyState } from "../../../src/components/EmptyState";
@@ -224,51 +225,51 @@ export default function BookScreen() {
   return (
     <View className="flex-1 bg-background">
       <ScreenHeader title={book.title} />
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 48, gap: 16 }}>
-        <View className="flex-row gap-4">
-          <BookCover
-            url={book.cover_url}
-            title={book.title}
-            sizeClassName="w-28 h-44"
-            saved={Boolean(userBook)}
-            ribbonSize={24}
-          />
-          <View className="flex-1">
-            <Text className="text-xl font-bold text-ink">{book.title}</Text>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 48, gap: 16 }}>
+        <BookCoverAmbience>
+          <View className="items-center">
+            <BookCover
+              url={book.cover_url}
+              title={book.title}
+              sizeClassName="w-32 h-48"
+              saved={Boolean(userBook)}
+              ribbonSize={24}
+            />
+            <Text className="mt-4 text-center text-xl font-bold text-ink">{book.title}</Text>
             {book.author ? (
               <Pressable onPress={() => router.push(`/author/${encodeURIComponent(book.author!)}`)}>
-                <Text className="mt-0.5 text-ink-muted underline">{book.author}</Text>
+                <Text className="mt-0.5 text-center text-ink-muted underline">{book.author}</Text>
               </Pressable>
-            ) : null}
-            {book.series_name ? (
-              <Pressable
-                onPress={() => router.push(`/series/${encodeURIComponent(book.series_name!)}`)}
-                className="mt-1 self-start rounded-full bg-primary/15 px-2.5 py-1 active:opacity-80"
-              >
-                <Text className="text-xs font-medium text-puce-red">
-                  Part of {book.series_name}
-                  {book.series_position != null ? ` #${book.series_position}` : ""}
-                </Text>
-              </Pressable>
-            ) : null}
-            {userBook ? (
-              <View className="mt-2">
-                <SavedPill shelf={userBook.shelf_status} />
-              </View>
             ) : null}
             {data?.communityRating ? (
-              <View className="mt-2 flex-row items-center gap-2">
+              <View className="mt-3 flex-row items-center gap-2">
                 <StarRating value={data.communityRating.averageRating} showNumber />
                 <Text className="text-xs text-ink-muted">({data.communityRating.ratingCount})</Text>
               </View>
             ) : null}
-            {userBook?.finished_at ? (
-              <Text className="mt-2 text-xs text-ink-muted">
-                Finished on {new Date(userBook.finished_at).toLocaleDateString()}
-              </Text>
-            ) : null}
           </View>
+        </BookCoverAmbience>
+
+        <View className="flex-row flex-wrap gap-2 justify-center">
+          {book.series_name ? (
+            <Pressable
+              onPress={() => router.push(`/series/${encodeURIComponent(book.series_name!)}`)}
+              className="rounded-full bg-primary/15 px-2.5 py-1 active:opacity-80"
+            >
+              <Text className="text-xs font-medium text-puce-red">
+                Part of {book.series_name}
+                {book.series_position != null ? ` #${book.series_position}` : ""}
+              </Text>
+            </Pressable>
+          ) : null}
+          {userBook ? <SavedPill shelf={userBook.shelf_status} /> : null}
         </View>
+
+        {userBook?.finished_at ? (
+          <Text className="text-center text-xs text-ink-muted">
+            Finished on {new Date(userBook.finished_at).toLocaleDateString()}
+          </Text>
+        ) : null}
 
         {/* Shelf actions */}
         <View className="flex-row gap-2">

@@ -11,6 +11,21 @@
   --color-text: #1A1A1A;
   --color-text-muted: #6B6B6B;
   --color-border: #E5DFEB;
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --color-primary: #C9AED0;
+  --color-puce-red: #E8C4CC;
+  --color-rust: #F07A52;
+  --color-royal-orange: #FFB07A;
+  --color-orange-yellow: #FFD98A;
+  --color-background: #1A1326;
+  --color-surface: #261C34;
+  --color-text: #F4EFFA;
+  --color-text-muted: #B5A8C4;
+  --color-border: #3A2F4A;
+  color-scheme: dark;
 }
 
 @theme inline {

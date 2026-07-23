@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { getBookDetails } from "@/lib/services/bookDetails";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { useUserBooksRealtime } from "@/lib/hooks/useUserBooksRealtime";
+import { BookCoverAmbience } from "@/components/books/BookCoverAmbience";
 import { BookCover } from "@/components/books/BookCover";
 import { BookShelfActions } from "@/components/books/BookShelfActions";
 import { ReadingProgressPanel } from "@/components/books/ReadingProgressPanel";
@@ -134,47 +135,52 @@ function BookDetailsContent() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-10 overflow-x-hidden text-center">
-      <div className="flex flex-wrap items-center justify-center gap-3">
-        <Link href="/library" className="text-sm font-medium text-primary hover:underline">
-          ← Back to library
-        </Link>
-        <CopyLinkButton path={bookDetailsPath(book.id)} label="Copy link" variant="outline" />
-      </div>
-
-      <BookCover
-        title={book.title}
-        author={book.author}
-        coverUrl={book.cover_url}
-        className="mx-auto max-w-[220px] shadow-sm"
-        priority
-        bookmarked={Boolean(userBook)}
-      />
-
-      <div className="min-w-0">
+      <BookCoverAmbience coverUrl={book.cover_url}>
         <div className="flex flex-wrap items-center justify-center gap-3">
-          <h1 className="text-2xl font-bold text-puce-red sm:text-3xl">{book.title}</h1>
-          {currentShelf ? <ShelfBadge status={currentShelf} /> : null}
+          <Link href="/library" className="text-sm font-medium text-primary hover:underline">
+            ← Back to library
+          </Link>
+          <CopyLinkButton path={bookDetailsPath(book.id)} label="Copy link" variant="outline" />
         </div>
-        {badges.length > 0 ? (
-          <div className="mt-3 flex justify-center">
-            <BookTrendBadge badges={badges} size="md" />
+
+        <BookCover
+          title={book.title}
+          author={book.author}
+          coverUrl={book.cover_url}
+          className="mx-auto mt-6 max-w-[220px] shadow-sm"
+          priority
+          bookmarked={Boolean(userBook)}
+        />
+
+        <div className="mt-6 min-w-0">
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <h1 className="font-display text-2xl font-bold text-puce-red sm:text-3xl">{book.title}</h1>
+            {currentShelf ? <ShelfBadge status={currentShelf} /> : null}
           </div>
-        ) : null}
-        {communityRating ? (
-          <div className="mt-3">
-            <CommunityRatingDisplay rating={communityRating} />
-          </div>
-        ) : null}
-        {book.author ? (
-          <p className="mt-2 text-lg text-text-muted">
-            <Link
-              href={authorPagePath(book.author)}
-              className="hover:text-primary hover:underline"
-            >
-              {book.author}
-            </Link>
-          </p>
-        ) : null}
+          {badges.length > 0 ? (
+            <div className="mt-3 flex justify-center">
+              <BookTrendBadge badges={badges} size="md" />
+            </div>
+          ) : null}
+          {communityRating ? (
+            <div className="mt-3">
+              <CommunityRatingDisplay rating={communityRating} />
+            </div>
+          ) : null}
+          {book.author ? (
+            <p className="mt-2 text-lg text-text-muted">
+              <Link
+                href={authorPagePath(book.author)}
+                className="hover:text-primary hover:underline"
+              >
+                {book.author}
+              </Link>
+            </p>
+          ) : null}
+        </div>
+      </BookCoverAmbience>
+
+      <div className="min-w-0 px-1">
 
         {book.series_name ? (
           <p className="mt-2">

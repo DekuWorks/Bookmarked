@@ -1,6 +1,7 @@
 import "../global.css";
 import "react-native-gesture-handler";
 import { useEffect } from "react";
+import { Appearance } from "react-native";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import {
@@ -14,6 +15,8 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "../src/lib/queryClient";
 import { useAuthBootstrap } from "../src/hooks/useAuth";
+import { ThemeShell } from "../src/components/ThemeShell";
+import { useThemeStore } from "../src/store/themeStore";
 
 SplashScreen.preventAutoHideAsync().catch(() => {
   /* no-op: splash may already be hidden */
@@ -21,6 +24,17 @@ SplashScreen.preventAutoHideAsync().catch(() => {
 
 function RootLayoutNav() {
   useAuthBootstrap();
+  const hydrate = useThemeStore((state) => state.hydrate);
+  const syncSystem = useThemeStore((state) => state.syncSystem);
+
+  useEffect(() => {
+    void hydrate();
+    const subscription = Appearance.addChangeListener(({ colorScheme }) => {
+      syncSystem(colorScheme);
+    });
+    return () => subscription.remove();
+  }, [hydrate, syncSystem]);
+
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
@@ -51,11 +65,13 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <QueryClientProvider client={queryClient}>
-          <RootLayoutNav />
-        </QueryClientProvider>
-      </SafeAreaProvider>
+      <ThemeShell>
+        <SafeAreaProvider>
+          <QueryClientProvider client={queryClient}>
+            <RootLayoutNav />
+          </QueryClientProvider>
+        </SafeAreaProvider>
+      </ThemeShell>
     </GestureHandlerRootView>
   );
 }
