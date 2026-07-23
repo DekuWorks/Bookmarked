@@ -126,9 +126,9 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Web subscription hook + gates | ✅ | `useSubscription.ts` · `PremiumFeatureLock` · `/upgrade/` |
 | Mobile subscription hook + gates | ✅ | `apps/mobile/src/hooks/useSubscription.ts` · `/(app)/upgrade` |
 | Premium features gated | ✅ | `advanced_analytics`, `ai_insights` |
-| Stripe checkout (web) | ⬜ | Blocked — see `docs/STRIPE_SETUP.md` (`STRIPE_*` secrets + webhook Edge Function) |
+| Stripe checkout (web) | 🔄 | `create-checkout-session` Edge Function + `/upgrade/` CTA; live when `STRIPE_*` secrets set — see `docs/STRIPE_SETUP.md` |
 | App Store / Google Play IAP | ⬜ | No SDK integration |
-| Webhook signature verification | 🔄 | Stripe HMAC verification shipped; Apple/Google relay still manual |
+| Webhook signature verification | 🔄 | Stripe HMAC + invoice events + `stripe_customer_id` mapping; Apple/Google relay still manual |
 | Admin grant UI | ⬜ | Manual SQL / service role |
 
 ---
@@ -203,7 +203,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Env validation at build | ✅ | `apps/web/scripts/validate-env.mjs` |
 | SEO metadata | ✅ | Per-route `layout.tsx` metadata |
 | Route audit | ✅ | 30+ web pages under `apps/web/src/app/` |
-| iOS TestFlight pipeline | 🔄 | EAS build 8 in progress (commit 9863eda+); build 7 submit was stale |
+| iOS TestFlight pipeline | 🔄 | EAS build 8 in progress; build 9 queued from `fbffabe+` (trending/premium polish) |
 
 ---
 
@@ -232,7 +232,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Database schema | `docs/DATABASE_SCHEMA.md` |
 | Master task list (MVP) | `docs/project/MASTER_TASK_LIST.md` |
 
-**Last updated:** July 23, 2026 (EAS iOS build 8 started; trending weights + community ratings polish; Stripe webhook verification)
+**Last updated:** July 23, 2026 (Stripe checkout Edge Function; EAS iOS builds 8–9; trending + community ratings polish)
 
 ---
 
@@ -240,8 +240,9 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 
 | Priority | Item | Notes |
 |----------|------|-------|
-| P1 | Submit EAS build 8 to TestFlight | `eas submit --platform ios --latest` after build completes |
-| P1 | Stripe checkout (web) | Blocked on `STRIPE_*` secrets — webhook handler ready; see `docs/STRIPE_SETUP.md` |
+| P1 | Submit EAS build 8 to TestFlight | Auto-submit monitor running; `eas submit` after build 8 finishes |
+| P1 | EAS build 9 (trending/premium) | Started from `fbffabe+`; submit when finished |
+| P1 | Stripe secrets + deploy | Set `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`; deploy Edge Functions |
 | P1 | App Store / Google Play IAP | Needs store SDK + receipt validation |
 | P2 | Extract duplicated services to `packages/` | `communityRating` + trending weights moved; 25 modules remain |
 | P2 | Library virtualization | Deferred until large libraries reported |

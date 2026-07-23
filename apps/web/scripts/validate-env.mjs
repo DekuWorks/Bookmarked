@@ -76,6 +76,9 @@ if (!process.env.ISBNDB_API_KEY?.trim()) {
  * Supabase project secrets (not in web build):
  * - ISBNDB_API_KEY — Edge Function catalog proxy
  * - SUBSCRIPTION_WEBHOOK_SECRET — billing webhook stub
+ * - STRIPE_SECRET_KEY — Stripe Checkout Session creation (create-checkout-session)
+ * - STRIPE_PRICE_ID — Premium recurring price ID
+ * - STRIPE_WEBHOOK_SECRET — Stripe webhook signature verification
  * - RATE_LIMIT_STUB_SECRET — rate-limit stub (optional)
  */
 

@@ -44,6 +44,7 @@ type SubscriptionUpdate = {
   subscription_status: SubscriptionStatus;
   subscription_provider: SubscriptionProvider;
   subscription_expires_at: string | null;
+  stripe_customer_id?: string | null;
 };
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -130,26 +131,45 @@ function unixToIso(value: unknown): string | null {
   return new Date(value * 1000).toISOString();
 }
 
+function stripeCustomerIdFromObject(object: Record<string, unknown>): string | null {
+  const customer = object.customer;
+  if (typeof customer === "string" && customer.startsWith("cus_")) return customer;
+  return null;
+}
+
+function userIdFromStripeObject(object: Record<string, unknown>): string | null {
+  if (typeof object.client_reference_id === "string" && isUuid(object.client_reference_id)) {
+    return object.client_reference_id;
+  }
+
+  const metadata = object.metadata as Record<string, string> | undefined;
+  const userId = metadata?.user_id ?? metadata?.supabase_user_id;
+  if (typeof userId === "string" && isUuid(userId)) return userId;
+
+  return null;
+}
+
 function subscriptionFromStripeEvent(event: StripeEvent): SubscriptionUpdate | null {
   const object = event.data.object;
+  const stripeCustomerId = stripeCustomerIdFromObject(object);
 
   switch (event.type) {
     case "checkout.session.completed": {
-      const userId = object.client_reference_id;
-      if (typeof userId !== "string" || !isUuid(userId)) return null;
+      const userId = userIdFromStripeObject(object);
+      if (!userId) return null;
       return {
         subscription_tier: "premium",
         subscription_status: "active",
         subscription_provider: "stripe",
         subscription_expires_at: null,
+        stripe_customer_id: stripeCustomerId,
       };
     }
     case "customer.subscription.created":
     case "customer.subscription.updated":
     case "customer.subscription.deleted": {
-      const metadata = object.metadata as Record<string, string> | undefined;
-      const userId = metadata?.user_id ?? metadata?.supabase_user_id;
-      if (typeof userId !== "string" || !isUuid(userId)) return null;
+      const userId = userIdFromStripeObject(object);
+      if (!userId) return null;
 
       const status = stripeStatusFromSubscription(
         typeof object.status === "string" ? object.status : undefined
@@ -162,11 +182,68 @@ function subscriptionFromStripeEvent(event: StripeEvent): SubscriptionUpdate | n
         subscription_provider: "stripe",
         subscription_expires_at:
           unixToIso(object.current_period_end) ?? unixToIso(object.cancel_at),
+        stripe_customer_id: stripeCustomerId,
       };
+    }
+    case "invoice.payment_failed": {
+      return {
+        subscription_tier: "premium",
+        subscription_status: "past_due",
+        subscription_provider: "stripe",
+        subscription_expires_at: unixToIso(object.period_end),
+        stripe_customer_id: stripeCustomerId,
+      };
+    }
+    case "invoice.paid":
+    case "invoice.payment_succeeded": {
+      const billingReason = object.billing_reason;
+      if (billingReason === "subscription_create" || billingReason === "subscription_cycle") {
+        return {
+          subscription_tier: "premium",
+          subscription_status: "active",
+          subscription_provider: "stripe",
+          subscription_expires_at: unixToIso(object.period_end),
+          stripe_customer_id: stripeCustomerId,
+        };
+      }
+      return null;
     }
     default:
       return null;
   }
+}
+
+async function resolveUserIdForStripeEvent(
+  event: StripeEvent,
+  update: SubscriptionUpdate
+): Promise<string | null> {
+  const object = event.data.object;
+  const directUserId = userIdFromStripeObject(object);
+  if (directUserId) return directUserId;
+
+  const stripeCustomerId = update.stripe_customer_id;
+  if (!stripeCustomerId) return null;
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")?.trim();
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim();
+  if (!supabaseUrl || !serviceRoleKey) return null;
+
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  const { data, error } = await supabase
+    .from("user_subscriptions")
+    .select("user_id")
+    .eq("stripe_customer_id", stripeCustomerId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[subscription-webhook] customer lookup failed:", error.message);
+    return null;
+  }
+
+  return data?.user_id ?? null;
 }
 
 async function upsertSubscription(
@@ -248,12 +325,7 @@ Deno.serve(async (req) => {
       return jsonResponse({ ok: true, ignored: true, type: event.type });
     }
 
-    const userId =
-      event.type === "checkout.session.completed"
-        ? (event.data.object.client_reference_id as string)
-        : ((event.data.object.metadata as Record<string, string> | undefined)?.user_id ??
-          (event.data.object.metadata as Record<string, string> | undefined)?.supabase_user_id);
-
+    const userId = await resolveUserIdForStripeEvent(event, update);
     if (!userId || !isUuid(userId)) {
       return jsonResponse({ error: "Stripe event missing valid user_id metadata" }, 400);
     }

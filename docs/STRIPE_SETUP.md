@@ -1,31 +1,74 @@
-# Stripe checkout setup (blocked on secrets)
+# Stripe checkout setup
 
-Bookmarked Premium gates are wired on web and mobile (`useSubscription`, `PremiumFeatureLock`, `canAccessFeature`). Billing is **not live** until the secrets below are configured.
+Bookmarked Premium gates are wired on web and mobile (`useSubscription`, `PremiumFeatureLock`, `canAccessFeature`). Web billing uses a Supabase Edge Function for Checkout Session creation and webhook sync.
 
-## Required secrets
+## Required secrets (Supabase project)
 
-| Secret | Where | Purpose |
-|--------|-------|---------|
-| `STRIPE_SECRET_KEY` | Supabase Edge Function / server | Create Checkout Sessions |
-| `STRIPE_WEBHOOK_SECRET` | `subscription-webhook` Edge Function | Verify webhook signatures |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Web build env (optional if checkout redirects via Edge Function) | Stripe.js on `/upgrade/` |
+Set with `supabase secrets set KEY=value` (never commit to the repo):
 
-Store in Supabase project secrets for Edge Functions. Do **not** commit to the repo.
+| Secret | Purpose |
+|--------|---------|
+| `STRIPE_SECRET_KEY` | Create Checkout Sessions (`sk_live_…` or `sk_test_…`) |
+| `STRIPE_PRICE_ID` | Recurring price ID for Premium (`price_…`, e.g. $4.99/mo) |
+| `STRIPE_WEBHOOK_SECRET` | Verify Stripe webhook signatures (`whsec_…`) |
+| `SUBSCRIPTION_WEBHOOK_SECRET` | Manual / relay payloads (admin grants, testing) |
 
-## Current state
+Optional web build env (not required for checkout — redirect is server-side):
 
-- **Web** (`apps/web/src/app/(app)/upgrade/page.tsx`): informational “Coming soon” — no Checkout redirect
-- **Edge Function** (`supabase/functions/subscription-webhook/`): Stripe signature verification + `user_subscriptions` upsert for `checkout.session.completed` and `customer.subscription.*`; manual relay via `x-subscription-webhook-secret` still supported
-- **Mobile**: no App Store / Google Play SDK yet
+| Variable | Purpose |
+|----------|---------|
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe.js if you add embedded elements later |
 
-## Webhook events handled (Stripe)
+## Stripe Dashboard setup
+
+1. Create a **Product** — “Bookmarked Premium”
+2. Add a **recurring Price** — $4.99/month → copy `price_…` into `STRIPE_PRICE_ID`
+3. **Webhook endpoint** — `POST {SUPABASE_URL}/functions/v1/subscription-webhook?provider=stripe`
+4. Subscribe to events:
+   - `checkout.session.completed`
+   - `customer.subscription.created`
+   - `customer.subscription.updated`
+   - `customer.subscription.deleted`
+   - `invoice.paid`
+   - `invoice.payment_failed`
+5. Copy the signing secret into `STRIPE_WEBHOOK_SECRET`
+
+## Edge Functions
+
+| Function | Path | Auth |
+|----------|------|------|
+| `create-checkout-session` | `/functions/v1/create-checkout-session` | Bearer JWT (signed-in user) |
+| `subscription-webhook` | `/functions/v1/subscription-webhook?provider=stripe` | `stripe-signature` header |
+
+Deploy after setting secrets:
+
+```bash
+supabase functions deploy create-checkout-session
+supabase functions deploy subscription-webhook
+```
+
+Apply migration `20260723140000_stripe_customer_id.sql` so invoice events can resolve users via `stripe_customer_id`.
+
+## Checkout flow (web)
+
+1. User opens `/upgrade/` and clicks **Subscribe with Stripe**
+2. Web calls `create-checkout-session` with the user JWT
+3. Edge Function returns `{ url }` → browser redirects to Stripe Checkout
+4. On success, Stripe redirects to `/upgrade/?checkout=success`
+5. Webhook upserts `user_subscriptions` (tier, status, `stripe_customer_id`)
+
+If `STRIPE_SECRET_KEY` or `STRIPE_PRICE_ID` is missing, the Edge Function returns **503** and the upgrade page shows the “Coming soon” fallback.
+
+## Webhook events handled
 
 | Event | Action |
 |-------|--------|
-| `checkout.session.completed` | Activate Premium when `client_reference_id` is the Supabase user UUID |
-| `customer.subscription.created` / `updated` / `deleted` | Sync tier/status from `metadata.user_id` (or `metadata.supabase_user_id`) |
+| `checkout.session.completed` | Activate Premium; store `stripe_customer_id` from session |
+| `customer.subscription.created` / `updated` / `deleted` | Sync tier/status from subscription metadata |
+| `invoice.paid` / `invoice.payment_succeeded` | Renew Premium (`active`) |
+| `invoice.payment_failed` | Mark `past_due` |
 
-Checkout Sessions must set `client_reference_id` to the user's UUID. Subscriptions should include `metadata.user_id`.
+Checkout Sessions must set `client_reference_id` to the Supabase user UUID (done by `create-checkout-session`). Subscriptions include `metadata.user_id`.
 
 ## Manual relay (admin / testing)
 
@@ -36,26 +79,34 @@ curl -X POST "$SUPABASE_URL/functions/v1/subscription-webhook" \
   -d '{"user_id":"<uuid>","subscription_tier":"premium","subscription_status":"active"}'
 ```
 
-## Activation checklist
-
-1. Create Stripe product + price (`$4.99/mo` recurring)
-2. Add secrets to Supabase (`supabase secrets set …`)
-3. Implement Checkout Session creation (Edge Function or static-export-safe client flow)
-4. Finish `subscription-webhook`: verify `stripe-signature`, handle `checkout.session.completed` / `customer.subscription.*`
-5. Map Stripe `customer_id` → `user_subscriptions` row (service role)
-6. Replace upgrade page CTA with live Checkout
-7. Test cancel / renew / failed payment paths
-
-## Why Edge Function (not Next.js API)
-
-Web deploys as a **static export** on GitHub Pages — no server runtime for API routes or webhooks. Stripe webhooks must target Supabase Edge Functions (same pattern as ISBNdb search).
-
 ## Admin grants (interim)
 
 Until billing is live, grant Premium manually:
 
 ```sql
-insert into user_subscriptions (user_id, plan, status, source)
-values ('<user-uuid>', 'premium', 'active', 'admin_grant')
-on conflict (user_id) do update set status = 'active', plan = 'premium', updated_at = now();
+insert into user_subscriptions (user_id, subscription_tier, subscription_status, subscription_provider)
+values ('<user-uuid>', 'premium', 'active', 'manual')
+on conflict (user_id) do update
+  set subscription_tier = 'premium',
+      subscription_status = 'active',
+      subscription_provider = 'manual',
+      updated_at = now();
 ```
+
+## Why Edge Functions (not Next.js API)
+
+Web deploys as a **static export** on GitHub Pages — no server runtime for API routes or webhooks. Stripe secrets and webhooks use Supabase Edge Functions (same pattern as ISBNdb search and account deletion).
+
+## Mobile
+
+App Store / Google Play IAP is not wired yet. Mobile upgrade screen remains informational until store SDK + receipt validation ship.
+
+## Activation checklist
+
+- [ ] Stripe product + price created
+- [ ] Supabase secrets set (`STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`)
+- [ ] Migration `stripe_customer_id` applied
+- [ ] Edge Functions deployed
+- [ ] Webhook endpoint configured in Stripe Dashboard
+- [ ] Test checkout (test mode) → verify `user_subscriptions` row
+- [ ] Test cancel / failed payment paths
