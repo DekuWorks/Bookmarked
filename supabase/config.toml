@@ -379,3 +379,9 @@ entrypoint = "./functions/isbndb/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/isbndb/*.html" ]
+
+[functions.ai-insights]
+enabled = true
+verify_jwt = true
+import_map = "./functions/ai-insights/deno.json"
+entrypoint = "./functions/ai-insights/index.ts"
