@@ -4,4 +4,4 @@ export {
   computeCompletionTags,
   mergeCompletionTags,
   type CompletionTag,
-} from "@bookmarked/utils/completionTags";
+} from "../../../../packages/utils/completionTags";

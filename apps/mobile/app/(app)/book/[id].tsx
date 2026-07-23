@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Alert, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
@@ -13,6 +13,7 @@ import { ProgressBar } from "../../../src/components/ProgressBar";
 import { MarkFinishedSheet } from "../../../src/components/MarkFinishedSheet";
 import { RateBookPromptSheet } from "../../../src/components/RateBookPromptSheet";
 import { RateReviewSheet } from "../../../src/components/RateReviewSheet";
+import { ReadingJournalSection } from "../../../src/components/ReadingJournalSection";
 import { ReadingNotesSection } from "../../../src/components/ReadingNotesSection";
 import { SavedPill } from "../../../src/components/SavedPill";
 import { ScreenHeader } from "../../../src/components/ScreenHeader";
@@ -28,7 +29,7 @@ import {
   updateReadingProgress,
 } from "../../../src/services/library";
 import { useAuthStore } from "../../../src/store/authStore";
-import type { Review, ShelfStatus } from "../../../src/types";
+import type { Review, ReadingSession, ShelfStatus } from "../../../src/types";
 
 const SHELVES: { status: ShelfStatus; label: string }[] = [
   { status: "want_to_read", label: "TBR" },
@@ -103,6 +104,7 @@ export default function BookScreen() {
   const [progressValue, setProgressValue] = useState("");
   const [dateOpen, setDateOpen] = useState(false);
   const [dateValue, setDateValue] = useState("");
+  const [sessionOverrides, setSessionOverrides] = useState<Record<string, ReadingSession>>({});
 
   const details = useQuery({
     queryKey: ["book-details", bookId, userId],
@@ -118,6 +120,14 @@ export default function BookScreen() {
 
   const data = details.data;
   const book = data?.book;
+  const readingSessions = useMemo(() => {
+    const base = data?.readingSessions ?? [];
+    return base.map((session) => sessionOverrides[session.id] ?? session);
+  }, [data?.readingSessions, sessionOverrides]);
+
+  function handleSessionUpdate(updated: ReadingSession) {
+    setSessionOverrides((prev) => ({ ...prev, [updated.id]: updated }));
+  }
 
   async function changeShelf(shelf: ShelfStatus) {
     if (!userId || !book) return;
@@ -370,12 +380,19 @@ export default function BookScreen() {
         ) : null}
 
         {userBook ? (
-          <ReadingNotesSection
-            userId={userId as string}
-            userBookId={userBook.id}
-            initialNotes={data?.notes ?? []}
-            onChanged={invalidate}
-          />
+          <>
+            <ReadingJournalSection
+              sessions={readingSessions}
+              loading={details.isLoading}
+              onSessionUpdate={handleSessionUpdate}
+            />
+            <ReadingNotesSection
+              userId={userId as string}
+              userBookId={userBook.id}
+              initialNotes={data?.notes ?? []}
+              onChanged={invalidate}
+            />
+          </>
         ) : null}
 
         {book.description ? (

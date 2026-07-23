@@ -32,6 +32,13 @@ export {
 } from "./readingCompletion";
 
 export {
+  COMPLETION_TAGS,
+  computeCompletionTags,
+  mergeCompletionTags,
+  type CompletionTag,
+} from "./completionTags";
+
+export {
   MAX_BIO_LENGTH,
   MAX_DISPLAY_NAME_LENGTH,
   MAX_READING_GOAL,

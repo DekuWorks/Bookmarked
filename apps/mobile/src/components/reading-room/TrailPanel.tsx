@@ -62,16 +62,16 @@ export function TrailPanel({ sessions }: Props) {
 
   if (!sessions.length) {
     return (
-      <SectionCard title="Trail" emoji="🥾">
+      <SectionCard title="Journal" emoji="🥾">
         <Text className="text-sm text-ink-muted">
-          Save reading progress to build your trail.
+          Save reading progress to build your journal.
         </Text>
       </SectionCard>
     );
   }
 
   return (
-    <SectionCard title="Trail" emoji="🥾">
+    <SectionCard title="Journal" emoji="🥾">
       <Text className="mb-3 text-sm text-ink-muted">Pick a book to view its session notes.</Text>
       <View className="gap-2">
         {bookGroups.map((group) => {

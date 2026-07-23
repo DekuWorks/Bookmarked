@@ -95,3 +95,36 @@ export async function createReadingSession(
   if (error) return { error: error.message };
   return { session: data as ReadingSession };
 }
+
+export type UpdateReadingSessionInput = {
+  note?: string | null;
+  mood?: string | null;
+};
+
+export async function updateReadingSession(
+  sessionId: string,
+  input: UpdateReadingSessionInput
+): Promise<{ error?: string; session?: ReadingSession }> {
+  const patch: { note?: string | null; mood?: string | null } = {};
+
+  if (input.note !== undefined) {
+    patch.note = input.note?.trim() ? input.note.trim() : null;
+  }
+  if (input.mood !== undefined) {
+    patch.mood = input.mood || null;
+  }
+
+  if (Object.keys(patch).length === 0) {
+    return { error: "Nothing to update." };
+  }
+
+  const { data, error } = await supabase
+    .from("reading_sessions")
+    .update(patch)
+    .eq("id", sessionId)
+    .select("*")
+    .single();
+
+  if (error) return { error: error.message };
+  return { session: data as ReadingSession };
+}

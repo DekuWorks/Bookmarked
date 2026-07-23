@@ -5,6 +5,10 @@ import {
   type PageCountResolution,
 } from "../utils/readingCompletion";
 import {
+  computeCompletionTags,
+  mergeCompletionTags,
+} from "../constants/completionTags";
+import {
   activityMetadata,
   bookActivityContext,
   recordActivity,
@@ -38,6 +42,13 @@ export type CompleteReadingSessionInput = {
   manualPageCount?: number | null;
   source: CompleteReadingSource;
   sessionId?: string | null;
+  applyCompletionTags?: boolean;
+  completionTagsState?: {
+    read_count?: number | null;
+    is_favorite?: boolean | null;
+    rating?: number | null;
+    completion_tags?: string[] | null;
+  };
 };
 
 export type CompleteReadingSessionResult = {
@@ -47,6 +58,26 @@ export type CompleteReadingSessionResult = {
   promptReview?: boolean;
   pageCountPending?: boolean;
 };
+
+async function applyCompletionTags(
+  userBookId: string,
+  state: NonNullable<CompleteReadingSessionInput["completionTagsState"]>
+): Promise<void> {
+  const readCount = Number(state.read_count) || 1;
+  const tags = computeCompletionTags({
+    readCount,
+    isFavorite: Boolean(state.is_favorite),
+    rating: state.rating ?? null,
+  });
+
+  await supabase
+    .from("user_books")
+    .update({
+      completion_tags: mergeCompletionTags(state.completion_tags, tags),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", userBookId);
+}
 
 /** Mobile mirror of apps/web/src/lib/services/completeReadingSession.ts */
 export async function completeReadingSession(
@@ -63,6 +94,8 @@ export async function completeReadingSession(
     readNumber = 1,
     source,
     sessionId,
+    applyCompletionTags: shouldApplyTags = true,
+    completionTagsState,
   } = input;
 
   const now = new Date().toISOString();
@@ -126,6 +159,10 @@ export async function completeReadingSession(
 
     if (sessionError) return { error: sessionError.message };
     savedSessionId = sessionRow?.id;
+  }
+
+  if (shouldApplyTags && completionTagsState) {
+    await applyCompletionTags(userBookId, completionTagsState);
   }
 
   const pageCountPending = resolution.pageCountStatus === "missing";

@@ -273,7 +273,7 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
 
         {tab === "trail" ? (
           <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6 text-left">
-            <h2 className="text-center text-lg font-semibold text-puce-red">Trail</h2>
+            <h2 className="text-center text-lg font-semibold text-puce-red">Journal</h2>
             <p className="mt-1 text-center text-sm text-text-muted">
               Pick a book to view its session notes.
             </p>

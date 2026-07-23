@@ -14,23 +14,24 @@ import { SegmentedTabs } from "../../src/components/SegmentedTabs";
 import { ShelfIcon } from "../../src/components/ShelfIcon";
 import type { ShelfIconId } from "../../src/constants/shelfIcons";
 import { ActivityFeed } from "../../src/components/reading-room/ActivityFeed";
+import { HistoryPanel } from "../../src/components/reading-room/HistoryPanel";
+import { NotesPanel } from "../../src/components/reading-room/NotesPanel";
+import { ReviewsPanel } from "../../src/components/reading-room/ReviewsPanel";
 import { TrailPanel } from "../../src/components/reading-room/TrailPanel";
+import {
+  READING_ROOM_TAB_OPTIONS,
+  type ReadingRoomTab,
+} from "../../src/constants/readingRoomTabs";
 import { useProfile } from "../../src/hooks/useProfile";
 import { getUserLibraryBooks } from "../../src/services/library";
 import { computeReadingGoal } from "../../src/services/readingGoal";
+import { searchNotesWithBooks } from "../../src/services/readingNotes";
+import { listUserReviews } from "../../src/services/readingRoom";
 import { listUserReadingSessions } from "../../src/services/readingSessions";
 import { TAB_BAR_SPACE, useTabBarScroll } from "../../src/navigation/TabBarScroll";
 import { SERIF_DISPLAY_FONT } from "../../src/constants/theme";
 import { useAuthStore } from "../../src/store/authStore";
 import { useThemeColors } from "../../src/store/themeStore";
-
-type ReadingRoomTab = "overview" | "progress" | "trail";
-
-const TAB_OPTIONS: { id: ReadingRoomTab; label: string }[] = [
-  { id: "overview", label: "Overview" },
-  { id: "progress", label: "Progress" },
-  { id: "trail", label: "Trail" },
-];
 
 function QuickLink({
   icon,
@@ -68,6 +69,10 @@ export default function HomeReadingRoom() {
   const [sessions, setSessions] = useState<Awaited<ReturnType<typeof listUserReadingSessions>> | null>(
     null
   );
+  const [reviews, setReviews] = useState<Awaited<ReturnType<typeof listUserReviews>> | null>(null);
+  const [recentNotes, setRecentNotes] = useState<
+    Awaited<ReturnType<typeof searchNotesWithBooks>> | null
+  >(null);
 
   const library = useQuery({
     queryKey: ["library", userId],
@@ -81,11 +86,35 @@ export default function HomeReadingRoom() {
     setSessions(rows);
   }, [userId]);
 
+  const loadReviews = useCallback(async () => {
+    if (!userId) return;
+    const rows = await listUserReviews(userId);
+    setReviews(rows);
+  }, [userId]);
+
+  const loadNotes = useCallback(async () => {
+    if (!userId) return;
+    const rows = await searchNotesWithBooks({ userId, limit: 12 });
+    setRecentNotes(rows);
+  }, [userId]);
+
   useEffect(() => {
-    if (tab === "trail") {
+    if (tab === "trail" || tab === "history") {
       void loadSessions();
     }
   }, [tab, loadSessions]);
+
+  useEffect(() => {
+    if (tab === "reviews") {
+      void loadReviews();
+    }
+  }, [tab, loadReviews]);
+
+  useEffect(() => {
+    if (tab === "notes") {
+      void loadNotes();
+    }
+  }, [tab, loadNotes]);
 
   const books = library.data ?? [];
   const currentlyReading = useMemo(
@@ -101,6 +130,13 @@ export default function HomeReadingRoom() {
     [books]
   );
   const favorites = useMemo(() => books.filter((b) => b.is_favorite).slice(0, 8), [books]);
+  const readBooks = useMemo(
+    () =>
+      books
+        .filter((b) => b.shelf_status === "read")
+        .sort((a, b) => new Date(b.finished_at ?? 0).getTime() - new Date(a.finished_at ?? 0).getTime()),
+    [books]
+  );
   const goal = computeReadingGoal(books, profile?.yearly_reading_goal ?? null);
   const name = profile?.display_name?.trim() || profile?.username?.trim() || "reader";
   const continueReadingBook = currentlyReading.find((b) => b.books?.id);
@@ -108,7 +144,9 @@ export default function HomeReadingRoom() {
   function refreshAll() {
     library.refetch();
     void refetchProfile();
-    if (tab === "trail") void loadSessions();
+    if (tab === "trail" || tab === "history") void loadSessions();
+    if (tab === "reviews") void loadReviews();
+    if (tab === "notes") void loadNotes();
   }
 
   if (library.isLoading) {
@@ -148,7 +186,7 @@ export default function HomeReadingRoom() {
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <SegmentedTabs options={TAB_OPTIONS} value={tab} onChange={setTab} />
+          <SegmentedTabs options={READING_ROOM_TAB_OPTIONS} value={tab} onChange={setTab} />
         </ScrollView>
 
         {tab === "overview" ? (
@@ -267,6 +305,12 @@ export default function HomeReadingRoom() {
         ) : null}
 
         {tab === "trail" ? <TrailPanel sessions={sessions} /> : null}
+
+        {tab === "notes" ? <NotesPanel notes={recentNotes} /> : null}
+
+        {tab === "reviews" ? <ReviewsPanel reviews={reviews} /> : null}
+
+        {tab === "history" ? <HistoryPanel readBooks={readBooks} sessions={sessions} /> : null}
       </Animated.ScrollView>
     </View>
   );

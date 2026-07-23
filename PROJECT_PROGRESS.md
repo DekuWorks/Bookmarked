@@ -13,7 +13,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Phase | Name | Status | Summary |
 |-------|------|--------|---------|
 | 1 | Navigation | ✅ | Web + mobile primary nav shipped; `/dashboard/` redirects to Reading Room |
-| 2 | Reading depth | 🔄 | Web complete; mobile missing Notes/Reviews/History tabs + completion auto-tags |
+| 2 | Reading depth | ✅ | Web + mobile parity: 6 Reading Room tabs, completion auto-tags, session notes |
 | 3 | Community | 🔄 | Feed, messaging, clubs, trending live; events calendar not built |
 | 4 | Premium | 🔄 | Schema + gates + webhook stub; Stripe / IAP not wired |
 | 5 | UI refresh | ✅ | Gradients, surface cards, branding on web + mobile |
@@ -40,7 +40,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 
 ---
 
-## Phase 2 — Reading 🔄
+## Phase 2 — Reading ✅
 
 ### 2.1 Finish workflow
 
@@ -63,7 +63,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Feelings / mood tags | ✅ | `reviews.feelings` · `REVIEW_FEELINGS` constant |
 | Rating emoji (Fable-style) | ✅ | Migration `20260713130000_review_rating_emoji.sql` |
 | Reading Room reviews tab (web) | ✅ | `ReadingRoomTabs.tsx` — filters, monthly grouping |
-| Dedicated reviews UI (mobile) | 🔄 | Book detail + `RateReviewSheet`; no Reading Room reviews tab |
+| Dedicated reviews UI (mobile) | ✅ | Reading Room reviews tab + book detail `RateReviewSheet` |
 
 ### 2.3 Journal / Trail / Notes
 
@@ -71,17 +71,17 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 |------|--------|-------------------|
 | Per-book journal (sessions) | ✅ | `ReadingJournalSection.tsx` · `reading_sessions` |
 | Reading notes | ✅ | `reading_notes` · `/notes/` (web) · `apps/mobile/app/(app)/notes.tsx` |
-| Trail tab (web) | ✅ | `TrailPanel.tsx` — renamed from Journal |
-| Reading Room tabs (web) | ✅ | Overview, Progress, Trail, Notes, Reviews, History — `readingRoomTabs.ts` |
-| Reading Room tabs (mobile) | 🔄 | Overview, Progress, Trail only — `apps/mobile/app/(app)/index.tsx` |
-| History tab | ✅ web · ⬜ mobile | Web `ReadingRoomTabs` history panel |
+| Trail tab (web) | ✅ | `TrailPanel.tsx` — tab label **Journal** (legacy `?tab=journal` alias) |
+| Reading Room tabs (web) | ✅ | Overview, Progress, Journal, Notes, Reviews, History — `readingRoomTabs.ts` |
+| Reading Room tabs (mobile) | ✅ | Same 6 tabs — `apps/mobile/app/(app)/index.tsx` |
+| History tab | ✅ | Web + mobile history panels |
 
 ### 2.4 Streaks & auto tags
 
 | Item | Status | Notes / references |
 |------|--------|-------------------|
 | Reading streak | ✅ | `ReadingStreakCard` · `computeReadingStreak` in `analytics.ts` |
-| Auto completion tags | ✅ web · ⬜ mobile | `completion_tags` on `user_books` · `computeCompletionTags` in `completionTags.ts` applied in web `completeReadingSession` only |
+| Auto completion tags | ✅ | `packages/utils/completionTags.ts` · applied in web + mobile `completeReadingSession` |
 
 ### 2.5 Catalog (Open Library / ISBNdb)
 
@@ -203,13 +203,13 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 
 ---
 
-## Cross-cutting: Mobile parity 🔄
+## Cross-cutting: Mobile parity ✅
 
 | Area | Web | Mobile | Gap |
 |------|-----|--------|-----|
 | Core reading loop | ✅ | ✅ | — |
-| Reading Room tabs | 6 tabs | 3 tabs | Notes, Reviews, History |
-| Completion auto-tags | ✅ | ⬜ | Mobile `completeReadingSession` omits `completion_tags` |
+| Reading Room tabs | 6 tabs | 6 tabs | — |
+| Completion auto-tags | ✅ | ✅ | — |
 | Goodreads import | ✅ | ⬜ | `goodreadsImport.ts` web only |
 | Feed search | ✅ | ⬜ | — |
 | Public library browse | ✅ | ✅ | — |

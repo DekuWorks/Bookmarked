@@ -180,7 +180,9 @@ export async function setShelfStatus(
 ): Promise<{ error?: string }> {
   const { data: existing } = await supabase
     .from("user_books")
-    .select("id, shelf_status, progress_pages, read_count, started_at, finished_at")
+    .select(
+      "id, shelf_status, progress_pages, read_count, started_at, finished_at, is_favorite, rating, completion_tags"
+    )
     .eq("user_id", userId)
     .eq("book_id", book.id)
     .maybeSingle();
@@ -210,7 +212,7 @@ export async function setShelfStatus(
         },
         { onConflict: "user_id,book_id" }
       )
-      .select("id, started_at, read_count")
+      .select("id, started_at, read_count, is_favorite, rating, completion_tags")
       .single();
 
     if (error) return { error: error.message };
@@ -233,6 +235,15 @@ export async function setShelfStatus(
       finishedAt: now,
       startedAt: userBook.started_at ?? now,
       source: "shelf_move",
+      applyCompletionTags: Boolean(existing),
+      completionTagsState: existing
+        ? {
+            read_count: userBook.read_count ?? existing.read_count,
+            is_favorite: userBook.is_favorite ?? existing.is_favorite,
+            rating: userBook.rating ?? existing.rating,
+            completion_tags: userBook.completion_tags ?? existing.completion_tags,
+          }
+        : undefined,
     });
 
     if (completion.error) return { error: completion.error };
@@ -302,7 +313,7 @@ export async function markFinished(
 ): Promise<{ error?: string; promptReview?: boolean }> {
   const { data: userBook, error: fetchError } = await supabase
     .from("user_books")
-    .select("id, progress_pages, started_at, read_count")
+    .select("id, progress_pages, started_at, read_count, is_favorite, rating, completion_tags")
     .eq("user_id", userId)
     .eq("book_id", book.id)
     .maybeSingle();
@@ -342,6 +353,13 @@ export async function markFinished(
     finishedAt: finished_at,
     startedAt: userBook.started_at ?? finished_at,
     source: "mark_finished",
+    applyCompletionTags: true,
+    completionTagsState: {
+      read_count: userBook.read_count,
+      is_favorite: userBook.is_favorite,
+      rating: userBook.rating,
+      completion_tags: userBook.completion_tags,
+    },
   });
 
   if (completion.error) return { error: completion.error };
