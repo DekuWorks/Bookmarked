@@ -1,14 +1,16 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
+import { useToast } from "@/components/ui/Toast";
 import { PremiumFeatureLock } from "@/components/premium/PremiumFeatureLock";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { layout } from "@/lib/constants/layout";
+import { staticRedirect } from "@/lib/navigation/staticRedirect";
 import { createPremiumCheckoutSession } from "@/lib/services/stripeCheckout";
 
 const PREMIUM_FEATURES = [
@@ -36,6 +38,7 @@ const PREMIUM_PRICE = "$4.99 / month";
 
 export default function UpgradePage() {
   const user = useAuthUser();
+  const toast = useToast();
   const searchParams = useSearchParams();
   const { isPremium, loading, refresh } = useSubscription(user?.id);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -44,31 +47,57 @@ export default function UpgradePage() {
 
   const checkoutStatus = searchParams.get("checkout");
 
+  useEffect(() => {
+    if (user === null) {
+      staticRedirect("/login/?redirect=%2Fupgrade%2F");
+    }
+  }, [user]);
+
   const handleSubscribe = useCallback(async () => {
+    if (!user) {
+      const message = "Sign in to subscribe.";
+      setCheckoutError(message);
+      toast.error(message);
+      staticRedirect("/login/?redirect=%2Fupgrade%2F");
+      return;
+    }
+
     setCheckoutError(null);
     setCheckoutLoading(true);
 
-    const result = await createPremiumCheckoutSession();
-    setCheckoutLoading(false);
+    try {
+      const result = await createPremiumCheckoutSession();
 
-    if (result.ok) {
-      window.location.href = result.url;
-      return;
+      if (result.ok) {
+        window.location.href = result.url;
+        return;
+      }
+
+      if (!result.available) {
+        setCheckoutUnavailable(true);
+        toast.error(result.error);
+        return;
+      }
+
+      setCheckoutError(result.error);
+      toast.error(result.error);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Could not start checkout. Please try again.";
+      setCheckoutError(message);
+      toast.error(message);
+    } finally {
+      setCheckoutLoading(false);
     }
-
-    if (!result.available) {
-      setCheckoutUnavailable(true);
-      return;
-    }
-
-    setCheckoutError(result.error);
-  }, []);
+  }, [toast, user]);
 
   if (user === undefined || (user && loading)) {
     return <LoadingState message="Loading plans…" />;
   }
 
-  if (!user) return null;
+  if (!user) {
+    return <LoadingState message="Redirecting to sign in…" />;
+  }
 
   return (
     <div className={layout.pageStack}>

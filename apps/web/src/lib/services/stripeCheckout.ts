@@ -1,4 +1,5 @@
-import { getSupabase } from "@/lib/supabase/client";
+import { getSupabaseEnv } from "@/lib/env";
+import { createClient } from "@/lib/supabase/client";
 
 export type CheckoutResult =
   | { ok: true; url: string }
@@ -6,7 +7,7 @@ export type CheckoutResult =
   | { ok: false; available: true; error: string };
 
 export async function createPremiumCheckoutSession(): Promise<CheckoutResult> {
-  const supabase = getSupabase();
+  const supabase = createClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -15,11 +16,12 @@ export async function createPremiumCheckoutSession(): Promise<CheckoutResult> {
     return { ok: false, available: true, error: "You must be signed in." };
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!supabaseUrl || !anonKey) {
+  const envResult = getSupabaseEnv();
+  if (!envResult.ok) {
     return { ok: false, available: false, error: "Server misconfigured." };
   }
+
+  const { url: supabaseUrl, anonKey } = envResult.env;
 
   const response = await fetch(`${supabaseUrl}/functions/v1/create-checkout-session`, {
     method: "POST",
