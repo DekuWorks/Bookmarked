@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { Alert, Pressable, Text, View } from "react-native";
+import { Alert, Pressable, Text, View, type LayoutChangeEvent } from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Avatar } from "../../../src/components/Avatar";
@@ -25,6 +25,9 @@ const SEGMENTS: { id: Segment; label: string }[] = [
   { id: "clubs", label: "Book Clubs" },
 ];
 
+/** Conservative estimate until the header is measured (title + segmented tabs). */
+const MESSAGES_WASH_HEIGHT_RATIO = 0.16;
+
 function conversationPreview(item: ConversationPreview): string {
   const latest = item.latestMessage;
   if (!latest) return "No messages yet";
@@ -40,6 +43,12 @@ export default function MessagesScreen() {
   const { onScroll } = useTabBarScroll();
   const [segment, setSegment] = useState<Segment>("dms");
   const [newMessageOpen, setNewMessageOpen] = useState(false);
+  const [headerHeight, setHeaderHeight] = useState(0);
+
+  const onHeaderLayout = useCallback((event: LayoutChangeEvent) => {
+    const next = event.nativeEvent.layout.height;
+    setHeaderHeight((prev) => (prev === next ? prev : next));
+  }, []);
 
   const conversations = useConversations();
   const pinConversation = usePinConversation();
@@ -66,8 +75,11 @@ export default function MessagesScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <ScreenGradientWash />
-      <View style={{ paddingTop: insets.top + 8 }} className="px-4 pb-3">
+      <ScreenGradientWash
+        height={headerHeight > 0 ? headerHeight : undefined}
+        heightRatio={MESSAGES_WASH_HEIGHT_RATIO}
+      />
+      <View onLayout={onHeaderLayout} style={{ paddingTop: insets.top + 8 }} className="px-4 pb-3">
         <View className="mb-3 flex-row items-center justify-between">
           <Text className="text-3xl font-black text-puce-red">Messages</Text>
           {segment === "dms" ? (
@@ -87,6 +99,7 @@ export default function MessagesScreen() {
         <LoadingState message="Loading…" />
       ) : segment === "dms" ? (
         <Animated.FlatList
+          className="flex-1 bg-background"
           data={conversations.data ?? []}
           keyExtractor={(item) => item.id}
           onScroll={onScroll}
@@ -171,6 +184,7 @@ export default function MessagesScreen() {
         />
       ) : (
         <Animated.FlatList
+          className="flex-1 bg-background"
           data={clubs.data ?? []}
           keyExtractor={(item) => item.id}
           onScroll={onScroll}
