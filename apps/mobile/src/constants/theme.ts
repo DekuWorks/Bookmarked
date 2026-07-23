@@ -58,9 +58,7 @@ export const SANS_FONT_MEDIUM = "Geist_500Medium";
 export const SANS_FONT_BOLD = "Geist_700Bold";
 
 /**
- * Wordmark color — the dusty purple of the "B" glyph in
- * assets/brand/logo-mark.png (sampled #715B8B / srgb(113,91,139); text uses
- * #715B8A — 1 blue channel off, visually identical), so the logo-as-B and the
- * "ookmarked" text read as one consistent color.
+ * Wordmark color — dusty purple sampled from `assets/brand/logo.png` (#715B8B).
+ * Retained for legacy text accents; the brand lockup now uses the wordmark image.
  */
 export const BRAND_WORDMARK = "#715B8A";

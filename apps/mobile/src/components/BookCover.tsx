@@ -38,9 +38,9 @@ export function BookCover({
   if (!saved) return cover;
 
   return (
-    <View className="relative">
+    <View className="relative" style={{ overflow: "visible" }}>
       {cover}
-      <View className="absolute -top-1 right-1">
+      <View className="absolute" style={{ top: -4, right: -4, overflow: "visible" }}>
         <BookmarkRibbon size={ribbonSize} />
       </View>
     </View>

@@ -73,11 +73,11 @@ Custom PNG shelf icons replace emoji for the four built-in shelf states. Mapping
 | Custom shelf sections | `shelf-privacy.tsx` custom rows | ⬜ N/A — custom shelves |
 | Club cards / feed | `ClubCard.tsx`, etc. | ⬜ N/A — not built-in shelf icons |
 
-## Bookmark overlay (pending asset)
+## Bookmark overlay ✅
 
-When the larger-sparkles bookmark ribbon is approved, drop the new PNG in:
+Purple B ribbon with larger sparkles (`11.png`):
 
-- **Web:** `apps/web/public/images/bookmark-ribbon.png`
-- **Mobile:** `apps/mobile/assets/brand/bookmark-ribbon.png`
+- **Web:** `apps/web/public/images/bookmark-ribbon.png` → `BookmarkedShelfBadge`
+- **Mobile:** `apps/mobile/assets/brand/bookmark-ribbon.png` → `BookmarkRibbon`
 
-Components `BookmarkedShelfBadge` (web) and `BookmarkRibbon` (mobile) read from those paths — no code changes required.
+Aspect ratio updated to `441/547`; sparkles use `overflow: visible` so they are not clipped.

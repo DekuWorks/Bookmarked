@@ -44,11 +44,36 @@ for (const [src, dest] of map) {
 
 Copy optimized files to **both** web and mobile paths to keep parity.
 
-## Bookmark overlay (separate)
+## Bookmark overlay
 
 Saved-book ribbon (not a shelf icon):
 
-- Web: `apps/web/public/images/bookmark-ribbon.png` → `BookmarkedShelfBadge`
-- Mobile: `apps/mobile/assets/brand/bookmark-ribbon.png` → `BookmarkRibbon`
+| Platform | Optimized | Source |
+|----------|-----------|--------|
+| Web | `apps/web/public/images/bookmark-ribbon.png` | `apps/web/public/images/source/bookmark-ribbon.png` |
+| Mobile | `apps/mobile/assets/brand/bookmark-ribbon.png` | `apps/mobile/assets/brand/source/bookmark-ribbon.png` |
+
+- Design source: `11.png` (purple B ribbon with larger sparkles).
+- Trimmed shipped size: 441×547 RGBA; aspect `441/547` in `BookmarkedShelfBadge` / `BookmarkRibbon`.
+- Re-optimize with `node apps/web/scripts/process-brand-assets.mjs` (set `BRAND_SRC` to the design folder).
+
+## Logo / wordmark
+
+| Asset | Web | Mobile | Notes |
+|-------|-----|--------|-------|
+| Full wordmark | `apps/web/public/logo.png` | `apps/mobile/assets/brand/logo.png` | `NEW LOGO.png` → 814×181 trimmed |
+| B mark (icon) | `apps/web/public/logo-mark.png` | `apps/mobile/assets/brand/logo-mark.png` | Derived from `11.png` |
+| Splash / adaptive | `apps/web/public/logo-circle.png` | `apps/mobile/assets/brand/logo-circle.png` | B mark on `#FCFAFE` |
+| App / favicon | `icon.png`, `favicon-32x32.png`, `apple-touch-icon.png` | `icon.png`, `apple-touch-icon.png` | Generated from logo-mark |
+
+Source copies: `apps/web/public/assets/brand/source/` and `apps/mobile/assets/brand/source/`.
+
+Regenerate all brand assets:
+
+```bash
+cd apps/web
+node scripts/process-brand-assets.mjs
+node scripts/generate-social-images.mjs
+```
 
 See `docs/SHELF_ICON_AUDIT.md` for component wiring.

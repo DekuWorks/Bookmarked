@@ -1,5 +1,4 @@
-import { Image, Text, View } from "react-native";
-import { BRAND_WORDMARK, SERIF_DISPLAY_FONT } from "../constants/theme";
+import { Image, View } from "react-native";
 
 type Props = {
   /** Hide the wordmark, showing only the B mark. */
@@ -8,38 +7,38 @@ type Props = {
   size?: "default" | "large";
 };
 
+/** Trimmed wordmark aspect ratio (814×181). */
+const WORDMARK_ASPECT = 814 / 181;
+
 const SIZES = {
-  default: { markW: 28, markH: 27, fontSize: 22, letterSpacing: 0.5 },
-  large: { markW: 36, markH: 35, fontSize: 30, letterSpacing: 0.75 },
+  default: { height: 28 },
+  large: { height: 36 },
 } as const;
 
 /**
- * Mobile brand lockup: transparent ribbon-B mark as the letter "B", then
- * "ookmarked" in the matching dusty purple (same pattern as BrandTopHeader /
- * web BrandLogo).
+ * Mobile brand lockup: full BOOKMARKED wordmark image, or compact B mark alone.
  */
 export function BrandLogo({ compact, size = "default" }: Props) {
-  const s = SIZES[size];
+  const { height } = SIZES[size];
+  const width = Math.round(height * WORDMARK_ASPECT);
+
+  if (compact) {
+    return (
+      <Image
+        source={require("../../assets/brand/logo-mark.png")}
+        style={{ width: height, height }}
+        resizeMode="contain"
+      />
+    );
+  }
 
   return (
     <View className="flex-row items-center">
       <Image
-        source={require("../../assets/brand/logo-mark.png")}
-        style={{ width: s.markW, height: s.markH, marginRight: -1 }}
+        source={require("../../assets/brand/logo.png")}
+        style={{ width, height }}
         resizeMode="contain"
       />
-      {compact ? null : (
-        <Text
-          style={{
-            fontFamily: SERIF_DISPLAY_FONT,
-            fontSize: s.fontSize,
-            letterSpacing: s.letterSpacing,
-            color: BRAND_WORDMARK,
-          }}
-        >
-          ookmarked
-        </Text>
-      )}
     </View>
   );
 }

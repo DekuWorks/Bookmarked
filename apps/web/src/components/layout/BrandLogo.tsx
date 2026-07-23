@@ -1,38 +1,46 @@
 import Image from "next/image";
 import { cn } from "@/lib/utils/cn";
 
-/** Dusty purple matching the B glyph (`#715B8B` sampled from logo-mark). */
-const BRAND_WORDMARK = "#715B8A";
+/** Trimmed wordmark aspect ratio (814×181). */
+const WORDMARK_ASPECT = 814 / 181;
+const WORDMARK_HEIGHT = 32;
 
 type Props = {
   className?: string;
+  /** Show only the B mark (compact nav). */
+  compact?: boolean;
 };
 
 /**
- * Brand lockup: transparent ribbon-B mark as the letter "B", then "ookmarked"
- * in the same dusty purple — same pattern as the mobile BrandTopHeader.
+ * Brand lockup: full BOOKMARKED wordmark image, or compact B mark alone.
  */
-export function BrandLogo({ className }: Props) {
-  return (
-    <span
-      className={cn("inline-flex items-center", className)}
-      style={{ color: BRAND_WORDMARK }}
-    >
+export function BrandLogo({ className, compact }: Props) {
+  if (compact) {
+    return (
       <Image
         src="/logo-mark.png"
         alt=""
         width={30}
-        height={29}
-        className="shrink-0"
+        height={30}
+        className={cn("shrink-0", className)}
         unoptimized
         aria-hidden
       />
-      <span
-        className="font-display text-[1.35rem] font-extrabold tracking-wide"
-        style={{ marginLeft: -1 }}
-      >
-        ookmarked
-      </span>
-    </span>
+    );
+  }
+
+  const height = WORDMARK_HEIGHT;
+  const width = Math.round(height * WORDMARK_ASPECT);
+
+  return (
+    <Image
+      src="/logo.png"
+      alt="Bookmarked"
+      width={width}
+      height={height}
+      className={cn("shrink-0", className)}
+      unoptimized
+      priority
+    />
   );
 }
