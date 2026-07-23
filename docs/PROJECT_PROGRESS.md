@@ -89,7 +89,11 @@ Dashboard, Library, Reading Room tabs, Profile cleanup, and mobile bottom nav �
 | Trail book-title picker (searchable) | ✅ | `TrailPanel` — searchable list, no inline session dump |
 | Trail session detail + back nav | ✅ | Books → sessions (by read #) → full session detail |
 | Direct-to-Read `pages_read` fix | ✅ | `setBookShelfStatus` sets `progress_pages` to `page_count` when known |
-| Web unit tests | ✅ | `vitest` — `trail.test.ts`, `readingRoomTabs.test.ts` |
+| Reading completion expansion (Tasks 9–22) | ✅ | `completeReadingSession`, missing page count UI, migration `20260723140000` |
+| Centralized completion service | ✅ | `apps/web/src/lib/services/completeReadingSession.ts` + mobile mirror |
+| Missing page count dialog | ✅ | `MissingPageCountDialog` — web shelf/search direct-to-Read |
+| Backfill broken completions | ✅ | Migration + `scripts/repair-invalid-reading-completions.sql` |
+| Web unit tests | ✅ | `vitest` — `readingCompletion.test.ts`, trail/reading room tabs |
 
 ---
 

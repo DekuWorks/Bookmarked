@@ -114,8 +114,30 @@ function formatWithSubject(
         ? `${subject} updated progress on ${title} (${percent}%)`
         : `${subject} updated progress on ${title}`;
     case "book_finished":
-    case "reading_finished":
-      return `${subject} finished ${title}`;
+    case "reading_finished": {
+      const pending = metadata?.page_count_pending === true;
+      const pages =
+        typeof metadata?.pages_read === "number" && metadata.pages_read > 0
+          ? metadata.pages_read
+          : null;
+      const finishedAt =
+        typeof metadata?.finished_at === "string" ? metadata.finished_at : null;
+      const dateSuffix = finishedAt
+        ? ` — ${new Date(finishedAt).toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })}`
+        : "";
+
+      if (pending) {
+        return `${subject} finished ${title} — Page count pending`;
+      }
+      if (pages != null) {
+        return `${subject} finished ${title} — ${pages.toLocaleString()} pages${dateSuffix}`;
+      }
+      return `${subject} finished ${title}${dateSuffix}`;
+    }
     case "reading_started":
       return `${subject} started reading ${title}`;
     case "review_created":

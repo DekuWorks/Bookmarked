@@ -16,6 +16,22 @@ export {
 } from "./messageAttachments";
 
 export {
+  MAX_PAGE_COUNT,
+  buildCompletionSessionPatch,
+  buildCompletionUserBookPatch,
+  countResolvedPagesRead,
+  formatFinishActivityDetail,
+  resolvePageCount,
+  validateManualPageCount,
+  type CompletionProgressPatch,
+  type CompletionSessionPatch,
+  type PageCountResolution,
+  type PageCountSource,
+  type PageCountStatus,
+  type ResolvePageCountInput,
+} from "./readingCompletion";
+
+export {
   MAX_BIO_LENGTH,
   MAX_DISPLAY_NAME_LENGTH,
   MAX_READING_GOAL,

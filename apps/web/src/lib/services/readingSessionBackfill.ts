@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/client";
-import { createReadingSessionWithClient } from "@/lib/services/readingSessions";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 type UserBookWithProgress = {
@@ -16,6 +15,7 @@ type UserBookWithProgress = {
 /**
  * Creates a single synthetic session for user_books that have progress but no sessions.
  * Safe to call on load — skips books that already have sessions.
+ * Skips read books with zero pages (missing page count) to avoid invalid completions.
  */
 export async function backfillReadingSessionsForUser(
   userId: string,
@@ -57,19 +57,28 @@ export async function backfillReadingSessionsForUser(
 
     const pageEnd = Math.max(0, book.progress_pages ?? 0);
     const percent = Math.min(100, Math.max(0, Number(book.progress_percent ?? 0)));
+
+    if (book.shelf_status === "read" && pageEnd <= 0) {
+      continue;
+    }
+
     if (pageEnd <= 0 && percent <= 0 && book.shelf_status !== "read") continue;
 
     const createdAt =
       book.finished_at ?? book.started_at ?? book.updated_at ?? new Date().toISOString();
 
-    const { error } = await createReadingSessionWithClient(client, {
-      userId: book.user_id,
-      userBookId: book.id,
-      pageStart: 0,
-      pageEnd: pageEnd > 0 ? pageEnd : 0,
-      percentComplete: book.shelf_status === "read" ? 100 : percent,
-      note: null,
-      createdAt,
+    const { error } = await client.from("reading_sessions").insert({
+      user_id: book.user_id,
+      user_book_id: book.id,
+      page_start: 0,
+      page_end: pageEnd > 0 ? pageEnd : 0,
+      pages_read: pageEnd > 0 ? pageEnd : 0,
+      percent_complete: book.shelf_status === "read" ? 100 : percent,
+      total_pages: pageEnd > 0 ? pageEnd : null,
+      page_count_status: pageEnd > 0 ? "known" : book.shelf_status === "read" ? "missing" : null,
+      page_count_source: pageEnd > 0 ? "canonical_book" : book.shelf_status === "read" ? "unavailable" : null,
+      completed_at: book.shelf_status === "read" ? createdAt : null,
+      created_at: createdAt,
     });
 
     if (error) {

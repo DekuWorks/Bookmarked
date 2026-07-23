@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { ShelfSelectMenu } from "@/components/shelves/ShelfSelectMenu";
+import { MissingPageCountDialog } from "@/components/books/MissingPageCountDialog";
 import { AddToCustomShelfMenu } from "@/components/shelves/AddToCustomShelfMenu";
 import { useToast } from "@/components/ui/Toast";
 import { useActionToast } from "@/lib/hooks/useActionToast";
@@ -12,6 +13,7 @@ import {
   toggleFavorite,
   type BookActionState,
 } from "@/lib/actions/book";
+import { needsMissingPageCountPrompt } from "@/lib/services/completeReadingSession";
 import { SHELF_CONFIG } from "@/lib/constants/shelves";
 import { listCustomShelfIdsForBook } from "@/lib/services/customShelves";
 import { ShelfBadge } from "@/components/shelves/ShelfBadge";
@@ -25,6 +27,9 @@ type Props = {
   bookTitle: string;
   currentShelf: ShelfStatus | null;
   isFavorite?: boolean;
+  pageCount?: number | null;
+  editionSelected?: boolean;
+  previousPage?: number;
 };
 
 export function BookShelfActions({
@@ -32,11 +37,16 @@ export function BookShelfActions({
   bookTitle,
   currentShelf,
   isFavorite = false,
+  pageCount = null,
+  editionSelected = false,
+  previousPage = 0,
 }: Props) {
   const user = useAuthUser();
   const toast = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
   const [customMenuOpen, setCustomMenuOpen] = useState(false);
+  const [missingPageOpen, setMissingPageOpen] = useState(false);
+  const [pendingShelf, setPendingShelf] = useState<ShelfStatus | null>(null);
   const [pending, setPending] = useState(false);
   const [memberShelfIds, setMemberShelfIds] = useState<string[]>([]);
   const [removeState, removeAction, removing] = useActionState(removeFromShelf, initial);
@@ -52,11 +62,19 @@ export function BookShelfActions({
   useActionToast(removeState);
   useActionToast(favState);
 
-  async function applyShelf(shelfStatus: ShelfStatus) {
+  async function submitShelf(
+    shelfStatus: ShelfStatus,
+    options?: { manualPageCount?: number }
+  ) {
     setPending(true);
     const formData = new FormData();
     formData.set("book_id", bookId);
     formData.set("shelf_status", shelfStatus);
+    if (editionSelected) formData.set("edition_selected", "true");
+    if (options?.manualPageCount != null) {
+      formData.set("manual_page_count", String(options.manualPageCount));
+    }
+
     try {
       const result = await setBookShelfStatus({}, formData);
       if (result.error) {
@@ -66,10 +84,29 @@ export function BookShelfActions({
       if (result.success) {
         toast.success(result.success);
         setMenuOpen(false);
+        setMissingPageOpen(false);
+        setPendingShelf(null);
       }
     } finally {
       setPending(false);
     }
+  }
+
+  async function applyShelf(shelfStatus: ShelfStatus) {
+    if (
+      shelfStatus === "read" &&
+      needsMissingPageCountPrompt({
+        editionSelected,
+        catalogPageCount: pageCount,
+        previousPage,
+      })
+    ) {
+      setPendingShelf(shelfStatus);
+      setMissingPageOpen(true);
+      return;
+    }
+
+    await submitShelf(shelfStatus);
   }
 
   return (
@@ -145,6 +182,26 @@ export function BookShelfActions({
         onSelectShelf={applyShelf}
         onClose={() => {
           if (!pending) setMenuOpen(false);
+        }}
+      />
+
+      <MissingPageCountDialog
+        bookTitle={bookTitle}
+        open={missingPageOpen}
+        loading={pending}
+        onSaveWithPageCount={(manualPageCount) => {
+          if (!pendingShelf) return;
+          void submitShelf(pendingShelf, { manualPageCount });
+        }}
+        onSaveWithoutPageCount={() => {
+          if (!pendingShelf) return;
+          void submitShelf(pendingShelf);
+        }}
+        onClose={() => {
+          if (!pending) {
+            setMissingPageOpen(false);
+            setPendingShelf(null);
+          }
         }}
       />
 

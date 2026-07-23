@@ -408,6 +408,10 @@ export type PostCommentReplyWithAuthor = PostCommentReply & {
   author: PostAuthor;
 };
 
+export type PageCountStatus = "known" | "user_entered" | "missing";
+
+export type PageCountSource = "edition" | "canonical_book" | "user" | "unavailable";
+
 export interface ReadingSession {
   id: string;
   user_id: string;
@@ -419,6 +423,11 @@ export interface ReadingSession {
   note: string | null;
   mood: string | null;
   read_number: number;
+  total_pages: number | null;
+  page_count_status: PageCountStatus | null;
+  page_count_source: PageCountSource | null;
+  edition_id: string | null;
+  completed_at: string | null;
   created_at: string;
 }
 

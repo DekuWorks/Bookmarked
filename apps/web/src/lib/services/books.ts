@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/client";
 import { getShelfLabel, isShelfStatus } from "@/lib/constants/shelfLabels";
 import { activityMetadata, bookActivityContext, recordActivity } from "@/lib/services/activity";
+import { completeReadingSession } from "@/lib/services/completeReadingSession";
+import { trackReadingCompleted } from "@/lib/services/productAnalytics";
 import { enrichBookCatalogEntry } from "@/lib/services/bookMetadata";
 import { resolveBookCoverUrl } from "@/lib/services/covers";
 import { ISBNDB_SOURCE } from "@/lib/services/isbndb";
@@ -226,16 +228,97 @@ export async function addCatalogBookToShelf(
   }
 
   const bookId = catalog.bookId;
+  const manualPageCountRaw = String(formData.get("manual_page_count") ?? "").trim();
+  const manualPageCount = manualPageCountRaw ? Number(manualPageCountRaw) : null;
+  const editionSelected = Boolean(input.edition_key?.trim());
 
   const { data: existingUserBook } = await supabase
     .from("user_books")
-    .select("id, shelf_status")
+    .select("id, shelf_status, progress_pages, read_count, started_at, is_favorite, rating, completion_tags")
     .eq("user_id", user.id)
     .eq("book_id", bookId)
     .maybeSingle();
 
   if (existingUserBook?.shelf_status === shelf_status) {
     return { success: `Already on ${getShelfLabel(shelf_status)}`, bookId };
+  }
+
+  const previousShelf = existingUserBook?.shelf_status ?? null;
+  const previousPage = Number(existingUserBook?.progress_pages) || 0;
+  const now = new Date().toISOString();
+
+  if (shelf_status === "read" && previousShelf !== "read") {
+    const { data: userBook, error: shelfError } = await supabase
+      .from("user_books")
+      .upsert(
+        {
+          user_id: user.id,
+          book_id: bookId,
+          updated_at: now,
+          started_at: existingUserBook?.started_at ?? now,
+        },
+        { onConflict: "user_id,book_id" }
+      )
+      .select("id, started_at, read_count, is_favorite, rating, completion_tags")
+      .single();
+
+    if (shelfError) return { error: ADD_BOOK_ERROR };
+
+    const { data: bookRow } = await supabase
+      .from("books")
+      .select("id, title, page_count, cover_url, subjects, isbn")
+      .eq("id", bookId)
+      .maybeSingle();
+
+    const completion = await completeReadingSession({
+      supabase,
+      userId: user.id,
+      bookId,
+      userBookId: userBook.id,
+      bookTitle: bookRow?.title ?? input.title,
+      book: {
+        id: bookId,
+        page_count: bookRow?.page_count ?? (input.page_count ? Number(input.page_count) : null),
+        cover_url: bookRow?.cover_url ?? null,
+        subjects: bookRow?.subjects ?? null,
+        isbn: bookRow?.isbn ?? input.isbn ?? null,
+      },
+      editionSelected,
+      previousPage,
+      readNumber: Number(existingUserBook?.read_count) || 1,
+      finishedAt: now,
+      startedAt: userBook.started_at ?? now,
+      manualPageCount,
+      source: "search_add",
+      applyCompletionTags: Boolean(existingUserBook),
+      completionTagsState: existingUserBook
+        ? {
+            read_count: userBook.read_count ?? existingUserBook.read_count,
+            is_favorite: userBook.is_favorite ?? existingUserBook.is_favorite,
+            rating: userBook.rating ?? existingUserBook.rating,
+            completion_tags: userBook.completion_tags ?? existingUserBook.completion_tags,
+          }
+        : undefined,
+    });
+
+    if (completion.error) return { error: completion.error };
+
+    if (completion.resolution) {
+      trackReadingCompleted({
+        source: "search_add",
+        bookId,
+        pageCountStatus: completion.resolution.pageCountStatus,
+        pageCountSource: completion.resolution.pageCountSource,
+        pagesRead:
+          completion.resolution.pageCountStatus === "missing"
+            ? null
+            : completion.resolution.totalPages,
+      });
+    }
+
+    const label = getShelfLabel(shelf_status);
+    const action = existingUserBook ? "Moved to" : "Added to";
+    return { success: `${action} ${label}`, bookId };
   }
 
   const { data: userBook, error: shelfError } = await supabase
@@ -245,7 +328,7 @@ export async function addCatalogBookToShelf(
         user_id: user.id,
         book_id: bookId,
         shelf_status,
-        updated_at: new Date().toISOString(),
+        updated_at: now,
       },
       { onConflict: "user_id,book_id" }
     )
@@ -274,7 +357,7 @@ export async function addCatalogBookToShelf(
       shelf_status,
       external_source: ISBNDB_SOURCE,
       external_id: input.external_id,
-      previous_shelf_status: existingUserBook?.shelf_status ?? null,
+      previous_shelf_status: previousShelf,
     }),
   });
 

@@ -5,6 +5,7 @@ import {
   type FavoriteGenreInsight,
   type ReadingStreakInsight,
 } from "@/lib/services/readingInsights";
+import { countResolvedPagesRead } from "@/lib/utils/readingCompletion";
 
 export type ReadingAnalytics = {
   booksRead: number;
@@ -36,7 +37,7 @@ export function computeReadingAnalytics({
     (b) => b.shelf_status === "currently_reading"
   ).length;
   const booksRead = books.filter((b) => b.shelf_status === "read").length;
-  const pagesRead = books.reduce((sum, b) => sum + (Number(b.progress_pages) || 0), 0);
+  const pagesRead = countResolvedPagesRead(books);
   const favoritesCount = books.filter((b) => b.is_favorite).length;
 
   const rated = books.filter((b) => b.rating != null);

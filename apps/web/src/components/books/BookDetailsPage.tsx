@@ -298,6 +298,9 @@ function BookDetailsContent() {
           bookTitle={book.title}
           currentShelf={currentShelf}
           isFavorite={Boolean(userBook?.is_favorite)}
+          pageCount={book.page_count}
+          editionSelected={Boolean(book.isbn)}
+          previousPage={Number(userBook?.progress_pages) || 0}
         />
         <ReadingProgressPanel
           bookId={book.id}

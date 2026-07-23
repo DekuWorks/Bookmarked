@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@bookmarked/utils/*": ["../../packages/utils/*"]
     }
   },
   "include": [

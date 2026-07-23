@@ -4,14 +4,12 @@ import {
   bookActivityContext,
   recordActivity,
 } from "@/lib/services/activity";
+import { completeReadingSession } from "@/lib/services/completeReadingSession";
+import { trackReadingCompleted } from "@/lib/services/productAnalytics";
 import { createReadingSessionWithClient } from "@/lib/services/readingSessions";
 import { ensureCatalogBook } from "@/lib/services/books";
 import { transferUserBookHistory } from "@/lib/services/transferUserBook";
 import { getShelfLabel, isShelfStatus } from "@/lib/constants/shelfLabels";
-import {
-  computeCompletionTags,
-  mergeCompletionTags,
-} from "@/lib/constants/completionTags";
 import { parseHalfStarRating } from "@/lib/utils/ratings";
 import { sanitizeRatingEmoji } from "@/lib/constants/reviewEmojis";
 import type { ReviewRatingMode, ShelfStatus } from "@/types";
@@ -49,6 +47,7 @@ type AuthBookContext =
         page_count: number | null;
         cover_url: string | null;
         subjects: string[] | null;
+        isbn: string | null;
       };
       userBook: UserBookRow | null;
     };
@@ -62,7 +61,7 @@ async function getAuthUserBook(bookId: string): Promise<AuthBookContext> {
 
   const { data: book } = await supabase
     .from("books")
-    .select("id, title, page_count, cover_url, subjects")
+    .select("id, title, page_count, cover_url, subjects, isbn")
     .eq("id", bookId)
     .maybeSingle();
 
@@ -97,27 +96,6 @@ function parseRatingMode(raw: string): ReviewRatingMode {
   return raw === "advanced" ? "advanced" : "regular";
 }
 
-async function applyCompletionTagsForFinish(
-  supabase: SupabaseClient,
-  userBook: UserBookRow,
-  rating?: number | null
-): Promise<void> {
-  const readCount = Number(userBook.read_count) || 1;
-  const tags = computeCompletionTags({
-    readCount,
-    isFavorite: Boolean(userBook.is_favorite),
-    rating: rating ?? userBook.rating ?? null,
-  });
-
-  await supabase
-    .from("user_books")
-    .update({
-      completion_tags: mergeCompletionTags(userBook.completion_tags, tags),
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", userBook.id);
-}
-
 export async function setBookShelfStatus(
   _prev: BookActionState,
   formData: FormData
@@ -134,6 +112,80 @@ export async function setBookShelfStatus(
   const { supabase, user, book, userBook } = ctx;
 
   const now = new Date().toISOString();
+  const previousShelf = userBook?.shelf_status ?? null;
+  const previousPage = Number(userBook?.progress_pages) || 0;
+  const manualPageCountRaw = String(formData.get("manual_page_count") ?? "").trim();
+  const manualPageCount = manualPageCountRaw ? Number(manualPageCountRaw) : null;
+  const editionSelected = String(formData.get("edition_selected") ?? "") === "true";
+
+  if (shelf_status === "read" && previousShelf !== "read") {
+    const { data: saved, error: upsertError } = await supabase
+      .from("user_books")
+      .upsert(
+        {
+          user_id: user.id,
+          book_id: bookId,
+          updated_at: now,
+          started_at: userBook?.started_at ?? now,
+        },
+        { onConflict: "user_id,book_id" }
+      )
+      .select("id, started_at, read_count, is_favorite, rating, completion_tags")
+      .single();
+
+    if (upsertError) return { error: upsertError.message };
+
+    const completion = await completeReadingSession({
+      supabase,
+      userId: user.id,
+      bookId,
+      userBookId: saved.id,
+      bookTitle: book.title,
+      book: {
+        id: book.id,
+        page_count: book.page_count,
+        cover_url: book.cover_url,
+        subjects: book.subjects,
+        isbn: book.isbn,
+      },
+      editionSelected,
+      previousPage,
+      readNumber: Number(userBook?.read_count) || 1,
+      finishedAt: userBook?.finished_at ?? now,
+      startedAt: saved.started_at ?? userBook?.started_at ?? now,
+      manualPageCount,
+      source: "shelf_move",
+      applyCompletionTags: true,
+      completionTagsState: {
+        read_count: saved.read_count ?? userBook?.read_count,
+        is_favorite: saved.is_favorite ?? userBook?.is_favorite,
+        rating: saved.rating ?? userBook?.rating,
+        completion_tags: saved.completion_tags ?? userBook?.completion_tags,
+      },
+    });
+
+    if (completion.error) return { error: completion.error };
+
+    if (completion.resolution) {
+      trackReadingCompleted({
+        source: "shelf_move",
+        bookId,
+        pageCountStatus: completion.resolution.pageCountStatus,
+        pageCountSource: completion.resolution.pageCountSource,
+        pagesRead:
+          completion.resolution.pageCountStatus === "missing"
+            ? null
+            : completion.resolution.totalPages,
+      });
+    }
+
+    const verb = userBook ? "Moved to" : "Added to";
+    return {
+      success: `${verb} ${getShelfLabel(shelf_status)}`,
+      promptReview: completion.promptReview,
+    };
+  }
+
   const payload: Record<string, unknown> = {
     user_id: user.id,
     book_id: bookId,
@@ -141,19 +193,8 @@ export async function setBookShelfStatus(
     updated_at: now,
   };
 
-  const previousShelf = userBook?.shelf_status ?? null;
-  const previousPage = Number(userBook?.progress_pages) || 0;
-  const pageCount = book.page_count ?? 0;
-
   if (shelf_status === "currently_reading" && !userBook?.started_at) {
     payload.started_at = now;
-  }
-  if (shelf_status === "read") {
-    payload.finished_at = userBook?.finished_at ?? now;
-    if (!userBook?.started_at) payload.started_at = now;
-    const finalPage = pageCount > 0 ? pageCount : previousPage;
-    payload.progress_pages = finalPage;
-    payload.progress_percent = 100;
   }
 
   const { data: saved, error } = await supabase
@@ -164,31 +205,7 @@ export async function setBookShelfStatus(
 
   if (error) return { error: error.message };
 
-  if (shelf_status === "read" && previousShelf !== "read") {
-    const finalPage = pageCount > 0 ? pageCount : previousPage;
-    if (finalPage > 0) {
-      const sessionResult = await createReadingSessionWithClient(supabase, {
-        userId: user.id,
-        userBookId: saved.id,
-        pageStart: previousPage,
-        pageEnd: finalPage,
-        percentComplete: 100,
-        readNumber: Number(userBook?.read_count) || 1,
-        createdAt: (payload.finished_at as string) ?? now,
-      });
-      if (sessionResult.error) return { error: sessionResult.error };
-    }
-    if (userBook) {
-      await applyCompletionTagsForFinish(supabase, userBook);
-    }
-  }
-
-  const event_type =
-    shelf_status === "read" && previousShelf !== "read"
-      ? "book_finished"
-      : userBook
-        ? "shelf_updated"
-        : "book_added";
+  const event_type = userBook ? "shelf_updated" : "book_added";
   await recordActivity(supabase, {
     user_id: user.id,
     event_type,
@@ -301,13 +318,13 @@ export async function markBookFinished(
     return { error: "Add this book to your library first." };
   }
 
-  const total = book.page_count ?? Number(userBook.progress_pages) ?? 0;
   const previousPage = Number(userBook.progress_pages) || 0;
-  const finalPage = total > 0 ? total : previousPage;
   const now = new Date().toISOString();
   const finishedRaw = String(formData.get("finished_at") ?? "").trim();
   const parsedFinish = parseDateInput(finishedRaw);
   const finished_at = parsedFinish ?? now;
+  const manualPageCountRaw = String(formData.get("manual_page_count") ?? "").trim();
+  const manualPageCount = manualPageCountRaw ? Number(manualPageCountRaw) : null;
 
   if (finishedRaw && !parsedFinish) {
     return { error: "Invalid finish date." };
@@ -317,43 +334,50 @@ export async function markBookFinished(
     return { error: "Finish date cannot be before start date." };
   }
 
-  const { error } = await supabase
-    .from("user_books")
-    .update({
-      shelf_status: "read",
-      progress_pages: finalPage,
-      progress_percent: 100,
-      finished_at,
-      started_at: userBook.started_at ?? finished_at,
-      updated_at: now,
-    })
-    .eq("id", userBook.id);
-
-  if (error) return { error: error.message };
-
-  const sessionResult = await createReadingSessionWithClient(supabase, {
+  const completion = await completeReadingSession({
+    supabase,
     userId: user.id,
+    bookId,
     userBookId: userBook.id,
-    pageStart: previousPage,
-    pageEnd: finalPage,
-    percentComplete: 100,
+    bookTitle: book.title,
+    book: {
+      id: book.id,
+      page_count: book.page_count,
+      cover_url: book.cover_url,
+      subjects: book.subjects,
+      isbn: book.isbn,
+    },
+    previousPage,
     readNumber: Number(userBook.read_count) || 1,
-    createdAt: finished_at,
+    finishedAt: finished_at,
+    startedAt: userBook.started_at ?? finished_at,
+    manualPageCount,
+    source: "mark_finished",
+    applyCompletionTags: true,
+    completionTagsState: {
+      read_count: userBook.read_count,
+      is_favorite: userBook.is_favorite,
+      rating: userBook.rating,
+      completion_tags: userBook.completion_tags,
+    },
   });
 
-  if (sessionResult.error) return { error: sessionResult.error };
+  if (completion.error) return { error: completion.error };
 
-  await applyCompletionTagsForFinish(supabase, userBook);
+  if (completion.resolution) {
+    trackReadingCompleted({
+      source: "mark_finished",
+      bookId,
+      pageCountStatus: completion.resolution.pageCountStatus,
+      pageCountSource: completion.resolution.pageCountSource,
+      pagesRead:
+        completion.resolution.pageCountStatus === "missing"
+          ? null
+          : completion.resolution.totalPages,
+    });
+  }
 
-  await recordActivity(supabase, {
-    user_id: user.id,
-    event_type: "book_finished",
-    entity_type: "user_book",
-    entity_id: userBook.id,
-    metadata_json: activityMetadata(book.title, bookActivityContext(book)),
-  });
-
-  return { success: "Book Completed 🎉", promptReview: true };
+  return { success: "Book Completed 🎉", promptReview: completion.promptReview ?? true };
 }
 
 export async function removeFromShelf(

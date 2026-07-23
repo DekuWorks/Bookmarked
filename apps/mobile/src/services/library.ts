@@ -1,4 +1,4 @@
-import { createReadingSession } from "./readingSessions";
+import { completeReadingSession } from "./completeReadingSession";
 import { supabase } from "./supabase";
 import { SHELF_CONFIG } from "../constants/shelves";
 import {
@@ -191,14 +191,55 @@ export async function setShelfStatus(
 
   const { data: bookRow } = await supabase
     .from("books")
-    .select("page_count")
+    .select("page_count, cover_url, subjects, isbn")
     .eq("id", book.id)
     .maybeSingle();
 
-  const pageCount = bookRow?.page_count ?? 0;
+  const pageCount = bookRow?.page_count ?? null;
   const previousPage = Number(existing?.progress_pages) || 0;
   const previousShelf = existing?.shelf_status ?? null;
   const now = new Date().toISOString();
+
+  if (shelfStatus === "read" && previousShelf !== "read") {
+    const { data: userBook, error } = await supabase
+      .from("user_books")
+      .upsert(
+        {
+          user_id: userId,
+          book_id: book.id,
+          updated_at: now,
+          started_at: existing?.started_at ?? now,
+        },
+        { onConflict: "user_id,book_id" }
+      )
+      .select("id, started_at, read_count")
+      .single();
+
+    if (error) return { error: error.message };
+
+    const completion = await completeReadingSession({
+      userId,
+      bookId: book.id,
+      userBookId: userBook.id,
+      bookTitle: book.title,
+      book: {
+        id: book.id,
+        page_count: pageCount,
+        cover_url: book.cover_url ?? bookRow?.cover_url ?? null,
+        subjects: book.subjects ?? bookRow?.subjects ?? null,
+        isbn: bookRow?.isbn ?? null,
+      },
+      editionSelected: Boolean(bookRow?.isbn),
+      previousPage,
+      readNumber: Number(existing?.read_count) || 1,
+      finishedAt: now,
+      startedAt: userBook.started_at ?? now,
+      source: "shelf_move",
+    });
+
+    if (completion.error) return { error: completion.error };
+    return {};
+  }
 
   const patch: Record<string, unknown> = {
     user_id: userId,
@@ -207,13 +248,6 @@ export async function setShelfStatus(
     updated_at: now,
   };
   if (shelfStatus === "currently_reading") patch.started_at = existing?.started_at ?? now;
-  if (shelfStatus === "read") {
-    patch.finished_at = existing?.finished_at ?? now;
-    if (!existing?.started_at) patch.started_at = now;
-    const finalPage = pageCount > 0 ? pageCount : previousPage;
-    patch.progress_pages = finalPage;
-    patch.progress_percent = 100;
-  }
 
   const { data: userBook, error } = await supabase
     .from("user_books")
@@ -223,28 +257,7 @@ export async function setShelfStatus(
 
   if (error) return { error: error.message };
 
-  if (shelfStatus === "read" && previousShelf !== "read") {
-    const finalPage = pageCount > 0 ? pageCount : previousPage;
-    if (finalPage > 0) {
-      const sessionResult = await createReadingSession({
-        userId,
-        userBookId: userBook.id,
-        pageStart: previousPage,
-        pageEnd: finalPage,
-        percentComplete: 100,
-        readNumber: Number(existing?.read_count) || 1,
-        createdAt: (patch.finished_at as string) ?? now,
-      });
-      if (sessionResult.error) return { error: sessionResult.error };
-    }
-  }
-
-  const eventType: ActivityEventType =
-    shelfStatus === "read" && previousShelf !== "read"
-      ? "book_finished"
-      : existing
-        ? "shelf_updated"
-        : "book_added";
+  const eventType: ActivityEventType = existing ? "shelf_updated" : "book_added";
   await recordBookActivity(userId, eventType, userBook?.id ?? null, book, {
     shelf_status: shelfStatus,
     previous_shelf_status: previousShelf,
@@ -314,38 +327,28 @@ export async function markFinished(
   }
 
   const previousPage = Number(userBook.progress_pages) || 0;
-  const total = book.page_count ?? previousPage;
-  const finalPage = total > 0 ? total : previousPage;
 
-  const { error } = await supabase
-    .from("user_books")
-    .update({
-      shelf_status: "read",
-      progress_percent: 100,
-      progress_pages: finalPage,
-      finished_at,
-      started_at: userBook.started_at ?? finished_at,
-      dnf: false,
-      updated_at: now,
-    })
-    .eq("id", userBook.id);
-
-  if (error) return { error: error.message };
-
-  const sessionResult = await createReadingSession({
+  const completion = await completeReadingSession({
     userId,
+    bookId: book.id,
     userBookId: userBook.id,
-    pageStart: previousPage,
-    pageEnd: finalPage,
-    percentComplete: 100,
+    bookTitle: book.title,
+    book: {
+      id: book.id,
+      page_count: book.page_count ?? null,
+      cover_url: book.cover_url ?? null,
+      subjects: book.subjects ?? null,
+    },
+    previousPage,
     readNumber: Number(userBook.read_count) || 1,
-    createdAt: finished_at,
+    finishedAt: finished_at,
+    startedAt: userBook.started_at ?? finished_at,
+    source: "mark_finished",
   });
 
-  if (sessionResult.error) return { error: sessionResult.error };
+  if (completion.error) return { error: completion.error };
 
-  await recordBookActivity(userId, "book_finished", userBook.id, book);
-  return { promptReview: true };
+  return { promptReview: completion.promptReview ?? true };
 }
 
 /**

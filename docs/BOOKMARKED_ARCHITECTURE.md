@@ -128,8 +128,11 @@ Library is reachable from Dashboard quick actions and Reading Room overview, not
 ```
 Search → Add to shelf → Book detail → Update progress
     → reading_sessions row + user_books update → Activity event
-    → Mark finished → shelf_status = read → Review (optional)
+    → Mark finished / direct-to-Read → completeReadingSession()
+    → shelf_status = read → Review (optional)
 ```
+
+Direct-to-Read and all finish paths call `completeReadingSession` (`apps/web/src/lib/services/completeReadingSession.ts`, mirrored in mobile). Page count resolution priority: user-selected edition → catalog page count → prior progress → manual entry → missing. When page count is missing, the book counts as read but `pages_read` stays excluded from stats until resolved.
 
 | Step | Tables | UI |
 |------|--------|-----|
@@ -137,7 +140,7 @@ Search → Add to shelf → Book detail → Update progress
 | Track progress | `user_books`, `reading_sessions` | `ReadingProgressPanel` |
 | Journal session notes | `reading_sessions.note` | `ReadingJournalSection` (per book) |
 | Reading notes | `reading_notes` | `ReadingNotesSection`, `/notes/` search |
-| Finish | `user_books.finished_at`, shelf move | `markBookFinished` action |
+| Finish | `user_books`, `reading_sessions` (`page_count_status`, `total_pages`, `completed_at`) | `markBookFinished`, shelf move, `MissingPageCountDialog` |
 
 ### 5.2 Library organization
 

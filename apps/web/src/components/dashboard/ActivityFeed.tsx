@@ -46,7 +46,7 @@ export function ActivityFeed({ userId }: { userId: string }) {
 
   return (
     <DashboardCard title="Recent activity">
-      <ul className="mx-auto max-w-2xl space-y-3">
+      <ul className="mx-auto max-w-2xl space-y-3" aria-label="Recent reading activity">
         {events.map((event, i) => (
           <li
             key={`${event.created_at}-${i}`}

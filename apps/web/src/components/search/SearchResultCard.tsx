@@ -11,10 +11,12 @@ import {
   type CatalogEditionSummary,
 } from "@/components/search/EditionPickerModal";
 import { useToast } from "@/components/ui/Toast";
+import { MissingPageCountDialog } from "@/components/books/MissingPageCountDialog";
 import {
   addCatalogBookToShelf,
   ensureCatalogBook,
 } from "@/lib/services/books";
+import { needsMissingPageCountPrompt } from "@/lib/services/completeReadingSession";
 import { resolveDisplayCoverUrl } from "@/lib/services/covers";
 import { bookDetailsPath } from "@/lib/routes/book";
 import { authorPagePath } from "@/lib/routes/author";
@@ -115,6 +117,8 @@ export function SearchResultCard({
   const toast = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
   const [editionOpen, setEditionOpen] = useState(false);
+  const [missingPageOpen, setMissingPageOpen] = useState(false);
+  const [pendingShelf, setPendingShelf] = useState<ShelfStatus | null>(null);
   const [saving, setSaving] = useState(false);
   const [viewDetailsLoading, setViewDetailsLoading] = useState(false);
   const [selectedEdition, setSelectedEdition] = useState<CatalogEditionSummary | null>(
@@ -169,7 +173,10 @@ export function SearchResultCard({
     setMenuOpen(true);
   }
 
-  async function handleSelectShelf(shelfStatus: ShelfStatus) {
+  async function submitShelf(
+    shelfStatus: ShelfStatus,
+    options?: { manualPageCount?: number }
+  ) {
     setSaving(true);
     const formData = new FormData();
     formData.set("title", bookPayload.title);
@@ -184,6 +191,9 @@ export function SearchResultCard({
       formData.set("edition_key", bookPayload.edition_key);
     }
     formData.set("shelf_status", shelfStatus);
+    if (options?.manualPageCount != null) {
+      formData.set("manual_page_count", String(options.manualPageCount));
+    }
 
     try {
       const result = await addCatalogBookToShelf({}, formData);
@@ -194,11 +204,30 @@ export function SearchResultCard({
       if (result.success) {
         toast.success(result.success);
         setMenuOpen(false);
+        setMissingPageOpen(false);
+        setPendingShelf(null);
         onBookmarked?.();
       }
     } finally {
       setSaving(false);
     }
+  }
+
+  async function handleSelectShelf(shelfStatus: ShelfStatus) {
+    if (
+      shelfStatus === "read" &&
+      needsMissingPageCountPrompt({
+        editionSelected: Boolean(bookPayload.edition_key),
+        catalogPageCount: bookPayload.page_count ? Number(bookPayload.page_count) : null,
+        previousPage: 0,
+      })
+    ) {
+      setPendingShelf(shelfStatus);
+      setMissingPageOpen(true);
+      return;
+    }
+
+    await submitShelf(shelfStatus);
   }
 
   const editionLabel = selectedEdition
@@ -283,6 +312,26 @@ export function SearchResultCard({
         onSelectShelf={handleSelectShelf}
         onClose={() => {
           if (!saving) setMenuOpen(false);
+        }}
+      />
+
+      <MissingPageCountDialog
+        bookTitle={bookPayload.title}
+        open={missingPageOpen}
+        loading={saving}
+        onSaveWithPageCount={(manualPageCount) => {
+          if (!pendingShelf) return;
+          void submitShelf(pendingShelf, { manualPageCount });
+        }}
+        onSaveWithoutPageCount={() => {
+          if (!pendingShelf) return;
+          void submitShelf(pendingShelf);
+        }}
+        onClose={() => {
+          if (!saving) {
+            setMissingPageOpen(false);
+            setPendingShelf(null);
+          }
         }}
       />
     </>
