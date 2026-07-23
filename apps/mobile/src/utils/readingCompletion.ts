@@ -18,9 +18,9 @@ export type PageCountResolution = {
 };
 
 export type ResolvePageCountInput = {
-  editionPageCount?: number | null;
+  editionPageCount?: number | string | null;
   editionSelected?: boolean;
-  catalogPageCount?: number | null;
+  catalogPageCount?: number | string | null;
   previousPage?: number | null;
   manualPageCount?: number | null;
 };
@@ -47,9 +47,13 @@ export function validateManualPageCount(
   return { ok: true, value: parsed };
 }
 
-function positiveInt(value: number | null | undefined): number | null {
-  if (value == null || !Number.isFinite(value)) return null;
-  const n = Math.trunc(value);
+function positiveInt(value: number | string | null | undefined): number | null {
+  if (value == null) return null;
+  const n =
+    typeof value === "number"
+      ? Math.trunc(value)
+      : Number.parseInt(String(value).trim(), 10);
+  if (!Number.isFinite(n) || !Number.isInteger(n)) return null;
   return n > 0 ? n : null;
 }
 

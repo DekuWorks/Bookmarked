@@ -175,8 +175,16 @@ async function recordBookActivity(
 /** Add a shared `books` row to a shelf (or move it), recording activity. */
 export async function setShelfStatus(
   userId: string,
-  book: { id: string; title: string; cover_url?: string | null; subjects?: string[] | null },
-  shelfStatus: ShelfStatus
+  book: {
+    id: string;
+    title: string;
+    cover_url?: string | null;
+    subjects?: string[] | null;
+    page_count?: number | null;
+    isbn?: string | null;
+  },
+  shelfStatus: ShelfStatus,
+  options?: { manualPageCount?: number | null }
 ): Promise<{ error?: string }> {
   const { data: existing } = await supabase
     .from("user_books")
@@ -195,7 +203,7 @@ export async function setShelfStatus(
     .eq("id", book.id)
     .maybeSingle();
 
-  const pageCount = bookRow?.page_count ?? null;
+  const pageCount = bookRow?.page_count ?? book.page_count ?? null;
   const previousPage = Number(existing?.progress_pages) || 0;
   const previousShelf = existing?.shelf_status ?? null;
   const now = new Date().toISOString();
@@ -234,6 +242,7 @@ export async function setShelfStatus(
       readNumber: Number(existing?.read_count) || 1,
       finishedAt: now,
       startedAt: userBook.started_at ?? now,
+      manualPageCount: options?.manualPageCount,
       source: "shelf_move",
       applyCompletionTags: Boolean(existing),
       completionTagsState: existing
@@ -308,6 +317,7 @@ export async function markFinished(
     cover_url?: string | null;
     subjects?: string[] | null;
     page_count?: number | null;
+    isbn?: string | null;
   },
   options?: { finishedAt?: string }
 ): Promise<{ error?: string; promptReview?: boolean }> {
@@ -347,7 +357,9 @@ export async function markFinished(
       page_count: book.page_count ?? null,
       cover_url: book.cover_url ?? null,
       subjects: book.subjects ?? null,
+      isbn: book.isbn ?? null,
     },
+    editionSelected: Boolean(book.isbn),
     previousPage,
     readNumber: Number(userBook.read_count) || 1,
     finishedAt: finished_at,

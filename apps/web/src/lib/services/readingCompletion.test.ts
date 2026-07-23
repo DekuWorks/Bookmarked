@@ -53,6 +53,42 @@ describe("resolvePageCount", () => {
       pageCountSource: "unavailable",
     });
   });
+
+  it("coerces numeric string catalog page counts", () => {
+    expect(
+      resolvePageCount({
+        catalogPageCount: "384",
+        previousPage: 0,
+      })
+    ).toEqual({
+      totalPages: 384,
+      pageCountStatus: "known",
+      pageCountSource: "canonical_book",
+    });
+  });
+});
+
+describe("direct-to-read completion", () => {
+  it("records full book pages when catalog count is known", () => {
+    const resolution = resolvePageCount({ catalogPageCount: 412, previousPage: 0 });
+    const userPatch = buildCompletionUserBookPatch({
+      finishedAt: "2026-07-23T12:00:00.000Z",
+      previousPage: 0,
+      resolution,
+    });
+    const sessionPatch = buildCompletionSessionPatch({
+      previousPage: 0,
+      resolution,
+      editionId: "book-1",
+      finishedAt: "2026-07-23T12:00:00.000Z",
+    });
+
+    expect(userPatch.progress_pages).toBe(412);
+    expect(sessionPatch.page_start).toBe(0);
+    expect(sessionPatch.page_end).toBe(412);
+    expect(sessionPatch.pages_read).toBe(412);
+    expect(sessionPatch.page_count_status).toBe("known");
+  });
 });
 
 describe("completion patches", () => {

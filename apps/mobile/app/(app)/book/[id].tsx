@@ -28,6 +28,7 @@ import {
   setShelfStatus,
   updateReadingProgress,
 } from "../../../src/services/library";
+import { needsMissingPageCountPrompt } from "../../../src/services/completeReadingSession";
 import { useAuthStore } from "../../../src/store/authStore";
 import type { Review, ReadingSession, ShelfStatus } from "../../../src/types";
 
@@ -129,11 +130,67 @@ export default function BookScreen() {
     setSessionOverrides((prev) => ({ ...prev, [updated.id]: updated }));
   }
 
-  async function changeShelf(shelf: ShelfStatus) {
+  async function applyShelf(shelf: ShelfStatus, manualPageCount?: number) {
     if (!userId || !book) return;
-    const result = await setShelfStatus(userId, book, shelf);
+    const result = await setShelfStatus(userId, book, shelf, { manualPageCount });
     if (result.error) Alert.alert("Error", result.error);
     invalidate();
+  }
+
+  async function changeShelf(shelf: ShelfStatus) {
+    if (!userId || !book) return;
+    if (
+      shelf === "read" &&
+      needsMissingPageCountPrompt({
+        editionSelected: Boolean(book.isbn),
+        catalogPageCount: book.page_count,
+        previousPage: Number(data?.userBook?.progress_pages) || 0,
+      })
+    ) {
+      Alert.alert(
+        "Page count needed",
+        "This book has no page count in the catalog. Finish without pages, or enter the total.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Finish without pages", onPress: () => void applyShelf(shelf) },
+          {
+            text: "Enter pages",
+            onPress: () => {
+              if (typeof Alert.prompt !== "function") {
+                Alert.alert(
+                  "Page count unavailable",
+                  "Finish without pages for now, or add the book from search where page entry is supported."
+                );
+                return;
+              }
+              Alert.prompt(
+                "Total pages",
+                "How many pages is this book?",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: "Save",
+                    onPress: (value?: string) => {
+                      const manualPageCount = Number.parseInt(String(value ?? "").trim(), 10);
+                      if (!Number.isFinite(manualPageCount) || manualPageCount <= 0) {
+                        Alert.alert("Invalid page count", "Enter a whole number greater than zero.");
+                        return;
+                      }
+                      void applyShelf(shelf, manualPageCount);
+                    },
+                  },
+                ],
+                "plain-text",
+                "",
+                "number-pad"
+              );
+            },
+          },
+        ]
+      );
+      return;
+    }
+    await applyShelf(shelf);
   }
 
   async function finish() {

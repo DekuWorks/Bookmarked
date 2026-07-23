@@ -1,13 +1,14 @@
+import { completeReadingSession } from "./completeReadingSession";
 import { supabase } from "./supabase";
 import { activityMetadata, bookActivityContext, recordActivity } from "./activity";
+import { getShelfConfig } from "../constants/shelves";
 import type { CatalogDoc } from "./isbndb";
 import type { ShelfStatus } from "../types";
 
 /**
  * Mobile books service — a trimmed port of apps/web/src/lib/services/books.ts.
  * Upserts an ISBNdb catalog result into the shared `books` table (matching by
- * ISBN, then external id) and adds/moves it onto a shelf. Cover resolution and
- * catalog enrichment (web-only, server-heavy) are intentionally deferred.
+ * ISBN, then external id) and adds/moves it onto a shelf.
  */
 
 const ISBNDB_SOURCE = "isbndb";
@@ -27,14 +28,14 @@ export async function ensureCatalogBook(
 
   const { data: existingByIsbn } = await supabase
     .from("books")
-    .select("id, cover_url, isbn")
+    .select("id, cover_url, isbn, page_count")
     .eq("isbn", isbn)
     .maybeSingle();
 
   const { data: existingByExternal } = !existingByIsbn
     ? await supabase
         .from("books")
-        .select("id, cover_url, isbn")
+        .select("id, cover_url, isbn, page_count")
         .eq("external_source", ISBNDB_SOURCE)
         .eq("external_id", externalId)
         .maybeSingle()
@@ -46,7 +47,10 @@ export async function ensureCatalogBook(
     const patch: Record<string, unknown> = { external_source: ISBNDB_SOURCE, external_id: externalId };
     if (coverUrl && !existing.cover_url) patch.cover_url = coverUrl;
     if (isbn && !existing.isbn) patch.isbn = isbn;
-    await supabase.from("books").update(patch).eq("id", existing.id);
+    if (pageCount && pageCount > 0 && !existing.page_count) patch.page_count = pageCount;
+    if (Object.keys(patch).length > 1) {
+      await supabase.from("books").update(patch).eq("id", existing.id);
+    }
     return { bookId: existing.id as string };
   }
 
@@ -72,7 +76,8 @@ export async function ensureCatalogBook(
 
 export async function addCatalogBookToShelf(
   doc: CatalogDoc,
-  shelf: ShelfStatus
+  shelf: ShelfStatus,
+  options?: { manualPageCount?: number | null }
 ): Promise<{ error?: string; bookId?: string }> {
   const {
     data: { user },
@@ -85,21 +90,85 @@ export async function addCatalogBookToShelf(
 
   const { data: existingUserBook } = await supabase
     .from("user_books")
-    .select("id, shelf_status")
+    .select(
+      "id, shelf_status, progress_pages, read_count, started_at, is_favorite, rating, completion_tags"
+    )
     .eq("user_id", user.id)
     .eq("book_id", bookId)
     .maybeSingle();
 
   if (existingUserBook?.shelf_status === shelf) return { bookId };
 
+  const previousShelf = existingUserBook?.shelf_status ?? null;
+  const previousPage = Number(existingUserBook?.progress_pages) || 0;
+  const now = new Date().toISOString();
+  const catalogPageCount = doc.number_of_pages_median ?? null;
+  const isbn = doc.isbn?.[0]?.trim() || doc.key?.trim() || null;
+
+  if (shelf === "read" && previousShelf !== "read") {
+    const { data: userBook, error: shelfError } = await supabase
+      .from("user_books")
+      .upsert(
+        {
+          user_id: user.id,
+          book_id: bookId,
+          updated_at: now,
+          started_at: existingUserBook?.started_at ?? now,
+        },
+        { onConflict: "user_id,book_id" }
+      )
+      .select("id, started_at, read_count, is_favorite, rating, completion_tags")
+      .single();
+
+    if (shelfError) return { error: shelfError.message };
+
+    const { data: bookRow } = await supabase
+      .from("books")
+      .select("id, title, page_count, cover_url, subjects, isbn")
+      .eq("id", bookId)
+      .maybeSingle();
+
+    const completion = await completeReadingSession({
+      userId: user.id,
+      bookId,
+      userBookId: userBook.id,
+      bookTitle: bookRow?.title ?? doc.title,
+      book: {
+        id: bookId,
+        page_count: bookRow?.page_count ?? catalogPageCount,
+        cover_url: bookRow?.cover_url ?? doc.cover_url ?? null,
+        subjects: bookRow?.subjects ?? null,
+        isbn: bookRow?.isbn ?? isbn,
+      },
+      editionSelected: Boolean(isbn),
+      previousPage,
+      readNumber: Number(existingUserBook?.read_count) || 1,
+      finishedAt: now,
+      startedAt: userBook.started_at ?? now,
+      manualPageCount: options?.manualPageCount,
+      source: "search_add",
+      applyCompletionTags: Boolean(existingUserBook),
+      completionTagsState: existingUserBook
+        ? {
+            read_count: userBook.read_count ?? existingUserBook.read_count,
+            is_favorite: userBook.is_favorite ?? existingUserBook.is_favorite,
+            rating: userBook.rating ?? existingUserBook.rating,
+            completion_tags: userBook.completion_tags ?? existingUserBook.completion_tags,
+          }
+        : undefined,
+    });
+
+    if (completion.error) return { error: completion.error };
+    return { bookId };
+  }
+
   const patch: Record<string, unknown> = {
     user_id: user.id,
     book_id: bookId,
     shelf_status: shelf,
-    updated_at: new Date().toISOString(),
+    updated_at: now,
   };
-  if (shelf === "currently_reading") patch.started_at = new Date().toISOString();
-  if (shelf === "read") patch.finished_at = new Date().toISOString();
+  if (shelf === "currently_reading") patch.started_at = existingUserBook?.started_at ?? now;
 
   const { data: userBook, error } = await supabase
     .from("user_books")
@@ -117,7 +186,7 @@ export async function addCatalogBookToShelf(
     metadata_json: activityMetadata(doc.title, {
       ...bookActivityContext({ id: bookId, cover_url: doc.cover_url ?? null }),
       shelf_status: shelf,
-      previous_shelf_status: existingUserBook?.shelf_status ?? null,
+      previous_shelf_status: previousShelf,
     }),
   });
 

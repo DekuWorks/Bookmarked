@@ -72,6 +72,9 @@ export function BookShelfActions({
     formData.set("book_id", bookId);
     formData.set("shelf_status", shelfStatus);
     if (editionSelected) formData.set("edition_selected", "true");
+    if (pageCount != null && pageCount > 0) {
+      formData.set("catalog_page_count", String(pageCount));
+    }
     if (options?.manualPageCount != null) {
       formData.set("manual_page_count", String(options.manualPageCount));
     }

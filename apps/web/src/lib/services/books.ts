@@ -73,7 +73,7 @@ async function upsertCatalogBook(
   const { data: existingByIsbn } = trimmedIsbn
     ? await supabase
         .from("books")
-        .select("id, cover_url, isbn, external_source, external_id")
+        .select("id, cover_url, isbn, external_source, external_id, page_count")
         .eq("isbn", trimmedIsbn)
         .maybeSingle()
     : { data: null };
@@ -81,7 +81,7 @@ async function upsertCatalogBook(
   const { data: existingByExternal } = !existingByIsbn
     ? await supabase
         .from("books")
-        .select("id, cover_url, isbn, external_source, external_id")
+        .select("id, cover_url, isbn, external_source, external_id, page_count")
         .eq("external_source", ISBNDB_SOURCE)
         .eq("external_id", external_id)
         .maybeSingle()
@@ -92,7 +92,7 @@ async function upsertCatalogBook(
     !existingByIsbn && !existingByExternal && trimmedIsbn
       ? await supabase
           .from("books")
-          .select("id, cover_url, isbn, external_source, external_id")
+          .select("id, cover_url, isbn, external_source, external_id, page_count")
           .eq("external_source", "open_library")
           .eq("isbn", trimmedIsbn)
           .maybeSingle()
@@ -119,6 +119,10 @@ async function upsertCatalogBook(
         patch.cover_url = cover_url;
       }
       if (trimmedIsbn && !existing.isbn) patch.isbn = trimmedIsbn;
+      const parsedPages = page_count ? Number(page_count) : null;
+      if (parsedPages && parsedPages > 0 && !existing.page_count) {
+        patch.page_count = parsedPages;
+      }
     }
 
     if (Object.keys(patch).length > 0) {

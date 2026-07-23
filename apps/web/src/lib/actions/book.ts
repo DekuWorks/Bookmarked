@@ -116,7 +116,11 @@ export async function setBookShelfStatus(
   const previousPage = Number(userBook?.progress_pages) || 0;
   const manualPageCountRaw = String(formData.get("manual_page_count") ?? "").trim();
   const manualPageCount = manualPageCountRaw ? Number(manualPageCountRaw) : null;
-  const editionSelected = String(formData.get("edition_selected") ?? "") === "true";
+  const catalogPageCountRaw = String(formData.get("catalog_page_count") ?? "").trim();
+  const catalogPageCountHint = catalogPageCountRaw ? Number(catalogPageCountRaw) : null;
+  const editionSelected =
+    String(formData.get("edition_selected") ?? "") === "true" || Boolean(book.isbn);
+  const resolvedPageCount = book.page_count ?? catalogPageCountHint;
 
   if (shelf_status === "read" && previousShelf !== "read") {
     const { data: saved, error: upsertError } = await supabase
@@ -143,7 +147,7 @@ export async function setBookShelfStatus(
       bookTitle: book.title,
       book: {
         id: book.id,
-        page_count: book.page_count,
+        page_count: resolvedPageCount,
         cover_url: book.cover_url,
         subjects: book.subjects,
         isbn: book.isbn,
