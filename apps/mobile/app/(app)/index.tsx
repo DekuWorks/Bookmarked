@@ -17,7 +17,9 @@ import { getUserLibraryBooks } from "../../src/services/library";
 import { computeReadingGoal } from "../../src/services/readingGoal";
 import { fetchTrendingSections } from "../../src/services/trending";
 import { TAB_BAR_SPACE, useTabBarScroll } from "../../src/navigation/TabBarScroll";
+import { SERIF_DISPLAY_FONT } from "../../src/constants/theme";
 import { useAuthStore } from "../../src/store/authStore";
+import { useThemeColors } from "../../src/store/themeStore";
 
 function QuickLink({ icon, label, onPress }: { icon: string; label: string; onPress: () => void }) {
   return (
@@ -33,6 +35,7 @@ function QuickLink({ icon, label, onPress }: { icon: string; label: string; onPr
 
 export default function HomeReadingRoom() {
   const router = useRouter();
+  const colors = useThemeColors();
   const userId = useAuthStore((s) => s.user?.id);
   const { data: profile, refetch: refetchProfile } = useProfile();
   const { onScroll } = useTabBarScroll();
@@ -92,8 +95,13 @@ export default function HomeReadingRoom() {
         }
       >
         <View>
-          <Text className="text-2xl font-black text-puce-red">Reading Room</Text>
-          <Text className="text-ink-muted">Welcome back, {name}.</Text>
+          <Text
+            className="text-3xl"
+            style={{ fontFamily: SERIF_DISPLAY_FONT, color: colors.puceRed }}
+          >
+            Reading Room
+          </Text>
+          <Text style={{ color: colors.inkMuted }}>Welcome back, {name}.</Text>
         </View>
 
         <View className="flex-row gap-3">

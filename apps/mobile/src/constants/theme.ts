@@ -52,6 +52,11 @@ export const HEADER_WASH_HEIGHT_RATIO = 0.25;
  */
 export const SERIF_DISPLAY_FONT = "PlayfairDisplay_800ExtraBold";
 
+/** Body sans — mirrors web Geist Sans (`--font-geist-sans`). */
+export const SANS_FONT = "Geist_400Regular";
+export const SANS_FONT_MEDIUM = "Geist_500Medium";
+export const SANS_FONT_BOLD = "Geist_700Bold";
+
 /**
  * Wordmark color — the dusty purple of the "B" glyph in
  * assets/brand/logo-mark.png (sampled #715B8B / srgb(113,91,139); text uses

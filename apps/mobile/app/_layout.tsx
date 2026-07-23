@@ -5,6 +5,11 @@ import { Appearance } from "react-native";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import {
+  Geist_400Regular,
+  Geist_500Medium,
+  Geist_700Bold,
+} from "@expo-google-fonts/geist";
+import {
   PlayfairDisplay_700Bold,
   PlayfairDisplay_800ExtraBold,
   PlayfairDisplay_900Black,
@@ -45,6 +50,9 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
+    Geist_400Regular,
+    Geist_500Medium,
+    Geist_700Bold,
     PlayfairDisplay_700Bold,
     PlayfairDisplay_800ExtraBold,
     PlayfairDisplay_900Black,
