@@ -103,6 +103,9 @@ def main() -> int:
     deleted: dict[str, int] = {}
 
     deletions = [
+        ("content_reports", f"reporter_id=eq.{user_id}", "id"),
+        ("user_blocks", f"blocker_id=eq.{user_id}", "blocked_id"),
+        ("user_blocks", f"blocked_id=eq.{user_id}", "blocked_id"),
         ("review_reactions", f"user_id=eq.{user_id}", "review_id"),
         ("review_replies", f"user_id=eq.{user_id}", "id"),
         ("post_comment_reactions", f"user_id=eq.{user_id}", "comment_id"),

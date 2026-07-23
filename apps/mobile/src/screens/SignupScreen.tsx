@@ -1,17 +1,18 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Linking, Pressable, Text, View } from "react-native";
 import { BrandLogo } from "../components/BrandLogo";
 import { Button } from "../components/Button";
 import { Input } from "../components/Input";
 import { ScreenContainer } from "../components/ScreenContainer";
-import { webAuthRedirect } from "../constants/env";
+import { webAuthRedirect, env } from "../constants/env";
 import { supabase } from "../services/supabase";
 
 export function SignupScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -27,6 +28,10 @@ export function SignupScreen() {
     }
     if (password.length < 6) {
       setError("Password must be at least 6 characters.");
+      return;
+    }
+    if (!acceptedTerms) {
+      setError("Please accept the Terms of Service and Community Guidelines.");
       return;
     }
 
@@ -80,10 +85,33 @@ export function SignupScreen() {
         onChangeText={setPassword}
       />
 
+      <Pressable
+        onPress={() => setAcceptedTerms((v) => !v)}
+        className="mb-4 flex-row items-start gap-3"
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: acceptedTerms }}
+      >
+        <Text className="text-lg">{acceptedTerms ? "☑️" : "⬜"}</Text>
+        <Text className="flex-1 text-sm leading-5 text-ink-muted">
+          I agree to the{" "}
+          <Text className="text-puce-red underline" onPress={() => Linking.openURL(`${env.siteUrl}/terms/`)}>
+            Terms of Service
+          </Text>{" "}
+          and{" "}
+          <Text
+            className="text-puce-red underline"
+            onPress={() => Linking.openURL(`${env.siteUrl}/terms/#community`)}
+          >
+            Community Guidelines
+          </Text>
+          , including zero tolerance for objectionable content and abusive users.
+        </Text>
+      </Pressable>
+
       {error ? <Text className="text-rust mb-3">{error}</Text> : null}
       {notice ? <Text className="text-emerald-700 mb-3">{notice}</Text> : null}
 
-      <Button title="Sign up" onPress={onSubmit} loading={loading} />
+      <Button title="Sign up" onPress={onSubmit} loading={loading} disabled={!acceptedTerms} />
 
       <Pressable onPress={() => router.back()} className="mt-8 items-center">
         <Text className="text-puce-red underline">Already have an account? Log in</Text>

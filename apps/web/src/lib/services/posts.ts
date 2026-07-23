@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { postFeedPath } from "@/lib/routes/posts";
 import { getFollowingIds } from "@/lib/services/follows";
+import { getBlockedUserIds } from "@/lib/services/moderation";
 import {
   createMentionNotification,
   createPostCommentNotification,
@@ -454,7 +455,10 @@ export async function listFeedPosts(
   const rows = (data ?? []) as RawPostRow[];
   if (!rows.length) return [];
 
-  return hydratePosts(rows.slice(0, limit), viewerId);
+  const blockedIds = new Set(await getBlockedUserIds());
+  const filtered = rows.filter((row) => !blockedIds.has(row.user_id));
+
+  return hydratePosts(filtered.slice(0, limit), viewerId);
 }
 
 export async function listPostsByUser(

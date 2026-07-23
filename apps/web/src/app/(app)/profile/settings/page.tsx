@@ -11,6 +11,7 @@ import { LibraryImportPanel } from "@/components/profile/LibraryImportPanel";
 import { ShelfPrivacyPanel } from "@/components/profile/ShelfPrivacyPanel";
 import { ThemePreferencePanel } from "@/components/theme/ThemePreferencePanel";
 import { NotificationPreferencesPanel } from "@/components/notifications/NotificationPreferencesPanel";
+import { DeleteAccountPanel } from "@/components/moderation/DeleteAccountPanel";
 import { ReadingGoalPanel } from "@/components/reading-goal/ReadingGoalPanel";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
@@ -132,6 +133,8 @@ export default function ProfileSettingsPage() {
         <section className="surface-card p-6">
           <ShelfPrivacyPanel profile={profile} />
         </section>
+
+        <DeleteAccountPanel />
 
         <section className="surface-card p-6 text-center">
           <LogoutButton />

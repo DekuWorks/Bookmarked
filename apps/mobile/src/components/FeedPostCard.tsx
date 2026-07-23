@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { Alert, Pressable, Text, View } from "react-native";
+import { useQueryClient } from "@tanstack/react-query";
 import { Avatar } from "./Avatar";
 import { AttachmentImage } from "./AttachmentImage";
 import { BookCover } from "./BookCover";
@@ -10,8 +11,8 @@ import { PostCommentsSheet } from "./PostCommentsSheet";
 import { ProfanityBlur } from "./ProfanityBlur";
 import { RepostPreview } from "./RepostPreview";
 import { StarRating } from "./StarRating";
+import { showContentActions } from "./ContentActions";
 import { timeAgo } from "../utils";
-import { useQueryClient } from "@tanstack/react-query";
 import { useToggleReviewLike, useRepostPost, useTogglePostLike } from "../hooks/useFeed";
 import { deletePost } from "../services/posts";
 import { setShelfStatus } from "../services/library";
@@ -29,9 +30,11 @@ function CardShell({ children }: { children: React.ReactNode }) {
 function AuthorRow({
   entry,
   action,
+  onMore,
 }: {
   entry: FeedEntry;
   action: string;
+  onMore?: () => void;
 }) {
   const router = useRouter();
   const username = entry.author.username?.trim();
@@ -56,7 +59,13 @@ function AuthorRow({
         <Text className="text-xs text-ink-muted">{action}</Text>
       </View>
       <Text className="text-xs text-ink-muted">{timeAgo(entry.createdAt)}</Text>
-      <Text className="ml-2 text-lg text-ink-muted">⋯</Text>
+      {onMore ? (
+        <Pressable onPress={onMore} className="ml-2 active:opacity-60" hitSlop={8}>
+          <Text className="text-lg text-ink-muted">⋯</Text>
+        </Pressable>
+      ) : (
+        <Text className="ml-2 text-lg text-ink-muted">⋯</Text>
+      )}
     </Pressable>
   );
 }
@@ -93,9 +102,22 @@ function ActionRow({
 
 function ReviewCard({ entry, viewerId }: { entry: ReviewEntry; viewerId?: string }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [revealed, setRevealed] = useState(false);
   const like = useToggleReviewLike();
   const hidden = entry.hasSpoilers && !revealed;
+  const isSelf = entry.author.id === viewerId;
+
+  function onMore() {
+    if (isSelf) return;
+    showContentActions({
+      contentType: "review",
+      contentId: entry.id,
+      reportedUserId: entry.author.id,
+      reportedUserName: entry.author.name,
+      onBlocked: () => queryClient.invalidateQueries({ queryKey: ["home-feed"] }),
+    });
+  }
 
   async function save() {
     if (!viewerId || !entry.book) return;
@@ -109,7 +131,7 @@ function ReviewCard({ entry, viewerId }: { entry: ReviewEntry; viewerId?: string
 
   return (
     <CardShell>
-      <AuthorRow entry={entry} action="reviewed a book" />
+      <AuthorRow entry={entry} action="reviewed a book" onMore={isSelf ? undefined : onMore} />
       <Pressable
         className="mt-3 flex-row gap-3 active:opacity-80"
         onPress={() => entry.book && router.push(`/book/${entry.book.id}`)}
@@ -223,6 +245,31 @@ function PostCard({ entry, viewerId }: { entry: PostEntry; viewerId?: string }) 
   const isRepost = Boolean(post.repost_of_post_id);
   const mine = post.user_id === viewerId;
 
+  function onMore() {
+    if (mine) {
+      Alert.alert("Post", undefined, [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            const result = await deletePost(post.id);
+            if (result.error) Alert.alert("Couldn't delete", result.error);
+            else queryClient.invalidateQueries({ queryKey: ["home-feed"] });
+          },
+        },
+      ]);
+      return;
+    }
+    showContentActions({
+      contentType: "post",
+      contentId: post.id,
+      reportedUserId: entry.author.id,
+      reportedUserName: entry.author.name,
+      onBlocked: () => queryClient.invalidateQueries({ queryKey: ["home-feed"] }),
+    });
+  }
+
   function onRepost() {
     if (isRepost) return;
     Alert.alert("Repost", "Share this post with your followers?", [
@@ -248,22 +295,6 @@ function PostCard({ entry, viewerId }: { entry: PostEntry; viewerId?: string }) 
     ]);
   }
 
-  function onMore() {
-    if (!mine) return;
-    Alert.alert("Post", undefined, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          const result = await deletePost(post.id);
-          if (result.error) Alert.alert("Couldn't delete", result.error);
-          else queryClient.invalidateQueries({ queryKey: ["home-feed"] });
-        },
-      },
-    ]);
-  }
-
   return (
     <CardShell>
       <View className="flex-row items-center">
@@ -277,13 +308,9 @@ function PostCard({ entry, viewerId }: { entry: PostEntry; viewerId?: string }) 
           </Text>
         </View>
         <Text className="text-xs text-ink-muted">{timeAgo(entry.createdAt)}</Text>
-        {mine ? (
-          <Pressable onPress={onMore} className="ml-2 active:opacity-60">
-            <Text className="text-lg text-ink-muted">⋯</Text>
-          </Pressable>
-        ) : (
-          <Text className="ml-2 text-lg text-ink-muted">⋯</Text>
-        )}
+        <Pressable onPress={onMore} className="ml-2 active:opacity-60" hitSlop={8}>
+          <Text className="text-lg text-ink-muted">⋯</Text>
+        </Pressable>
       </View>
 
       {post.body ? <MentionText body={post.body} className="mt-3 leading-5 text-ink" /> : null}
@@ -353,11 +380,22 @@ function PostCard({ entry, viewerId }: { entry: PostEntry; viewerId?: string }) 
 
 function DiscussionCard({ entry }: { entry: DiscussionEntry }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const extra = Math.max(0, entry.participantCount - entry.participantAvatars.length);
+
+  function onMore() {
+    showContentActions({
+      contentType: "club_post",
+      contentId: entry.id,
+      reportedUserId: entry.author.id,
+      reportedUserName: entry.author.name,
+      onBlocked: () => queryClient.invalidateQueries({ queryKey: ["home-feed"] }),
+    });
+  }
 
   return (
     <CardShell>
-      <AuthorRow entry={entry} action="started a discussion" />
+      <AuthorRow entry={entry} action="started a discussion" onMore={onMore} />
       <Text className="mt-3 text-xs font-semibold uppercase tracking-wide text-primary-dark">
         {entry.clubName}
       </Text>

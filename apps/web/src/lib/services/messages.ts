@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import { createMessageNotifications } from "@/lib/services/notifications";
+import { getBlockedUserIds } from "@/lib/services/moderation";
 import { MAX_MESSAGE_BODY_LENGTH } from "@/lib/constants/validation";
 import {
   MESSAGE_ATTACHMENT_BUCKET,
@@ -630,8 +631,15 @@ export async function getConversations(userId: string): Promise<ConversationPrev
     })
   );
 
+  const blockedIds = new Set(await getBlockedUserIds());
+  const visible = sorted.filter((conversation) => {
+    if (conversation.type !== "direct") return true;
+    const peer = conversation.participants.find((p) => p.user_id !== userId);
+    return peer ? !blockedIds.has(peer.user_id) : true;
+  });
+
   return Promise.all(
-    sorted.map(async (conversation) => {
+    visible.map(async (conversation) => {
       if (!conversation.latestMessage?.attachment_url) return conversation;
 
       const attachment_url = await signMessageAttachmentUrl(

@@ -42,6 +42,17 @@ export function LoginForm({ redirect }: Props) {
       <Button type="submit" variant="primary" className="w-full" loading={pending}>
         Log in
       </Button>
+      <p className="mt-4 text-center text-xs text-text-muted">
+        By logging in, you agree to our{" "}
+        <Link href="/terms" className="font-medium text-primary hover:underline">
+          Terms of Service
+        </Link>{" "}
+        and{" "}
+        <Link href="/terms#community" className="font-medium text-primary hover:underline">
+          Community Guidelines
+        </Link>
+        .
+      </p>
       <p className="mt-4 text-center text-sm text-text-muted">
         <Link href="/forgot-password" className="font-medium text-primary hover:underline">
           Forgot password?

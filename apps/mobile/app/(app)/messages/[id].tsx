@@ -32,6 +32,8 @@ import {
   messageReplySnippet,
 } from "../../../src/services/messages";
 import { pickImageFromLibrary, uploadMessageAttachment } from "../../../src/services/storage";
+import { showContentActions } from "../../../src/components/ContentActions";
+import { containsProfanity } from "../../../src/utils/profanity";
 import { useAuthStore } from "../../../src/store/authStore";
 import type { MessageReactionSummary, MessageWithSender } from "../../../src/types";
 
@@ -104,6 +106,10 @@ export default function ThreadScreen() {
   async function submit() {
     const body = draft.trim();
     if (!body && !attachment) return;
+    if (containsProfanity(body)) {
+      Alert.alert("Language not allowed", "Please remove profanity before sending.");
+      return;
+    }
     setDraft("");
     const pendingAttachment = attachment;
     const pendingReplyTo = replyTo?.id ?? null;
@@ -121,13 +127,22 @@ export default function ThreadScreen() {
     const mine = message.sender_id === userId;
     const options = mine
       ? ["Reply", "Delete", ...MESSAGE_QUICK_REACTIONS, "Cancel"]
-      : ["Reply", ...MESSAGE_QUICK_REACTIONS, "Cancel"];
+      : ["Reply", "Report", ...MESSAGE_QUICK_REACTIONS, "Cancel"];
     const cancelButtonIndex = options.length - 1;
 
     const onSelect = (index: number) => {
       if (index === cancelButtonIndex) return;
       if (index === 0) {
         setReplyTo(message);
+        return;
+      }
+      if (!mine && index === 1) {
+        showContentActions({
+          contentType: "message",
+          contentId: message.id,
+          reportedUserId: message.sender_id,
+          reportedUserName: profileName(message),
+        });
         return;
       }
       if (mine && index === 1) {
@@ -141,7 +156,7 @@ export default function ThreadScreen() {
         ]);
         return;
       }
-      const reactionIndex = mine ? index - 2 : index - 1;
+      const reactionIndex = mine ? index - 2 : index - 2;
       const emoji = MESSAGE_QUICK_REACTIONS[reactionIndex];
       if (!emoji) return;
       void toggleReaction.mutateAsync({ messageId: message.id, emoji });
@@ -157,6 +172,20 @@ export default function ThreadScreen() {
 
     Alert.alert("Message", undefined, [
       { text: "Reply", onPress: () => setReplyTo(message) },
+      ...(!mine
+        ? [
+            {
+              text: "Report",
+              onPress: () =>
+                showContentActions({
+                  contentType: "message",
+                  contentId: message.id,
+                  reportedUserId: message.sender_id,
+                  reportedUserName: profileName(message),
+                }),
+            },
+          ]
+        : []),
       ...(mine
         ? [
             {

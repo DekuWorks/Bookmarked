@@ -9,6 +9,7 @@ import { ProfanityBlur } from "../../../../src/components/ProfanityBlur";
 import { ProfileShelfPreview } from "../../../../src/components/ProfileShelfPreview";
 import { ReadingStreakCard } from "../../../../src/components/ReadingStreakCard";
 import { ScreenHeader } from "../../../../src/components/ScreenHeader";
+import { showProfileActions } from "../../../../src/components/ContentActions";
 import { useFollowCounts, useIsFollowing, useMutuals } from "../../../../src/hooks/useFollows";
 import {
   readerLibraryPath,
@@ -101,7 +102,25 @@ export default function ReaderScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <ScreenHeader title={`@${reader.username ?? handle}`} />
+      <ScreenHeader
+        title={`@${reader.username ?? handle}`}
+        right={
+          !isSelf ? (
+            <Pressable
+              onPress={() =>
+                showProfileActions({
+                  userId: reader.id,
+                  userName: name,
+                  onBlocked: () => router.back(),
+                })
+              }
+              className="px-2 active:opacity-70"
+            >
+              <Text className="text-lg text-ink-muted">⋯</Text>
+            </Pressable>
+          ) : undefined
+        }
+      />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120, gap: 16 }}>
         <View className="items-center rounded-2xl border border-brand-border bg-surface p-5">
           <Avatar url={reader.avatar_url} name={name} size={72} />

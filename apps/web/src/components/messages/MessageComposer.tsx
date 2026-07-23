@@ -11,6 +11,7 @@ import {
   validateMessageAttachmentFile,
 } from "@/lib/services/messages";
 import { MessageReplyPreview } from "@/components/messages/MessageReplyPreview";
+import { containsProfanity } from "@/lib/utils/profanity";
 import type { MessageWithSender } from "@/types";
 
 type Props = {
@@ -43,6 +44,10 @@ export function MessageComposer({
   async function handleSend() {
     const trimmed = body.trim();
     if ((!trimmed && !attachment.hasAttachment) || sending) return;
+    if (containsProfanity(trimmed)) {
+      setError("Please remove profanity before sending.");
+      return;
+    }
 
     setSending(true);
     setError(null);

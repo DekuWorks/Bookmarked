@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import { getFollowingIds } from "./follows";
+import { getBlockedUserIds } from "./moderation";
 import { listFeedPosts } from "./posts";
 import type { PostWithAuthor } from "../types";
 
@@ -306,8 +307,12 @@ export async function fetchHomeFeed(
   tab: FeedTab,
   limit = 30
 ): Promise<FeedEntry[]> {
+  const blockedIds = new Set(await getBlockedUserIds());
+
   if (tab === "clubs") {
-    return loadDiscussions(null, limit);
+    return loadDiscussions(null, limit).then((entries) =>
+      entries.filter((entry) => !blockedIds.has(entry.author.id))
+    );
   }
 
   const followingIds = tab === "following" ? await getFollowingIds(viewerId) : null;
@@ -319,6 +324,7 @@ export async function fetchHomeFeed(
   ]);
 
   return [...reviews, ...posts, ...discussions]
+    .filter((entry) => !blockedIds.has(entry.author.id))
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, limit);
 }

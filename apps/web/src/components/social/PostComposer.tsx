@@ -20,6 +20,7 @@ import { GifSearchPicker } from "@/components/social/GifSearchPickerLazy";
 import type { GiphySearchResult } from "@/lib/services/giphy";
 import { isAllowedPostImageUrl, resolveGiphyImageUrl } from "@/lib/utils/giphy";
 import { cn } from "@/lib/utils/cn";
+import { containsProfanity } from "@/lib/utils/profanity";
 import { MAX_POST_BODY_LENGTH } from "@/lib/constants/validation";
 
 type Props = {
@@ -307,6 +308,10 @@ export function PostComposer({ userId, onPostCreated }: Props) {
     const trimmed = body.trim();
     if (!trimmed && !imageFile && !gifUrl && !remoteImageUrl) {
       toast.error("Write something or attach an image or GIF before posting.");
+      return;
+    }
+    if (containsProfanity(trimmed)) {
+      toast.error("Please remove profanity before posting.");
       return;
     }
 

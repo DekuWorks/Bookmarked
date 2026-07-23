@@ -32,6 +32,8 @@ import {
   type ReplyNode,
 } from "../services/postCommentEngagement";
 import { pickImageFromLibrary, uploadCommentAttachment } from "../services/storage";
+import { showContentActions } from "./ContentActions";
+import { containsProfanity } from "../utils/profanity";
 import { useAuthStore } from "../store/authStore";
 import { timeAgo } from "../utils";
 import type { PostCommentWithAuthor, ReactionCounts } from "../types";
@@ -123,6 +125,10 @@ export function PostCommentsSheet({ postId, visible, onClose, onChanged }: Props
   async function submit() {
     const trimmed = body.trim();
     if (!trimmed && !attachment) return;
+    if (containsProfanity(trimmed)) {
+      Alert.alert("Language not allowed", "Please remove profanity before commenting.");
+      return;
+    }
     setSending(true);
     const result = replyTarget
       ? await addPostCommentReply(
@@ -318,7 +324,20 @@ export function PostCommentsSheet({ postId, visible, onClose, onChanged }: Props
                           <Pressable onPress={() => removeComment(comment.id)}>
                             <Text className="text-xs text-rust">Delete</Text>
                           </Pressable>
-                        ) : null}
+                        ) : (
+                          <Pressable
+                            onPress={() =>
+                              showContentActions({
+                                contentType: "comment",
+                                contentId: comment.id,
+                                reportedUserId: comment.user_id,
+                                reportedUserName: authorName(comment.author),
+                              })
+                            }
+                          >
+                            <Text className="text-xs text-ink-muted">Report</Text>
+                          </Pressable>
+                        )}
                       </View>
 
                       <Pressable onPress={() => loadReplies(comment.id)} className="mt-2">

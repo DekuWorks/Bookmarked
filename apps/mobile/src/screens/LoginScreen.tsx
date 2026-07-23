@@ -70,6 +70,10 @@ export function LoginScreen() {
 
       <Button title="Log in" onPress={onSubmit} loading={loading} />
 
+      <Text className="mt-4 text-center text-xs text-ink-muted px-2">
+        By logging in, you agree to our Terms of Service and Community Guidelines on bookmarked.online.
+      </Text>
+
       <View className="flex-row flex-wrap gap-2 justify-center mt-6">
         <Pressable onPress={() => router.push("/(auth)/signup")}>
           <Text className="text-puce-red underline">Create account</Text>

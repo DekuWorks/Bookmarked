@@ -1,13 +1,24 @@
 LOGIN REQUIRED
-Bookmarked + uses email and password authentication (Supabase Auth).
+Bookmarked uses email and password authentication (Supabase Auth).
 
-Demo account: None provided.
-Reviewers can create a free account in-app via Sign Up (email + password), then complete a short profile setup (username).
+Demo account for App Review:
+  Email:    appreview@bookmarked.online
+  Password: BookmarkedReview2026!
+
+If the demo account is unavailable, reviewers can create a free account via Sign Up (email + password), accept the Terms of Service and Community Guidelines checkbox, then complete profile setup (username).
+
+MODERATION FEATURES (Guideline 1.2)
+- Terms + Community Guidelines: required checkbox on Sign Up; linked from login screen.
+- Profanity filter: blocks offensive language on compose (posts, comments, messages) and blurs profanity in feeds.
+- Report content: tap ⋯ on any feed post/review/discussion, long-press a message, or tap Report on a comment → choose a reason → stored in content_reports for admin review within 24h.
+- Block user: available from the same menus and from any reader profile (⋯) → removes their content from your feed immediately and auto-files a report for developer review.
+- Account deletion: Profile → Settings → Delete account → type DELETE → confirm.
 
 SUPPORT
 Website: https://bookmarked.online
+Terms: https://bookmarked.online/terms
 Privacy: https://bookmarked.online/privacy
 Email: general@bookmarked.online
 
 NOTES
-No in-app purchases or subscriptions in this build. Core features (library/shelves, feed, clubs, messages, notes, reviews, reading goals) are available after sign-in.
+No in-app purchases in this build. Core features (library/shelves, feed, clubs, messages, notes, reviews, reading goals) are available after sign-in.

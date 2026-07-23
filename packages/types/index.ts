@@ -457,3 +457,40 @@ export interface ReadingNote {
   created_at: string;
   updated_at: string;
 }
+
+export type ReportableContentType =
+  | "post"
+  | "comment"
+  | "message"
+  | "review"
+  | "club_post"
+  | "profile";
+
+export type ContentReportReason =
+  | "harassment"
+  | "spam"
+  | "inappropriate"
+  | "hate_speech"
+  | "other";
+
+export type ContentReportStatus = "pending" | "reviewed" | "actioned" | "dismissed";
+
+export interface ContentReport {
+  id: string;
+  reporter_id: string;
+  content_type: ReportableContentType;
+  content_id: string;
+  reported_user_id: string | null;
+  reason: ContentReportReason;
+  details: string | null;
+  status: ContentReportStatus;
+  created_at: string;
+  reviewed_at: string | null;
+}
+
+export interface UserBlock {
+  blocker_id: string;
+  blocked_id: string;
+  report_id: string | null;
+  created_at: string;
+}

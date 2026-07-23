@@ -29,6 +29,7 @@ import type { ReactionCounts, Review, ReviewReplyWithAuthor } from "@/types";
 import type { ThreadNode } from "@/lib/utils/threadReplies";
 import { usePreferredLocale } from "@/lib/hooks/usePreferredLocale";
 import { formatReviewDate } from "@/lib/utils/locale";
+import { ContentActionsMenu } from "@/components/moderation/ContentActionsMenu";
 
 type ReviewReplyNode = Omit<ReviewReplyWithAuthor, "children">;
 
@@ -196,6 +197,16 @@ export function ReviewCard({
             >
               Delete
             </Button>
+          </span>
+        ) : reviewId && viewerId && !isOwnReview ? (
+          <span className="ml-auto">
+            <ContentActionsMenu
+              contentType="review"
+              contentId={reviewId}
+              reportedUserId={review.user_id}
+              reportedUserName={displayName}
+              onBlocked={onReviewChange}
+            />
           </span>
         ) : null}
       </div>

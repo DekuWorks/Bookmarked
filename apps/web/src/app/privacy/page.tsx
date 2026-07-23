@@ -36,12 +36,22 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-lg font-semibold text-puce-red">Your choices</h2>
             <p className="mt-2">
-              You can update or delete account content from your profile and library. To delete your
-              account, contact{" "}
-              <a href={`mailto:${CONTACT_EMAIL}`} className="text-puce-red underline hover:no-underline">
-                {CONTACT_EMAIL}
-              </a>
-              .
+              You can update or delete account content from your profile and library. You can
+              permanently delete your account at any time from Account settings in the app or
+              website. Deletion removes your profile, library, reviews, posts, messages, and other
+              personal data.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-puce-red">Safety and moderation</h2>
+            <p className="mt-2">
+              You can report objectionable content and block abusive users in the app. Reports are
+              reviewed by our team within 24 hours. See our{" "}
+              <Link href="/terms#community" className="text-puce-red underline hover:no-underline">
+                Community Guidelines
+              </Link>{" "}
+              for details.
             </p>
           </section>
 

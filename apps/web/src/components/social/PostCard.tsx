@@ -21,6 +21,7 @@ import { PostEditPanel } from "@/components/social/PostEditPanel";
 import { QuoteRepostModal } from "@/components/social/QuoteRepostModal";
 import { RepostPreview } from "@/components/social/RepostPreview";
 import { MentionText } from "@/components/social/MentionText";
+import { ContentActionsMenu } from "@/components/moderation/ContentActionsMenu";
 import { usePreferredLocale } from "@/lib/hooks/usePreferredLocale";
 import { isGiphyImageUrl } from "@/lib/utils/giphy";
 import { formatFeedTimestamp } from "@/lib/utils/locale";
@@ -209,7 +210,17 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
                   Delete
                 </Button>
               </span>
-            ) : null}
+            ) : (
+              <span className="ml-auto">
+                <ContentActionsMenu
+                  contentType="post"
+                  contentId={localPost.id}
+                  reportedUserId={localPost.user_id}
+                  reportedUserName={authorLabel(localPost.author)}
+                  onBlocked={onPostChange}
+                />
+              </span>
+            )}
           </div>
 
           {isEditing ? (

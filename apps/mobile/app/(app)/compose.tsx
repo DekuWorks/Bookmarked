@@ -20,6 +20,7 @@ import { createPost, getPostById, repostPost } from "../../src/services/posts";
 import { deleteDraft, listDrafts, saveDraft } from "../../src/services/postDrafts";
 import { searchProfiles, type ProfileSearchResult } from "../../src/services/profile";
 import { pickImageFromLibrary, uploadPostImage } from "../../src/services/storage";
+import { containsProfanity } from "../../src/utils/profanity";
 import { activeMentionQuery } from "../../src/utils/mentions";
 import { useAuthStore } from "../../src/store/authStore";
 import { useQueryClient } from "@tanstack/react-query";
@@ -112,6 +113,13 @@ export default function ComposeRoute() {
 
   async function share() {
     if (!canSubmit) return;
+    if (containsProfanity(body)) {
+      Alert.alert(
+        "Language not allowed",
+        "Please remove profanity before posting. Bookmarked does not allow abusive language."
+      );
+      return;
+    }
     setSaving(true);
     const result = isQuote
       ? await repostPost(String(repostOf), { body, imageUrl })

@@ -6,6 +6,7 @@ import {
   type ActivityVisibility,
 } from "@/lib/services/activity";
 import { getFollowingIds } from "@/lib/services/follows";
+import { getBlockedUserIds } from "@/lib/services/moderation";
 
 export type FeedItem = {
   id: string;
@@ -279,8 +280,11 @@ export async function fetchFollowingFeed(
 
   const activityRows = (data ?? []) as ActivityRow[];
   const followingSet = new Set(followingIds);
+  const blockedIds = new Set(await getBlockedUserIds());
   const withProfiles = await attachProfilesToActivity(activityRows);
-  const visible = filterVisibleRows(withProfiles, viewerId, followingSet);
+  const visible = filterVisibleRows(withProfiles, viewerId, followingSet).filter(
+    (row) => !blockedIds.has(row.user_id)
+  );
   const selected = visible.slice(0, limit);
   const selectedActivity = selected
     .map((row) => activityRows.find((activity) => activity.id === row.id))
@@ -312,7 +316,9 @@ export async function fetchForYouFeed(
 
   const activityRows = (data ?? []) as ActivityRow[];
   const withProfiles = await attachProfilesToActivity(activityRows);
+  const blockedIds = new Set(await getBlockedUserIds());
   const visible = filterVisibleRows(withProfiles, viewerId, followingSet)
+    .filter((row) => !blockedIds.has(row.user_id))
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
     .slice(0, limit);
   const selectedActivity = visible
