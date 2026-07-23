@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { colorScheme } from "nativewind";
 import { Appearance, type ColorSchemeName } from "react-native";
 import { create } from "zustand";
 
@@ -49,10 +50,12 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
     const stored = await AsyncStorage.getItem(STORAGE_KEY);
     const preference =
       stored === "light" || stored === "dark" || stored === "system" ? stored : "system";
+    colorScheme.set(preference);
     set({ preference, resolved: resolveTheme(preference), hydrated: true });
   },
   setPreference: async (preference) => {
     await AsyncStorage.setItem(STORAGE_KEY, preference);
+    colorScheme.set(preference);
     set({ preference, resolved: resolveTheme(preference) });
   },
   syncSystem: (scheme) => {

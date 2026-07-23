@@ -15,7 +15,6 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "../src/lib/queryClient";
 import { useAuthBootstrap } from "../src/hooks/useAuth";
-import { ThemeShell } from "../src/components/ThemeShell";
 import { useThemeStore } from "../src/store/themeStore";
 
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -65,13 +64,11 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeShell>
-        <SafeAreaProvider>
-          <QueryClientProvider client={queryClient}>
-            <RootLayoutNav />
-          </QueryClientProvider>
-        </SafeAreaProvider>
-      </ThemeShell>
+      <SafeAreaProvider>
+        <QueryClientProvider client={queryClient}>
+          <RootLayoutNav />
+        </QueryClientProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
