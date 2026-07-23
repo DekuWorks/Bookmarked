@@ -10,14 +10,28 @@ import {
   uploadMessageAttachment,
   validateMessageAttachmentFile,
 } from "@/lib/services/messages";
+import { MessageReplyPreview } from "@/components/messages/MessageReplyPreview";
+import type { MessageWithSender } from "@/types";
 
 type Props = {
   conversationId: string;
-  onSend: (body: string, attachmentUrl?: string | null) => Promise<{ error?: string }>;
+  onSend: (
+    body: string,
+    attachmentUrl?: string | null,
+    replyToId?: string | null
+  ) => Promise<{ error?: string }>;
   disabled?: boolean;
+  replyTo?: MessageWithSender | null;
+  onCancelReply?: () => void;
 };
 
-export function MessageComposer({ conversationId, onSend, disabled }: Props) {
+export function MessageComposer({
+  conversationId,
+  onSend,
+  disabled,
+  replyTo,
+  onCancelReply,
+}: Props) {
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +54,7 @@ export function MessageComposer({ conversationId, onSend, disabled }: Props) {
       return;
     }
 
-    const result = await onSend(trimmed, attachmentResult.url);
+    const result = await onSend(trimmed, attachmentResult.url, replyTo?.id ?? null);
     setSending(false);
 
     if (result.error) {
@@ -50,6 +64,7 @@ export function MessageComposer({ conversationId, onSend, disabled }: Props) {
 
     setBody("");
     attachment.clearAttachment();
+    onCancelReply?.();
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -65,6 +80,21 @@ export function MessageComposer({ conversationId, onSend, disabled }: Props) {
   return (
     <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] border-t border-border bg-surface px-4 py-3 md:bottom-0">
       <div className="mx-auto flex max-w-3xl flex-col gap-2">
+        {replyTo ? (
+          <MessageReplyPreview
+            reply={{
+              id: replyTo.id,
+              sender_id: replyTo.sender_id,
+              body: replyTo.body,
+              attachment_url: replyTo.attachment_url,
+              deleted_at: replyTo.deleted_at,
+              sender: replyTo.sender,
+            }}
+            isOwn={false}
+            onClear={onCancelReply}
+          />
+        ) : null}
+
         {attachment.imagePreview ? (
           <div className="relative inline-block w-fit">
             {/* eslint-disable-next-line @next/next/no-img-element */}

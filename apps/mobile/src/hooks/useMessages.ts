@@ -7,6 +7,7 @@ import {
   getUnreadMessageCount,
   markConversationRead,
   sendMessage,
+  toggleMessageReaction,
 } from "../services/messages";
 import { useAuthStore } from "../store/authStore";
 
@@ -39,9 +40,10 @@ export function useConversation(conversationId: string) {
 }
 
 export function useThreadMessages(conversationId: string) {
+  const userId = useAuthStore((s) => s.user?.id);
   return useQuery({
-    queryKey: ["messages", conversationId],
-    queryFn: () => getMessages(conversationId),
+    queryKey: ["messages", conversationId, userId],
+    queryFn: () => getMessages(conversationId, userId ?? null),
     enabled: Boolean(conversationId),
     refetchInterval: 15_000,
   });
@@ -51,13 +53,32 @@ export function useSendMessage(conversationId: string) {
   const userId = useAuthStore((s) => s.user?.id);
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ body, attachmentUrl }: { body: string; attachmentUrl?: string | null }) =>
-      sendMessage(conversationId, body, attachmentUrl),
+    mutationFn: ({
+      body,
+      attachmentUrl,
+      replyToId,
+    }: {
+      body: string;
+      attachmentUrl?: string | null;
+      replyToId?: string | null;
+    }) => sendMessage(conversationId, body, attachmentUrl, replyToId),
     onSuccess: (result) => {
       if (result.error) return;
       queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
       queryClient.invalidateQueries({ queryKey: ["conversations", userId] });
       queryClient.invalidateQueries({ queryKey: ["messages", "unread", userId] });
+    },
+  });
+}
+
+export function useToggleMessageReaction(conversationId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ messageId, emoji }: { messageId: string; emoji: string }) =>
+      toggleMessageReaction(messageId, emoji),
+    onSuccess: (result) => {
+      if (result.error) return;
+      queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
     },
   });
 }

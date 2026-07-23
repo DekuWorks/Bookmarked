@@ -124,10 +124,35 @@ export interface Message {
   sender_id: string;
   body: string;
   attachment_url: string | null;
+  reply_to_id: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
 }
+
+export interface MessageReaction {
+  id: string;
+  message_id: string;
+  user_id: string;
+  emoji: string;
+  created_at: string;
+}
+
+export type MessageReactionSummary = {
+  emoji: string;
+  count: number;
+  user_ids: string[];
+  viewer_reacted: boolean;
+};
+
+export type MessageReplyPreview = {
+  id: string;
+  sender_id: string;
+  body: string;
+  attachment_url: string | null;
+  deleted_at: string | null;
+  sender: MessageProfile;
+};
 
 export type ConversationParticipantWithProfile = ConversationParticipant & {
   profile: MessageProfile;
@@ -140,6 +165,8 @@ export type ConversationWithParticipants = Conversation & {
 
 export type MessageWithSender = Message & {
   sender: MessageProfile;
+  reply_to?: MessageReplyPreview | null;
+  reactions?: MessageReactionSummary[];
 };
 
 export type ConversationPreview = Conversation & {

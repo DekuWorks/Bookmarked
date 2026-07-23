@@ -8,6 +8,8 @@ import type {
   ConversationWithParticipants,
   Message,
   MessageProfile,
+  MessageReactionSummary,
+  MessageReplyPreview,
   MessageWithSender,
 } from "../types";
 
@@ -21,6 +23,119 @@ import type {
 
 const PROFILE_SELECT = "id, username, display_name, avatar_url";
 const MESSAGE_ATTACHMENT_SIGNED_URL_TTL_SEC = 3600;
+
+const MESSAGE_SELECT = `
+  *,
+  profiles!messages_sender_id_profiles_fkey (${PROFILE_SELECT}),
+  reply_to:messages!messages_reply_to_id_fkey (
+    id,
+    sender_id,
+    body,
+    attachment_url,
+    deleted_at,
+    profiles!messages_sender_id_profiles_fkey (${PROFILE_SELECT})
+  )
+`;
+
+function mapReplyPreview(
+  row: {
+    id: string;
+    sender_id: string;
+    body: string;
+    attachment_url: string | null;
+    deleted_at: string | null;
+    profiles: MessageProfile | null;
+  } | null
+): MessageReplyPreview | null {
+  if (!row) return null;
+
+  return {
+    id: row.id,
+    sender_id: row.sender_id,
+    body: row.body,
+    attachment_url: row.attachment_url ?? null,
+    deleted_at: row.deleted_at,
+    sender: row.profiles ?? {
+      id: row.sender_id,
+      username: null,
+      display_name: null,
+      avatar_url: null,
+    },
+  };
+}
+
+type MessageRow = Message & {
+  profiles: MessageProfile | null;
+  reply_to: Parameters<typeof mapReplyPreview>[0];
+};
+
+function mapMessageRow(row: MessageRow): MessageWithSender {
+  return {
+    id: row.id,
+    conversation_id: row.conversation_id,
+    sender_id: row.sender_id,
+    body: row.body,
+    attachment_url: row.attachment_url ?? null,
+    reply_to_id: row.reply_to_id ?? null,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    deleted_at: row.deleted_at,
+    sender: row.profiles ?? {
+      id: row.sender_id,
+      username: null,
+      display_name: null,
+      avatar_url: null,
+    },
+    reply_to: mapReplyPreview(row.reply_to),
+    reactions: [],
+  };
+}
+
+async function fetchReactionSummaries(
+  messageIds: string[],
+  viewerId: string | null
+): Promise<Map<string, MessageReactionSummary[]>> {
+  const map = new Map<string, MessageReactionSummary[]>();
+  if (!messageIds.length) return map;
+
+  const { data, error } = await supabase
+    .from("message_reactions")
+    .select("message_id, user_id, emoji")
+    .in("message_id", messageIds);
+
+  if (error) throw error;
+
+  const grouped = new Map<string, Map<string, { user_ids: string[] }>>();
+
+  for (const row of data ?? []) {
+    const byEmoji = grouped.get(row.message_id) ?? new Map();
+    const entry = byEmoji.get(row.emoji) ?? { user_ids: [] };
+    entry.user_ids.push(row.user_id);
+    byEmoji.set(row.emoji, entry);
+    grouped.set(row.message_id, byEmoji);
+  }
+
+  for (const messageId of messageIds) {
+    const byEmoji = grouped.get(messageId);
+    if (!byEmoji) {
+      map.set(messageId, []);
+      continue;
+    }
+
+    const summaries = [...byEmoji.entries()]
+      .map(([emoji, entry]) => ({
+        emoji,
+        count: entry.user_ids.length,
+        user_ids: entry.user_ids,
+        viewer_reacted: viewerId ? entry.user_ids.includes(viewerId) : false,
+      }))
+      .sort((a, b) => b.count - a.count || a.emoji.localeCompare(b.emoji));
+
+    map.set(messageId, summaries);
+  }
+
+  return map;
+}
 
 async function signMessageAttachmentUrl(value: string | null): Promise<string | null> {
   if (!value) return null;
@@ -252,31 +367,28 @@ export async function getConversation(
   };
 }
 
-export async function getMessages(conversationId: string): Promise<MessageWithSender[]> {
+export async function getMessages(
+  conversationId: string,
+  viewerId?: string | null
+): Promise<MessageWithSender[]> {
   const { data, error } = await supabase
     .from("messages")
-    .select(`*, profiles!messages_sender_id_profiles_fkey (${PROFILE_SELECT})`)
+    .select(MESSAGE_SELECT)
     .eq("conversation_id", conversationId)
     .order("created_at", { ascending: true });
 
   if (error) throw error;
 
+  const mapped = ((data ?? []) as MessageRow[]).map(mapMessageRow);
+  const reactionsByMessage = await fetchReactionSummaries(
+    mapped.map((message) => message.id),
+    viewerId ?? null
+  );
+
   return signMessageAttachmentFields(
-    ((data ?? []) as Array<Message & { profiles: MessageProfile | null }>).map((row) => ({
-      id: row.id,
-      conversation_id: row.conversation_id,
-      sender_id: row.sender_id,
-      body: row.body,
-      attachment_url: row.attachment_url ?? null,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
-      deleted_at: row.deleted_at,
-      sender: row.profiles ?? {
-        id: row.sender_id,
-        username: null,
-        display_name: null,
-        avatar_url: null,
-      },
+    mapped.map((message) => ({
+      ...message,
+      reactions: reactionsByMessage.get(message.id) ?? [],
     }))
   );
 }
@@ -284,10 +396,12 @@ export async function getMessages(conversationId: string): Promise<MessageWithSe
 export async function sendMessage(
   conversationId: string,
   body: string,
-  attachmentUrl?: string | null
+  attachmentUrl?: string | null,
+  replyToId?: string | null
 ): Promise<{ message?: Message; error?: string }> {
   const trimmed = body.trim();
   const attachment = attachmentUrl?.trim() || null;
+  const replyTo = replyToId?.trim() || null;
   if (!trimmed && !attachment) return { error: "Message cannot be empty." };
 
   try {
@@ -302,6 +416,17 @@ export async function sendMessage(
 
     if (!membership) return { error: "You are not part of this conversation." };
 
+    if (replyTo) {
+      const { data: parent } = await supabase
+        .from("messages")
+        .select("id")
+        .eq("id", replyTo)
+        .eq("conversation_id", conversationId)
+        .maybeSingle();
+
+      if (!parent) return { error: "Reply target not found in this conversation." };
+    }
+
     const { data: message, error: messageError } = await supabase
       .from("messages")
       .insert({
@@ -309,6 +434,7 @@ export async function sendMessage(
         sender_id: user.id,
         body: trimmed,
         attachment_url: attachment,
+        reply_to_id: replyTo,
       })
       .select("*")
       .single();
@@ -330,6 +456,58 @@ export async function sendMessage(
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Could not send message." };
   }
+}
+
+export async function toggleMessageReaction(
+  messageId: string,
+  emoji: string
+): Promise<{ error?: string }> {
+  const trimmedEmoji = emoji.trim();
+  if (!trimmedEmoji) return { error: "Reaction is required." };
+
+  try {
+    const user = await requireUser();
+
+    const { data: existing } = await supabase
+      .from("message_reactions")
+      .select("id")
+      .eq("message_id", messageId)
+      .eq("user_id", user.id)
+      .eq("emoji", trimmedEmoji)
+      .maybeSingle();
+
+    if (existing) {
+      const { error } = await supabase
+        .from("message_reactions")
+        .delete()
+        .eq("id", existing.id);
+
+      if (error) return { error: error.message };
+      return {};
+    }
+
+    const { error } = await supabase.from("message_reactions").insert({
+      message_id: messageId,
+      user_id: user.id,
+      emoji: trimmedEmoji,
+    });
+
+    if (error) return { error: error.message };
+    return {};
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not update reaction.",
+    };
+  }
+}
+
+export function messageReplySnippet(
+  message: Pick<MessageReplyPreview, "body" | "attachment_url" | "deleted_at">
+): string {
+  if (message.deleted_at) return "Message deleted";
+  if (message.body.trim()) return message.body.trim();
+  if (message.attachment_url) return "Photo";
+  return "Message";
 }
 
 export async function markConversationRead(conversationId: string): Promise<void> {

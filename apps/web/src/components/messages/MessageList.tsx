@@ -1,25 +1,40 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { MessageBubble } from "@/components/messages/MessageBubble";
-import type { MessageWithSender } from "@/types";
+import { profileDisplayName } from "@/lib/utils/messaging";
+import type { ConversationParticipantWithProfile, MessageWithSender } from "@/types";
 
 type Props = {
   messages: MessageWithSender[];
   currentUserId: string;
   isGroup: boolean;
+  participants?: ConversationParticipantWithProfile[];
   onDeleteMessage?: (messageId: string) => void;
   onEditMessage?: (messageId: string, body: string) => Promise<{ error?: string }>;
+  onReplyToMessage?: (message: MessageWithSender) => void;
+  onToggleReaction?: (messageId: string, emoji: string) => void;
 };
 
 export function MessageList({
   messages,
   currentUserId,
   isGroup,
+  participants = [],
   onDeleteMessage,
   onEditMessage,
+  onReplyToMessage,
+  onToggleReaction,
 }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  const participantNames = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const participant of participants) {
+      map.set(participant.user_id, profileDisplayName(participant.profile));
+    }
+    return map;
+  }, [participants]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -41,8 +56,11 @@ export function MessageList({
           message={message}
           isOwn={message.sender_id === currentUserId}
           showSenderName={isGroup}
+          participantNames={participantNames}
           onDelete={onDeleteMessage}
           onEdit={onEditMessage}
+          onReply={onReplyToMessage}
+          onToggleReaction={onToggleReaction}
         />
       ))}
       <div ref={bottomRef} />

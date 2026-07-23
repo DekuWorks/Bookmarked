@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Input";
+import { MessageReactionBar, MessageReactionPicker } from "@/components/messages/MessageReactionBar";
+import { MessageReplyPreview } from "@/components/messages/MessageReplyPreview";
 import { formatMessageTimestamp } from "@/lib/services/messages";
 import { usePreferredLocale } from "@/lib/hooks/usePreferredLocale";
 import { profileDisplayName } from "@/lib/utils/messaging";
@@ -13,17 +15,30 @@ type Props = {
   message: MessageWithSender;
   isOwn: boolean;
   showSenderName: boolean;
+  participantNames: Map<string, string>;
   onDelete?: (messageId: string) => void;
   onEdit?: (messageId: string, body: string) => Promise<{ error?: string }>;
+  onReply?: (message: MessageWithSender) => void;
+  onToggleReaction?: (messageId: string, emoji: string) => void;
 };
 
-export function MessageBubble({ message, isOwn, showSenderName, onDelete, onEdit }: Props) {
+export function MessageBubble({
+  message,
+  isOwn,
+  showSenderName,
+  participantNames,
+  onDelete,
+  onEdit,
+  onReply,
+  onToggleReaction,
+}: Props) {
   const locale = usePreferredLocale();
   const deleted = Boolean(message.deleted_at);
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(message.body);
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
   const edited =
     !deleted &&
     message.updated_at &&
@@ -56,6 +71,8 @@ export function MessageBubble({ message, isOwn, showSenderName, onDelete, onEdit
     setEditError(null);
     setIsEditing(false);
   }
+
+  const canInteract = !deleted && !isEditing;
 
   return (
     <div className={cn("flex flex-col gap-1", isOwn ? "items-end" : "items-start")}>
@@ -107,6 +124,9 @@ export function MessageBubble({ message, isOwn, showSenderName, onDelete, onEdit
               "Message deleted"
             ) : (
               <div className="space-y-2">
+                {message.reply_to ? (
+                  <MessageReplyPreview reply={message.reply_to} isOwn={isOwn} compact />
+                ) : null}
                 {message.attachment_url ? (
                   <a
                     href={message.attachment_url}
@@ -128,9 +148,32 @@ export function MessageBubble({ message, isOwn, showSenderName, onDelete, onEdit
           </div>
         )}
 
-        {isOwn && !deleted && !isEditing && (onDelete || onEdit) ? (
-          <div className="absolute -bottom-5 right-0 flex gap-2 text-[11px] text-text-muted opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
-            {onEdit ? (
+        {canInteract && (onReply || onToggleReaction || onDelete || onEdit) ? (
+          <div
+            className={cn(
+              "absolute -bottom-5 flex gap-2 text-[11px] text-text-muted opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100",
+              isOwn ? "right-0" : "left-0"
+            )}
+          >
+            {onReply ? (
+              <button type="button" onClick={() => onReply(message)}>
+                Reply
+              </button>
+            ) : null}
+            {onToggleReaction ? (
+              <div className="relative">
+                <button type="button" onClick={() => setShowReactionPicker((open) => !open)}>
+                  React
+                </button>
+                {showReactionPicker ? (
+                  <MessageReactionPicker
+                    onSelect={(emoji) => onToggleReaction(message.id, emoji)}
+                    onClose={() => setShowReactionPicker(false)}
+                  />
+                ) : null}
+              </div>
+            ) : null}
+            {isOwn && onEdit ? (
               <button
                 type="button"
                 onClick={() => {
@@ -142,7 +185,7 @@ export function MessageBubble({ message, isOwn, showSenderName, onDelete, onEdit
                 Edit
               </button>
             ) : null}
-            {onDelete ? (
+            {isOwn && onDelete ? (
               <button type="button" onClick={() => onDelete(message.id)}>
                 Delete
               </button>
@@ -150,6 +193,15 @@ export function MessageBubble({ message, isOwn, showSenderName, onDelete, onEdit
           </div>
         ) : null}
       </div>
+
+      {canInteract && onToggleReaction && message.reactions?.length ? (
+        <MessageReactionBar
+          reactions={message.reactions}
+          participantNames={participantNames}
+          onToggleReaction={(emoji) => onToggleReaction(message.id, emoji)}
+          alignEnd={isOwn}
+        />
+      ) : null}
 
       <time dateTime={message.created_at} className="px-1 text-[11px] text-text-muted">
         {formatMessageTimestamp(message.created_at, locale)}

@@ -16,6 +16,7 @@ import {
   getMessages,
   markConversationRead,
   sendMessage,
+  toggleMessageReaction,
   updateMessage,
 } from "@/lib/services/messages";
 import { messagesInboxPath } from "@/lib/routes/messages";
@@ -30,13 +31,14 @@ function MessageThreadContent() {
   );
   const [messages, setMessages] = useState<MessageWithSender[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [replyTo, setReplyTo] = useState<MessageWithSender | null>(null);
 
   const loadThread = useCallback(async () => {
     if (!user || !conversationId) return;
 
     const [conv, msgs] = await Promise.all([
       getConversation(conversationId, user.id),
-      getMessages(conversationId),
+      getMessages(conversationId, 200, user.id),
     ]);
 
     if (!conv) {
@@ -98,6 +100,18 @@ function MessageThreadContent() {
           void loadThreadRef.current();
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "message_reactions",
+        },
+        () => {
+          if (cancelled) return;
+          void loadThreadRef.current();
+        }
+      )
       .subscribe();
 
     return () => {
@@ -106,18 +120,29 @@ function MessageThreadContent() {
     };
   }, [user?.id, conversationId]);
 
-  async function handleSend(body: string, attachmentUrl?: string | null) {
+  async function handleSend(
+    body: string,
+    attachmentUrl?: string | null,
+    replyToId?: string | null
+  ) {
     if (!conversationId) return { error: "Missing conversation." };
 
-    const result = await sendMessage(conversationId, body, attachmentUrl);
+    const result = await sendMessage(conversationId, body, attachmentUrl, replyToId);
     if (result.error) return { error: result.error };
 
+    setReplyTo(null);
     await loadThread();
     return {};
   }
 
   async function handleDeleteMessage(messageId: string) {
     const result = await deleteMessage(messageId);
+    if (result.error) return;
+    await loadThread();
+  }
+
+  async function handleToggleReaction(messageId: string, emoji: string) {
+    const result = await toggleMessageReaction(messageId, emoji);
     if (result.error) return;
     await loadThread();
   }
@@ -174,11 +199,19 @@ function MessageThreadContent() {
         messages={messages}
         currentUserId={user.id}
         isGroup={conversation.type === "group"}
+        participants={conversation.participants}
         onDeleteMessage={(messageId) => void handleDeleteMessage(messageId)}
         onEditMessage={handleEditMessage}
+        onReplyToMessage={setReplyTo}
+        onToggleReaction={(messageId, emoji) => void handleToggleReaction(messageId, emoji)}
       />
 
-      <MessageComposer conversationId={conversationId} onSend={handleSend} />
+      <MessageComposer
+        conversationId={conversationId}
+        onSend={handleSend}
+        replyTo={replyTo}
+        onCancelReply={() => setReplyTo(null)}
+      />
     </div>
   );
 }

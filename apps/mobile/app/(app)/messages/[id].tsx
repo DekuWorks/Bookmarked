@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
+  ActionSheetIOS,
   Alert,
   FlatList,
   Image,
@@ -17,15 +18,29 @@ import { Avatar } from "../../../src/components/Avatar";
 import { GifPicker } from "../../../src/components/GifPicker";
 import { LoadingState } from "../../../src/components/LoadingState";
 import { ScreenHeader } from "../../../src/components/ScreenHeader";
+import { MESSAGE_QUICK_REACTIONS } from "../../../src/constants/messageReactions";
 import {
   useConversation,
   useMarkConversationRead,
   useSendMessage,
   useThreadMessages,
+  useToggleMessageReaction,
 } from "../../../src/hooks/useMessages";
-import { conversationDisplayName } from "../../../src/services/messages";
+import {
+  conversationDisplayName,
+  messageReplySnippet,
+} from "../../../src/services/messages";
 import { pickImageFromLibrary, uploadMessageAttachment } from "../../../src/services/storage";
 import { useAuthStore } from "../../../src/store/authStore";
+import type { MessageReactionSummary, MessageWithSender } from "../../../src/types";
+
+function profileName(message: MessageWithSender): string {
+  return (
+    message.sender.display_name?.trim() ||
+    message.sender.username?.trim() ||
+    "Reader"
+  );
+}
 
 export default function ThreadScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -38,10 +53,12 @@ export default function ThreadScreen() {
   const [attachment, setAttachment] = useState<string | null>(null);
   const [gifOpen, setGifOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [replyTo, setReplyTo] = useState<MessageWithSender | null>(null);
 
   const conversation = useConversation(conversationId);
   const messages = useThreadMessages(conversationId);
   const send = useSendMessage(conversationId);
+  const toggleReaction = useToggleMessageReaction(conversationId);
   const markRead = useMarkConversationRead();
 
   useEffect(() => {
@@ -63,8 +80,6 @@ export default function ThreadScreen() {
           ?.profile.username?.trim() || null
       : null;
 
-  // Header occupies insets.top + ~58px; offset the keyboard-avoider by that so
-  // the docked compose bar rises cleanly with the keyboard on iOS.
   const headerHeight = insets.top + 58;
 
   async function attachImage() {
@@ -89,9 +104,47 @@ export default function ThreadScreen() {
     if (!body && !attachment) return;
     setDraft("");
     const pendingAttachment = attachment;
+    const pendingReplyTo = replyTo?.id ?? null;
     setAttachment(null);
-    await send.mutateAsync({ body, attachmentUrl: pendingAttachment });
+    setReplyTo(null);
+    await send.mutateAsync({
+      body,
+      attachmentUrl: pendingAttachment,
+      replyToId: pendingReplyTo,
+    });
     requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
+  }
+
+  function openMessageActions(message: MessageWithSender) {
+    const options = ["Reply", ...MESSAGE_QUICK_REACTIONS, "Cancel"];
+    const cancelButtonIndex = options.length - 1;
+
+    const onSelect = (index: number) => {
+      if (index === cancelButtonIndex) return;
+      if (index === 0) {
+        setReplyTo(message);
+        return;
+      }
+      const emoji = MESSAGE_QUICK_REACTIONS[index - 1];
+      void toggleReaction.mutateAsync({ messageId: message.id, emoji });
+    };
+
+    if (Platform.OS === "ios") {
+      ActionSheetIOS.showActionSheetWithOptions(
+        { options, cancelButtonIndex },
+        onSelect
+      );
+      return;
+    }
+
+    Alert.alert("Message", undefined, [
+      { text: "Reply", onPress: () => setReplyTo(message) },
+      ...MESSAGE_QUICK_REACTIONS.map((emoji) => ({
+        text: emoji,
+        onPress: () => void toggleReaction.mutateAsync({ messageId: message.id, emoji }),
+      })),
+      { text: "Cancel", style: "cancel" as const },
+    ]);
   }
 
   const canSend = (draft.trim().length > 0 || Boolean(attachment)) && !uploading && !send.isPending;
@@ -128,20 +181,71 @@ export default function ThreadScreen() {
             renderItem={({ item }) => {
               const mine = item.sender_id === userId;
               return (
-                <View
-                  className={`max-w-[80%] rounded-2xl px-3 py-2 ${
-                    mine ? "self-end bg-puce-red" : "self-start bg-primary/20"
-                  }`}
+                <Pressable
+                  onLongPress={() => openMessageActions(item)}
+                  className={`max-w-[80%] ${mine ? "self-end" : "self-start"}`}
                 >
-                  {item.attachment_url ? (
-                    <View className="mb-1 w-52">
-                      <AttachmentImage url={item.attachment_url} compact />
+                  {item.reply_to ? (
+                    <View
+                      className={`mb-1 rounded-xl border-l-2 px-2 py-1 ${
+                        mine ? "border-white/70 bg-white/10" : "border-puce-red/60 bg-primary/10"
+                      }`}
+                    >
+                      <Text
+                        className={`text-[11px] font-semibold ${mine ? "text-white" : "text-ink"}`}
+                      >
+                        {profileName({
+                          ...item,
+                          sender: item.reply_to.sender,
+                        })}
+                      </Text>
+                      <Text
+                        className={`text-[11px] ${mine ? "text-white/80" : "text-ink/70"}`}
+                        numberOfLines={1}
+                      >
+                        {messageReplySnippet(item.reply_to)}
+                      </Text>
                     </View>
                   ) : null}
-                  {item.body ? (
-                    <Text className={mine ? "text-white" : "text-ink"}>{item.body}</Text>
+                  <View
+                    className={`rounded-2xl px-3 py-2 ${
+                      mine ? "bg-puce-red" : "bg-primary/20"
+                    }`}
+                  >
+                    {item.attachment_url ? (
+                      <View className="mb-1 w-52">
+                        <AttachmentImage url={item.attachment_url} compact />
+                      </View>
+                    ) : null}
+                    {item.body ? (
+                      <Text className={mine ? "text-white" : "text-ink"}>{item.body}</Text>
+                    ) : null}
+                  </View>
+                  {item.reactions?.length ? (
+                    <View className={`mt-1 flex-row flex-wrap gap-1 ${mine ? "justify-end" : ""}`}>
+                      {item.reactions.map((reaction: MessageReactionSummary) => (
+                        <Pressable
+                          key={reaction.emoji}
+                          onPress={() =>
+                            void toggleReaction.mutateAsync({
+                              messageId: item.id,
+                              emoji: reaction.emoji,
+                            })
+                          }
+                          className={`rounded-full border px-2 py-0.5 ${
+                            reaction.viewer_reacted
+                              ? "border-puce-red/40 bg-puce-red/10"
+                              : "border-brand-border bg-surface"
+                          }`}
+                        >
+                          <Text className="text-xs">
+                            {reaction.emoji} {reaction.count}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
                   ) : null}
-                </View>
+                </Pressable>
               );
             }}
           />
@@ -150,6 +254,23 @@ export default function ThreadScreen() {
             className="border-t border-brand-border bg-surface px-3 pt-2"
             style={{ paddingBottom: insets.bottom + 8 }}
           >
+            {replyTo ? (
+              <View className="mb-2 rounded-xl border border-brand-border bg-background px-3 py-2">
+                <View className="flex-row items-start justify-between gap-2">
+                  <View className="min-w-0 flex-1">
+                    <Text className="text-xs font-semibold text-ink">
+                      Replying to {profileName(replyTo)}
+                    </Text>
+                    <Text className="text-xs text-ink/70" numberOfLines={1}>
+                      {messageReplySnippet(replyTo)}
+                    </Text>
+                  </View>
+                  <Pressable onPress={() => setReplyTo(null)}>
+                    <Text className="text-xs text-rust">Cancel</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : null}
             {attachment ? (
               <View className="mb-2 flex-row items-center gap-2">
                 <Image

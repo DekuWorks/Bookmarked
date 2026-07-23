@@ -37,6 +37,8 @@ export type {
   ConversationParticipantWithProfile,
   Message,
   MessageWithSender,
+  MessageReactionSummary,
+  MessageReplyPreview,
   Notification,
   NotificationType,
   NotificationWithActor,
