@@ -41,6 +41,7 @@ export default function AppTabsLayout() {
 
         {/* Secondary destinations — reached from Home links, Feed, Search, or the bell */}
         <Tabs.Screen name="library" options={{ href: null }} />
+        <Tabs.Screen name="reading-room" options={{ href: null }} />
         <Tabs.Screen name="compose" options={{ href: null }} />
         <Tabs.Screen name="clubs" options={{ href: null }} />
         <Tabs.Screen name="notes" options={{ href: null }} />

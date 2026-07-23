@@ -74,7 +74,7 @@ export default function ProfileRoute() {
         {!isPremium ? (
           <ProfileLink icon="✨" label="Upgrade to Premium" onPress={() => router.push("/upgrade")} />
         ) : null}
-        <ProfileLink icon="📚" label="My Books" onPress={() => router.push("/library")} />
+        <ProfileLink icon="📚" label="Library" onPress={() => router.push("/library")} />
         <ProfileLink icon="📝" label="Reading Notes" onPress={() => router.push("/notes")} />
         <ProfileLink icon="♣️" label="Book Clubs" onPress={() => router.push("/clubs")} />
       </View>

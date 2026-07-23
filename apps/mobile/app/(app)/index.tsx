@@ -111,8 +111,8 @@ export default function HomeReadingRoom() {
         </View>
 
         <SectionCard title="Currently reading" emoji="📖" action={
-          <Pressable onPress={() => router.push("/library")}>
-            <Text className="text-sm font-semibold text-primary-dark">My Books ›</Text>
+          <Pressable onPress={() => router.push("/library/reading")}>
+            <Text className="text-sm font-semibold text-primary-dark">View shelf ›</Text>
           </Pressable>
         }>
           {currentlyReading.length === 0 ? (
@@ -146,7 +146,7 @@ export default function HomeReadingRoom() {
         <ReadingInsightsSection />
 
         <View className="flex-row gap-3">
-          <QuickLink icon="📚" label="My Books" onPress={() => router.push("/library")} />
+          <QuickLink icon="📚" label="Library" onPress={() => router.push("/library")} />
           <QuickLink icon="📝" label="Notes" onPress={() => router.push("/notes")} />
           <QuickLink icon="🔍" label="Add book" onPress={() => router.push("/search")} />
         </View>

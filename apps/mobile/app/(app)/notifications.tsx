@@ -45,6 +45,23 @@ function mapLinkToRoute(linkUrl: string | null): string | null {
       return `/reader/${encodeURIComponent(decodeURIComponent(followListMatch[1]))}/${followListMatch[2]}`;
     }
 
+    // Own library: /library(/:shelf) or /library/custom?slug=
+    if (path === "/library" || path.startsWith("/library/")) {
+      const customSlug = params.get("slug");
+      if (path.endsWith("/custom") && customSlug) {
+        return `/library/custom?slug=${encodeURIComponent(customSlug)}`;
+      }
+      const shelfMatch = path.match(/^\/library\/([^/]+)$/);
+      if (shelfMatch && shelfMatch[1] !== "my-books") {
+        return `/library/${encodeURIComponent(decodeURIComponent(shelfMatch[1]))}`;
+      }
+      return "/library";
+    }
+
+    if (path === "/reading-room" || path.startsWith("/reading-room/")) {
+      return "/reading-room";
+    }
+
     // Mobile library: /reader/:username/library(/:shelf)
     const libraryMatch = path.match(/\/reader\/([^/]+)\/library(?:\/([^/]+))?$/);
     if (libraryMatch) {

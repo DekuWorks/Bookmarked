@@ -69,6 +69,39 @@ async function uniqueSlugForUser(userId: string, baseSlug: string): Promise<stri
   }
 }
 
+export async function getCustomShelfBySlug(
+  userId: string,
+  slug: string
+): Promise<CustomShelfGroup | null> {
+  const { data: shelf, error } = await supabase
+    .from("user_shelves")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!shelf) return null;
+
+  const { data: items, error: itemsError } = await supabase
+    .from("user_shelf_books")
+    .select(BOOK_SELECT)
+    .eq("shelf_id", shelf.id)
+    .order("created_at", { ascending: false });
+
+  if (itemsError) throw itemsError;
+
+  const typedShelf = shelf as UserShelf;
+  return {
+    id: typedShelf.id,
+    name: typedShelf.name,
+    slug: typedShelf.slug,
+    genre: typedShelf.genre,
+    visibility: typedShelf.visibility,
+    items: (items ?? []) as unknown as CustomShelfBookItem[],
+  };
+}
+
 export async function getCustomShelfGroupsWithBooks(
   userId: string
 ): Promise<CustomShelfGroup[]> {

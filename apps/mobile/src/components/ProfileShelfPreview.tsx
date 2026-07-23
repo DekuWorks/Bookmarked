@@ -78,7 +78,7 @@ export function ProfileShelfPreview({
           className="self-center rounded-full border border-brand-border bg-surface px-5 py-2 active:opacity-80"
         >
           <Text className="text-sm font-semibold text-puce-red">
-            {isOwnProfile ? "Open Reading Room" : "View full library"}
+            {isOwnProfile ? "Open library" : "View full library"}
           </Text>
         </Pressable>
       ) : null}

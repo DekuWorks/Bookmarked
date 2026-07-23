@@ -3,13 +3,14 @@ import { useRouter } from "expo-router";
 import { Modal, Pressable, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BookCover } from "../../src/components/BookCover";
-import { EmptyState } from "../../src/components/EmptyState";
-import { LoadingState } from "../../src/components/LoadingState";
-import { ScreenGradientWash } from "../../src/components/ScreenGradientWash";
-import { useLibraryBooks } from "../../src/hooks/useLibrary";
-import { TAB_BAR_SPACE, useTabBarScroll } from "../../src/navigation/TabBarScroll";
-import type { LibraryBookRow } from "../../src/services/library";
+import { BookCover } from "../../../src/components/BookCover";
+import { EmptyState } from "../../../src/components/EmptyState";
+import { LoadingState } from "../../../src/components/LoadingState";
+import { ScreenGradientWash } from "../../../src/components/ScreenGradientWash";
+import { ScreenHeader } from "../../../src/components/ScreenHeader";
+import { useLibraryBooks } from "../../../src/hooks/useLibrary";
+import { TAB_BAR_SPACE, useTabBarScroll } from "../../../src/navigation/TabBarScroll";
+import type { LibraryBookRow } from "../../../src/services/library";
 
 type ShelfTab = "read" | "tbr" | "dnf" | "all";
 
@@ -40,7 +41,6 @@ const SORT_OPTIONS: { id: SortKey; label: string }[] = [
 ];
 
 function isDnf(row: LibraryBookRow): boolean {
-  // Real DNF column (migration 20260713170538); fall back to any legacy tag.
   return row.dnf || (row.completion_tags ?? []).some((t) => t.toLowerCase() === "dnf");
 }
 
@@ -75,8 +75,6 @@ function sortBooks(rows: LibraryBookRow[], sort: SortKey): LibraryBookRow[] {
     case "genre":
       return copy.sort((a, b) => genre(a).localeCompare(genre(b), undefined, { sensitivity: "base" }));
     case "date_to_read":
-      // Real "Date to Read" column (expected_read_date, migration 20260713170538),
-      // soonest first; rows without a target date sort to the end.
       return copy.sort((a, b) => {
         const av = a.expected_read_date
           ? new Date(a.expected_read_date).getTime()
@@ -168,10 +166,9 @@ export default function MyBooksScreen() {
   return (
     <View className="flex-1 bg-background">
       <ScreenGradientWash />
-      {/* Header */}
-      <View style={{ paddingTop: insets.top + 8 }} className="bg-background px-4 pb-2">
+      <ScreenHeader title="All Books" />
+      <View className="px-4 pb-2">
         <View className="flex-row items-center">
-          <Text className="flex-1 text-3xl font-black text-puce-red">My Books</Text>
           <Pressable
             onPress={() => router.push("/search")}
             accessibilityLabel="Search books"
@@ -182,13 +179,12 @@ export default function MyBooksScreen() {
           <Pressable
             onPress={() => router.push("/search")}
             accessibilityLabel="Add a book"
-            className="ml-1 h-10 w-10 items-center justify-center rounded-full bg-puce-red active:opacity-80"
+            className="ml-auto h-10 w-10 items-center justify-center rounded-full bg-puce-red active:opacity-80"
           >
             <Text className="text-2xl font-light leading-6 text-white">+</Text>
           </Pressable>
         </View>
 
-        {/* Shelf tabs */}
         <View className="mt-3 flex-row">
           {SHELF_TABS.map((t) => {
             const active = t.id === tab;
@@ -204,7 +200,6 @@ export default function MyBooksScreen() {
         </View>
       </View>
 
-      {/* Sort + view toggle */}
       <View className="flex-row items-center justify-between px-4 py-3">
         <View className="flex-row items-center">
           <Text className="mr-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">
@@ -253,7 +248,6 @@ export default function MyBooksScreen() {
         />
       )}
 
-      {/* Sort dropdown */}
       <Modal transparent visible={sortOpen} animationType="fade" onRequestClose={() => setSortOpen(false)}>
         <Pressable className="flex-1 bg-black/20" onPress={() => setSortOpen(false)}>
           <View style={{ marginTop: insets.top + 150 }} className="mx-6 rounded-2xl bg-surface p-2 shadow-lg">
