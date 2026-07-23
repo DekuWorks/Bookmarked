@@ -54,6 +54,10 @@ export function MessageComposer({
       return;
     }
 
+    // Clear local preview before send so the image doesn't appear in both
+    // the composer and the thread while the message is in flight.
+    attachment.clearAttachment();
+
     const result = await onSend(trimmed, attachmentResult.url, replyTo?.id ?? null);
     setSending(false);
 
@@ -63,7 +67,6 @@ export function MessageComposer({
     }
 
     setBody("");
-    attachment.clearAttachment();
     onCancelReply?.();
   }
 
@@ -95,7 +98,7 @@ export function MessageComposer({
           />
         ) : null}
 
-        {attachment.imagePreview ? (
+        {attachment.imagePreview && !sending ? (
           <div className="relative inline-block w-fit">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -114,7 +117,7 @@ export function MessageComposer({
           </div>
         ) : null}
 
-        {attachment.gifUrl && !attachment.imagePreview ? (
+        {attachment.gifUrl && !attachment.imagePreview && !sending ? (
           <div className="relative inline-block w-fit max-w-full">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img

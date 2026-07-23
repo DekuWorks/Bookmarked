@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { MESSAGE_QUICK_REACTIONS } from "@/lib/constants/messageReactions";
 import type { MessageReactionSummary } from "@/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -57,32 +56,6 @@ export function MessageReactionBar({
           </div>
         );
       })}
-    </div>
-  );
-}
-
-type PickerProps = {
-  onSelect: (emoji: string) => void;
-  onClose: () => void;
-};
-
-export function MessageReactionPicker({ onSelect, onClose }: PickerProps) {
-  return (
-    <div className="absolute bottom-full right-0 z-20 mb-2 flex gap-1 rounded-full border border-border bg-surface px-2 py-1 shadow-lg">
-      {MESSAGE_QUICK_REACTIONS.map((emoji) => (
-        <button
-          key={emoji}
-          type="button"
-          className="rounded-full px-1.5 py-0.5 text-lg hover:bg-background"
-          onClick={() => {
-            onSelect(emoji);
-            onClose();
-          }}
-          aria-label={`React with ${emoji}`}
-        >
-          {emoji}
-        </button>
-      ))}
     </div>
   );
 }
