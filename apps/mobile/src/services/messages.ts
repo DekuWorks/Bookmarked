@@ -257,7 +257,6 @@ function countUnread(
   const lastRead = lastReadAt ? new Date(lastReadAt).getTime() : 0;
   return messages.filter((m) => {
     if (m.sender_id === currentUserId) return false;
-    if (m.deleted_at) return false;
     return new Date(m.created_at).getTime() > lastRead;
   }).length;
 }
@@ -532,13 +531,56 @@ export async function toggleMessageReaction(
 }
 
 export function messageReplySnippet(
-  message: Pick<MessageReplyPreview, "body" | "attachment_url" | "deleted_at">
+  message: Pick<MessageReplyPreview, "body" | "attachment_url" | "deleted_at"> | null
 ): string {
-  if (message.deleted_at) return "Message deleted";
+  if (!message || message.deleted_at) return "Original message unavailable";
   const body = message.body?.trim() ?? "";
   if (body) return body;
   if (message.attachment_url) return "Photo";
   return "Message";
+}
+
+export async function deleteMessage(messageId: string): Promise<{ error?: string }> {
+  try {
+    const user = await requireUser();
+
+    const { data: message, error: fetchError } = await supabase
+      .from("messages")
+      .select("id, attachment_url")
+      .eq("id", messageId)
+      .eq("sender_id", user.id)
+      .maybeSingle();
+
+    if (fetchError) return { error: fetchError.message };
+    if (!message) return { error: "Message not found." };
+
+    const attachmentPath = message.attachment_url
+      ? parseMessageAttachmentPath(message.attachment_url)
+      : null;
+
+    if (attachmentPath) {
+      const { error: storageError } = await supabase.storage
+        .from(MESSAGE_ATTACHMENT_BUCKET)
+        .remove([attachmentPath]);
+
+      if (storageError) {
+        console.error("[messages] attachment delete failed:", storageError.message);
+      }
+    }
+
+    const { error } = await supabase
+      .from("messages")
+      .delete()
+      .eq("id", messageId)
+      .eq("sender_id", user.id);
+
+    if (error) return { error: error.message };
+    return {};
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not delete message.",
+    };
+  }
 }
 
 export async function markConversationRead(conversationId: string): Promise<void> {

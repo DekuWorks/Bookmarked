@@ -34,9 +34,7 @@ export function ConversationListItem({
 
   const title = conversationDisplayName(conversation, currentUserId);
   const latest = conversation.latestMessage;
-  const preview = latest?.deleted_at
-    ? "Message deleted"
-    : latest?.body ?? "No messages yet";
+  const preview = latest?.body ?? "No messages yet";
   const timestamp = latest ? formatMessageTimestamp(latest.created_at) : null;
 
   const avatarProfile =

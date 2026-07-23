@@ -38,20 +38,18 @@ export function MessageBubble({
   onToggleReaction,
 }: Props) {
   const locale = usePreferredLocale();
-  const deleted = Boolean(message.deleted_at);
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(message.body);
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const edited =
-    !deleted &&
     message.updated_at &&
     message.updated_at !== message.created_at;
 
-  const hasReply = !deleted && Boolean(message.reply_to);
-  const hasAttachment = !deleted && Boolean(message.attachment_url);
-  const hasBody = !deleted && Boolean(message.body?.trim());
+  const hasReply = Boolean(message.reply_to);
+  const hasAttachment = Boolean(message.attachment_url);
+  const hasBody = Boolean(message.body?.trim());
   const isAttachmentOnly = hasAttachment && !hasBody && !hasReply;
 
   async function handleSave() {
@@ -82,7 +80,7 @@ export function MessageBubble({
     setIsEditing(false);
   }
 
-  const canInteract = !deleted && !isEditing;
+  const canInteract = !isEditing;
   const showActions = canInteract && (onReply || onToggleReaction || onDelete || onEdit);
   const showReactions =
     canInteract && Boolean(onToggleReaction) && Boolean(message.reactions?.length);
@@ -131,26 +129,21 @@ export function MessageBubble({
                 isAttachmentOnly ? "overflow-hidden p-1" : "px-4 py-2.5",
                 isOwn
                   ? "rounded-br-md bg-puce-red text-white"
-                  : "rounded-bl-md border border-border bg-surface text-text",
-                deleted && "px-4 py-2.5 italic opacity-70"
+                  : "rounded-bl-md border border-border bg-surface text-text"
               )}
             >
-              {deleted ? (
-                "Message deleted"
-              ) : (
-                <div className={cn(!isAttachmentOnly && "space-y-2")}>
-                  {hasReply ? (
-                    <MessageReplyPreview reply={message.reply_to!} isOwn={isOwn} compact />
-                  ) : null}
-                  {hasAttachment ? (
-                    <CommentAttachment
-                      url={message.attachment_url!}
-                      className={cn(isAttachmentOnly && "rounded-xl")}
-                    />
-                  ) : null}
-                  {hasBody ? <p className={hasAttachment ? "px-1" : undefined}>{message.body}</p> : null}
-                </div>
-              )}
+              <div className={cn(!isAttachmentOnly && "space-y-2")}>
+                {hasReply ? (
+                  <MessageReplyPreview reply={message.reply_to!} isOwn={isOwn} compact />
+                ) : null}
+                {hasAttachment ? (
+                  <CommentAttachment
+                    url={message.attachment_url!}
+                    className={cn(isAttachmentOnly && "rounded-xl")}
+                  />
+                ) : null}
+                {hasBody ? <p className={hasAttachment ? "px-1" : undefined}>{message.body}</p> : null}
+              </div>
             </div>
 
             {showReactions ? (

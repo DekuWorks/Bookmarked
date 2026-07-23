@@ -1,6 +1,8 @@
+import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createDirectConversation,
+  deleteMessage,
   getConversation,
   getConversations,
   getMessages,
@@ -9,6 +11,7 @@ import {
   sendMessage,
   toggleMessageReaction,
 } from "../services/messages";
+import { supabase } from "../services/supabase";
 import { useAuthStore } from "../store/authStore";
 
 export function useConversations() {
@@ -41,11 +44,49 @@ export function useConversation(conversationId: string) {
 
 export function useThreadMessages(conversationId: string) {
   const userId = useAuthStore((s) => s.user?.id);
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!conversationId) return;
+
+    const topic = `messages:${conversationId}`;
+    const channel = supabase
+      .channel(topic)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
+          void queryClient.invalidateQueries({ queryKey: ["conversations", userId] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "message_reactions",
+        },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [conversationId, queryClient, userId]);
+
   return useQuery({
     queryKey: ["messages", conversationId, userId],
     queryFn: () => getMessages(conversationId, userId ?? null),
     enabled: Boolean(conversationId),
-    refetchInterval: 15_000,
   });
 }
 
@@ -79,6 +120,20 @@ export function useToggleMessageReaction(conversationId: string) {
     onSuccess: (result) => {
       if (result.error) return;
       queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
+    },
+  });
+}
+
+export function useDeleteMessage(conversationId: string) {
+  const userId = useAuthStore((s) => s.user?.id);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (messageId: string) => deleteMessage(messageId),
+    onSuccess: (result) => {
+      if (result.error) return;
+      queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
+      queryClient.invalidateQueries({ queryKey: ["conversations", userId] });
+      queryClient.invalidateQueries({ queryKey: ["messages", "unread", userId] });
     },
   });
 }

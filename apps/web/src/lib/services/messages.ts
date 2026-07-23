@@ -336,7 +336,6 @@ function countUnread(
 
   return messages.filter((message) => {
     if (message.sender_id === currentUserId) return false;
-    if (message.deleted_at) return false;
     return new Date(message.created_at).getTime() > lastRead;
   }).length;
 }
@@ -919,7 +918,7 @@ export async function toggleMessageReaction(
 export function messageReplySnippet(
   message: Pick<MessageReplyPreview, "body" | "attachment_url" | "deleted_at"> | null
 ): string {
-  if (!message || message.deleted_at) return "Message deleted";
+  if (!message || message.deleted_at) return "Original message unavailable";
   const body = message.body?.trim() ?? "";
   if (body) return body;
   if (message.attachment_url) return "Photo";
@@ -987,7 +986,6 @@ export async function updateMessage(
       })
       .eq("id", messageId)
       .eq("sender_id", user.id)
-      .is("deleted_at", null)
       .select("*")
       .single();
 

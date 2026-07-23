@@ -21,6 +21,7 @@ import { ScreenHeader } from "../../../src/components/ScreenHeader";
 import { MESSAGE_QUICK_REACTIONS } from "../../../src/constants/messageReactions";
 import {
   useConversation,
+  useDeleteMessage,
   useMarkConversationRead,
   useSendMessage,
   useThreadMessages,
@@ -59,6 +60,7 @@ export default function ThreadScreen() {
   const messages = useThreadMessages(conversationId);
   const send = useSendMessage(conversationId);
   const toggleReaction = useToggleMessageReaction(conversationId);
+  const deleteMsg = useDeleteMessage(conversationId);
   const markRead = useMarkConversationRead();
 
   useEffect(() => {
@@ -116,7 +118,10 @@ export default function ThreadScreen() {
   }
 
   function openMessageActions(message: MessageWithSender) {
-    const options = ["Reply", ...MESSAGE_QUICK_REACTIONS, "Cancel"];
+    const mine = message.sender_id === userId;
+    const options = mine
+      ? ["Reply", "Delete", ...MESSAGE_QUICK_REACTIONS, "Cancel"]
+      : ["Reply", ...MESSAGE_QUICK_REACTIONS, "Cancel"];
     const cancelButtonIndex = options.length - 1;
 
     const onSelect = (index: number) => {
@@ -125,13 +130,26 @@ export default function ThreadScreen() {
         setReplyTo(message);
         return;
       }
-      const emoji = MESSAGE_QUICK_REACTIONS[index - 1];
+      if (mine && index === 1) {
+        Alert.alert("Delete message?", "This cannot be undone.", [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: () => void deleteMsg.mutateAsync(message.id),
+          },
+        ]);
+        return;
+      }
+      const reactionIndex = mine ? index - 2 : index - 1;
+      const emoji = MESSAGE_QUICK_REACTIONS[reactionIndex];
+      if (!emoji) return;
       void toggleReaction.mutateAsync({ messageId: message.id, emoji });
     };
 
     if (Platform.OS === "ios") {
       ActionSheetIOS.showActionSheetWithOptions(
-        { options, cancelButtonIndex },
+        { options, cancelButtonIndex, destructiveButtonIndex: mine ? 1 : undefined },
         onSelect
       );
       return;
@@ -139,6 +157,23 @@ export default function ThreadScreen() {
 
     Alert.alert("Message", undefined, [
       { text: "Reply", onPress: () => setReplyTo(message) },
+      ...(mine
+        ? [
+            {
+              text: "Delete",
+              style: "destructive" as const,
+              onPress: () =>
+                Alert.alert("Delete message?", "This cannot be undone.", [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: () => void deleteMsg.mutateAsync(message.id),
+                  },
+                ]),
+            },
+          ]
+        : []),
       ...MESSAGE_QUICK_REACTIONS.map((emoji) => ({
         text: emoji,
         onPress: () => void toggleReaction.mutateAsync({ messageId: message.id, emoji }),
