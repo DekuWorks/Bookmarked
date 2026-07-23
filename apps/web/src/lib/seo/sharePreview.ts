@@ -1,6 +1,8 @@
 export const SITE_URL = "https://bookmarked.online";
 export const SITE_NAME = "Bookmarked";
 export const SITE_TAGLINE = "Your reading life, beautifully organized";
+export const SITE_DESCRIPTION =
+  "A web-first reading platform to search books, manage shelves, track progress, and write reviews.";
 
 export const DEFAULT_OG_IMAGE = `${SITE_URL}/og-share.png`;
 

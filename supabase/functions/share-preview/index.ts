@@ -1,15 +1,16 @@
 /**
- * Branded Open Graph share card: book cover (optional) + dark footer with B logo.
+ * Branded Open Graph share card: book cover (optional) + footer with B logo and tagline.
  * Public GET — used as og:image for link previews (iMessage, Slack, etc.).
  */
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 
+const SITE_ORIGIN = "https://bookmarked.online";
 const WIDTH = 1200;
 const HEIGHT = 630;
-const FOOTER_H = 130;
-const LOGO_URL = "https://bookmarked.online/logo-mark.png";
+const FOOTER_H = 120;
+const FOOTER_COLOR = 0x5c4d6fff;
 
 const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
@@ -28,6 +29,14 @@ async function loadImage(url: string): Promise<Image | null> {
   }
 }
 
+function fill(image: Image, color: number): void {
+  for (let y = 0; y < image.height; y++) {
+    for (let x = 0; x < image.width; x++) {
+      image.setPixelAt(x + 1, y + 1, color);
+    }
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: CORS_HEADERS });
@@ -41,7 +50,9 @@ Deno.serve(async (req) => {
   const contentH = HEIGHT - FOOTER_H;
 
   const canvas = new Image(WIDTH, HEIGHT);
-  canvas.fill(0x261c34ff);
+  fill(canvas, FOOTER_COLOR);
+
+  const top = new Image(WIDTH, contentH);
 
   if (coverParam) {
     const cover = await loadImage(coverParam);
@@ -52,19 +63,36 @@ Deno.serve(async (req) => {
       cover.resize(w, h);
       const x = Math.round((WIDTH - w) / 2);
       const y = Math.round((contentH - h) / 2);
-      canvas.composite(cover, x, y);
+      top.composite(cover, x, y);
+    } else {
+      fill(top, 0xd8c7ecff);
+    }
+  } else {
+    fill(top, 0xd8c7ecff);
+    const heroLogo = await loadImage(`${SITE_ORIGIN}/logo-mark.png`);
+    if (heroLogo) {
+      heroLogo.resize(220, 220);
+      top.composite(heroLogo, Math.round((WIDTH - 220) / 2), Math.round((contentH - 220) / 2) - 20);
     }
   }
 
-  const footer = new Image(WIDTH, FOOTER_H);
-  footer.fill(0x2a2a2aff);
-  canvas.composite(footer, 0, contentH);
+  canvas.composite(top, 0, 0);
 
-  const logo = await loadImage(LOGO_URL);
+  const footer = new Image(WIDTH, FOOTER_H);
+  fill(footer, FOOTER_COLOR);
+
+  const logo = await loadImage(`${SITE_ORIGIN}/logo-mark.png`);
   if (logo) {
-    logo.resize(56, 56);
-    canvas.composite(logo, 40, contentH + Math.round((FOOTER_H - 56) / 2));
+    logo.resize(72, 72);
+    footer.composite(logo, 40, Math.round((FOOTER_H - 72) / 2));
   }
+
+  const footerText = await loadImage(`${SITE_ORIGIN}/images/og-footer-text.png`);
+  if (footerText) {
+    footer.composite(footerText, 132, 18);
+  }
+
+  canvas.composite(footer, 0, contentH);
 
   const png = await canvas.encode();
 

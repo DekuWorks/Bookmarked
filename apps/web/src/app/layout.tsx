@@ -1,16 +1,15 @@
-import {
-  DEFAULT_OG_IMAGE_URL,
-  SITE_DESCRIPTION,
-  SITE_NAME,
-  SITE_TAGLINE,
-  SITE_URL,
-} from "@/lib/constants/site";
 import type { Metadata } from "next";
 import Script from "next/script";
 import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { SupabaseConfigError } from "@/components/layout/SupabaseConfigError";
-import { DEFAULT_OG_IMAGE, SITE_NAME, SITE_TAGLINE } from "@/lib/seo/sharePreview";
+import {
+  DEFAULT_OG_IMAGE,
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_TAGLINE,
+  SITE_URL,
+} from "@/lib/seo/sharePreview";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,32 +29,34 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://bookmarked.online"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: `${SITE_NAME} — ${SITE_TAGLINE}`,
     template: `%s · ${SITE_NAME}`,
   },
-  description:
-    "A web-first reading platform to search books, manage shelves, track progress, and write reviews.",
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
       { url: "/icon.png", type: "image/png" },
       { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
     ],
-    apple: "/apple-touch-icon.png",
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
   openGraph: {
     type: "website",
+    locale: "en_US",
+    url: SITE_URL,
     siteName: SITE_NAME,
     title: `${SITE_NAME} — ${SITE_TAGLINE}`,
     description: SITE_TAGLINE,
     images: [
       {
         url: DEFAULT_OG_IMAGE,
-        width: 512,
-        height: 488,
-        alt: `${SITE_NAME} logo`,
+        width: 1200,
+        height: 630,
+        alt: `${SITE_NAME} — ${SITE_TAGLINE}`,
       },
     ],
   },

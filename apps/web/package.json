@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
-    "build": "node scripts/validate-env.mjs && next build",
+    "generate:social-images": "node scripts/generate-social-images.mjs",
+    "build": "node scripts/validate-env.mjs && npm run generate:social-images && next build",
     "start": "next start",
     "lint": "eslint"
   },
@@ -22,6 +23,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.7",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

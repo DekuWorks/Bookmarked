@@ -21,6 +21,7 @@ import {
 } from "@/lib/services/readingInsights";
 import { ReadingStreakCard } from "@/components/profile/ReadingStreakCard";
 import { readerLibraryPath } from "@/lib/routes/readerLibrary";
+import { ShareHead } from "@/components/seo/ShareHead";
 
 type ReaderData = {
   profile: Profile;
@@ -99,6 +100,11 @@ function ReaderProfileContent() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-8 text-center">
+      <ShareHead
+        title={displayName}
+        description={profile.bio?.trim() || `${displayName} on Bookmarked`}
+        image={profile.avatar_url}
+      />
       <header className="rounded-xl border border-border bg-surface p-6 text-center shadow-sm">
         <div className="flex flex-col items-center justify-center gap-4">
           <ProfileAvatar profile={profile} size="xl" />
