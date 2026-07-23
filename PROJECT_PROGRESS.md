@@ -255,6 +255,6 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | P1 | Submit EAS build 8 to TestFlight | Auto-submit monitor running; `eas submit` after build 8 finishes |
 | P1 | EAS build 9 (trending/premium) | Started from `fbffabe+`; submit when finished |
 | P1 | Stripe secrets + deploy | Set `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`; deploy Edge Functions |
-| P1 | App Store Connect + IAP sandbox test | Create `com.dekuworks.bookmarked.premium.monthly`; deploy `verify-apple-purchase`; see `docs/APP_STORE_IAP.md` |
+| P1 | App Store Connect + IAP sandbox test | Create `com.dekuworks.bookmarked.premium.monthly`; deploy `apple-iap-verify`; see `docs/APP_STORE_IAP.md` |
 | P2 | Extract duplicated services to `packages/` | `communityRating` + trending weights moved; 25 modules remain |
 | P2 | Library virtualization | Deferred until large libraries reported |

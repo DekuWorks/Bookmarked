@@ -32,6 +32,13 @@ export function getLastWeekRange(): { start: Date; end: Date } {
   return { start, end };
 }
 
+/** Last 12 weeks for heatmap (84 days). */
+export function getHeatmapRange(): { start: Date; end: Date } {
+  const end = addUtcDays(startOfUtcDay(new Date()), 1);
+  const start = addUtcDays(end, -84);
+  return { start, end };
+}
+
 function shortWeekdayLabel(isoDay: string): string {
   const date = new Date(`${isoDay}T12:00:00.000Z`);
   return date.toLocaleDateString(undefined, { weekday: "short" });
@@ -63,4 +70,21 @@ export async function getReadingActivityData(userId: string): Promise<ReadingAct
     pagesByDay: filled,
     weekLabels,
   };
+}
+
+export async function getReadingHeatmapData(userId: string): Promise<ReadingPagesByDay[]> {
+  const { start, end } = getHeatmapRange();
+  const pagesByDay = await getReadingPagesByDay(userId, start, end);
+  const byDay = new Map(pagesByDay.map((row) => [row.day, row]));
+
+  const filled: ReadingPagesByDay[] = [];
+  const days = Math.round((end.getTime() - start.getTime()) / 86_400_000);
+
+  for (let i = 0; i < days; i++) {
+    const day = addUtcDays(start, i);
+    const key = isoDayKey(day);
+    filled.push(byDay.get(key) ?? { day: key, pages_read: 0, session_count: 0 });
+  }
+
+  return filled;
 }

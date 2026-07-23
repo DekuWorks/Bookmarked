@@ -1,12 +1,12 @@
 import { useRouter } from "expo-router";
-import { Linking, Platform, ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 import { Button } from "../../src/components/Button";
 import { LoadingState } from "../../src/components/LoadingState";
 import { PremiumFeatureLock } from "../../src/components/PremiumFeatureLock";
+import { PremiumUpgradeActions } from "../../src/components/PremiumUpgradeActions";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
-import { webAuthRedirect } from "../../src/constants/env";
-import { useAppleIap } from "../../src/hooks/useAppleIap";
 import { useSubscription } from "../../src/hooks/useSubscription";
+import { useAuthStore } from "../../src/store/authStore";
 
 const PREMIUM_FEATURES = [
   {
@@ -29,14 +29,11 @@ const PREMIUM_FEATURES = [
 ] as const;
 
 const PREMIUM_PRICE = "$4.99 / month";
-const WEB_UPGRADE_URL = webAuthRedirect("/upgrade");
 
 export default function UpgradeRoute() {
   const router = useRouter();
+  const userId = useAuthStore((s) => s.user?.id);
   const { isPremium, loading, refetch } = useSubscription();
-  const iap = useAppleIap();
-
-  const storePrice = iap.product?.displayPrice ?? PREMIUM_PRICE;
 
   if (loading) {
     return (
@@ -73,7 +70,7 @@ export default function UpgradeRoute() {
             <Text className="text-center text-sm font-medium uppercase tracking-wide text-primary">
               Bookmarked Premium
             </Text>
-            <Text className="mt-2 text-center text-3xl font-bold text-puce-red">{storePrice}</Text>
+            <Text className="mt-2 text-center text-3xl font-bold text-puce-red">{PREMIUM_PRICE}</Text>
             <Text className="mt-1 text-center text-sm text-ink-muted">
               Billed monthly. Cancel anytime.
             </Text>
@@ -90,56 +87,13 @@ export default function UpgradeRoute() {
               ))}
             </View>
 
-            <View className="mt-6 gap-3">
-              {iap.supported && !iap.unavailable ? (
-                <>
-                  <Button
-                    title={iap.purchasing ? "Processing…" : "Subscribe with App Store"}
-                    variant="primary"
-                    loading={iap.purchasing || iap.loading}
-                    onPress={() => void iap.subscribe()}
-                  />
-                  <Button
-                    title={iap.restoring ? "Restoring…" : "Restore purchases"}
-                    variant="ghost"
-                    loading={iap.restoring}
-                    onPress={() => void iap.restore()}
-                  />
-                </>
-              ) : iap.supported && iap.unavailable ? (
-                <View className="rounded-xl border border-dashed border-primary/30 bg-primary/5 px-4 py-3">
-                  <Text className="text-center text-sm font-medium text-puce-red">
-                    App Store billing is almost ready
-                  </Text>
-                  <Text className="mt-1 text-center text-sm leading-5 text-ink-muted">
-                    Subscribe on the web below, or try again after the Premium product is live in App
-                    Store Connect.
-                  </Text>
-                </View>
-              ) : null}
-
-              <Button
-                title="Subscribe on web"
-                variant={iap.supported ? "secondary" : "primary"}
-                onPress={() => void Linking.openURL(WEB_UPGRADE_URL)}
-              />
-
-              {Platform.OS === "ios" ? (
-                <Text className="text-center text-xs leading-5 text-ink-muted">
-                  Apple requires digital subscriptions in the iOS app to use the App Store. You can
-                  also subscribe at bookmarked.online — Premium unlocks everywhere.
-                </Text>
-              ) : (
-                <Text className="text-center text-xs leading-5 text-ink-muted">
-                  Subscribe on the web with Stripe. Premium unlocks on Android and iOS once your
-                  account is upgraded.
-                </Text>
-              )}
-            </View>
-
-            {iap.error ? (
-              <Text className="mt-3 text-center text-sm text-red-600">{iap.error}</Text>
-            ) : null}
+            {userId ? (
+              <PremiumUpgradeActions userId={userId} onSubscriptionUpdated={() => void refetch()} />
+            ) : (
+              <Text className="mt-6 text-center text-sm text-ink-muted">
+                Sign in to subscribe.
+              </Text>
+            )}
           </View>
         )}
 

@@ -45,10 +45,10 @@ Bookmarked Premium on iOS uses **App Store subscriptions** (`expo-iap`). Web bil
 
 ## Server verification
 
-Edge Function: `supabase/functions/verify-apple-purchase`
+Edge Function: `supabase/functions/apple-iap-verify`
 
 ```bash
-supabase functions deploy verify-apple-purchase
+supabase functions deploy apple-iap-verify
 ```
 
 Secrets (optional):
