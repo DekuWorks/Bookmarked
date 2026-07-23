@@ -177,19 +177,18 @@ export function GroupSettingsMenu({ conversation, currentUserId, onUpdated }: Pr
   }
 
   const panelClassName =
-    "max-h-[min(70vh,32rem)] overflow-y-auto rounded-xl border border-border bg-surface p-4 shadow-lg";
+    "max-h-[min(70vh,32rem)] w-full min-w-0 overflow-y-auto rounded-xl border border-border bg-surface p-4 shadow-lg sm:w-80 sm:min-w-[18rem]";
 
   const panelContent = (
     <>
       {isOwner ? (
         <Section title="Group">
-          <div className="surface-card space-y-4 p-4">
+          <div className="w-full min-w-0 space-y-4">
             <CircleAvatarUpload
               imageUrl={conversation.avatar_url}
               fallbackLabel={title}
               disabled={busy}
               size="md"
-              className="mx-auto w-full"
               onFileSelect={async (file) => {
                 const result = await uploadGroupAvatar(conversation.id, file);
                 if (result.error) throw new Error(result.error);
@@ -203,24 +202,26 @@ export function GroupSettingsMenu({ conversation, currentUserId, onUpdated }: Pr
                 onUpdated();
               }}
             />
-            <Input
-              id="group-title"
-              label="Group name"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Group name"
-              disabled={busy}
-              className="mb-0"
-            />
-            <Button
-              type="button"
-              size="sm"
-              disabled={busy || !title.trim()}
-              onClick={() => void handleRename()}
-              className="w-full"
-            >
-              Save name
-            </Button>
+            <div className="w-full min-w-0 space-y-3 [&>div]:mb-0">
+              <Input
+                id="group-title"
+                label="Group name"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Book club friends, reading buddies…"
+                disabled={busy}
+                className="min-w-0"
+              />
+              <Button
+                type="button"
+                size="sm"
+                disabled={busy || !title.trim()}
+                onClick={() => void handleRename()}
+                className="w-full"
+              >
+                Save name
+              </Button>
+            </div>
           </div>
         </Section>
       ) : null}
@@ -372,7 +373,7 @@ export function GroupSettingsMenu({ conversation, currentUserId, onUpdated }: Pr
             role="menu"
             aria-label="Group settings"
             className={cn(
-              "fixed inset-x-0 bottom-0 z-50 rounded-t-2xl sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-0 sm:top-full sm:mt-1 sm:w-[min(calc(100vw-2rem),20rem)] sm:rounded-xl",
+              "fixed inset-x-0 bottom-0 z-50 rounded-t-2xl sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-0 sm:top-full sm:mt-1 sm:rounded-xl",
               panelClassName
             )}
           >
