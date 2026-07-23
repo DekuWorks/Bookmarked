@@ -4,6 +4,7 @@
  */
 
 import { createClient } from "@/lib/supabase/client";
+import { completeReadingSession } from "@/lib/services/completeReadingSession";
 import {
   catalogExternalId,
   ISBNDB_SOURCE,
@@ -203,27 +204,106 @@ async function upsertImportedBook(
       return { title: row.title, status: "error", message: error?.message ?? "Could not create book" };
     }
     bookId = inserted.id;
-  } else if (coverUrl) {
-    await supabase
-      .from("books")
-      .update({
-        cover_url: coverUrl,
-        external_source: ISBNDB_SOURCE,
-        external_id: externalId,
-      })
-      .eq("id", bookId);
+  } else {
+    const pagePatch: Record<string, unknown> = {
+      cover_url: coverUrl,
+      external_source: ISBNDB_SOURCE,
+      external_id: externalId,
+    };
+    if (row.numberOfPages && row.numberOfPages > 0) {
+      pagePatch.page_count = row.numberOfPages;
+    }
+    await supabase.from("books").update(pagePatch).eq("id", bookId);
   }
+
+  const { data: bookRow } = await supabase
+    .from("books")
+    .select("id, title, page_count, cover_url, subjects, isbn")
+    .eq("id", bookId)
+    .maybeSingle();
 
   const shelfStatus: ShelfStatus = row.exclusiveShelf ?? "want_to_read";
 
   const { data: existingUserBook } = await supabase
     .from("user_books")
-    .select("id, shelf_status")
+    .select(
+      "id, shelf_status, progress_pages, read_count, started_at, is_favorite, rating, completion_tags"
+    )
     .eq("user_id", userId)
     .eq("book_id", bookId)
     .maybeSingle();
 
   const now = new Date().toISOString();
+  const previousShelf = existingUserBook?.shelf_status ?? null;
+  const resolvedPageCount =
+    bookRow?.page_count ?? row.numberOfPages ?? doc.number_of_pages_median ?? null;
+
+  if (shelfStatus === "read" && previousShelf !== "read") {
+    const finishedAt = row.dateRead ?? row.dateAdded ?? now;
+    const startedAt = row.dateAdded ?? existingUserBook?.started_at ?? finishedAt;
+
+    const { data: userBook, error: shelfError } = await supabase
+      .from("user_books")
+      .upsert(
+        {
+          user_id: userId,
+          book_id: bookId,
+          updated_at: now,
+          started_at: startedAt,
+          ...(row.myRating && row.myRating >= 1 && row.myRating <= 5
+            ? { rating: row.myRating }
+            : {}),
+        },
+        { onConflict: "user_id,book_id" }
+      )
+      .select("id, started_at, read_count, is_favorite, rating, completion_tags")
+      .single();
+
+    if (shelfError) {
+      return { title: row.title, status: "error", message: shelfError.message };
+    }
+
+    const completion = await completeReadingSession({
+      supabase,
+      userId,
+      bookId,
+      userBookId: userBook.id,
+      bookTitle: bookRow?.title ?? row.title,
+      book: {
+        id: bookId,
+        page_count: resolvedPageCount,
+        cover_url: bookRow?.cover_url ?? coverUrl,
+        subjects: bookRow?.subjects ?? null,
+        isbn: bookRow?.isbn ?? isbn,
+      },
+      editionSelected: Boolean(bookRow?.isbn ?? isbn),
+      previousPage: Number(existingUserBook?.progress_pages) || 0,
+      readNumber: Number(existingUserBook?.read_count) || 1,
+      finishedAt,
+      startedAt: userBook.started_at ?? startedAt,
+      manualPageCount: row.numberOfPages,
+      source: "library",
+      applyCompletionTags: Boolean(existingUserBook),
+      completionTagsState: existingUserBook
+        ? {
+            read_count: userBook.read_count ?? existingUserBook.read_count,
+            is_favorite: userBook.is_favorite ?? existingUserBook.is_favorite,
+            rating: userBook.rating ?? existingUserBook.rating,
+            completion_tags: userBook.completion_tags ?? existingUserBook.completion_tags,
+          }
+        : undefined,
+    });
+
+    if (completion.error) {
+      return { title: row.title, status: "error", message: completion.error };
+    }
+
+    return {
+      title: row.title,
+      status: existingUserBook ? "updated" : "imported",
+    };
+  }
+
   const payload: Record<string, unknown> = {
     user_id: userId,
     book_id: bookId,
@@ -236,10 +316,6 @@ async function upsertImportedBook(
   }
   if (shelfStatus === "currently_reading" && !row.dateAdded) {
     payload.started_at = now;
-  }
-  if (shelfStatus === "read") {
-    payload.finished_at = row.dateRead ?? row.dateAdded ?? now;
-    payload.progress_percent = 100;
   }
   if (row.myRating && row.myRating >= 1 && row.myRating <= 5) {
     payload.rating = row.myRating;

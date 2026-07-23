@@ -287,7 +287,7 @@ export async function addCatalogBookToShelf(
         subjects: bookRow?.subjects ?? null,
         isbn: bookRow?.isbn ?? input.isbn ?? null,
       },
-      editionSelected,
+      editionSelected: Boolean(input.edition_key?.trim() || input.isbn?.trim()),
       previousPage,
       readNumber: Number(existingUserBook?.read_count) || 1,
       finishedAt: now,

@@ -106,7 +106,10 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Message reactions & replies | ✅ | `20260723022711_message_reactions_and_replies.sql` |
 | Book clubs | ✅ | `20260713140000_book_clubs.sql` · `/clubs/` · mobile `clubs/` |
 | Trending sidebar / section | ✅ | `trending.ts` · `TrendingNewsletterPanel` (web) · `TrendingBooksSection` (mobile) |
-| Community rating on book pages | ✅ | `CommunityRatingDisplay` (web + mobile) |
+| Community rating on book pages | ✅ | `CommunityRatingDisplay` (web) · labeled stars on mobile book detail |
+| Direct-to-Read page count (web) | ✅ | `BookShelfActions`, `SearchResultCard`, `setBookShelfStatus`, `addCatalogBookToShelf` → `completeReadingSession` + `MissingPageCountDialog` |
+| Goodreads import → read shelf | ✅ | Web + mobile `goodreadsImport.ts` routes through `completeReadingSession` with CSV page counts |
+| `needsMissingPageCountPrompt` shared | ✅ | `packages/utils/readingCompletion.ts` (web + mobile re-export) |
 | Feed search | ✅ | `feedSearch.ts` — readers, books, posts (web + mobile) |
 | Goodreads import | ✅ | `goodreadsImport.ts` — web profile settings + mobile account settings |
 | Events calendar | ✅ | `book_club_events` migration · `/events/` · club event panels (web + mobile) |
@@ -123,7 +126,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Web subscription hook + gates | ✅ | `useSubscription.ts` · `PremiumFeatureLock` · `/upgrade/` |
 | Mobile subscription hook + gates | ✅ | `apps/mobile/src/hooks/useSubscription.ts` · `/(app)/upgrade` |
 | Premium features gated | ✅ | `advanced_analytics`, `ai_insights` |
-| Stripe checkout (web) | ⬜ | Upgrade page informational only |
+| Stripe checkout (web) | ⬜ | Blocked — see `docs/STRIPE_SETUP.md` (`STRIPE_*` secrets + webhook Edge Function) |
 | App Store / Google Play IAP | ⬜ | No SDK integration |
 | Webhook signature verification | ⬜ | `subscription-webhook` Edge Function is a stub |
 | Admin grant UI | ⬜ | Manual SQL / service role |
@@ -229,7 +232,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Database schema | `docs/DATABASE_SCHEMA.md` |
 | Master task list (MVP) | `docs/project/MASTER_TASK_LIST.md` |
 
-**Last updated:** July 23, 2026 (Phase 3: events calendar + mobile routing fixes + expo-document-picker pod install)
+**Last updated:** July 23, 2026 (web direct-to-Read parity verified; Goodreads read import + shared page-count prompt; Stripe setup doc)
 
 ---
 
@@ -237,8 +240,8 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 
 | Priority | Item | Notes |
 |----------|------|-------|
-| P1 | Stripe checkout (web) | Needs `STRIPE_*` secrets + webhook verification in Edge Function |
+| P1 | Stripe checkout (web) | Blocked on `STRIPE_*` secrets — see `docs/STRIPE_SETUP.md` |
 | P1 | App Store / Google Play IAP | Needs store SDK + receipt validation |
 | P1 | Native iOS rebuild | Run `npm run ios` in `apps/mobile` after pod install for Goodreads import |
-| P2 | Extract duplicated services to `packages/` | 28 modules; high effort |
+| P2 | Extract duplicated services to `packages/` | `needsMissingPageCountPrompt` moved; 27 modules remain |
 | P2 | Library virtualization | Deferred until large libraries reported |

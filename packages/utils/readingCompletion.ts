@@ -203,3 +203,19 @@ export function formatFinishActivityDetail(metadata: Record<string, unknown> | n
   }
   return null;
 }
+
+export function needsMissingPageCountPrompt(input: {
+  editionSelected?: boolean;
+  catalogPageCount?: number | null;
+  previousPage?: number | null;
+  manualPageCount?: number | null;
+}): boolean {
+  const resolution = resolvePageCount({
+    editionPageCount: input.editionSelected ? input.catalogPageCount : null,
+    editionSelected: input.editionSelected,
+    catalogPageCount: input.catalogPageCount,
+    previousPage: input.previousPage,
+    manualPageCount: input.manualPageCount,
+  });
+  return resolution.pageCountStatus === "missing";
+}

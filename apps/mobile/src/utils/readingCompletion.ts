@@ -208,3 +208,5 @@ export function formatFinishActivityDetail(metadata: Record<string, unknown> | n
   }
   return null;
 }
+
+export { needsMissingPageCountPrompt } from "../../../../packages/utils/readingCompletion";

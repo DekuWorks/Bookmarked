@@ -310,9 +310,17 @@ export default function BookScreen() {
               </Pressable>
             ) : null}
             {data?.communityRating ? (
-              <View className="mt-3 flex-row items-center gap-2">
-                <StarRating value={data.communityRating.averageRating} showNumber />
-                <Text className="text-xs text-ink-muted">({data.communityRating.ratingCount})</Text>
+              <View className="mt-3 items-center gap-1">
+                <Text className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                  Bookmarked rating
+                </Text>
+                <View className="flex-row items-center gap-2">
+                  <StarRating value={data.communityRating.averageRating} showNumber />
+                  <Text className="text-xs text-ink-muted">
+                    ({data.communityRating.ratingCount}{" "}
+                    {data.communityRating.ratingCount === 1 ? "rating" : "ratings"})
+                  </Text>
+                </View>
               </View>
             ) : null}
           </View>

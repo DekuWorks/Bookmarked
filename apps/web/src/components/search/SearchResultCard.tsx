@@ -214,11 +214,14 @@ export function SearchResultCard({
   }
 
   async function handleSelectShelf(shelfStatus: ShelfStatus) {
+    const catalogPageCount = bookPayload.page_count ? Number(bookPayload.page_count) : null;
+    const editionSelected = Boolean(bookPayload.edition_key || bookPayload.isbn);
+
     if (
       shelfStatus === "read" &&
       needsMissingPageCountPrompt({
-        editionSelected: Boolean(bookPayload.edition_key),
-        catalogPageCount: bookPayload.page_count ? Number(bookPayload.page_count) : null,
+        editionSelected,
+        catalogPageCount,
         previousPage: 0,
       })
     ) {

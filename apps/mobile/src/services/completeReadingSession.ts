@@ -4,6 +4,9 @@ import {
   resolvePageCount,
   type PageCountResolution,
 } from "../utils/readingCompletion";
+import { needsMissingPageCountPrompt } from "../../../../packages/utils/readingCompletion";
+
+export { needsMissingPageCountPrompt };
 import {
   computeCompletionTags,
   mergeCompletionTags,
@@ -193,18 +196,3 @@ export async function completeReadingSession(
   };
 }
 
-export function needsMissingPageCountPrompt(input: {
-  editionSelected?: boolean;
-  catalogPageCount?: number | null;
-  previousPage?: number | null;
-  manualPageCount?: number | null;
-}): boolean {
-  const resolution = resolvePageCount({
-    editionPageCount: input.editionSelected ? input.catalogPageCount : null,
-    editionSelected: input.editionSelected,
-    catalogPageCount: input.catalogPageCount,
-    previousPage: input.previousPage,
-    manualPageCount: input.manualPageCount,
-  });
-  return resolution.pageCountStatus === "missing";
-}
