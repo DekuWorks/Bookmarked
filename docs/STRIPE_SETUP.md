@@ -19,11 +19,40 @@ Optional web build env (not required for checkout — redirect is server-side):
 |----------|---------|
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe.js if you add embedded elements later |
 
+## Catalog (Bookmarked Premium)
+
+The upgrade page (`/upgrade/`) shows **monthly billing only** — `$4.99 / month`. The Edge Function reads a single `STRIPE_PRICE_ID` (no annual tier in code yet).
+
+| Field | Value |
+|-------|-------|
+| Product name | `Bookmarked Premium` |
+| Description | Advanced analytics, AI reading insights, and early access across web and mobile. |
+| Billing | Recurring monthly, USD $4.99 (`499` cents) |
+| Product metadata | `app=bookmarked`, `tier=premium`, `plan_code=premium` |
+| Price lookup key | `bookmarked_premium_monthly` |
+| Price metadata | `app=bookmarked`, `tier=premium`, `interval=monthly` |
+
+### Test mode catalog (created 2026-07-23)
+
+| Resource | ID |
+|----------|-----|
+| Product | `prod_UwNqts48NMyVEp` |
+| Price ($4.99/mo) | `price_1TwV52Jd5wbPvQ1I40HyYPPT` |
+| Webhook endpoint | `we_1TwV55Jd5wbPvQ1IqvPcSJqW` → `https://xtdfeorhdlpnbxycpone.supabase.co/functions/v1/subscription-webhook?provider=stripe` |
+
+Re-run catalog setup (idempotent — reuses existing product/price when names match):
+
+```bash
+STRIPE_SECRET_KEY=sk_test_… ./scripts/setup-stripe-catalog.sh
+```
+
+For **live mode**, repeat with `sk_live_…` (new product/price IDs — update secrets and webhook separately).
+
 ## Stripe Dashboard setup
 
-1. Create a **Product** — “Bookmarked Premium”
+1. Create a **Product** — “Bookmarked Premium” (or run `./scripts/setup-stripe-catalog.sh`)
 2. Add a **recurring Price** — $4.99/month → copy `price_…` into `STRIPE_PRICE_ID`
-3. **Webhook endpoint** — `POST {SUPABASE_URL}/functions/v1/subscription-webhook?provider=stripe`
+3. **Webhook endpoint** — `POST https://xtdfeorhdlpnbxycpone.supabase.co/functions/v1/subscription-webhook?provider=stripe`
 4. Subscribe to events:
    - `checkout.session.completed`
    - `customer.subscription.created`
@@ -32,6 +61,15 @@ Optional web build env (not required for checkout — redirect is server-side):
    - `invoice.paid`
    - `invoice.payment_failed`
 5. Copy the signing secret into `STRIPE_WEBHOOK_SECRET`
+
+Set Supabase secrets (never commit values):
+
+```bash
+./scripts/supabase-cli.sh secrets set \
+  STRIPE_SECRET_KEY=sk_test_… \
+  STRIPE_PRICE_ID=price_… \
+  STRIPE_WEBHOOK_SECRET=whsec_…
+```
 
 ## Edge Functions
 
@@ -103,10 +141,13 @@ App Store / Google Play IAP is not wired yet. Mobile upgrade screen remains info
 
 ## Activation checklist
 
-- [ ] Stripe product + price created
-- [ ] Supabase secrets set (`STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`)
-- [ ] Migration `stripe_customer_id` applied
-- [ ] Edge Functions deployed
-- [ ] Webhook endpoint configured in Stripe Dashboard
-- [ ] Test checkout (test mode) → verify `user_subscriptions` row
+- [x] Stripe product + price created (test mode — see catalog table above)
+- [x] Supabase secrets set (`STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`) — test mode
+- [x] Migration `stripe_customer_id` applied (`20260726140000`)
+- [x] `create-checkout-session` Edge Function deployed
+- [x] `subscription-webhook` Edge Function deployed
+- [x] Webhook endpoint configured in Stripe Dashboard (test mode)
+- [x] Test checkout (test mode) → `create-checkout-session` returns Stripe Checkout URL (HTTP 200)
+- [ ] End-to-end: complete test checkout → verify `user_subscriptions` row
 - [ ] Test cancel / failed payment paths
+- [ ] Live mode: recreate catalog + secrets + webhook with `sk_live_…`
