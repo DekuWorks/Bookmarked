@@ -104,6 +104,8 @@ Code sends `emailRedirectTo` → `/profile/setup/` and password-reset `redirectT
 
 Apply migrations in order via Supabase SQL Editor or `supabase db push`:
 
+CLI auth on macOS / Cursor agents: see [docs/SUPABASE_CLI.md](docs/SUPABASE_CLI.md).
+
 | Migration | Purpose |
 |-----------|---------|
 | `001_phase0_schema.sql` | Core tables, RLS, profiles, books, user_books, reviews, activity |
