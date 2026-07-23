@@ -91,6 +91,7 @@ export {
   DEFAULT_HISTORY_SORT,
   filterFinishedHistoryBooks,
   HISTORY_SORT_OPTIONS,
+  selectRecentlyFinishedBooks,
   sortHistoryBooks,
   type HistorySortableBook,
   type HistorySortMode,

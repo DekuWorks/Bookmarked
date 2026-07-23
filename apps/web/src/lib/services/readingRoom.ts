@@ -15,6 +15,7 @@ import {
   type ShelfGroup,
 } from "@/lib/services/library";
 import type { Book, Review } from "@/types";
+import { selectRecentlyFinishedBooks } from "@bookmarked/utils/readingRoomHistory";
 
 export type UserReviewWithBook = Review & {
   books: Pick<Book, "id" | "title" | "author" | "cover_url"> | null;
@@ -47,14 +48,7 @@ export async function getReadingRoomData(
 
   const currentlyReading = books.filter((b) => b.shelf_status === "currently_reading");
 
-  const recentlyFinished = books
-    .filter((b) => b.shelf_status === "read")
-    .sort((a, b) => {
-      const aDate = a.finished_at ? new Date(a.finished_at).getTime() : 0;
-      const bDate = b.finished_at ? new Date(b.finished_at).getTime() : 0;
-      return bDate - aDate;
-    })
-    .slice(0, 6);
+  const recentlyFinished = selectRecentlyFinishedBooks(books);
 
   const favorites = books.filter((b) => b.is_favorite).slice(0, 8);
 

@@ -32,6 +32,7 @@ import { TAB_BAR_SPACE, useTabBarScroll } from "../../src/navigation/TabBarScrol
 import { SERIF_DISPLAY_FONT } from "../../src/constants/theme";
 import { useAuthStore } from "../../src/store/authStore";
 import { useThemeColors } from "../../src/store/themeStore";
+import { selectRecentlyFinishedBooks } from "../../../../packages/utils/readingRoomHistory";
 
 function QuickLink({
   icon,
@@ -122,11 +123,7 @@ export default function HomeReadingRoom() {
     [books]
   );
   const recentlyFinished = useMemo(
-    () =>
-      books
-        .filter((b) => b.shelf_status === "read" && b.finished_at)
-        .sort((a, b) => new Date(b.finished_at!).getTime() - new Date(a.finished_at!).getTime())
-        .slice(0, 10),
+    () => selectRecentlyFinishedBooks(books),
     [books]
   );
   const favorites = useMemo(() => books.filter((b) => b.is_favorite).slice(0, 8), [books]);

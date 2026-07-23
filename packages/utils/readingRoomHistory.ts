@@ -4,6 +4,7 @@ export type HistorySortableBook = {
   id: string;
   created_at: string;
   finished_at: string | null;
+  updated_at?: string | null;
   books: {
     title?: string | null;
     author?: string | null;
@@ -37,6 +38,26 @@ function parseTimestamp(value: string | null | undefined): number {
   if (!value) return 0;
   const parsed = Date.parse(value);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+/** Prefer `finished_at`; fall back to `updated_at` for legacy read-shelf rows. */
+function finishSortTimestamp(book: {
+  finished_at: string | null;
+  updated_at?: string | null;
+}): number {
+  const finished = parseTimestamp(book.finished_at);
+  if (finished > 0) return finished;
+  return parseTimestamp(book.updated_at);
+}
+
+function isDnfBook(book: {
+  dnf?: boolean;
+  completion_tags?: string[] | null;
+}): boolean {
+  return (
+    Boolean(book.dnf) ||
+    (book.completion_tags ?? []).some((tag) => tag.toLowerCase() === "dnf")
+  );
 }
 
 /** History uses `finished_at` for date sorts — not `updated_at`. */
@@ -79,7 +100,7 @@ export function sortHistoryBooks<T extends HistorySortableBook>(
       break;
     case "added_oldest":
       sorted.sort((a, b) => {
-        const dateCmp = parseTimestamp(a.finished_at) - parseTimestamp(b.finished_at);
+        const dateCmp = finishSortTimestamp(a) - finishSortTimestamp(b);
         if (dateCmp !== 0) return dateCmp;
         return compareStrings(a.books?.title ?? "", b.books?.title ?? "");
       });
@@ -87,7 +108,7 @@ export function sortHistoryBooks<T extends HistorySortableBook>(
     case "added_newest":
     default:
       sorted.sort((a, b) => {
-        const dateCmp = parseTimestamp(b.finished_at) - parseTimestamp(a.finished_at);
+        const dateCmp = finishSortTimestamp(b) - finishSortTimestamp(a);
         if (dateCmp !== 0) return dateCmp;
         return compareStrings(a.books?.title ?? "", b.books?.title ?? "");
       });
@@ -97,8 +118,29 @@ export function sortHistoryBooks<T extends HistorySortableBook>(
   return sorted;
 }
 
-export function filterFinishedHistoryBooks<T extends HistorySortableBook & { shelf_status?: string }>(
-  books: T[]
-): T[] {
-  return books.filter((book) => book.shelf_status === "read" && book.finished_at);
+export function filterFinishedHistoryBooks<
+  T extends HistorySortableBook & {
+    shelf_status?: string;
+    dnf?: boolean;
+    completion_tags?: string[] | null;
+  },
+>(books: T[]): T[] {
+  return books.filter(
+    (book) => book.shelf_status === "read" && !isDnfBook(book)
+  );
+}
+
+const DEFAULT_RECENTLY_FINISHED_LIMIT = 6;
+
+/** Reading Room overview — finished shelf books, newest finish first. */
+export function selectRecentlyFinishedBooks<
+  T extends HistorySortableBook & {
+    shelf_status?: string;
+    dnf?: boolean;
+    completion_tags?: string[] | null;
+  },
+>(books: T[], limit = DEFAULT_RECENTLY_FINISHED_LIMIT): T[] {
+  return filterFinishedHistoryBooks(books)
+    .sort((a, b) => finishSortTimestamp(b) - finishSortTimestamp(a))
+    .slice(0, limit);
 }
