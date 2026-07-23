@@ -71,19 +71,7 @@ export default function ProfilePage() {
 
   return (
     <div className={layout.pageStack}>
-      <header className={cn(layout.pageHeader, "relative -mx-4 feed-header-gradient px-4 pb-8 pt-2 sm:-mx-6 sm:px-6")}>
-        <div className="absolute right-0 top-2">
-          <ButtonLink
-            href="/profile/settings"
-            variant="outline"
-            size="sm"
-            className="inline-flex items-center gap-2"
-            aria-label="Account settings"
-          >
-            <SettingsIcon />
-            <span className="hidden sm:inline">Settings</span>
-          </ButtonLink>
-        </div>
+      <header className={cn(layout.pageHeader, "-mx-4 feed-header-gradient px-4 pb-8 pt-2 sm:-mx-6 sm:px-6")}>
         <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Profile</h1>
         <p className="mt-1 text-text-muted">{email}</p>
       </header>
