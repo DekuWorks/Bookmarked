@@ -119,6 +119,8 @@ export default function ProfilePage() {
               profileName={profile?.display_name || profile?.username || "Reader"}
               counts={followCounts}
               className="mt-3"
+              align="center"
+              size="md"
             />
           </div>
         </div>

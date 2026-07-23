@@ -9,6 +9,7 @@ type Props = {
   onFollowingPress: () => void;
   onMutualsPress?: () => void;
   size?: "sm" | "md";
+  centered?: boolean;
 };
 
 function StatButton({
@@ -47,9 +48,10 @@ export function FollowStats({
   onFollowingPress,
   onMutualsPress,
   size = "sm",
+  centered = false,
 }: Props) {
   return (
-    <View className="flex-row items-start gap-6">
+    <View className={`flex-row items-start gap-6 ${centered ? "justify-center" : ""}`}>
       <StatButton
         label="Followers"
         count={counts.followers}

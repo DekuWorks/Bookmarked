@@ -50,6 +50,7 @@ export default function ProfileRoute() {
               onFollowersPress={() => router.push(`${readerBase}/followers`)}
               onFollowingPress={() => router.push(`${readerBase}/following`)}
               size="md"
+              centered
             />
           </View>
         ) : null}

@@ -47,7 +47,7 @@ export function Navbar({ variant = "public" }: Props) {
       )}
     >
       <nav
-        className={cn(layout.container, "flex items-center gap-4 py-3")}
+        className={cn(layout.container, "flex w-full items-center gap-4 py-3")}
         aria-label="Main navigation"
       >
         {isApp ? (

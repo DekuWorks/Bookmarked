@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { memo } from "react";
 import { FeedBookAttachment } from "@/components/social/FeedBookAttachment";
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { StarDisplay } from "@/components/reviews/StarDisplay";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import { feedItemHref } from "@/lib/routes/activity";
@@ -41,32 +42,46 @@ export const FeedCard = memo(function FeedCard({ item }: Props) {
 
   return (
     <article className="surface-card p-5 sm:p-6">
-      <div className="min-w-0">
-        <p className="text-base leading-relaxed text-text">
-          {profileHref ? (
+      <div className="flex gap-3">
+        {item.profiles ? (
+          profileHref ? (
             <Link
               href={profileHref}
-              className="font-semibold text-puce-red hover:underline"
+              className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
             >
-              {readerLabel(item)}
+              <ProfileAvatar profile={item.profiles} size="sm" />
             </Link>
           ) : (
-            <span className="font-semibold text-puce-red">{readerLabel(item)}</span>
-          )}{" "}
-          <Link href={activityHref} className="hover:text-primary hover:underline">
-            {item.actionMessage}
-          </Link>
-        </p>
-        <p className="mt-1 text-xs text-text-muted">
-          <time suppressHydrationWarning dateTime={item.created_at}>
-            {formatFeedTimestamp(item.created_at, locale)}
-          </time>
-        </p>
-        {reviewRating != null ? (
-          <div className="mt-2.5 inline-flex rounded-lg bg-background/80 px-3 py-2">
-            <StarDisplay rating={reviewRating} showNumeric />
-          </div>
+            <ProfileAvatar profile={item.profiles} size="sm" className="shrink-0" />
+          )
         ) : null}
+        <div className="min-w-0 flex-1">
+          <p className="text-base leading-relaxed text-text">
+            {profileHref ? (
+              <Link
+                href={profileHref}
+                className="font-semibold text-puce-red hover:underline"
+              >
+                {readerLabel(item)}
+              </Link>
+            ) : (
+              <span className="font-semibold text-puce-red">{readerLabel(item)}</span>
+            )}{" "}
+            <Link href={activityHref} className="hover:text-primary hover:underline">
+              {item.actionMessage}
+            </Link>
+          </p>
+          <p className="mt-1 text-xs text-text-muted">
+            <time suppressHydrationWarning dateTime={item.created_at}>
+              {formatFeedTimestamp(item.created_at, locale)}
+            </time>
+          </p>
+          {reviewRating != null ? (
+            <div className="mt-2.5 inline-flex rounded-lg bg-background/80 px-3 py-2">
+              <StarDisplay rating={reviewRating} showNumeric />
+            </div>
+          ) : null}
+        </div>
       </div>
 
       {showBookCover && item.bookId ? (

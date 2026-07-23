@@ -234,8 +234,8 @@ export function NavbarMenu({
         ) : null}
       </div>
 
-      {/* Mobile menu toggle (actions render in desktop row above) */}
-      <div className="relative z-[110] flex items-center gap-1 md:hidden">
+      {/* Mobile menu toggle + actions (aligned to the right of the header) */}
+      <div className="relative z-[110] ml-auto flex items-center gap-1 md:hidden">
         {actions ? <div className="flex items-center">{actions}</div> : null}
         {!hideMobileDrawer ? (
         <button

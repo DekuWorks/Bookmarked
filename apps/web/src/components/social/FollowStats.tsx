@@ -12,6 +12,8 @@ type Props = {
   counts: FollowCounts;
   className?: string;
   size?: "sm" | "md";
+  /** Center the follower / following row (profile headers). */
+  align?: "start" | "center";
 };
 
 function StatButton({
@@ -19,18 +21,21 @@ function StatButton({
   count,
   onClick,
   size,
+  centered,
 }: {
   label: string;
   count: number;
   onClick: () => void;
   size: "sm" | "md";
+  centered?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        "rounded-lg text-left transition-colors",
+        "rounded-lg transition-colors",
+        centered ? "text-center" : "text-left",
         "hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange",
         size === "md" ? "px-2 py-1" : "px-1 py-0.5"
       )}
@@ -55,24 +60,28 @@ export function FollowStats({
   counts,
   className,
   size = "sm",
+  align = "start",
 }: Props) {
   const [modalKind, setModalKind] = useState<FollowListKind | null>(null);
   const isOwnProfile = profileUserId === viewerId;
+  const centered = align === "center";
 
   return (
     <>
-      <dl className={cn("flex gap-6 text-sm", className)}>
+      <dl className={cn("flex gap-6 text-sm", centered && "justify-center", className)}>
         <StatButton
           label="Followers"
           count={counts.followers}
           onClick={() => setModalKind("followers")}
           size={size}
+          centered={centered}
         />
         <StatButton
           label="Following"
           count={counts.following}
           onClick={() => setModalKind("following")}
           size={size}
+          centered={centered}
         />
       </dl>
 
