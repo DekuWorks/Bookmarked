@@ -34,7 +34,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/brand/logo-circle.png",
-        "backgroundColor": "#F4EEFA"
+        "backgroundColor": "#EADCF4"
       },
       "package": "com.dekuworks.bookmarked",
       "edgeToEdgeEnabled": true,
