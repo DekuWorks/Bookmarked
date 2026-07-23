@@ -127,7 +127,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Mobile subscription hook + gates | ✅ | `apps/mobile/src/hooks/useSubscription.ts` · `/(app)/upgrade` |
 | Premium features gated | ✅ | `advanced_analytics`, `ai_insights` |
 | AI reading insights (OpenAI) | ✅ | `packages/utils/aiInsights.ts` · `supabase/functions/ai-insights` · web + mobile `AiInsightsPanel` · see `docs/AI_INSIGHTS.md` |
-| Stripe checkout (web) | 🔄 | `create-checkout-session` Edge Function + `/upgrade/` CTA; live when `STRIPE_*` secrets set — see `docs/STRIPE_SETUP.md` |
+| Stripe checkout (web) | ✅ | `create-checkout-session` + `/upgrade/` Subscribe CTA; test keys active — live cutover in `docs/PRODUCTION_BILLING.md` |
 | App Store IAP (iOS) | ✅ | `expo-iap` + `useAppleIap` + `apple-iap-verify` — see `docs/APP_STORE_IAP.md` |
 | Google Play IAP | ⬜ | Android uses web Stripe link from upgrade screen |
 | Mobile web upgrade UX | ✅ | `/upgrade/` responsive layout; Stripe checkout works in mobile Safari |
@@ -254,7 +254,8 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 |----------|------|-------|
 | P1 | Submit EAS build 8 to TestFlight | Auto-submit monitor running; `eas submit` after build 8 finishes |
 | P1 | EAS build 9 (trending/premium) | Started from `fbffabe+`; submit when finished |
-| P1 | Stripe secrets + deploy | Set `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`; deploy Edge Functions |
-| P1 | App Store Connect + IAP sandbox test | Create `com.dekuworks.bookmarked.premium.monthly`; deploy `apple-iap-verify`; see `docs/APP_STORE_IAP.md` |
+| P1 | Stripe live mode cutover | Run `setup-stripe-catalog.sh --live`; set live secrets — see `docs/PRODUCTION_BILLING.md` |
+| P1 | App Store Connect IAP review | Production subscription `com.dekuworks.bookmarked.premium.monthly`; sandbox TestFlight test — see `docs/APP_STORE_IAP.md` |
+| P1 | OpenAI API key | Set `OPENAI_API_KEY` for server-side AI insights — see `docs/AI_INSIGHTS.md` |
 | P2 | Extract duplicated services to `packages/` | `communityRating` + trending weights moved; 25 modules remain |
 | P2 | Library virtualization | Deferred until large libraries reported |

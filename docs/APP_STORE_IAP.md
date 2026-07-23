@@ -7,7 +7,8 @@ Bookmarked Premium on iOS uses **App Store subscriptions** (`expo-iap`). Web bil
 | Field | Value |
 |-------|-------|
 | Bundle ID | `com.dekuworks.bookmarked` |
-| Subscription product ID | `com.dekuworks.bookmarked.premium.monthly` |
+| Subscription product ID | `com.dekuworks.bookmarked.premium.monthly` (production) |
+| Sandbox override | `EXPO_PUBLIC_APPLE_PREMIUM_SANDBOX_PRODUCT_ID` (only if separate SKU) |
 | Price | $4.99 / month |
 | Env override (mobile) | `EXPO_PUBLIC_APPLE_PREMIUM_PRODUCT_ID` |
 
@@ -37,7 +38,7 @@ Bookmarked Premium on iOS uses **App Store subscriptions** (`expo-iap`). Web bil
 | Upgrade screen | `apps/mobile/app/(app)/upgrade.tsx` |
 | IAP service | `apps/mobile/src/services/iap.ts` |
 | Upgrade actions UI | `apps/mobile/src/components/PremiumUpgradeActions.tsx` |
-| Product ID constant | `packages/utils/iap.ts` |
+| Product ID constant | `packages/utils/iap.ts` · `apps/mobile/src/constants/iap.ts` |
 
 - **iOS app:** Subscribe with App Store, Restore purchases, or Subscribe on web (`bookmarked.online/upgrade`).
 - **Android app:** Subscribe on web only (Stripe) — Google Play billing can be added later.
@@ -95,4 +96,5 @@ Gates: `packages/utils/subscription.ts` → `canAccessFeature('advanced_analytic
 ## Related docs
 
 - `docs/STRIPE_SETUP.md` — web billing
+- `docs/PRODUCTION_BILLING.md` — production cutover checklist
 - `PROJECT_PROGRESS.md` — Phase 4 Premium tracker

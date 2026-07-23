@@ -11,7 +11,7 @@ import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { layout } from "@/lib/constants/layout";
 import { staticRedirect } from "@/lib/navigation/staticRedirect";
-import { createPremiumCheckoutSession } from "@/lib/services/stripeCheckout";
+import { createPremiumCheckoutSession, getPremiumCheckoutAvailability } from "@/lib/services/stripeCheckout";
 
 const PREMIUM_FEATURES = [
   {
@@ -44,8 +44,25 @@ export default function UpgradePage() {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [checkoutUnavailable, setCheckoutUnavailable] = useState(false);
+  const [checkoutMode, setCheckoutMode] = useState<"live" | "test" | "unknown" | null>(null);
+  const [availabilityLoading, setAvailabilityLoading] = useState(true);
 
   const checkoutStatus = searchParams.get("checkout");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void getPremiumCheckoutAvailability().then((result) => {
+      if (cancelled) return;
+      setCheckoutUnavailable(!result.available);
+      setCheckoutMode(result.mode ?? null);
+      setAvailabilityLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (user === null) {
@@ -111,7 +128,7 @@ export default function UpgradePage() {
     }
   }, [toast, user]);
 
-  if (user === undefined || (user && loading)) {
+  if (user === undefined || (user && loading) || availabilityLoading) {
     return <LoadingState message="Loading plans…" />;
   }
 
@@ -164,13 +181,9 @@ export default function UpgradePage() {
       ) : (
         <section className="surface-card overflow-hidden p-4 sm:p-6">
           <div className="text-center">
-            {checkoutUnavailable ? (
-              <p className="text-sm font-medium uppercase tracking-wide text-primary">Coming soon</p>
-            ) : (
-              <p className="text-sm font-medium uppercase tracking-wide text-primary">
-                Bookmarked Premium
-              </p>
-            )}
+            <p className="text-sm font-medium uppercase tracking-wide text-primary">
+              Bookmarked Premium
+            </p>
             <p className="mt-2 text-3xl font-bold text-puce-red">{PREMIUM_PRICE}</p>
             <p className="mt-1 text-sm text-text-muted">Billed monthly. Cancel anytime.</p>
           </div>
@@ -188,10 +201,10 @@ export default function UpgradePage() {
 
           {checkoutUnavailable ? (
             <div className="mt-6 rounded-xl border border-dashed border-primary/30 bg-primary/5 px-4 py-3 text-center text-sm leading-relaxed text-text-muted">
-              <p className="font-medium text-puce-red">Billing is almost ready</p>
+              <p className="font-medium text-puce-red">Web checkout is unavailable</p>
               <p className="mt-1">
-                Stripe checkout (web) and App Store / Google Play subscriptions (mobile) will unlock
-                Premium without another app release. Gates are already wired.
+                Subscribe in the iOS app with your Apple ID, or try again later. Premium gates are
+                already wired — your subscription unlocks on web and mobile.
               </p>
             </div>
           ) : (
@@ -209,7 +222,8 @@ export default function UpgradePage() {
               ) : (
                 <p className="text-center text-xs text-text-muted">
                   Secure checkout via Stripe. Manage or cancel anytime from your Stripe customer
-                  portal once billing is live.
+                  portal.
+                  {checkoutMode === "test" ? " (Stripe test mode — no real charges.)" : null}
                 </p>
               )}
             </div>

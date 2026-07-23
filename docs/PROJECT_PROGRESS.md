@@ -168,7 +168,7 @@ Dashboard, Library, Reading Room tabs, Profile cleanup, and mobile bottom nav �
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Stripe checkout (web) | ⚪ | Upgrade page is informational until `STRIPE_*` keys wired |
+| Stripe checkout (web) | ✅ | `/upgrade/` probes availability; Subscribe CTA when `STRIPE_*` secrets set — see `docs/STRIPE_SETUP.md` |
 | App Store / Google Play (mobile) | ⚪ | Upgrade screen scaffolded; IAP not integrated |
 | Webhook signature verification | ⚪ | `subscription-webhook` Edge Function stub deployed path only |
 | Admin manual grant UI | ⚪ | Service-role / SQL updates for now |

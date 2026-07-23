@@ -76,19 +76,42 @@ async function createStripeCheckoutSession(params: {
   return { url: data.url, sessionId: data.id };
 }
 
+function stripeCheckoutConfig(): {
+  available: boolean;
+  mode: "live" | "test" | "unknown";
+} {
+  const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY")?.trim();
+  const stripePriceId = Deno.env.get("STRIPE_PRICE_ID")?.trim();
+  const available = Boolean(stripeSecretKey && stripePriceId);
+  const mode = stripeSecretKey?.startsWith("sk_live_")
+    ? "live"
+    : stripeSecretKey?.startsWith("sk_test_")
+      ? "test"
+      : "unknown";
+
+  return { available, mode };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
+
+  if (req.method === "GET") {
+    const config = stripeCheckoutConfig();
+    return jsonResponse({
+      available: config.available,
+      mode: config.available ? config.mode : undefined,
+    });
   }
 
   if (req.method !== "POST") {
     return jsonResponse({ error: "Method not allowed" }, 405);
   }
 
-  const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY")?.trim();
-  const stripePriceId = Deno.env.get("STRIPE_PRICE_ID")?.trim();
+  const { available, mode } = stripeCheckoutConfig();
 
-  if (!stripeSecretKey || !stripePriceId) {
+  if (!available) {
     return jsonResponse(
       {
         available: false,
@@ -134,6 +157,9 @@ Deno.serve(async (req) => {
   const successUrl = payload.success_url?.trim() || `${SITE_URL}/upgrade/?checkout=success`;
   const cancelUrl = payload.cancel_url?.trim() || `${SITE_URL}/upgrade/?checkout=canceled`;
 
+  const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY")?.trim() ?? "";
+  const stripePriceId = Deno.env.get("STRIPE_PRICE_ID")?.trim() ?? "";
+
   try {
     const session = await createStripeCheckoutSession({
       secretKey: stripeSecretKey,
@@ -146,6 +172,7 @@ Deno.serve(async (req) => {
 
     return jsonResponse({
       available: true,
+      mode,
       url: session.url,
       sessionId: session.sessionId,
     });

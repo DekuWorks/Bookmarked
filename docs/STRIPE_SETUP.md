@@ -1,17 +1,31 @@
 # Stripe checkout setup
 
-Bookmarked Premium gates are wired on web and mobile (`useSubscription`, `PremiumFeatureLock`, `canAccessFeature`). Web billing uses a Supabase Edge Function for Checkout Session creation and webhook sync.
+Bookmarked Premium gates are wired on web and mobile (`useSubscription`, `PremiumFeatureLock`, `canAccessFeature`). Web billing uses Supabase Edge Functions for Checkout Session creation and webhook sync.
 
-## Required secrets (Supabase project)
+See also: `docs/PRODUCTION_BILLING.md` for the full production cutover checklist.
 
-Set with `supabase secrets set KEY=value` (never commit to the repo):
+## Current Supabase secrets (names only)
+
+| Secret | Status |
+|--------|--------|
+| `STRIPE_SECRET_KEY` | ✅ Set |
+| `STRIPE_PRICE_ID` | ✅ Set |
+| `STRIPE_WEBHOOK_SECRET` | ✅ Set |
+| `OPENAI_API_KEY` | ❌ Not set (AI insights use rule-based fallback) |
+| `SUBSCRIPTION_WEBHOOK_SECRET` | ❌ Not set (optional — manual relay / admin grants) |
+
+> Stripe keys in Supabase are currently **test mode** (`sk_test_…`). Switch to live keys for real charges — see [Production cutover](#production-cutover).
+
+## Required secrets
+
+Set with `./scripts/supabase-cli.sh secrets set KEY=value` (never commit to the repo):
 
 | Secret | Purpose |
 |--------|---------|
-| `STRIPE_SECRET_KEY` | Create Checkout Sessions (`sk_live_…` or `sk_test_…`) |
-| `STRIPE_PRICE_ID` | Recurring price ID for Premium (`price_…`, e.g. $4.99/mo) |
+| `STRIPE_SECRET_KEY` | Create Checkout Sessions (`sk_live_…` for production) |
+| `STRIPE_PRICE_ID` | Recurring price ID for Premium (`price_…`, $4.99/mo) |
 | `STRIPE_WEBHOOK_SECRET` | Verify Stripe webhook signatures (`whsec_…`) |
-| `SUBSCRIPTION_WEBHOOK_SECRET` | Manual / relay payloads (admin grants, testing) |
+| `SUBSCRIPTION_WEBHOOK_SECRET` | Optional — manual / relay payloads (admin grants) |
 
 Optional web build env (not required for checkout — redirect is server-side):
 
@@ -32,21 +46,25 @@ The upgrade page (`/upgrade/`) shows **monthly billing only** — `$4.99 / month
 | Price lookup key | `bookmarked_premium_monthly` |
 | Price metadata | `app=bookmarked`, `tier=premium`, `interval=monthly` |
 
-### Test mode catalog (created 2026-07-23)
+### Create catalog (test or live)
+
+```bash
+# Test / staging catalog
+STRIPE_SECRET_KEY=sk_test_… ./scripts/setup-stripe-catalog.sh
+
+# Production catalog (requires sk_live_…)
+STRIPE_SECRET_KEY=sk_live_… ./scripts/setup-stripe-catalog.sh --live
+```
+
+The script is idempotent — it reuses existing product/price when names match.
+
+### Staging catalog reference (test mode)
 
 | Resource | ID |
 |----------|-----|
 | Product | `prod_UwNqts48NMyVEp` |
 | Price ($4.99/mo) | `price_1TwV52Jd5wbPvQ1I40HyYPPT` |
 | Webhook endpoint | `we_1TwV55Jd5wbPvQ1IqvPcSJqW` → `https://xtdfeorhdlpnbxycpone.supabase.co/functions/v1/subscription-webhook?provider=stripe` |
-
-Re-run catalog setup (idempotent — reuses existing product/price when names match):
-
-```bash
-STRIPE_SECRET_KEY=sk_test_… ./scripts/setup-stripe-catalog.sh
-```
-
-For **live mode**, repeat with `sk_live_…` (new product/price IDs — update secrets and webhook separately).
 
 ## Stripe Dashboard setup
 
@@ -66,7 +84,7 @@ Set Supabase secrets (never commit values):
 
 ```bash
 ./scripts/supabase-cli.sh secrets set \
-  STRIPE_SECRET_KEY=sk_test_… \
+  STRIPE_SECRET_KEY=sk_live_… \
   STRIPE_PRICE_ID=price_… \
   STRIPE_WEBHOOK_SECRET=whsec_…
 ```
@@ -75,27 +93,30 @@ Set Supabase secrets (never commit values):
 
 | Function | Path | Auth |
 |----------|------|------|
-| `create-checkout-session` | `/functions/v1/create-checkout-session` | Bearer JWT (signed-in user) |
+| `create-checkout-session` | `/functions/v1/create-checkout-session` | `GET` — availability probe (anon key); `POST` — Bearer user JWT |
 | `subscription-webhook` | `/functions/v1/subscription-webhook?provider=stripe` | `stripe-signature` header |
 
 Deploy after setting secrets:
 
 ```bash
-supabase functions deploy create-checkout-session
-supabase functions deploy subscription-webhook
+./scripts/supabase-cli.sh functions deploy create-checkout-session
+./scripts/supabase-cli.sh functions deploy subscription-webhook
 ```
 
-Apply migration `20260723140000_stripe_customer_id.sql` so invoice events can resolve users via `stripe_customer_id`.
+Apply migration `20260726140000_stripe_customer_id.sql` so invoice events can resolve users via `stripe_customer_id`.
 
 ## Checkout flow (web)
 
-1. User opens `/upgrade/` and clicks **Subscribe with Stripe**
-2. Web calls `create-checkout-session` with the user JWT
-3. Edge Function returns `{ url }` → browser redirects to Stripe Checkout
-4. On success, Stripe redirects to `/upgrade/?checkout=success`
-5. Webhook upserts `user_subscriptions` (tier, status, `stripe_customer_id`)
+1. User opens `/upgrade/` — page probes `GET /create-checkout-session` for availability
+2. User clicks **Subscribe with Stripe**
+3. Web calls `POST /create-checkout-session` with the user JWT
+4. Edge Function returns `{ url }` → browser redirects to Stripe Checkout
+5. On success, Stripe redirects to `/upgrade/?checkout=success`
+6. Webhook upserts `user_subscriptions` (tier, status, `stripe_customer_id`)
 
-If `STRIPE_SECRET_KEY` or `STRIPE_PRICE_ID` is missing, the Edge Function returns **503** and the upgrade page shows the “Coming soon” fallback.
+If `STRIPE_SECRET_KEY` or `STRIPE_PRICE_ID` is missing, the upgrade page shows a fallback message and hides the subscribe button.
+
+When Stripe test keys are active, the upgrade page notes “Stripe test mode — no real charges.”
 
 ## Webhook events handled
 
@@ -119,7 +140,7 @@ curl -X POST "$SUPABASE_URL/functions/v1/subscription-webhook" \
 
 ## Admin grants (interim)
 
-Until billing is live, grant Premium manually:
+Grant Premium manually without billing:
 
 ```sql
 insert into user_subscriptions (user_id, subscription_tier, subscription_status, subscription_provider)
@@ -137,17 +158,25 @@ Web deploys as a **static export** on GitHub Pages — no server runtime for API
 
 ## Mobile
 
-App Store / Google Play IAP is not wired yet. Mobile upgrade screen remains informational until store SDK + receipt validation ship.
+iOS uses App Store subscriptions (`expo-iap`). Android uses the web Stripe link from the upgrade screen. See `docs/APP_STORE_IAP.md`.
+
+## Production cutover
+
+1. Run `./scripts/setup-stripe-catalog.sh --live` with `sk_live_…`
+2. Create a **live mode** webhook endpoint in Stripe Dashboard (same URL and events as test)
+3. Update Supabase secrets with live `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`
+4. Redeploy `create-checkout-session` and `subscription-webhook`
+5. Complete one real checkout on `/upgrade/` and verify `user_subscriptions`
+6. Remove or archive test-mode webhook endpoint when no longer needed
 
 ## Activation checklist
 
-- [x] Stripe product + price created (test mode — see catalog table above)
+- [x] Stripe product + price created (test mode — staging reference above)
 - [x] Supabase secrets set (`STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`) — test mode
 - [x] Migration `stripe_customer_id` applied (`20260726140000`)
 - [x] `create-checkout-session` Edge Function deployed
 - [x] `subscription-webhook` Edge Function deployed
 - [x] Webhook endpoint configured in Stripe Dashboard (test mode)
-- [x] Test checkout (test mode) → `create-checkout-session` returns Stripe Checkout URL (HTTP 200)
-- [ ] End-to-end: complete test checkout → verify `user_subscriptions` row
-- [ ] Test cancel / failed payment paths
-- [ ] Live mode: recreate catalog + secrets + webhook with `sk_live_…`
+- [x] Web upgrade page probes availability and shows Subscribe CTA when configured
+- [ ] End-to-end: complete checkout → verify `user_subscriptions` row
+- [ ] **Live mode:** recreate catalog + secrets + webhook with `sk_live_…` (`--live` flag)

@@ -3,9 +3,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Linking, Platform, Text, View } from "react-native";
 import { ErrorCode, useIAP, type Purchase } from "expo-iap";
 import {
-  IAP_PREMIUM_MONTHLY_IOS,
   IAP_PREMIUM_PRICE_LABEL,
 } from "../../../../packages/utils/iap";
+import { APPLE_PREMIUM_PRODUCT_ID } from "../constants/iap";
 import { env, webAuthRedirect } from "../constants/env";
 import { verifyApplePurchaseOnServer } from "../services/iap";
 import { Button } from "./Button";
@@ -68,11 +68,11 @@ export function PremiumUpgradeActions({ userId, onSubscriptionUpdated }: Props) 
 
   useEffect(() => {
     if (!iapEnabled || !connected) return;
-    void fetchProducts({ skus: [IAP_PREMIUM_MONTHLY_IOS], type: "subs" });
+    void fetchProducts({ skus: [APPLE_PREMIUM_PRODUCT_ID], type: "subs" });
   }, [connected, fetchProducts, iapEnabled]);
 
   const localizedPrice =
-    subscriptions.find((item) => item.id === IAP_PREMIUM_MONTHLY_IOS)?.displayPrice ??
+    subscriptions.find((item) => item.id === APPLE_PREMIUM_PRODUCT_ID)?.displayPrice ??
     IAP_PREMIUM_PRICE_LABEL;
 
   const handleSubscribe = useCallback(async () => {
@@ -84,7 +84,7 @@ export function PremiumUpgradeActions({ userId, onSubscriptionUpdated }: Props) 
         type: "subs",
         request: {
           apple: {
-            sku: IAP_PREMIUM_MONTHLY_IOS,
+            sku: APPLE_PREMIUM_PRODUCT_ID,
             appAccountToken: userId,
           },
         },

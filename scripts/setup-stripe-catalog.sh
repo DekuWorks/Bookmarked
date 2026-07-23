@@ -4,6 +4,7 @@
 #
 # Usage:
 #   STRIPE_SECRET_KEY=sk_test_… ./scripts/setup-stripe-catalog.sh
+#   STRIPE_SECRET_KEY=sk_live_… ./scripts/setup-stripe-catalog.sh --live
 #   ./scripts/setup-stripe-catalog.sh   # reads STRIPE_SECRET_KEY from root .env if present
 #
 # Prints product ID and price ID on success. Does not set Supabase secrets.
@@ -11,6 +12,28 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+LIVE_MODE=0
+
+for arg in "$@"; do
+  case "$arg" in
+    --live) LIVE_MODE=1 ;;
+    -h|--help)
+      cat <<'EOF'
+Usage: ./scripts/setup-stripe-catalog.sh [--live]
+
+  --live   Require sk_live_… and create/reuse the production Stripe catalog
+
+Without --live, uses STRIPE_SECRET_KEY as-is (typically sk_test_… for staging).
+EOF
+      exit 0
+      ;;
+    *)
+      echo "error: unknown argument: ${arg}" >&2
+      exit 1
+      ;;
+  esac
+done
+
 if [[ -f "$ROOT/.env" ]]; then
   set -a
   # shellcheck disable=SC1091
@@ -22,6 +45,18 @@ STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY:-}"
 if [[ -z "$STRIPE_SECRET_KEY" ]]; then
   echo "error: set STRIPE_SECRET_KEY (sk_test_… or sk_live_…)" >&2
   exit 1
+fi
+
+if [[ "$LIVE_MODE" -eq 1 ]]; then
+  if [[ ! "$STRIPE_SECRET_KEY" =~ ^sk_live_ ]]; then
+    echo "error: --live requires STRIPE_SECRET_KEY to start with sk_live_" >&2
+    exit 1
+  fi
+  echo "==> Live mode (production Stripe catalog)"
+elif [[ "$STRIPE_SECRET_KEY" =~ ^sk_live_ ]]; then
+  echo "==> Live key detected (production catalog)"
+else
+  echo "==> Test mode catalog (pass --live with sk_live_… for production)"
 fi
 
 PRODUCT_NAME="Bookmarked Premium"
@@ -147,9 +182,14 @@ else
   echo "    Created price: ${price_id}"
 fi
 
+mode_label="test"
+if [[ "$STRIPE_SECRET_KEY" =~ ^sk_live_ ]]; then
+  mode_label="live"
+fi
+
 cat <<EOF
 
-Catalog ready.
+Catalog ready (${mode_label} mode).
 
   Product : ${PRODUCT_NAME} (${product_id})
   Price   : \$4.99/month (${price_id})
@@ -158,7 +198,7 @@ Catalog ready.
 Next steps (Supabase project xtdfeorhdlpnbxycpone):
 
   ./scripts/supabase-cli.sh secrets set \\
-    STRIPE_SECRET_KEY=sk_... \\
+    STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:0:12}... \\
     STRIPE_PRICE_ID=${price_id}
 
   # After creating the Stripe webhook endpoint (see docs/STRIPE_SETUP.md):

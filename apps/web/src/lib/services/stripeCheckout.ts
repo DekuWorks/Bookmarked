@@ -6,6 +6,42 @@ export type CheckoutResult =
   | { ok: false; available: false; error: string }
   | { ok: false; available: true; error: string };
 
+export type CheckoutAvailability = {
+  available: boolean;
+  mode?: "live" | "test" | "unknown";
+};
+
+export async function getPremiumCheckoutAvailability(): Promise<CheckoutAvailability> {
+  const envResult = getSupabaseEnv();
+  if (!envResult.ok) {
+    return { available: false };
+  }
+
+  const { url: supabaseUrl, anonKey } = envResult.env;
+
+  try {
+    const response = await fetch(`${supabaseUrl}/functions/v1/create-checkout-session`, {
+      method: "GET",
+      headers: {
+        apikey: anonKey,
+        Authorization: `Bearer ${anonKey}`,
+      },
+    });
+
+    const body = (await response.json().catch(() => null)) as {
+      available?: boolean;
+      mode?: "live" | "test" | "unknown";
+    } | null;
+
+    return {
+      available: Boolean(body?.available),
+      mode: body?.mode,
+    };
+  } catch {
+    return { available: false };
+  }
+}
+
 export async function createPremiumCheckoutSession(): Promise<CheckoutResult> {
   const supabase = createClient();
   const {
