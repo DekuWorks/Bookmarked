@@ -27,7 +27,7 @@ const MESSAGE_ATTACHMENT_SIGNED_URL_TTL_SEC = 3600;
 const MESSAGE_SELECT = `
   *,
   profiles!messages_sender_id_profiles_fkey (${PROFILE_SELECT}),
-  reply_to:messages!messages_reply_to_id_fkey (
+  reply_to:messages!reply_to_id (
     id,
     sender_id,
     body,

@@ -140,7 +140,7 @@ const PROFILE_SELECT = "id, username, display_name, avatar_url";
 const MESSAGE_SELECT = `
   *,
   profiles!messages_sender_id_profiles_fkey (${PROFILE_SELECT}),
-  reply_to:messages!messages_reply_to_id_fkey (
+  reply_to:messages!reply_to_id (
     id,
     sender_id,
     body,
