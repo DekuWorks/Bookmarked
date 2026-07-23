@@ -74,7 +74,22 @@ Dashboard, Library, Reading Room tabs, Profile cleanup, and mobile bottom nav �
 |------|--------|-------|
 | `mood` column on `reading_sessions` | ✅ | Migration `20260721120000_reading_sessions_mood.sql` |
 | Mood picker on book journal | ✅ | `SessionMoodPicker` in `ReadingJournalSection` |
-| Mood display in Reading Room journal tab | ✅ | `ReadingRoomTabs` |
+| Mood display in Reading Room trail tab | ✅ | `TrailPanel` |
+
+### 2.4 Reading Room web overhaul (July 2026)
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Audit routes & Dashboard references | ✅ | Home = `/reading-room/`; `/dashboard/` redirects to Overview |
+| Remove “Today’s Dashboard” button | ✅ | Removed from Overview in `917ef1c` |
+| Delete Dashboard nav tab | ✅ | Navbar + bottom nav use Home → Reading Room |
+| Overview layout (no reading goal) | ✅ | Currently Reading → Finished + Favorites → Quick Actions → Activity |
+| Progress tab (reading goal only there) | ✅ | Goal, stats, heatmap, AI insights unchanged |
+| Rename Journal → Trail (user-facing) | ✅ | Tab, book page section, copy; `?tab=journal` + `/journal/` redirect |
+| Trail book-title picker (searchable) | ✅ | `TrailPanel` — searchable list, no inline session dump |
+| Trail session detail + back nav | ✅ | Books → sessions (by read #) → full session detail |
+| Direct-to-Read `pages_read` fix | ✅ | `setBookShelfStatus` sets `progress_pages` to `page_count` when known |
+| Web unit tests | ✅ | `vitest` — `trail.test.ts`, `readingRoomTabs.test.ts` |
 
 ---
 

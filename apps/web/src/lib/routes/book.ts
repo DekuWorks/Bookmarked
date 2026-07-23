@@ -8,9 +8,14 @@ export function bookDetailsReviewsPath(bookId: string): string {
   return `/book/?id=${encodeURIComponent(bookId)}&section=reviews`;
 }
 
-/** Book details with reading journal focused (scroll target on book page). */
+/** Book details with reading trail focused (scroll target on book page). */
+export function bookDetailsTrailPath(bookId: string): string {
+  return `/book/?id=${encodeURIComponent(bookId)}&section=trail`;
+}
+
+/** @deprecated Use bookDetailsTrailPath — kept for legacy links. */
 export function bookDetailsJournalPath(bookId: string): string {
-  return `/book/?id=${encodeURIComponent(bookId)}&section=journal`;
+  return bookDetailsTrailPath(bookId);
 }
 
 /** Book details with reading notes focused (scroll target on book page). */

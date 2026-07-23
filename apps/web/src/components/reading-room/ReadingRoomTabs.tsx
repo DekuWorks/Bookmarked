@@ -14,8 +14,8 @@ import { BookMiniGrid } from "@/components/reading-room/BookMiniGrid";
 import { CurrentlyReadingRow } from "@/components/reading-room/CurrentlyReadingRow";
 import { ReadingGoalPanel } from "@/components/reading-goal/ReadingGoalPanel";
 import { StarDisplay } from "@/components/reviews/StarDisplay";
-import { SessionMoodChip } from "@/components/books/SessionMoodPicker";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
+import { TrailPanel } from "@/components/reading-room/TrailPanel";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { bookDetailsPath } from "@/lib/routes/book";
 import { searchNotesWithBooks } from "@/lib/services/readingNotes";
@@ -30,68 +30,15 @@ import { formatReviewDate } from "@/lib/utils/locale";
 import { usePreferredLocale } from "@/lib/hooks/usePreferredLocale";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { LoadingState } from "@/components/ui/LoadingState";
+import {
+  parseReadingRoomTab,
+  READING_ROOM_TAB_OPTIONS,
+  readingRoomTabHref,
+  type ReadingRoomTab,
+} from "@/lib/reading-room/readingRoomTabs";
+import { formatSessionDate } from "@/lib/reading-room/trail";
 
-type BookSessionGroup = {
-  key: string;
-  bookId: string | null;
-  bookTitle: string;
-  sessions: UserReadingSession[];
-};
-
-function groupSessionsByBook(sessions: UserReadingSession[]): BookSessionGroup[] {
-  const groups = new Map<string, BookSessionGroup>();
-
-  for (const session of sessions) {
-    const key = session.bookId ?? session.bookTitle ?? session.id;
-    const existing = groups.get(key);
-    if (existing) {
-      existing.sessions.push(session);
-    } else {
-      groups.set(key, {
-        key,
-        bookId: session.bookId,
-        bookTitle: session.bookTitle ?? "Reading session",
-        sessions: [session],
-      });
-    }
-  }
-
-  return [...groups.values()];
-}
-
-export type ReadingRoomTab =
-  | "overview"
-  | "progress"
-  | "trail"
-  | "notes"
-  | "reviews"
-  | "history";
-
-const TAB_OPTIONS: { id: ReadingRoomTab; label: string }[] = [
-  { id: "overview", label: "Overview" },
-  { id: "progress", label: "Progress" },
-  { id: "trail", label: "Trail" },
-  { id: "notes", label: "Notes" },
-  { id: "reviews", label: "Reviews" },
-  { id: "history", label: "History" },
-];
-
-function parseTab(value: string | null): ReadingRoomTab {
-  if (value === "journal") return "trail";
-  if (value && TAB_OPTIONS.some((tab) => tab.id === value)) {
-    return value as ReadingRoomTab;
-  }
-  return "overview";
-}
-
-function formatSessionDate(iso: string): string {
-  const date = new Date(iso);
-  return date.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
+export type { ReadingRoomTab };
 
 type ReviewFilter = "all" | "rated" | "written";
 
@@ -128,7 +75,7 @@ type Props = {
 
 function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
   const searchParams = useSearchParams();
-  const tab = parseTab(searchParams.get("tab"));
+  const tab = parseReadingRoomTab(searchParams.get("tab"));
   const locale = usePreferredLocale();
   const { canAccess, loading: subscriptionLoading } = useSubscription(userId);
   const hasAdvancedAnalytics = canAccess("advanced_analytics");
@@ -136,7 +83,6 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
   const [sessions, setSessions] = useState<UserReadingSession[] | null>(null);
   const [reviews, setReviews] = useState<UserReviewWithBook[] | null>(null);
   const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("all");
-  const [selectedTrailBook, setSelectedTrailBook] = useState<string | null>(null);
   const [recentNotes, setRecentNotes] = useState<
     Awaited<ReturnType<typeof searchNotesWithBooks>>["notes"] | null
   >(null);
@@ -179,11 +125,6 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
     }
   }, [tab, loadNotes]);
 
-  function tabHref(nextTab: ReadingRoomTab): string {
-    if (nextTab === "overview") return "/reading-room/";
-    return `/reading-room/?tab=${nextTab}`;
-  }
-
   return (
     <div className="space-y-6">
       <div
@@ -191,10 +132,10 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
         role="tablist"
         aria-label="Reading room sections"
       >
-        {TAB_OPTIONS.map((option) => (
+        {READING_ROOM_TAB_OPTIONS.map((option) => (
           <Link
             key={option.id}
-            href={tabHref(option.id)}
+            href={readingRoomTabHref(option.id)}
             role="tab"
             aria-selected={tab === option.id}
             data-active={tab === option.id ? "true" : "false"}
@@ -205,7 +146,7 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
         ))}
       </div>
 
-      <div role="tabpanel" aria-label={TAB_OPTIONS.find((t) => t.id === tab)?.label}>
+      <div role="tabpanel" aria-label={READING_ROOM_TAB_OPTIONS.find((t) => t.id === tab)?.label}>
         {tab === "overview" ? (
           <div className="space-y-8">
             <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
@@ -314,7 +255,7 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
                 ) : (
                   <PremiumFeatureLock
                     title="AI reading insights"
-                    description="Get personalized reflections and reading patterns powered by your journal."
+                    description="Get personalized reflections and reading patterns powered by your trail."
                     compact
                   />
                 )}
@@ -329,92 +270,7 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
             <p className="mt-1 text-center text-sm text-text-muted">
               Pick a book to view its session notes.
             </p>
-            {sessions === null ? (
-              <LoadingState message="Loading trail…" />
-            ) : sessions.length === 0 ? (
-              <p className="mt-6 text-center text-sm text-text-muted">
-                Save reading progress to build your trail.
-              </p>
-            ) : (
-              (() => {
-                const bookGroups = groupSessionsByBook(sessions);
-                const activeKey = selectedTrailBook ?? bookGroups[0]?.key ?? null;
-                const activeGroup = bookGroups.find((group) => group.key === activeKey);
-
-                return (
-                  <div className="mt-6 space-y-4">
-                    <ul className="space-y-2">
-                      {bookGroups.map((group) => (
-                        <li key={group.key}>
-                          <button
-                            type="button"
-                            onClick={() => setSelectedTrailBook(group.key)}
-                            className={cn(
-                              "w-full rounded-lg border px-4 py-3 text-left text-sm font-medium transition",
-                              activeKey === group.key
-                                ? "border-puce-red bg-puce-red/10 text-puce-red"
-                                : "border-border bg-background/50 text-text hover:border-primary"
-                            )}
-                          >
-                            {group.bookTitle}
-                            <span className="ml-2 text-xs font-normal text-text-muted">
-                              ({group.sessions.length} session
-                              {group.sessions.length === 1 ? "" : "s"})
-                            </span>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-
-                    {activeGroup ? (
-                      <ol className="space-y-4 border-t border-border pt-4">
-                        {activeGroup.sessions.map((session) => (
-                          <li
-                            key={session.id}
-                            className="rounded-lg border border-border bg-background/50 px-4 py-3"
-                          >
-                            <div className="flex flex-wrap items-baseline justify-between gap-2">
-                              <time
-                                className="text-xs text-text-muted"
-                                dateTime={session.created_at}
-                              >
-                                {formatSessionDate(session.created_at)}
-                              </time>
-                              {activeGroup.bookId ? (
-                                <Link
-                                  href={bookDetailsPath(activeGroup.bookId)}
-                                  className="text-xs font-medium text-primary hover:underline"
-                                >
-                                  Open book
-                                </Link>
-                              ) : null}
-                            </div>
-                            <p className="mt-1 text-sm text-text-muted">
-                              Pages {session.page_start}–{session.page_end} ·{" "}
-                              {Math.round(session.percent_complete)}% complete
-                            </p>
-                            {session.note ? (
-                              <p className="mt-2 text-sm leading-relaxed text-text">
-                                {session.note}
-                              </p>
-                            ) : (
-                              <p className="mt-2 text-sm italic text-text-muted">
-                                No note for this session.
-                              </p>
-                            )}
-                            {session.mood ? (
-                              <div className="mt-2">
-                                <SessionMoodChip mood={session.mood} />
-                              </div>
-                            ) : null}
-                          </li>
-                        ))}
-                      </ol>
-                    ) : null}
-                  </div>
-                );
-              })()
-            )}
+            <TrailPanel sessions={sessions} />
           </section>
         ) : null}
 

@@ -297,13 +297,13 @@ export function ReadingProgressPanel({
           variant="ghost"
           size="sm"
           onClick={() => {
-            document.getElementById("reading-journal")?.scrollIntoView({
+            document.getElementById("reading-trail")?.scrollIntoView({
               behavior: "smooth",
               block: "start",
             });
           }}
         >
-          Reading journal
+          Reading trail
         </Button>
         <Button
           type="button"

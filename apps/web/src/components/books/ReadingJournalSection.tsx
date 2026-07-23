@@ -73,7 +73,7 @@ function SessionNoteEditor({ session, onSaved }: SessionNoteEditorProps) {
 
     if (result.session) onSaved(result.session);
     setEditing(false);
-    toast.success("Journal entry saved");
+    toast.success("Trail entry saved");
   }
 
   async function handleMoodChange(nextMood: ReviewFeeling | null) {
@@ -179,16 +179,16 @@ export function ReadingJournalSection({ sessions, loading, onSessionUpdate }: Pr
 
   return (
     <CollapsibleSection
-      id="reading-journal"
-      title="Reading journal"
+      id="reading-trail"
+      title="Reading trail"
       description="Your reading history for this book — newest first."
       badge={badge}
     >
       {loading ? (
-        <p className="text-sm text-text-muted">Loading journal…</p>
+        <p className="text-sm text-text-muted">Loading trail…</p>
       ) : sessions.length === 0 ? (
         <p className="text-sm text-text-muted">
-          No reading sessions yet. Save progress to start your journal.
+          No reading sessions yet. Save progress to start your trail.
         </p>
       ) : (
         <>
@@ -221,7 +221,7 @@ export function ReadingJournalSection({ sessions, loading, onSessionUpdate }: Pr
                 aria-expanded={expanded}
                 onClick={() => setExpanded((value) => !value)}
               >
-                {expanded ? "Show less" : "View full reading journal"}
+                {expanded ? "Show less" : "View full reading trail"}
               </Button>
             </div>
           ) : null}

@@ -71,8 +71,8 @@ function BookDetailsContent() {
   }, [focusReviews, data]);
 
   useEffect(() => {
-    if (focusSection !== "journal" || !data) return;
-    document.getElementById("reading-journal")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if ((focusSection !== "trail" && focusSection !== "journal") || !data) return;
+    document.getElementById("reading-trail")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [focusSection, data]);
 
   useEffect(() => {

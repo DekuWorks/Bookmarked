@@ -192,7 +192,7 @@ export function TransferReadingStatsModal({
           <div className="space-y-4">
             <p className="text-sm text-text-muted">
               Search for the edition you want (with the right cover), then move your
-              progress, journal, notes, and reviews onto it. Your current shelf entry for{" "}
+              progress, trail, notes, and reviews onto it. Your current shelf entry for{" "}
               <span className="font-medium text-text">{fromBookTitle}</span> will be
               removed.
             </p>

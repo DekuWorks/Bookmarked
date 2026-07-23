@@ -63,7 +63,7 @@ export function ReadingNotesSection({ userBookId, loading: externalLoading }: Pr
           <p className="text-sm font-medium text-text">No notes yet</p>
           <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-text-muted">
             Capture a favorite quote or jot down a thought while you read. Your notes appear here
-            in a journal-style timeline.
+            in a trail-style timeline.
           </p>
         </div>
       ) : (

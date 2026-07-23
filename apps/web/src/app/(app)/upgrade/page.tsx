@@ -16,7 +16,7 @@ const PREMIUM_FEATURES = [
   {
     title: "AI reading insights",
     description:
-      "Personalized recommendations, reflection prompts, and pattern summaries from your journal.",
+      "Personalized recommendations, reflection prompts, and pattern summaries from your trail.",
   },
   {
     title: "Early access",
