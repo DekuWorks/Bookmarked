@@ -22,7 +22,7 @@ const PREMIUM_FEATURES = [
   {
     title: "AI reading insights",
     description:
-      "Coming soon for Premium — reflection prompts and pattern summaries from your reading journal.",
+      "Personalized highlights, reading patterns, and reflection prompts powered by OpenAI from your journal.",
   },
   {
     title: "Early access",

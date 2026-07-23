@@ -22,7 +22,7 @@ export function UpgradeModal({
       <p className="text-sm leading-relaxed text-text-muted">{description}</p>
       <ul className="mt-4 space-y-2 text-sm text-text">
         <li>📊 Advanced analytics and reading heatmaps</li>
-        <li>✨ AI reading insights (coming soon)</li>
+        <li>✨ AI reading insights powered by OpenAI</li>
         <li>🎯 Priority access to new features</li>
       </ul>
       <div className="mt-6 flex flex-col gap-2 sm:flex-row">

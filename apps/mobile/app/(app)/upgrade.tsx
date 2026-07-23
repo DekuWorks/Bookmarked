@@ -13,7 +13,8 @@ const PREMIUM_FEATURES = [
   },
   {
     title: "AI reading insights",
-    description: "Personalized recommendations and reflection prompts based on your journal.",
+    description:
+      "Personalized highlights, patterns, and reflection prompts from your reading journal (OpenAI-powered).",
   },
   {
     title: "Early access",

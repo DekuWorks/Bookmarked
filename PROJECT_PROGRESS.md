@@ -126,6 +126,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Web subscription hook + gates | ✅ | `useSubscription.ts` · `PremiumFeatureLock` · `/upgrade/` |
 | Mobile subscription hook + gates | ✅ | `apps/mobile/src/hooks/useSubscription.ts` · `/(app)/upgrade` |
 | Premium features gated | ✅ | `advanced_analytics`, `ai_insights` |
+| AI reading insights (OpenAI) | ✅ | `packages/utils/aiInsights.ts` · `supabase/functions/ai-insights` · web + mobile `AiInsightsPanel` · see `docs/AI_INSIGHTS.md` |
 | Stripe checkout (web) | 🔄 | `create-checkout-session` Edge Function + `/upgrade/` CTA; live when `STRIPE_*` secrets set — see `docs/STRIPE_SETUP.md` |
 | App Store / Google Play IAP | ⬜ | No SDK integration |
 | Webhook signature verification | 🔄 | Stripe HMAC + invoice events + `stripe_customer_id` mapping; Apple/Google relay still manual |
