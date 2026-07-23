@@ -5,7 +5,7 @@ import { useState } from "react";
 import { UserAvatar } from "@/components/messages/UserAvatar";
 import { GroupAvatar } from "@/components/messages/GroupAvatar";
 import { PinIcon } from "@/components/messages/PinIcon";
-import { GroupSettingsModal } from "@/components/messages/GroupSettingsModal";
+import { GroupSettingsMenu } from "@/components/messages/GroupSettingsMenu";
 import {
   conversationDisplayName,
   pinConversation,
@@ -33,7 +33,6 @@ export function ConversationHeader({
 }: Props) {
   const toast = useToast();
   const [pinning, setPinning] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const isPinned = Boolean(conversation.viewerPinnedAt);
 
   const title = conversationDisplayName(conversation, currentUserId);
@@ -129,13 +128,11 @@ export function ConversationHeader({
         </button>
 
         {conversation.type === "group" ? (
-          <button
-            type="button"
-            onClick={() => setSettingsOpen(true)}
-            className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-text-muted hover:bg-background hover:text-royal-orange"
-          >
-            Settings
-          </button>
+          <GroupSettingsMenu
+            conversation={conversation}
+            currentUserId={currentUserId}
+            onUpdated={() => onConversationUpdate?.()}
+          />
         ) : null}
 
         <Link
@@ -146,18 +143,6 @@ export function ConversationHeader({
         </Link>
       </div>
 
-      {conversation.type === "group" ? (
-        <GroupSettingsModal
-          open={settingsOpen}
-          onClose={() => setSettingsOpen(false)}
-          conversation={conversation}
-          currentUserId={currentUserId}
-          onUpdated={() => {
-            setSettingsOpen(false);
-            onConversationUpdate?.();
-          }}
-        />
-      ) : null}
     </header>
   );
 }
