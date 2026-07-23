@@ -1,3 +1,11 @@
+/**
+ * Local browser notifications via the Notification API.
+ *
+ * Limitations: alerts only fire while this site has an open tab (or is in the
+ * background). Full push when the browser is closed requires a service worker
+ * and Web Push (VAPID) subscription — not implemented here.
+ */
+
 export function isBrowserNotificationSupported(): boolean {
   return typeof window !== "undefined" && "Notification" in window;
 }

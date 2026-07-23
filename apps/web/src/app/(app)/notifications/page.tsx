@@ -1,10 +1,11 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { EmptyNotificationsState, NotificationItem } from "@/components/notifications/NotificationItem";
 import { Button } from "@/components/ui/Button";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { useNotificationsRealtime } from "@/lib/hooks/useNotificationsRealtime";
 import {
   getNotifications,
   markAllNotificationsRead,
@@ -19,9 +20,8 @@ function NotificationsPageContent() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [markingAll, setMarkingAll] = useState(false);
 
-  useEffect(() => {
+  const loadNotifications = useCallback(() => {
     if (!user) return;
-
     setLoadError(null);
     void getNotifications(user.id)
       .then(setNotifications)
@@ -30,6 +30,23 @@ function NotificationsPageContent() {
         setLoadError("Could not load notifications. Please refresh and try again.");
       });
   }, [user]);
+
+  useEffect(() => {
+    loadNotifications();
+  }, [loadNotifications]);
+
+  useNotificationsRealtime({
+    userId: user?.id,
+    enabled: Boolean(user),
+    onInsert: loadNotifications,
+    onUpdate: (row) => {
+      setNotifications((current) =>
+        (current ?? []).map((item) =>
+          item.id === row.id ? { ...item, read_at: row.read_at } : item
+        )
+      );
+    },
+  });
 
   async function handleRead(id: string, _linkUrl: string | null) {
     await markNotificationRead(id);

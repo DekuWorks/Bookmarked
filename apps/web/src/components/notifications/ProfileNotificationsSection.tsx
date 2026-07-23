@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { BellIcon } from "@/components/notifications/BellIcon";
 import { NotificationItem } from "@/components/notifications/NotificationItem";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
+import { useNotificationsRealtime } from "@/lib/hooks/useNotificationsRealtime";
 import {
   getNotifications,
   markNotificationRead,
@@ -23,7 +24,7 @@ export function ProfileNotificationsSection({ userId, className }: Props) {
   const [notifications, setNotifications] = useState<NotificationWithActor[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadNotifications = useCallback(() => {
     setLoadError(null);
     void getNotifications(userId, PROFILE_NOTIFICATIONS_PREVIEW_LIMIT + 1)
       .then(setNotifications)
@@ -32,6 +33,22 @@ export function ProfileNotificationsSection({ userId, className }: Props) {
         setLoadError("Could not load notifications.");
       });
   }, [userId]);
+
+  useEffect(() => {
+    loadNotifications();
+  }, [loadNotifications]);
+
+  useNotificationsRealtime({
+    userId,
+    onInsert: loadNotifications,
+    onUpdate: (row) => {
+      setNotifications((current) =>
+        (current ?? []).map((item) =>
+          item.id === row.id ? { ...item, read_at: row.read_at } : item
+        )
+      );
+    },
+  });
 
   async function handleRead(id: string, _linkUrl: string | null) {
     await markNotificationRead(id);

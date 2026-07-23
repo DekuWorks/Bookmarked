@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import {
   updateNotificationPreferences,
@@ -70,6 +70,19 @@ const PREF_OPTIONS: { key: PrefKey; label: string; description: string }[] = [
   },
 ];
 
+function permissionLabel(permission: NotificationPermission | "unsupported"): string {
+  switch (permission) {
+    case "unsupported":
+      return "Not supported";
+    case "granted":
+      return "Allowed";
+    case "denied":
+      return "Blocked";
+    default:
+      return "Not requested";
+  }
+}
+
 export function NotificationPreferencesPanel({ profile, embedded = false }: Props) {
   const toast = useToast();
   const [values, setValues] = useState({
@@ -85,6 +98,21 @@ export function NotificationPreferencesPanel({ profile, embedded = false }: Prop
   const [browserPermission, setBrowserPermission] = useState(
     getBrowserNotificationPermission()
   );
+
+  useEffect(() => {
+    if (!isBrowserNotificationSupported()) return;
+
+    function syncPermission() {
+      setBrowserPermission(getBrowserNotificationPermission());
+    }
+
+    document.addEventListener("visibilitychange", syncPermission);
+    window.addEventListener("focus", syncPermission);
+    return () => {
+      document.removeEventListener("visibilitychange", syncPermission);
+      window.removeEventListener("focus", syncPermission);
+    };
+  }, []);
 
   async function savePrefs(next: NotificationValues, previous: NotificationValues) {
     setSaving(true);
@@ -107,23 +135,31 @@ export function NotificationPreferencesPanel({ profile, embedded = false }: Prop
     void savePrefs(next, previous);
   }
 
-  async function enableBrowserNotifications() {
+  async function requestPermissionAndEnable(): Promise<boolean> {
     if (!isBrowserNotificationSupported()) {
       toast.error("Browser notifications are not supported on this device.");
-      return;
+      return false;
     }
 
     const permission = await requestBrowserNotificationPermission();
     setBrowserPermission(permission);
 
+    if (permission === "denied") {
+      toast.error("Browser notifications are blocked. Enable them in your browser settings.");
+      return false;
+    }
+
     if (permission !== "granted") {
       toast.error("Browser notification permission was not granted.");
-      const previous = values;
-      const next = { ...values, notify_browser: false };
-      setValues(next);
-      void savePrefs(next, previous);
-      return;
+      return false;
     }
+
+    return true;
+  }
+
+  async function enableBrowserNotifications() {
+    const granted = await requestPermissionAndEnable();
+    if (!granted) return;
 
     const previous = values;
     const next = { ...values, notify_browser: true };
@@ -132,9 +168,27 @@ export function NotificationPreferencesPanel({ profile, embedded = false }: Prop
     toast.success("Browser notifications enabled.");
   }
 
-  async function disableBrowserNotifications() {
+  async function toggleBrowserNotifications() {
+    if (values.notify_browser) {
+      const previous = values;
+      const next = { ...values, notify_browser: false };
+      setValues(next);
+      await savePrefs(next, previous);
+      return;
+    }
+
+    if (browserPermission === "denied") {
+      toast.error("Notifications are blocked in your browser settings.");
+      return;
+    }
+
+    if (browserPermission !== "granted") {
+      const granted = await requestPermissionAndEnable();
+      if (!granted) return;
+    }
+
     const previous = values;
-    const next = { ...values, notify_browser: false };
+    const next = { ...values, notify_browser: true };
     setValues(next);
     await savePrefs(next, previous);
   }
@@ -187,47 +241,67 @@ export function NotificationPreferencesPanel({ profile, embedded = false }: Prop
       </ul>
 
       <div className="mt-6 rounded-lg border border-border bg-background p-4">
-        <p className="font-medium text-text">Browser notifications</p>
-        <p className="mt-1 text-sm text-text-muted">
-          Get alerts on this device when the site is open or in the background (where supported).
-        </p>
-        <p className="mt-2 text-xs text-text-muted">
-          Permission:{" "}
-          {browserPermission === "unsupported"
-            ? "Not supported"
-            : browserPermission === "granted"
-              ? "Allowed"
-              : browserPermission === "denied"
-                ? "Blocked"
-                : "Not requested"}
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {values.notify_browser && browserPermission === "granted" ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={saving}
-              onClick={() => void disableBrowserNotifications()}
-            >
-              Disable browser alerts
-            </Button>
-          ) : (
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="font-medium text-text">Browser notifications</p>
+            <p className="mt-1 text-sm text-text-muted">
+              Get native alerts on this device while Bookmarked is open. Works in the
+              background tab; closing the browser requires full push (not yet available).
+            </p>
+            <p className="mt-2 text-xs text-text-muted">
+              Permission: {permissionLabel(browserPermission)}
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={values.notify_browser}
+            aria-label="Browser notifications"
+            disabled={
+              saving ||
+              browserPermission === "unsupported" ||
+              browserPermission === "denied"
+            }
+            onClick={() => void toggleBrowserNotifications()}
+            className={cn(
+              "relative mt-1 h-7 w-12 shrink-0 rounded-full transition",
+              values.notify_browser && browserPermission === "granted"
+                ? "bg-puce-red"
+                : "bg-border"
+            )}
+          >
+            <span
+              className={cn(
+                "absolute top-0.5 h-6 w-6 rounded-full bg-surface shadow transition",
+                values.notify_browser && browserPermission === "granted"
+                  ? "left-5"
+                  : "left-0.5"
+              )}
+            />
+          </button>
+        </div>
+
+        {browserPermission === "default" ? (
+          <div className="mt-3">
             <Button
               type="button"
               variant="secondary"
               size="sm"
-              disabled={saving || browserPermission === "denied"}
+              disabled={saving}
               onClick={() => void enableBrowserNotifications()}
             >
-              Enable browser alerts
+              Enable
             </Button>
-          )}
-        </div>
+            <p className="mt-2 text-xs text-text-muted">
+              Your browser will ask for permission when you tap Enable or turn the toggle on.
+            </p>
+          </div>
+        ) : null}
+
         {browserPermission === "denied" ? (
-          <p className="mt-2 text-xs text-rust">
-            Notifications are blocked in your browser settings. Unblock them for bookmarked.online to
-            receive alerts.
+          <p className="mt-3 text-xs text-rust">
+            Notifications are blocked in your browser settings. Open site settings for
+            bookmarked.online and allow notifications, then refresh this page.
           </p>
         ) : null}
       </div>
