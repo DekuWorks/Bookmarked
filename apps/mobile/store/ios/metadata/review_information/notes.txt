@@ -4,15 +4,64 @@ Bookmarked uses email and password authentication (Supabase Auth).
 Demo account for App Review:
   Email:    appreview@bookmarked.online
   Password: BookmarkedReview2026!
+  Username: @appreview
 
 If the demo account is unavailable, reviewers can create a free account via Sign Up (email + password), accept the Terms of Service and Community Guidelines checkbox, then complete profile setup (username).
 
-MODERATION FEATURES (Guideline 1.2)
+---
+
+STEP-BY-STEP DEMO FLOWS (build 6)
+
+1) TERMS OF SERVICE / EULA (Guideline 1.2)
+   a. Log out if already signed in: Profile tab → Settings (gear) → Log out.
+   b. On the login screen, tap "Create account" / Sign up.
+   c. Observe the required checkbox: "I agree to the Terms of Service and Community Guidelines…"
+   d. Tap "Terms of Service" or "Community Guidelines" — each opens bookmarked.online/terms in Safari.
+   e. The Sign up button stays disabled until the checkbox is checked.
+   f. (Optional) Complete sign-up to verify the gate; or use the demo account above to skip to moderation flows.
+
+2) PROFANITY FILTER (Guideline 1.2)
+   a. Sign in with the demo account.
+   b. Feed tab → tap the compose (+) button (or Home → share a thought).
+   c. Type an obvious profane word in the post body and tap Post.
+   d. An alert blocks posting: "Please remove profanity before posting."
+   e. Feed tab → scroll to any post with flagged language — text is blurred with a frosted overlay until tapped.
+
+3) REPORT CONTENT (Guideline 1.2)
+   a. Feed tab → find any post from another user.
+   b. Tap the ⋯ (more) button on the post card.
+   c. Tap "Report content".
+   d. Select a reason (e.g. "Harassment or hate").
+   e. Confirm — alert: "Report submitted. We review reports within 24 hours."
+   f. Reports are stored in our admin queue (content_reports) for action within 24 hours.
+
+4) BLOCK USER (Guideline 1.2)
+   a. Feed tab → tap a post author's avatar or @username to open their profile.
+      — OR open Messages, tap a conversation, long-press a message → Report (same moderation path).
+   b. On the reader profile, tap ⋯ (top right).
+   c. Tap "Block [username]".
+   d. Confirm Block — their content is removed from your feed immediately; an auto-report is filed for developer review.
+
+5) ACCOUNT DELETION (Guideline 5.1.1(v))
+   IMPORTANT: Do NOT delete the demo account (appreview@bookmarked.online) — it is shared for review.
+   a. Create a temporary test account: Sign up → accept terms checkbox → set a username (e.g. reviewdelete2026).
+   b. Profile tab → Settings (gear, top right).
+   c. Scroll to the red "Delete account" section → tap "Delete my account".
+   d. Type DELETE in the confirmation field → tap "Permanently delete account".
+   e. Confirm in the system alert → account and all data are permanently removed; you return to the login screen.
+   f. Account deletion is fully in-app; no email or website visit required.
+
+---
+
+MODERATION SUMMARY (Guideline 1.2)
 - Terms + Community Guidelines: required checkbox on Sign Up; linked from login screen.
 - Profanity filter: blocks offensive language on compose (posts, comments, messages) and blurs profanity in feeds.
-- Report content: tap ⋯ on any feed post/review/discussion, long-press a message, or tap Report on a comment → choose a reason → stored in content_reports for admin review within 24h.
+- Report content: tap ⋯ on any feed post/review/discussion, long-press a message, or tap Report on a comment → choose a reason → stored in content_reports for admin review within 24 hours.
 - Block user: available from the same menus and from any reader profile (⋯) → removes their content from your feed immediately and auto-files a report for developer review.
 - Account deletion: Profile → Settings → Delete account → type DELETE → confirm.
+
+SCREEN RECORDING
+A device screen recording demonstrating flows 1–5 is attached in App Review Information (or will be uploaded before resubmission).
 
 SUPPORT
 Website: https://bookmarked.online
