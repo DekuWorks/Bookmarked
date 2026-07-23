@@ -9,6 +9,8 @@ import {
   getBrowserNotificationPermission,
   isBrowserNotificationSupported,
   requestBrowserNotificationPermission,
+  sendTestBrowserNotification,
+  setBrowserNotificationPreferenceEnabled,
 } from "@/lib/utils/browserNotifications";
 import { useToast } from "@/components/ui/Toast";
 import type { Profile } from "@/types";
@@ -125,6 +127,7 @@ export function NotificationPreferencesPanel({ profile, embedded = false }: Prop
       return;
     }
 
+    setBrowserNotificationPreferenceEnabled(next.notify_browser);
     toast.success("Saved");
   }
 
@@ -166,6 +169,26 @@ export function NotificationPreferencesPanel({ profile, embedded = false }: Prop
     setValues(next);
     await savePrefs(next, previous);
     toast.success("Browser notifications enabled.");
+  }
+
+  async function sendTestNotification() {
+    if (!values.notify_browser) {
+      toast.error("Turn on browser notifications first.");
+      return;
+    }
+
+    if (browserPermission !== "granted") {
+      const granted = await requestPermissionAndEnable();
+      if (!granted) return;
+    }
+
+    const shown = await sendTestBrowserNotification();
+    if (shown) {
+      toast.success("Test notification sent.");
+      return;
+    }
+
+    toast.error("Could not show a test notification. Check browser and system settings.");
   }
 
   async function toggleBrowserNotifications() {
@@ -245,8 +268,10 @@ export function NotificationPreferencesPanel({ profile, embedded = false }: Prop
           <div className="min-w-0">
             <p className="font-medium text-text">Browser notifications</p>
             <p className="mt-1 text-sm text-text-muted">
-              Get native alerts on this device while Bookmarked is open. Works in the
+              Get native alerts on this device while Bookmarked is open. Works in a
               background tab; closing the browser requires full push (not yet available).
+              macOS Focus / Do Not Disturb can silence alerts. iOS Safari does not
+              support page notifications unless installed as a PWA with push.
             </p>
             <p className="mt-2 text-xs text-text-muted">
               Permission: {permissionLabel(browserPermission)}
@@ -303,6 +328,20 @@ export function NotificationPreferencesPanel({ profile, embedded = false }: Prop
             Notifications are blocked in your browser settings. Open site settings for
             bookmarked.online and allow notifications, then refresh this page.
           </p>
+        ) : null}
+
+        {browserPermission === "granted" && values.notify_browser ? (
+          <div className="mt-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={saving}
+              onClick={() => void sendTestNotification()}
+            >
+              Send test notification
+            </Button>
+          </div>
         ) : null}
       </div>
     </Wrapper>

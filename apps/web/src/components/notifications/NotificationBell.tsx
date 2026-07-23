@@ -30,7 +30,6 @@ export function NotificationBell() {
     userId,
     onInsert: refreshCount,
     onUpdate: refreshCount,
-    showBrowserAlerts: true,
   });
 
   if (!user) return null;
