@@ -48,10 +48,15 @@ From `apps/mobile`:
 ```bash
 npm install            # installs deps (legacy-peer-deps is set via .npmrc)
 npm run start          # start the Metro dev server (press i / a / w)
-npm run ios            # open in iOS simulator
+npm run ios            # build + install + open iOS simulator (starts Metro)
 npm run android        # open in Android emulator
 npm run web            # run in the browser
 ```
+
+> **Simulator red screen ("No script URL provided")?** A debug build needs Metro.
+> Run `npm run start` and keep it open, or use `npm run ios` which starts Metro for you.
+> For App Review demos, use the **TestFlight build on a physical iPhone** instead
+> (`store/ios/REVIEW_DEMO_SCRIPT.md`).
 
 > This app is a standalone Expo project (its own `package.json` /
 > `node_modules`), sibling to `apps/web`. There is no root workspace install;

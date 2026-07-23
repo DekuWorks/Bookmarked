@@ -4,6 +4,57 @@ Record on a **physical iPhone** using Control Center → Screen Recording. Portr
 
 **Before you start:** Install build 7 from TestFlight (or the build you are submitting). Enable Do Not Disturb to avoid notification banners.
 
+---
+
+## How to run the app
+
+### Recommended — TestFlight on a physical iPhone (use this for recording)
+
+Apple reviewers and your demo video should use the **production build**, not a local simulator build.
+
+1. Install **build 7** from TestFlight on your iPhone.
+2. Open Bookmarked and sign in with the demo account below.
+3. Record with Control Center → Screen Recording.
+
+Production `.ipa` files from EAS are **device-only** — they cannot be installed on the iOS Simulator.
+
+### Optional — iOS Simulator (local development only)
+
+Use the simulator only for quick UI checks. The simulator runs a **debug build** that loads JavaScript from Metro on your Mac; it is not the same binary as TestFlight build 7.
+
+From `apps/mobile`:
+
+```bash
+npm install
+cp .env.example .env   # once — fill in Supabase keys (same as apps/web)
+npm run ios            # starts Metro, builds, installs, and opens the simulator
+```
+
+If the app is **already installed** on the simulator, start Metro first and keep that terminal open:
+
+```bash
+cd apps/mobile
+npm run start
+# Press `i` to open iOS simulator, or tap the Bookmarked icon in the simulator
+```
+
+### Troubleshooting — red screen: "No script URL provided"
+
+**Root cause:** A debug build was opened without the Metro bundler running. The native app has no embedded JS bundle in debug mode — it expects Metro at `http://localhost:8081`.
+
+**Fix:**
+
+1. In a terminal: `cd apps/mobile && npm run start` (leave it running).
+2. Relaunch Bookmarked in the simulator (`npm run ios` does both steps in one command).
+
+**Do not:**
+
+- Tap the simulator app icon or press Run in Xcode without Metro running.
+- Install the EAS production `.ipa` on the simulator (won't work — use TestFlight on a device).
+- Run `expo start --dev-client` — this project does not use `expo-dev-client`.
+
+---
+
 **Demo credentials (moderation flows only — do not delete this account):**
 - Email: `appreview@bookmarked.online`
 - Password: `BookmarkedReview2026!`
