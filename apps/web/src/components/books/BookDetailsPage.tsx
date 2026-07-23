@@ -22,6 +22,7 @@ import { LoadingState } from "@/components/ui/LoadingState";
 import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
+import { ShareHead } from "@/components/seo/ShareHead";
 import { bookDetailsPath } from "@/lib/routes/book";
 import { authorPagePath } from "@/lib/routes/author";
 import { seriesPagePath } from "@/lib/routes/series";
@@ -135,6 +136,15 @@ function BookDetailsContent() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-10 overflow-x-hidden text-center">
+      <ShareHead
+        title={book.title}
+        description={
+          book.author
+            ? `${book.author} on Bookmarked`
+            : "Discover this book on Bookmarked"
+        }
+        image={book.cover_url}
+      />
       <BookCoverAmbience coverUrl={book.cover_url}>
         <div className="flex flex-wrap items-center justify-center gap-3">
           <Link href="/library" className="text-sm font-medium text-primary hover:underline">
