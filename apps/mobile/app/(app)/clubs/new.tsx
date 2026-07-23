@@ -4,9 +4,11 @@ import { Stack, useRouter } from "expo-router";
 import { BookCover } from "../../../src/components/BookCover";
 import { BookPicker } from "../../../src/components/BookPicker";
 import { Button } from "../../../src/components/Button";
+import { CircleAvatarPicker } from "../../../src/components/CircleAvatarPicker";
 import { Input } from "../../../src/components/Input";
 import { useCreateClub } from "../../../src/hooks/useClubs";
 import { ensureCatalogBook } from "../../../src/services/bookClubs";
+import { uploadClubAvatar, type PickedImage } from "../../../src/services/storage";
 import type { CatalogDoc } from "../../../src/services/isbndb";
 import type { BookClubVisibility } from "../../../src/types";
 
@@ -23,6 +25,7 @@ export default function CreateClubRoute() {
   const [description, setDescription] = useState("");
   const [visibility, setVisibility] = useState<BookClubVisibility>("public");
   const [currentBook, setCurrentBook] = useState<CatalogDoc | null>(null);
+  const [avatarImage, setAvatarImage] = useState<PickedImage | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -58,6 +61,13 @@ export default function CreateClubRoute() {
       return;
     }
 
+    if (avatarImage) {
+      const upload = await uploadClubAvatar(result.clubId, avatarImage);
+      if (upload.error) {
+        Alert.alert("Club created", `Photo upload failed: ${upload.error}`);
+      }
+    }
+
     router.replace(`/(app)/clubs/${result.clubId}`);
   }
 
@@ -68,6 +78,14 @@ export default function CreateClubRoute() {
         contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"
       >
+        <CircleAvatarPicker
+          imageUrl={avatarImage?.uri ?? null}
+          fallbackLabel={name || "Club"}
+          disabled={submitting}
+          onImagePicked={setAvatarImage}
+          onRemove={() => setAvatarImage(null)}
+        />
+
         <Input
           label="Club name"
           placeholder="Fantasy Fanatics, Cozy Mystery Crew…"

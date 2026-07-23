@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { UserAvatar } from "@/components/messages/UserAvatar";
+import { GroupAvatar } from "@/components/messages/GroupAvatar";
 import { PinIcon } from "@/components/messages/PinIcon";
 import {
   conversationDisplayName,
@@ -75,9 +76,10 @@ export function ConversationListItem({
         className="flex min-h-[72px] min-w-0 flex-1 items-center gap-3 px-4 py-3"
       >
         {conversation.type === "group" ? (
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-royal-orange/20 text-sm font-bold text-puce-red">
-            {title.slice(0, 2).toUpperCase()}
-          </div>
+          <GroupAvatar
+            title={title}
+            avatarUrl={conversation.avatar_url}
+          />
         ) : avatarProfile ? (
           <UserAvatar profile={avatarProfile} />
         ) : (

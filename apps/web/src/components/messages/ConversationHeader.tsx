@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { UserAvatar } from "@/components/messages/UserAvatar";
+import { GroupAvatar } from "@/components/messages/GroupAvatar";
 import { PinIcon } from "@/components/messages/PinIcon";
 import { GroupSettingsModal } from "@/components/messages/GroupSettingsModal";
 import {
@@ -80,6 +81,8 @@ export function ConversationHeader({
           ) : (
             <UserAvatar profile={otherParticipant.profile} size="sm" />
           )
+        ) : conversation.type === "group" ? (
+          <GroupAvatar title={title} avatarUrl={conversation.avatar_url} size="sm" />
         ) : null}
 
         <div className="min-w-0 flex-1">

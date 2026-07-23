@@ -11,6 +11,7 @@ import { MESSAGE_ATTACHMENT_BUCKET } from "../../../../packages/utils/messageAtt
  */
 
 export const POST_IMAGE_BUCKET = "post-images";
+export const AVATAR_BUCKET = "avatars";
 export { MESSAGE_ATTACHMENT_BUCKET };
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB (matches bucket limit)
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
@@ -103,12 +104,12 @@ async function uploadBase64(
   path: string,
   base64: string,
   contentType: string,
-  options?: { returnPath?: boolean }
+  options?: { returnPath?: boolean; upsert?: boolean }
 ): Promise<{ url?: string; error?: string }> {
   const bytes = base64ToBytes(base64);
   const { error } = await supabase.storage.from(bucket).upload(path, bytes, {
     contentType,
-    upsert: false,
+    upsert: options?.upsert ?? false,
   });
   if (error) return { error: error.message };
 
@@ -153,4 +154,84 @@ export async function uploadMessageAttachment(
   return uploadBase64(MESSAGE_ATTACHMENT_BUCKET, path, image.base64, image.mimeType, {
     returnPath: true,
   });
+}
+
+async function uploadAvatarImage(
+  path: string,
+  image: PickedImage
+): Promise<{ url?: string; error?: string }> {
+  const result = await uploadBase64(AVATAR_BUCKET, path, image.base64, image.mimeType, {
+    upsert: true,
+  });
+  if (result.error || !result.url) return result;
+  return { url: `${result.url}?v=${Date.now()}` };
+}
+
+/** Upload a group chat avatar (owner only; mirrors web entityAvatar). */
+export async function uploadGroupAvatar(
+  conversationId: string,
+  image: PickedImage
+): Promise<{ url?: string; error?: string }> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be signed in." };
+
+  const path = `groups/${conversationId}/avatar.${extForMime(image.mimeType)}`;
+  const result = await uploadAvatarImage(path, image);
+  if (result.error || !result.url) return result;
+
+  const { error } = await supabase
+    .from("conversations")
+    .update({ avatar_url: result.url, updated_at: new Date().toISOString() })
+    .eq("id", conversationId);
+
+  if (error) return { error: error.message };
+  return { url: result.url };
+}
+
+/** Upload a book club avatar (owner only; stored in book_clubs.image_url). */
+export async function uploadClubAvatar(
+  clubId: string,
+  image: PickedImage
+): Promise<{ url?: string; error?: string }> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be signed in." };
+
+  const path = `clubs/${clubId}/avatar.${extForMime(image.mimeType)}`;
+  const result = await uploadAvatarImage(path, image);
+  if (result.error || !result.url) return result;
+
+  const { error } = await supabase
+    .from("book_clubs")
+    .update({ image_url: result.url, updated_at: new Date().toISOString() })
+    .eq("id", clubId);
+
+  if (error) return { error: error.message };
+  return { url: result.url };
+}
+
+export async function removeClubAvatar(clubId: string): Promise<{ error?: string }> {
+  const prefix = `clubs/${clubId}`;
+  const { data: files, error: listError } = await supabase.storage.from(AVATAR_BUCKET).list(prefix);
+  if (listError) return { error: listError.message };
+
+  const paths = (files ?? [])
+    .filter((file) => file.name.startsWith("avatar."))
+    .map((file) => `${prefix}/${file.name}`);
+
+  if (paths.length > 0) {
+    const { error: removeError } = await supabase.storage.from(AVATAR_BUCKET).remove(paths);
+    if (removeError) return { error: removeError.message };
+  }
+
+  const { error } = await supabase
+    .from("book_clubs")
+    .update({ image_url: null, updated_at: new Date().toISOString() })
+    .eq("id", clubId);
+
+  if (error) return { error: error.message };
+  return {};
 }

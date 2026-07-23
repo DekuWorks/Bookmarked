@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { BookCover } from "@/components/books/BookCover";
 import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
@@ -13,6 +14,7 @@ import { ClubDiscussionCard } from "@/components/clubs/ClubDiscussionCard";
 import { ClubDiscussionComposer } from "@/components/clubs/ClubDiscussionComposer";
 import { ClubMembersPanel } from "@/components/clubs/ClubMembersPanel";
 import { BookPickerModal } from "@/components/clubs/BookPickerModal";
+import { CircleAvatarUpload } from "@/components/ui/CircleAvatarUpload";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { useClubDiscussionsRealtime } from "@/lib/hooks/useClubDiscussionsRealtime";
 import {
@@ -24,6 +26,7 @@ import {
   listDiscussions,
   setCurrentBook,
 } from "@/lib/services/bookClubs";
+import { removeClubAvatar, uploadClubAvatar } from "@/lib/services/entityAvatar";
 import { bookDetailsPath } from "@/lib/routes/book";
 import { authorPagePath } from "@/lib/routes/author";
 import { clubDetailPath, clubsPath } from "@/lib/routes/clubs";
@@ -177,57 +180,99 @@ function ClubDetailContent() {
       </p>
 
       <header className="rounded-xl border border-border bg-surface p-6 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-bold text-puce-red sm:text-3xl">{club.name}</h1>
-              {club.visibility === "private" ? (
-                <span className="rounded-full bg-border/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-text-muted">
-                  Private
-                </span>
-              ) : null}
+        <div className="flex flex-wrap items-start gap-4">
+          {club.image_url ? (
+            <Image
+              src={club.image_url}
+              alt=""
+              width={80}
+              height={80}
+              className="h-20 w-20 shrink-0 rounded-full object-cover"
+              unoptimized
+            />
+          ) : (
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-royal-orange/20 text-xl font-bold text-puce-red">
+              {club.name.slice(0, 2).toUpperCase()}
             </div>
-            <p className="mt-1 text-sm text-text-muted">{memberLabel}</p>
-          </div>
+          )}
 
-          <div className="flex flex-wrap items-center gap-2">
-            <CopyLinkButton path={clubDetailPath(club.id)} label="Share" variant="outline" size="sm" />
-            {isOwner ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                loading={actionPending}
-                onClick={() => void handleDeleteClub()}
-              >
-                Delete
-              </Button>
-            ) : isMember ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                loading={actionPending}
-                onClick={() => void handleLeave()}
-              >
-                Leave
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                loading={actionPending}
-                onClick={() => void handleJoin()}
-              >
-                Join club
-              </Button>
-            )}
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-2xl font-bold text-puce-red sm:text-3xl">{club.name}</h1>
+                  {club.visibility === "private" ? (
+                    <span className="rounded-full bg-border/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-text-muted">
+                      Private
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-1 text-sm text-text-muted">{memberLabel}</p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <CopyLinkButton path={clubDetailPath(club.id)} label="Share" variant="outline" size="sm" />
+                {isOwner ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    loading={actionPending}
+                    onClick={() => void handleDeleteClub()}
+                  >
+                    Delete
+                  </Button>
+                ) : isMember ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    loading={actionPending}
+                    onClick={() => void handleLeave()}
+                  >
+                    Leave
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    loading={actionPending}
+                    onClick={() => void handleJoin()}
+                  >
+                    Join club
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {club.description ? (
+              <p className="mt-4 leading-relaxed text-text">{club.description}</p>
+            ) : null}
           </div>
         </div>
 
-        {club.description ? (
-          <p className="mt-4 leading-relaxed text-text">{club.description}</p>
+        {isOwner ? (
+          <div className="mt-6 border-t border-border pt-6">
+            <CircleAvatarUpload
+              imageUrl={club.image_url}
+              fallbackLabel={club.name}
+              disabled={actionPending}
+              size="md"
+              onFileSelect={async (file) => {
+                const result = await uploadClubAvatar(clubId, file);
+                if (result.error) throw new Error(result.error);
+                toast.success("Club photo updated.");
+                void loadClub();
+              }}
+              onRemove={async () => {
+                const result = await removeClubAvatar(clubId);
+                if (result.error) throw new Error(result.error);
+                toast.success("Club photo removed.");
+                void loadClub();
+              }}
+            />
+          </div>
         ) : null}
       </header>
 

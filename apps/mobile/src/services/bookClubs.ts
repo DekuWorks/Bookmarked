@@ -433,6 +433,7 @@ export type CreateClubInput = {
   description?: string | null;
   visibility?: BookClubVisibility;
   currentBookId?: string | null;
+  imageUrl?: string | null;
 };
 
 export async function createClub(
@@ -451,6 +452,7 @@ export async function createClub(
         name,
         description: input.description?.trim() || null,
         visibility: input.visibility ?? "public",
+        image_url: input.imageUrl?.trim() || null,
         current_book_id: input.currentBookId ?? null,
       })
       .select("id")
@@ -478,6 +480,7 @@ export type UpdateClubInput = {
   name?: string;
   description?: string | null;
   visibility?: BookClubVisibility;
+  imageUrl?: string | null;
 };
 
 export async function updateClub(
@@ -495,6 +498,7 @@ export async function updateClub(
     }
     if (input.description !== undefined) patch.description = input.description?.trim() || null;
     if (input.visibility !== undefined) patch.visibility = input.visibility;
+    if (input.imageUrl !== undefined) patch.image_url = input.imageUrl?.trim() || null;
 
     const { error } = await supabase.from("book_clubs").update(patch).eq("id", clubId);
     if (error) return { error: error.message };

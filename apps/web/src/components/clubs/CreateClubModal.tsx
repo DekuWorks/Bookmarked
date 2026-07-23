@@ -7,8 +7,10 @@ import { Input, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { BookCover } from "@/components/books/BookCover";
 import { BookPickerModal } from "@/components/clubs/BookPickerModal";
+import { CircleAvatarUpload } from "@/components/ui/CircleAvatarUpload";
 import { useToast } from "@/components/ui/Toast";
 import { createClub } from "@/lib/services/bookClubs";
+import { uploadClubAvatar } from "@/lib/services/entityAvatar";
 import { clubDetailPath } from "@/lib/routes/clubs";
 import type { BookClubVisibility } from "@/types";
 import type { BookSearchResult } from "@/lib/services/feedSearch";
@@ -27,6 +29,8 @@ export function CreateClubModal({ open, onClose, currentUserId }: Props) {
   const [description, setDescription] = useState("");
   const [visibility, setVisibility] = useState<BookClubVisibility>("public");
   const [currentBook, setCurrentBook] = useState<BookSearchResult | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +41,8 @@ export function CreateClubModal({ open, onClose, currentUserId }: Props) {
     setDescription("");
     setVisibility("public");
     setCurrentBook(null);
+    setAvatarFile(null);
+    setAvatarPreview(null);
     setError(null);
   }, [open]);
 
@@ -63,6 +69,13 @@ export function CreateClubModal({ open, onClose, currentUserId }: Props) {
       return;
     }
 
+    if (avatarFile) {
+      const avatarResult = await uploadClubAvatar(result.clubId, avatarFile);
+      if (avatarResult.error) {
+        toast.error(avatarResult.error);
+      }
+    }
+
     toast.success("Club created!");
     onClose();
     router.push(clubDetailPath(result.clubId));
@@ -71,6 +84,20 @@ export function CreateClubModal({ open, onClose, currentUserId }: Props) {
   return (
     <Modal open={open} onClose={onClose} title="Start a book club" className="max-w-lg">
       <div className="space-y-4">
+        <CircleAvatarUpload
+          imageUrl={avatarPreview}
+          fallbackLabel={name || "Club"}
+          disabled={submitting}
+          onFileSelect={async (file) => {
+            setAvatarFile(file);
+            setAvatarPreview(URL.createObjectURL(file));
+          }}
+          onRemove={async () => {
+            setAvatarFile(null);
+            setAvatarPreview(null);
+          }}
+        />
+
         <Input
           label="Club name"
           name="club-name"

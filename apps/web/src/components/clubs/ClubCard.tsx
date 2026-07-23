@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { BookCover } from "@/components/books/BookCover";
 import { clubDetailPath } from "@/lib/routes/clubs";
 import type { BookClubSummary } from "@/types";
@@ -21,16 +22,25 @@ export function ClubCard({ club }: Props) {
         "hover:border-primary/40 hover:shadow-md"
       )}
     >
-      <div className="relative h-24 w-16 shrink-0 overflow-hidden rounded-lg">
-        {club.current_book ? (
+      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full">
+        {club.image_url ? (
+          <Image
+            src={club.image_url}
+            alt=""
+            width={64}
+            height={64}
+            className="h-full w-full object-cover"
+            unoptimized
+          />
+        ) : club.current_book ? (
           <BookCover
             title={club.current_book.title}
             author={club.current_book.author}
             coverUrl={club.current_book.cover_url}
-            className="h-full w-full"
+            className="h-full w-full rounded-full"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/30 via-puce-red/10 to-royal-orange/25 text-2xl">
+          <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-primary/30 via-puce-red/10 to-royal-orange/25 text-2xl">
             📚
           </div>
         )}

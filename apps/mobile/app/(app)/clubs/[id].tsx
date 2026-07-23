@@ -9,12 +9,14 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useQueryClient } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Avatar } from "../../../src/components/Avatar";
 import { BookCover } from "../../../src/components/BookCover";
 import { BookPicker } from "../../../src/components/BookPicker";
 import { Button } from "../../../src/components/Button";
+import { CircleAvatarPicker } from "../../../src/components/CircleAvatarPicker";
 import { ClubDiscussionCard } from "../../../src/components/ClubDiscussionCard";
 import { EmptyState } from "../../../src/components/EmptyState";
 import { Input } from "../../../src/components/Input";
@@ -32,6 +34,11 @@ import {
   useUpdateClub,
 } from "../../../src/hooks/useClubs";
 import { ensureCatalogBook } from "../../../src/services/bookClubs";
+import {
+  removeClubAvatar,
+  uploadClubAvatar,
+  type PickedImage,
+} from "../../../src/services/storage";
 import type { CatalogDoc } from "../../../src/services/isbndb";
 import { useAuthStore } from "../../../src/store/authStore";
 import type { BookClubMemberWithProfile, BookClubVisibility } from "../../../src/types";
@@ -54,6 +61,7 @@ export default function ClubDetailRoute() {
   const clubId = typeof params.id === "string" ? params.id : "";
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
   const userId = useAuthStore((s) => s.user?.id);
 
   const { data: club, isLoading, isError, error } = useClub(clubId);
@@ -76,6 +84,7 @@ export default function ClubDetailRoute() {
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editVisibility, setEditVisibility] = useState<BookClubVisibility>("public");
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   useEffect(() => {
     if (editOpen && club) {
@@ -119,6 +128,30 @@ export default function ClubDetailRoute() {
       return;
     }
     setEditOpen(false);
+  }
+
+  async function handleAvatarPicked(image: PickedImage) {
+    setAvatarUploading(true);
+    const result = await uploadClubAvatar(clubId, image);
+    setAvatarUploading(false);
+    if (result.error) {
+      Alert.alert("Couldn't upload photo", result.error);
+      return;
+    }
+    await queryClient.invalidateQueries({ queryKey: ["club", clubId] });
+    await queryClient.invalidateQueries({ queryKey: ["clubs"] });
+  }
+
+  async function handleAvatarRemove() {
+    setAvatarUploading(true);
+    const result = await removeClubAvatar(clubId);
+    setAvatarUploading(false);
+    if (result.error) {
+      Alert.alert("Couldn't remove photo", result.error);
+      return;
+    }
+    await queryClient.invalidateQueries({ queryKey: ["club", clubId] });
+    await queryClient.invalidateQueries({ queryKey: ["clubs"] });
   }
 
   async function handlePickBook(doc: CatalogDoc) {
@@ -225,23 +258,28 @@ export default function ClubDetailRoute() {
       <Stack.Screen options={{ title: club.name }} />
 
       <View className="rounded-2xl border border-brand-border bg-surface p-4">
-        <View className="flex-row items-start justify-between gap-3">
+        <View className="flex-row items-start gap-4">
+          <Avatar url={club.image_url} name={club.name} size={72} />
           <View className="flex-1">
-            <View className="flex-row items-center gap-2">
-              <Text className="text-2xl font-bold text-puce-red flex-1">{club.name}</Text>
-              {club.visibility === "private" ? (
-                <Text className="text-[10px] font-semibold uppercase text-ink-muted">
-                  Private
-                </Text>
-              ) : null}
+            <View className="flex-row items-start justify-between gap-3">
+              <View className="flex-1">
+                <View className="flex-row items-center gap-2">
+                  <Text className="text-2xl font-bold text-puce-red flex-1">{club.name}</Text>
+                  {club.visibility === "private" ? (
+                    <Text className="text-[10px] font-semibold uppercase text-ink-muted">
+                      Private
+                    </Text>
+                  ) : null}
+                </View>
+                <Text className="text-sm text-ink-muted mt-1">{memberLabel}</Text>
+              </View>
             </View>
-            <Text className="text-sm text-ink-muted mt-1">{memberLabel}</Text>
+
+            {club.description ? (
+              <Text className="text-ink mt-3 leading-6">{club.description}</Text>
+            ) : null}
           </View>
         </View>
-
-        {club.description ? (
-          <Text className="text-ink mt-3 leading-6">{club.description}</Text>
-        ) : null}
 
         <View className="mt-4">
           {isOwner ? (
@@ -475,6 +513,14 @@ export default function ClubDetailRoute() {
             </View>
 
             <ScrollView keyboardShouldPersistTaps="handled">
+              <CircleAvatarPicker
+                imageUrl={club.image_url}
+                fallbackLabel={editName || club.name}
+                disabled={avatarUploading || updateMutation.isPending}
+                onImagePicked={(image) => void handleAvatarPicked(image)}
+                onRemove={() => void handleAvatarRemove()}
+              />
+
               <Input
                 label="Club name"
                 value={editName}

@@ -9,12 +9,14 @@ type Props = {
   back?: boolean;
   /** Optional press handler for the title (e.g. open peer profile). */
   onTitlePress?: () => void;
+  /** Optional avatar shown beside the title. */
+  left?: ReactNode;
   /** Optional right-aligned actions. */
   right?: ReactNode;
 };
 
 /** Plain screen header with an optional back button + title, matching mockup detail screens. */
-export function ScreenHeader({ title, back = true, onTitlePress, right }: Props) {
+export function ScreenHeader({ title, back = true, onTitlePress, left, right }: Props) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -36,6 +38,7 @@ export function ScreenHeader({ title, back = true, onTitlePress, right }: Props)
         ) : (
           <View className="w-2" />
         )}
+        {left ? <View className="mr-2">{left}</View> : null}
         {onTitlePress ? (
           <Pressable
             onPress={onTitlePress}

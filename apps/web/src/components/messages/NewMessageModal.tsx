@@ -11,6 +11,8 @@ import {
   createGroupConversation,
   searchProfilesForMessaging,
 } from "@/lib/services/messages";
+import { CircleAvatarUpload } from "@/components/ui/CircleAvatarUpload";
+import { uploadGroupAvatar } from "@/lib/services/entityAvatar";
 import { messageThreadPath } from "@/lib/routes/messages";
 import { profileDisplayName } from "@/lib/utils/messaging";
 import { useToast } from "@/components/ui/Toast";
@@ -39,6 +41,8 @@ export function NewMessageModal({
   const [selectedDirect, setSelectedDirect] = useState<MessageProfile | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<MessageProfile[]>([]);
   const [groupTitle, setGroupTitle] = useState("");
+  const [groupAvatarFile, setGroupAvatarFile] = useState<File | null>(null);
+  const [groupAvatarPreview, setGroupAvatarPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,6 +55,8 @@ export function NewMessageModal({
     setSelectedDirect(null);
     setSelectedGroup([]);
     setGroupTitle("");
+    setGroupAvatarFile(null);
+    setGroupAvatarPreview(null);
     setError(null);
   }, [open]);
 
@@ -128,6 +134,13 @@ export function NewMessageModal({
       return;
     }
 
+    if (groupAvatarFile) {
+      const avatarResult = await uploadGroupAvatar(result.conversationId, groupAvatarFile);
+      if (avatarResult.error) {
+        toast.error(avatarResult.error);
+      }
+    }
+
     onClose();
     router.push(messageThreadPath(result.conversationId));
   }
@@ -157,13 +170,28 @@ export function NewMessageModal({
         </div>
 
         {mode === "group" ? (
-          <Input
-            label="Group name"
-            name="group-title"
-            value={groupTitle}
-            onChange={(e) => setGroupTitle(e.target.value)}
-            placeholder="Book club friends, reading buddies…"
-          />
+          <>
+            <CircleAvatarUpload
+              imageUrl={groupAvatarPreview}
+              fallbackLabel={groupTitle || "Group"}
+              disabled={submitting}
+              onFileSelect={async (file) => {
+                setGroupAvatarFile(file);
+                setGroupAvatarPreview(URL.createObjectURL(file));
+              }}
+              onRemove={async () => {
+                setGroupAvatarFile(null);
+                setGroupAvatarPreview(null);
+              }}
+            />
+            <Input
+              label="Group name"
+              name="group-title"
+              value={groupTitle}
+              onChange={(e) => setGroupTitle(e.target.value)}
+              placeholder="Book club friends, reading buddies…"
+            />
+          </>
         ) : null}
 
         <Input

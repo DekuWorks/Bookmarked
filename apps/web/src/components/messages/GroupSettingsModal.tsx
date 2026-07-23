@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { UserAvatar } from "@/components/messages/UserAvatar";
+import { CircleAvatarUpload } from "@/components/ui/CircleAvatarUpload";
 import {
   addGroupMembers,
   leaveConversation,
@@ -11,6 +12,7 @@ import {
   renameGroupConversation,
   searchProfilesForMessaging,
 } from "@/lib/services/messages";
+import { removeGroupAvatar, uploadGroupAvatar } from "@/lib/services/entityAvatar";
 import { messagesInboxPath } from "@/lib/routes/messages";
 import { readerProfilePath } from "@/lib/routes/reader";
 import { profileDisplayName } from "@/lib/utils/messaging";
@@ -152,19 +154,38 @@ export function GroupSettingsModal({
         </div>
 
         {isOwner ? (
-          <div className="mt-4 space-y-2">
-            <label className="text-sm font-medium text-text" htmlFor="group-title">
-              Group name
-            </label>
-            <input
-              id="group-title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+          <div className="mt-4 space-y-4">
+            <CircleAvatarUpload
+              imageUrl={conversation.avatar_url}
+              fallbackLabel={title}
+              disabled={busy}
+              onFileSelect={async (file) => {
+                const result = await uploadGroupAvatar(conversation.id, file);
+                if (result.error) throw new Error(result.error);
+                toast.success("Group photo updated");
+                onUpdated();
+              }}
+              onRemove={async () => {
+                const result = await removeGroupAvatar(conversation.id);
+                if (result.error) throw new Error(result.error);
+                toast.success("Group photo removed");
+                onUpdated();
+              }}
             />
-            <Button type="button" size="sm" disabled={busy} onClick={() => void handleRename()}>
-              Save name
-            </Button>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-text" htmlFor="group-title">
+                Group name
+              </label>
+              <input
+                id="group-title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              />
+              <Button type="button" size="sm" disabled={busy} onClick={() => void handleRename()}>
+                Save name
+              </Button>
+            </div>
           </div>
         ) : null}
 

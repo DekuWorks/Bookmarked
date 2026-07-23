@@ -59,12 +59,17 @@ export default function MessagesScreen() {
           renderItem={({ item }) => {
             const name = conversationDisplayName(item, userId as string);
             const other = item.participants.find((p) => p.user_id !== userId);
+            const isGroup = item.type === "group";
             return (
               <Pressable
                 onPress={() => router.push(`/messages/${item.id}`)}
                 className="mb-2 flex-row items-center gap-3 rounded-2xl border border-brand-border bg-surface p-3 active:opacity-80"
               >
-                <Avatar url={other?.profile.avatar_url} name={name} size={48} />
+                {isGroup ? (
+                  <Avatar url={item.avatar_url} name={name} size={48} />
+                ) : (
+                  <Avatar url={other?.profile.avatar_url} name={name} size={48} />
+                )}
                 <View className="flex-1">
                   <Text className="font-semibold text-ink" numberOfLines={1}>
                     {name}
@@ -103,9 +108,7 @@ export default function MessagesScreen() {
               onPress={() => router.push(`/clubs/${item.id}`)}
               className="mb-2 flex-row items-center gap-3 rounded-2xl border border-brand-border bg-surface p-3 active:opacity-80"
             >
-              <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/20">
-                <Text className="text-lg">💬</Text>
-              </View>
+              <Avatar url={item.image_url} name={item.name} size={48} />
               <View className="flex-1">
                 <Text className="font-semibold text-ink" numberOfLines={1}>
                   {item.name}

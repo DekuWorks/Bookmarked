@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { BookCover } from "./BookCover";
+import { Avatar } from "./Avatar";
 import type { BookClubSummary } from "../types";
 
 export function ClubCard({ club }: { club: BookClubSummary }) {
@@ -13,15 +14,17 @@ export function ClubCard({ club }: { club: BookClubSummary }) {
       onPress={() => router.push(`/(app)/clubs/${club.id}`)}
       className="flex-row gap-4 rounded-2xl border border-brand-border bg-surface p-4 mb-3 active:opacity-80"
     >
-      <View className="w-16">
-        {club.current_book ? (
+      <View className="w-16 h-16">
+        {club.image_url ? (
+          <Avatar url={club.image_url} name={club.name} size={64} />
+        ) : club.current_book ? (
           <BookCover
             url={club.current_book.cover_url}
             title={club.current_book.title}
             sizeClassName="w-16 h-24"
           />
         ) : (
-          <View className="w-16 h-24 rounded-md bg-primary/25 items-center justify-center">
+          <View className="w-16 h-16 rounded-full bg-primary/25 items-center justify-center">
             <Text className="text-2xl">📚</Text>
           </View>
         )}

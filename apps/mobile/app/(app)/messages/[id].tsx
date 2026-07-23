@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AttachmentImage } from "../../../src/components/AttachmentImage";
+import { Avatar } from "../../../src/components/Avatar";
 import { GifPicker } from "../../../src/components/GifPicker";
 import { LoadingState } from "../../../src/components/LoadingState";
 import { ScreenHeader } from "../../../src/components/ScreenHeader";
@@ -51,6 +52,9 @@ export default function ThreadScreen() {
   const title = conversation.data
     ? conversationDisplayName(conversation.data, userId as string)
     : "Conversation";
+
+  const isGroup = conversation.data?.type === "group";
+  const groupAvatarUrl = isGroup ? conversation.data?.avatar_url : null;
 
   const peerUsername =
     conversation.data?.type === "direct"
@@ -100,6 +104,11 @@ export default function ThreadScreen() {
           peerUsername
             ? () => router.push(`/reader/${peerUsername}`)
             : undefined
+        }
+        left={
+          isGroup ? (
+            <Avatar url={groupAvatarUrl} name={title} size={32} />
+          ) : undefined
         }
       />
       {messages.isLoading ? (
