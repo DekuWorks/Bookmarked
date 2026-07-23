@@ -20,9 +20,9 @@ import { useAuthStore } from "../../src/store/authStore";
 
 function StatTile({ value, label }: { value: string | number; label: string }) {
   return (
-    <View className="flex-1 items-center rounded-2xl bg-primary/10 py-3">
+    <View className="flex-1 items-center rounded-2xl border border-primary/25 bg-primary/10 px-2 py-3 shadow-sm">
       <Text className="text-2xl font-black text-puce-red">{value}</Text>
-      <Text className="mt-0.5 text-xs text-ink-muted">{label}</Text>
+      <Text className="mt-0.5 text-center text-xs text-ink-muted">{label}</Text>
     </View>
   );
 }
