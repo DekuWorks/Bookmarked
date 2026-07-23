@@ -53,6 +53,20 @@ export {
 } from "./trending";
 
 export {
+  buildAiInsightsContext,
+  generateAiInsights,
+  mergeLlmSummary,
+  parseOpenAiInsightsResponse,
+  type AiInsightItem,
+  type AiInsightsBookInput,
+  type AiInsightsContext,
+  type AiInsightsReviewInput,
+  type AiInsightsResult,
+  type AiInsightsSessionInput,
+  type GenerateAiInsightsInput,
+} from "./aiInsights";
+
+export {
   MAX_BIO_LENGTH,
   MAX_DISPLAY_NAME_LENGTH,
   MAX_READING_GOAL,
