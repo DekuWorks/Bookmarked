@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { ScrollView, useWindowDimensions, View } from "react-native";
+import { ScrollView, useWindowDimensions, View, type LayoutChangeEvent } from "react-native";
 import { BrandTopHeader } from "../components/BrandTopHeader";
 import { FeedTabPanel } from "../components/FeedTabPanel";
 import { ScreenGradientWash } from "../components/ScreenGradientWash";
@@ -13,11 +13,20 @@ const TAB_OPTIONS: { id: FeedTab; label: string }[] = [
   { id: "clubs", label: "Book Clubs" },
 ];
 
+/** Conservative estimate until BrandTopHeader is measured (tabs make Feed header taller). */
+const FEED_WASH_HEIGHT_RATIO = 0.18;
+
 export function FeedScreen() {
   const { width } = useWindowDimensions();
   const pagerRef = useRef<ScrollView>(null);
   const [tab, setTab] = useState<FeedTab>("for-you");
+  const [headerHeight, setHeaderHeight] = useState(0);
   const { onScroll } = useTabBarScroll();
+
+  const onHeaderLayout = useCallback((event: LayoutChangeEvent) => {
+    const next = event.nativeEvent.layout.height;
+    setHeaderHeight((prev) => (prev === next ? prev : next));
+  }, []);
 
   const selectTab = useCallback(
     (next: FeedTab) => {
@@ -30,16 +39,21 @@ export function FeedScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <ScreenGradientWash />
-      <BrandTopHeader>
-        <SegmentedTabs
-          className="mt-3"
-          equalWidth
-          options={TAB_OPTIONS}
-          value={tab}
-          onChange={selectTab}
-        />
-      </BrandTopHeader>
+      <ScreenGradientWash
+        height={headerHeight > 0 ? headerHeight : undefined}
+        heightRatio={FEED_WASH_HEIGHT_RATIO}
+      />
+      <View onLayout={onHeaderLayout}>
+        <BrandTopHeader>
+          <SegmentedTabs
+            className="mt-3"
+            equalWidth
+            options={TAB_OPTIONS}
+            value={tab}
+            onChange={selectTab}
+          />
+        </BrandTopHeader>
+      </View>
 
       <ScrollView
         ref={pagerRef}
