@@ -258,7 +258,7 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
                 {subscriptionLoading ? (
                   <LoadingState message="Checking subscription…" />
                 ) : hasAiInsights ? (
-                  <AiInsightsPanel />
+                  <AiInsightsPanel userId={userId} />
                 ) : (
                   <PremiumFeatureLock
                     title="AI reading insights"

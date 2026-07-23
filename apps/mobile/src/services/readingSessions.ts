@@ -101,6 +101,67 @@ export type UpdateReadingSessionInput = {
   mood?: string | null;
 };
 
+export type ReadingStatsInRange = {
+  total_pages: number;
+  session_count: number;
+  active_days: number;
+};
+
+export type ReadingPagesByDay = {
+  day: string;
+  pages_read: number;
+  session_count: number;
+};
+
+export async function getReadingStatsInRange(
+  userId: string,
+  start: Date,
+  end: Date
+): Promise<ReadingStatsInRange | null> {
+  const { data, error } = await supabase.rpc("reading_stats_in_range", {
+    p_user_id: userId,
+    p_start: start.toISOString(),
+    p_end: end.toISOString(),
+  });
+
+  if (error) {
+    console.error("[readingSessions] stats failed:", error);
+    return null;
+  }
+
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) return { total_pages: 0, session_count: 0, active_days: 0 };
+
+  return {
+    total_pages: Number(row.total_pages ?? 0),
+    session_count: Number(row.session_count ?? 0),
+    active_days: Number(row.active_days ?? 0),
+  };
+}
+
+export async function getReadingPagesByDay(
+  userId: string,
+  start: Date,
+  end: Date
+): Promise<ReadingPagesByDay[]> {
+  const { data, error } = await supabase.rpc("reading_pages_by_day", {
+    p_user_id: userId,
+    p_start: start.toISOString(),
+    p_end: end.toISOString(),
+  });
+
+  if (error) {
+    console.error("[readingSessions] pages by day failed:", error);
+    return [];
+  }
+
+  return (data ?? []).map((row: ReadingPagesByDay) => ({
+    day: row.day,
+    pages_read: Number(row.pages_read ?? 0),
+    session_count: Number(row.session_count ?? 0),
+  }));
+}
+
 export async function updateReadingSession(
   sessionId: string,
   input: UpdateReadingSessionInput
