@@ -1,20 +1,22 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Avatar } from "../../../src/components/Avatar";
 import { EmptyState } from "../../../src/components/EmptyState";
 import { LoadingState } from "../../../src/components/LoadingState";
+import { NewMessageSheet } from "../../../src/components/messages/NewMessageSheet";
 import { ScreenGradientWash } from "../../../src/components/ScreenGradientWash";
 import { SegmentedTabs } from "../../../src/components/SegmentedTabs";
 import { UnreadBadge } from "../../../src/components/UnreadBadge";
-import { useConversations } from "../../../src/hooks/useMessages";
+import { useConversations, usePinConversation } from "../../../src/hooks/useMessages";
 import { getMyClubs } from "../../../src/services/bookClubs";
 import { conversationDisplayName, formatMessageTimestamp } from "../../../src/services/messages";
 import { TAB_BAR_SPACE, useTabBarScroll } from "../../../src/navigation/TabBarScroll";
 import { useAuthStore } from "../../../src/store/authStore";
+import type { ConversationPreview } from "../../../src/types";
 
 type Segment = "dms" | "clubs";
 
@@ -23,14 +25,24 @@ const SEGMENTS: { id: Segment; label: string }[] = [
   { id: "clubs", label: "Book Clubs" },
 ];
 
+function conversationPreview(item: ConversationPreview): string {
+  const latest = item.latestMessage;
+  if (!latest) return "No messages yet";
+  if (latest.body?.trim()) return latest.body;
+  if (latest.attachment_url) return "Photo";
+  return "No messages yet";
+}
+
 export default function MessagesScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const userId = useAuthStore((s) => s.user?.id);
   const { onScroll } = useTabBarScroll();
   const [segment, setSegment] = useState<Segment>("dms");
+  const [newMessageOpen, setNewMessageOpen] = useState(false);
 
   const conversations = useConversations();
+  const pinConversation = usePinConversation();
   const clubs = useQuery({
     queryKey: ["my-clubs", userId],
     queryFn: () => getMyClubs(userId as string),
@@ -39,11 +51,35 @@ export default function MessagesScreen() {
 
   const loading = segment === "dms" ? conversations.isLoading : clubs.isLoading;
 
+  function handlePinToggle(item: ConversationPreview) {
+    const isPinned = Boolean(item.pinnedAt);
+    void pinConversation.mutateAsync(
+      { conversationId: item.id, pinned: isPinned },
+      {
+        onError: () => {},
+        onSuccess: (result) => {
+          if (result.error) Alert.alert("Couldn't update pin", result.error);
+        },
+      }
+    );
+  }
+
   return (
     <View className="flex-1 bg-background">
       <ScreenGradientWash />
       <View style={{ paddingTop: insets.top + 8 }} className="px-4 pb-3">
-        <Text className="mb-3 text-3xl font-black text-puce-red">Messages</Text>
+        <View className="mb-3 flex-row items-center justify-between">
+          <Text className="text-3xl font-black text-puce-red">Messages</Text>
+          {segment === "dms" ? (
+            <Pressable
+              onPress={() => setNewMessageOpen(true)}
+              accessibilityLabel="New message"
+              className="h-10 w-10 items-center justify-center rounded-full bg-puce-red active:opacity-80"
+            >
+              <Text className="text-xl font-bold text-white">+</Text>
+            </Pressable>
+          ) : null}
+        </View>
         <SegmentedTabs options={SEGMENTS} value={segment} onChange={setSegment} />
       </View>
 
@@ -60,39 +96,76 @@ export default function MessagesScreen() {
             const name = conversationDisplayName(item, userId as string);
             const other = item.participants.find((p) => p.user_id !== userId);
             const isGroup = item.type === "group";
+            const isPinned = Boolean(item.pinnedAt);
             return (
-              <Pressable
-                onPress={() => router.push(`/messages/${item.id}`)}
-                className="mb-2 flex-row items-center gap-3 rounded-2xl border border-brand-border bg-surface p-3 active:opacity-80"
+              <View
+                className={`mb-2 flex-row items-stretch overflow-hidden rounded-2xl border ${
+                  isPinned
+                    ? "border-royal-orange/50 bg-royal-orange/5"
+                    : item.unreadCount
+                      ? "border-primary/40 bg-primary/5"
+                      : "border-brand-border bg-surface"
+                }`}
               >
-                {isGroup ? (
-                  <Avatar url={item.avatar_url} name={name} size={48} />
-                ) : (
-                  <Avatar url={other?.profile.avatar_url} name={name} size={48} />
-                )}
-                <View className="flex-1">
-                  <Text className="font-semibold text-ink" numberOfLines={1}>
-                    {name}
-                  </Text>
-                  <Text className="text-sm text-ink-muted" numberOfLines={1}>
-                    {item.latestMessage?.body ?? "No messages yet"}
-                  </Text>
-                </View>
-                <View className="items-end gap-1">
-                  {item.latestMessage ? (
-                    <Text className="text-xs text-ink-muted">
-                      {formatMessageTimestamp(item.latestMessage.created_at)}
+                <Pressable
+                  onPress={() => router.push(`/messages/${item.id}`)}
+                  onLongPress={() => handlePinToggle(item)}
+                  className="min-h-[72px] flex-1 flex-row items-center gap-3 p-3 active:opacity-80"
+                >
+                  {isGroup ? (
+                    <Avatar url={item.avatar_url} name={name} size={48} />
+                  ) : (
+                    <Avatar url={other?.profile.avatar_url} name={name} size={48} />
+                  )}
+                  <View className="min-w-0 flex-1">
+                    <View className="flex-row items-start justify-between gap-2">
+                      <Text
+                        className={`flex-1 font-semibold ${item.unreadCount ? "text-puce-red" : "text-ink"}`}
+                        numberOfLines={1}
+                      >
+                        {isPinned ? "📌 " : ""}
+                        {name}
+                      </Text>
+                      {item.latestMessage ? (
+                        <Text className="shrink-0 text-xs text-ink-muted">
+                          {formatMessageTimestamp(item.latestMessage.created_at)}
+                        </Text>
+                      ) : null}
+                    </View>
+                    <Text className="text-sm text-ink-muted" numberOfLines={1}>
+                      {conversationPreview(item)}
                     </Text>
-                  ) : null}
+                    {isGroup ? (
+                      <Text className="mt-1 text-xs text-ink-muted" numberOfLines={1}>
+                        {item.participants
+                          .map(
+                            (p) =>
+                              p.profile.display_name?.trim() ||
+                              p.profile.username?.trim() ||
+                              "Reader"
+                          )
+                          .join(", ")}
+                      </Text>
+                    ) : null}
+                  </View>
                   {item.unreadCount ? <UnreadBadge count={item.unreadCount} /> : null}
-                </View>
-              </Pressable>
+                </Pressable>
+                <Pressable
+                  onPress={() => handlePinToggle(item)}
+                  accessibilityLabel={isPinned ? "Unpin conversation" : "Pin conversation"}
+                  className="items-center justify-center px-3 active:opacity-70"
+                >
+                  <Text className={`text-lg ${isPinned ? "text-royal-orange" : "text-ink-muted"}`}>
+                    📌
+                  </Text>
+                </Pressable>
+              </View>
             );
           }}
           ListEmptyComponent={
             <EmptyState
               title="No conversations yet"
-              description="Find a reader in Search to start a chat."
+              description="Tap + to start a direct or group chat."
             />
           }
         />
@@ -128,6 +201,14 @@ export default function MessagesScreen() {
           }
         />
       )}
+
+      {userId ? (
+        <NewMessageSheet
+          visible={newMessageOpen}
+          currentUserId={userId}
+          onClose={() => setNewMessageOpen(false)}
+        />
+      ) : null}
     </View>
   );
 }

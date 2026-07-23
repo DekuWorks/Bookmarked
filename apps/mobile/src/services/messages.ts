@@ -18,12 +18,14 @@ import type {
  * Mobile messages service. Mirrors the web service
  * (apps/web/src/lib/services/messages.ts) against the same `conversations`,
  * `conversation_participants`, and `messages` tables + RLS, using batched
- * `.in(...)` hydration. Group management/attachments are out of scope for the
- * mobile foundation; direct + group threads read + send are supported.
+ * `.in(...)` hydration. Mirrors web group management, pinning, reactions,
+ * replies, and attachments.
  */
 
 const PROFILE_SELECT = "id, username, display_name, avatar_url";
 const MESSAGE_ATTACHMENT_SIGNED_URL_TTL_SEC = 3600;
+
+export const MAX_PINNED_CONVERSATIONS = 3;
 
 const MESSAGE_SELECT = `
   *,
@@ -422,12 +424,20 @@ export async function getMessages(
     viewerId ?? null
   );
 
-  return signMessageAttachmentFields(
-    mapped.map((message) => ({
+  const withReactions = await Promise.all(
+    mapped.map(async (message) => ({
       ...message,
+      reply_to: message.reply_to
+        ? {
+            ...message.reply_to,
+            attachment_url: await signMessageAttachmentUrl(message.reply_to.attachment_url),
+          }
+        : null,
       reactions: reactionsByMessage.get(message.id) ?? [],
     }))
   );
+
+  return signMessageAttachmentFields(withReactions);
 }
 
 export async function sendMessage(
@@ -598,6 +608,341 @@ export async function markConversationRead(conversationId: string): Promise<void
     .update({ last_read_at: new Date().toISOString() })
     .eq("conversation_id", conversationId)
     .eq("user_id", user.id);
+}
+
+export async function leaveConversation(
+  conversationId: string
+): Promise<{ error?: string }> {
+  try {
+    const user = await requireUser();
+
+    const { error } = await supabase
+      .from("conversation_participants")
+      .delete()
+      .eq("conversation_id", conversationId)
+      .eq("user_id", user.id);
+
+    if (error) return { error: error.message };
+    return {};
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not leave conversation.",
+    };
+  }
+}
+
+export async function renameGroupConversation(
+  conversationId: string,
+  title: string
+): Promise<{ error?: string }> {
+  const trimmed = title.trim();
+  if (!trimmed) return { error: "Group name is required." };
+
+  try {
+    const user = await requireUser();
+
+    const { data: conversation } = await supabase
+      .from("conversations")
+      .select("type")
+      .eq("id", conversationId)
+      .maybeSingle();
+
+    if (!conversation || conversation.type !== "group") {
+      return { error: "Only group conversations can be renamed." };
+    }
+
+    const { data: membership } = await supabase
+      .from("conversation_participants")
+      .select("role")
+      .eq("conversation_id", conversationId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!membership || membership.role !== "owner") {
+      return { error: "Only the group owner can rename this chat." };
+    }
+
+    const { error } = await supabase
+      .from("conversations")
+      .update({ title: trimmed, updated_at: new Date().toISOString() })
+      .eq("id", conversationId);
+
+    if (error) return { error: error.message };
+    return {};
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not rename group.",
+    };
+  }
+}
+
+export async function addGroupMembers(
+  conversationId: string,
+  userIds: string[]
+): Promise<{ error?: string; added?: number }> {
+  const uniqueIds = [...new Set(userIds.filter(Boolean))];
+  if (!uniqueIds.length) return { error: "Select at least one reader." };
+
+  try {
+    const user = await requireUser();
+
+    const { data: conversation } = await supabase
+      .from("conversations")
+      .select("type")
+      .eq("id", conversationId)
+      .maybeSingle();
+
+    if (!conversation || conversation.type !== "group") {
+      return { error: "Members can only be added to group chats." };
+    }
+
+    const { data: membership } = await supabase
+      .from("conversation_participants")
+      .select("role")
+      .eq("conversation_id", conversationId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!membership || membership.role !== "owner") {
+      return { error: "Only the group owner can add members." };
+    }
+
+    const { data: existing } = await supabase
+      .from("conversation_participants")
+      .select("user_id")
+      .eq("conversation_id", conversationId);
+
+    const existingIds = new Set((existing ?? []).map((row) => row.user_id));
+    const toAdd = uniqueIds.filter((id) => id !== user.id && !existingIds.has(id));
+
+    if (!toAdd.length) return { error: "Those readers are already in the group." };
+
+    const { data: profiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("id")
+      .in("id", toAdd);
+
+    if (profilesError) return { error: profilesError.message };
+    if ((profiles ?? []).length !== toAdd.length) {
+      return { error: "One or more readers were not found." };
+    }
+
+    const rows = toAdd.map((memberId) => ({
+      conversation_id: conversationId,
+      user_id: memberId,
+      role: "member" as const,
+    }));
+
+    const { error } = await supabase.from("conversation_participants").insert(rows);
+    if (error) return { error: error.message };
+
+    await supabase
+      .from("conversations")
+      .update({ updated_at: new Date().toISOString() })
+      .eq("id", conversationId);
+
+    return { added: toAdd.length };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not add members.",
+    };
+  }
+}
+
+export async function removeGroupMember(
+  conversationId: string,
+  memberUserId: string
+): Promise<{ error?: string }> {
+  try {
+    const user = await requireUser();
+
+    if (memberUserId === user.id) {
+      return leaveConversation(conversationId);
+    }
+
+    const { data: membership } = await supabase
+      .from("conversation_participants")
+      .select("role")
+      .eq("conversation_id", conversationId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!membership || membership.role !== "owner") {
+      return { error: "Only the group owner can remove members." };
+    }
+
+    const { error } = await supabase
+      .from("conversation_participants")
+      .delete()
+      .eq("conversation_id", conversationId)
+      .eq("user_id", memberUserId);
+
+    if (error) return { error: error.message };
+    return {};
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not remove member.",
+    };
+  }
+}
+
+export async function updateMessage(
+  messageId: string,
+  body: string
+): Promise<{ message?: Message; error?: string }> {
+  const trimmed = body.trim();
+  if (!trimmed) return { error: "Message cannot be empty." };
+
+  try {
+    const user = await requireUser();
+
+    const { data: message, error } = await supabase
+      .from("messages")
+      .update({
+        body: trimmed,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", messageId)
+      .eq("sender_id", user.id)
+      .select("*")
+      .single();
+
+    if (error) return { error: error.message };
+    return { message: message as Message };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not update message.",
+    };
+  }
+}
+
+export async function pinConversation(
+  conversationId: string
+): Promise<{ error?: string }> {
+  try {
+    const user = await requireUser();
+
+    const { data: membership, error: membershipError } = await supabase
+      .from("conversation_participants")
+      .select("id, pinned_at")
+      .eq("conversation_id", conversationId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (membershipError) return { error: membershipError.message };
+    if (!membership) return { error: "You are not part of this conversation." };
+    if (membership.pinned_at) return {};
+
+    const { count, error: countError } = await supabase
+      .from("conversation_participants")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .not("pinned_at", "is", null);
+
+    if (countError) return { error: countError.message };
+    if ((count ?? 0) >= MAX_PINNED_CONVERSATIONS) {
+      return { error: `You can pin up to ${MAX_PINNED_CONVERSATIONS} conversations.` };
+    }
+
+    const { error } = await supabase
+      .from("conversation_participants")
+      .update({ pinned_at: new Date().toISOString() })
+      .eq("id", membership.id);
+
+    if (error) return { error: error.message };
+    return {};
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not pin conversation.",
+    };
+  }
+}
+
+export async function unpinConversation(
+  conversationId: string
+): Promise<{ error?: string }> {
+  try {
+    const user = await requireUser();
+
+    const { error } = await supabase
+      .from("conversation_participants")
+      .update({ pinned_at: null })
+      .eq("conversation_id", conversationId)
+      .eq("user_id", user.id);
+
+    if (error) return { error: error.message };
+    return {};
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not unpin conversation.",
+    };
+  }
+}
+
+export async function createGroupConversation(
+  title: string,
+  userIds: string[]
+): Promise<{ conversationId?: string; error?: string }> {
+  const trimmedTitle = title.trim();
+  if (!trimmedTitle) return { error: "Group name is required." };
+
+  const uniqueIds = [...new Set(userIds.filter(Boolean))];
+
+  try {
+    const user = await requireUser();
+
+    const memberIds = uniqueIds.filter((id) => id !== user.id);
+    if (memberIds.length < 2) {
+      return { error: "Select at least two other readers for a group chat." };
+    }
+
+    const { data: profiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("id")
+      .in("id", memberIds);
+
+    if (profilesError) return { error: profilesError.message };
+    if ((profiles ?? []).length !== memberIds.length) {
+      return { error: "One or more selected readers were not found." };
+    }
+
+    const { data: conversation, error: conversationError } = await supabase
+      .from("conversations")
+      .insert({
+        type: "group",
+        title: trimmedTitle,
+        created_by: user.id,
+      })
+      .select("id")
+      .single();
+
+    if (conversationError || !conversation) {
+      return { error: conversationError?.message ?? "Could not create group." };
+    }
+
+    const rows = [
+      { conversation_id: conversation.id, user_id: user.id, role: "owner" as const },
+      ...memberIds.map((memberId) => ({
+        conversation_id: conversation.id,
+        user_id: memberId,
+        role: "member" as const,
+      })),
+    ];
+
+    const { error: participantsError } = await supabase
+      .from("conversation_participants")
+      .insert(rows);
+
+    if (participantsError) {
+      return { error: participantsError.message };
+    }
+
+    return { conversationId: conversation.id };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not create group.",
+    };
+  }
 }
 
 export async function createDirectConversation(

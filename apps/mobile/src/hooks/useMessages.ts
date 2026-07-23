@@ -2,14 +2,19 @@ import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createDirectConversation,
+  createGroupConversation,
   deleteMessage,
   getConversation,
   getConversations,
   getMessages,
   getUnreadMessageCount,
+  leaveConversation,
   markConversationRead,
+  pinConversation,
   sendMessage,
   toggleMessageReaction,
+  unpinConversation,
+  updateMessage,
 } from "../services/messages";
 import { supabase } from "../services/supabase";
 import { useAuthStore } from "../store/authStore";
@@ -151,7 +156,67 @@ export function useMarkConversationRead() {
 }
 
 export function useCreateDirectConversation() {
+  const queryClient = useQueryClient();
+  const userId = useAuthStore((s) => s.user?.id);
   return useMutation({
     mutationFn: (targetUserId: string) => createDirectConversation(targetUserId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["conversations", userId] });
+    },
+  });
+}
+
+export function useCreateGroupConversation() {
+  const queryClient = useQueryClient();
+  const userId = useAuthStore((s) => s.user?.id);
+  return useMutation({
+    mutationFn: ({ title, userIds }: { title: string; userIds: string[] }) =>
+      createGroupConversation(title, userIds),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["conversations", userId] });
+    },
+  });
+}
+
+export function useUpdateMessage(conversationId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ messageId, body }: { messageId: string; body: string }) =>
+      updateMessage(messageId, body),
+    onSuccess: (result) => {
+      if (result.error) return;
+      queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
+    },
+  });
+}
+
+export function usePinConversation() {
+  const userId = useAuthStore((s) => s.user?.id);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      conversationId,
+      pinned,
+    }: {
+      conversationId: string;
+      pinned: boolean;
+    }) => (pinned ? unpinConversation(conversationId) : pinConversation(conversationId)),
+    onSuccess: (result) => {
+      if (result.error) return;
+      queryClient.invalidateQueries({ queryKey: ["conversations", userId] });
+      queryClient.invalidateQueries({ queryKey: ["conversation"] });
+    },
+  });
+}
+
+export function useLeaveConversation() {
+  const userId = useAuthStore((s) => s.user?.id);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (conversationId: string) => leaveConversation(conversationId),
+    onSuccess: (result) => {
+      if (result.error) return;
+      queryClient.invalidateQueries({ queryKey: ["conversations", userId] });
+    },
   });
 }

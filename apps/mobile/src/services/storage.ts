@@ -190,6 +190,29 @@ export async function uploadGroupAvatar(
   return { url: result.url };
 }
 
+export async function removeGroupAvatar(conversationId: string): Promise<{ error?: string }> {
+  const prefix = `groups/${conversationId}`;
+  const { data: files, error: listError } = await supabase.storage.from(AVATAR_BUCKET).list(prefix);
+  if (listError) return { error: listError.message };
+
+  const paths = (files ?? [])
+    .filter((file) => file.name.startsWith("avatar."))
+    .map((file) => `${prefix}/${file.name}`);
+
+  if (paths.length > 0) {
+    const { error: removeError } = await supabase.storage.from(AVATAR_BUCKET).remove(paths);
+    if (removeError) return { error: removeError.message };
+  }
+
+  const { error } = await supabase
+    .from("conversations")
+    .update({ avatar_url: null, updated_at: new Date().toISOString() })
+    .eq("id", conversationId);
+
+  if (error) return { error: error.message };
+  return {};
+}
+
 /** Upload the signed-in user's profile avatar. */
 export async function uploadProfileAvatar(
   image: PickedImage
