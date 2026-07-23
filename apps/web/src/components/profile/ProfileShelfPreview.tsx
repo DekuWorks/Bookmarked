@@ -6,7 +6,7 @@ import { BookMiniGrid } from "@/components/reading-room/BookMiniGrid";
 import { ShelfIcon } from "@/components/shelves/ShelfIcon";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
-import { SHELF_CONFIG } from "@/lib/constants/shelves";
+import { getShelvesInOrder } from "@/lib/constants/shelves";
 import { readerLibraryPath } from "@/lib/routes/readerLibrary";
 import { buildShelfPreview, getReaderLibraryBooks } from "@/lib/services/publicLibrary";
 import type { ShelfGroup } from "@/lib/services/library";
@@ -62,7 +62,7 @@ export function ProfileShelfPreview({
 
   return (
     <section className="space-y-6">
-      {SHELF_CONFIG.map((config) => {
+      {getShelvesInOrder().map((config) => {
         const shelf = visibleShelves.find((entry) => entry.status === config.status);
         if (!shelf) return null;
 
@@ -73,7 +73,7 @@ export function ProfileShelfPreview({
           >
             <div className="mb-4 flex items-center justify-between gap-3">
               <h3 className="flex items-center gap-2 text-lg font-semibold text-puce-red">
-                <ShelfIcon id={config.status} size="md" />
+                <ShelfIcon id={config.status} size="medium" />
                 {config.title}
               </h3>
               {seeMoreHref ? (

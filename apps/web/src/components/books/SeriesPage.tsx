@@ -18,7 +18,7 @@ function statusPill(book: SeriesBook): { label: string; className: string } {
   switch (book.shelf_status) {
     case "read":
       return {
-        label: "Read",
+        label: "Finished",
         className: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
       };
     case "currently_reading":

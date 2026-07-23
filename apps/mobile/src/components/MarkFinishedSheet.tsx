@@ -56,7 +56,7 @@ export function MarkFinishedSheet({
         >
           <Text className="text-lg font-bold text-puce-red">Mark as finished</Text>
           <Text className="mt-2 text-sm leading-5 text-ink-muted">
-            <Text className="font-semibold text-ink">{bookTitle}</Text> will move to your Read shelf,
+            <Text className="font-semibold text-ink">{bookTitle}</Text> will move to your Finished shelf,
             progress will be set to 100%, and a journal entry will be added.
           </Text>
 

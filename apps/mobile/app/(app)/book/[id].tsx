@@ -33,7 +33,7 @@ import type { Review, ShelfStatus } from "../../../src/types";
 const SHELVES: { status: ShelfStatus; label: string }[] = [
   { status: "want_to_read", label: "TBR" },
   { status: "currently_reading", label: "Reading" },
-  { status: "read", label: "Read" },
+  { status: "read", label: "Finished" },
 ];
 
 function ReviewItem({ review }: { review: Review }) {
@@ -282,7 +282,7 @@ export default function BookScreen() {
                 onPress={() => changeShelf(s.status)}
                 className={`flex-1 items-center gap-1 rounded-xl py-2.5 ${active ? "bg-puce-red" : "bg-primary/15"}`}
               >
-                <ShelfIcon id={s.status} size="sm" />
+                <ShelfIcon id={s.status} size="small" />
                 <Text className={`text-sm font-semibold ${active ? "text-white" : "text-puce-red"}`}>
                   {s.label}
                 </Text>
@@ -299,9 +299,9 @@ export default function BookScreen() {
                 userBook.dnf ? "bg-rust" : "bg-primary/15"
               }`}
             >
-              <ShelfIcon id="dnf" size="sm" />
+              <ShelfIcon id="dnf" size="small" />
               <Text className={`text-sm font-semibold ${userBook.dnf ? "text-white" : "text-puce-red"}`}>
-                {userBook.dnf ? "Did not finish" : "Mark DNF"}
+                {userBook.dnf ? "Did not finish" : "Mark did not finish"}
               </Text>
             </Pressable>
             <Pressable

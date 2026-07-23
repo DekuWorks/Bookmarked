@@ -371,6 +371,24 @@ body {
   );
 }
 
+@keyframes shelf-icon-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-safe\:animate-\[shelf-icon-in_200ms_ease-out_forwards\] {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;

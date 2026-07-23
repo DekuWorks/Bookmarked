@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { SHELF_CONFIG } from "@/lib/constants/shelves";
+import { getShelvesInOrder } from "@/lib/constants/shelves";
 import { ShelfIcon } from "@/components/shelves/ShelfIcon";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -64,7 +64,7 @@ export function ShelfPrivacyPanel({ profile }: Props) {
     setSaving(true);
     setError(null);
 
-    for (const shelf of SHELF_CONFIG) {
+    for (const shelf of getShelvesInOrder()) {
       const result = validateShelfVisibility(values[shelf.status]);
       if (!result.ok) {
         setSaving(false);
@@ -142,14 +142,14 @@ export function ShelfPrivacyPanel({ profile }: Props) {
       </div>
 
       <ul className="mt-5 space-y-4">
-        {SHELF_CONFIG.map((shelf) => (
+        {getShelvesInOrder().map((shelf) => (
           <li
             key={shelf.status}
             className="flex flex-col gap-2 rounded-lg border border-border bg-background px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
           >
             <div>
               <p className="flex items-center gap-2 font-medium text-text">
-                <ShelfIcon id={shelf.status} size="sm" />
+                <ShelfIcon id={shelf.status} size="small" />
                 {shelf.title}
               </p>
               <p className="text-xs text-text-muted">{shelf.description}</p>
@@ -222,7 +222,7 @@ export function ShelfPrivacyPanel({ profile }: Props) {
 
       <p className="mt-3 text-xs text-text-muted">
         Current:{" "}
-        {SHELF_CONFIG.map((shelf) => (
+        {getShelvesInOrder().map((shelf) => (
           <span key={shelf.status}>
             {shelf.title} ({shelfVisibilityLabel(values[shelf.status])}){" "}
           </span>

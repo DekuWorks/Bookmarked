@@ -34,7 +34,7 @@ const MODE_TABS: { id: Mode; label: string }[] = [
 const SHELF_CHOICES: { status: ShelfStatus; label: string }[] = [
   { status: "want_to_read", label: "Want to read (TBR)" },
   { status: "currently_reading", label: "Currently reading" },
-  { status: "read", label: "Read" },
+  { status: "read", label: "Finished" },
 ];
 
 export default function SearchScreen() {
@@ -255,7 +255,7 @@ export default function SearchScreen() {
                 onPress={() => addToShelf(choice.status)}
                 className="mb-2 flex-row items-center gap-3 rounded-xl bg-primary/10 px-4 py-3 active:opacity-80"
               >
-                <ShelfIcon id={choice.status} size="md" />
+                <ShelfIcon id={choice.status} size="medium" />
                 <Text className="font-medium text-puce-red">{choice.label}</Text>
               </Pressable>
             ))}

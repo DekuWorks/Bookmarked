@@ -15,9 +15,9 @@ import type { LibraryBookRow } from "../../../src/services/library";
 type ShelfTab = "read" | "tbr" | "dnf" | "all";
 
 const SHELF_TABS: { id: ShelfTab; label: string }[] = [
-  { id: "read", label: "Read" },
+  { id: "read", label: "Finished" },
   { id: "tbr", label: "TBR" },
-  { id: "dnf", label: "DNF" },
+  { id: "dnf", label: "Did Not Finish" },
   { id: "all", label: "All" },
 ];
 

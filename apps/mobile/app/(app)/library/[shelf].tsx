@@ -55,7 +55,7 @@ export default function LibraryShelfScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <ScreenHeader title={config.title} left={<ShelfIcon id={config.status} size="sm" labeled />} />
+      <ScreenHeader title={config.title} left={<ShelfIcon id={config.status} size="small" labeled />} />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120, gap: 16 }}>
         <Pressable onPress={() => router.push("/library")} className="active:opacity-70">
           <Text className="text-sm text-primary-dark">← Back to library</Text>

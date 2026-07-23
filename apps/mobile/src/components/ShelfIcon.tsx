@@ -1,34 +1,79 @@
-import { Image, type ImageStyle, type StyleProp } from "react-native";
-import { getShelfIconConfig, type ShelfIconId } from "../constants/shelfIcons";
-
-type Size = "xs" | "sm" | "md" | "lg";
-
-const sizePx: Record<Size, number> = {
-  xs: 16,
-  sm: 20,
-  md: 24,
-  lg: 32,
-};
+import { useState } from "react";
+import { Image, View, type ImageStyle, type StyleProp } from "react-native";
+import {
+  getShelfIconConfig,
+  SHELF_ICON_FRAME_PX,
+  SHELF_ICON_SIZE_PX,
+  type ShelfIconId,
+  type ShelfIconSize,
+} from "../constants/shelfIcons";
 
 type Props = {
   id: ShelfIconId;
-  size?: Size;
+  size?: ShelfIconSize;
   style?: StyleProp<ImageStyle>;
   /** When true, exposes the shelf name to assistive tech (default: decorative). */
   labeled?: boolean;
 };
 
-export function ShelfIcon({ id, size = "md", style, labeled = false }: Props) {
+export function ShelfIcon({ id, size = "small", style, labeled = false }: Props) {
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
   const config = getShelfIconConfig(id);
-  const px = sizePx[size];
+  const px = SHELF_ICON_SIZE_PX[size];
+  const frame = SHELF_ICON_FRAME_PX[size];
 
   return (
-    <Image
-      source={config.source}
-      accessibilityLabel={labeled ? config.label : undefined}
+    <View
+      accessibilityLabel={labeled ? config.accessibilityLabel : undefined}
       accessibilityElementsHidden={!labeled}
       importantForAccessibility={labeled ? "yes" : "no-hide-descendants"}
-      style={[{ width: px, height: px, resizeMode: "contain" }, style]}
-    />
+      style={[
+        {
+          width: frame,
+          height: frame,
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: 6,
+          borderWidth: 1,
+          borderColor: "rgba(100, 47, 55, 0.12)",
+          backgroundColor: "rgba(255, 255, 255, 0.5)",
+        },
+        style,
+      ]}
+    >
+      {!loaded && !error ? (
+        <View
+          style={{
+            width: px * 0.8,
+            height: px * 0.8,
+            borderRadius: 4,
+            backgroundColor: "rgba(100, 47, 55, 0.1)",
+          }}
+        />
+      ) : null}
+      {error ? (
+        <View
+          style={{
+            width: px * 0.8,
+            height: px * 0.8,
+            borderRadius: 4,
+            backgroundColor: "rgba(100, 47, 55, 0.08)",
+          }}
+        />
+      ) : (
+        <Image
+          source={config.source}
+          onLoad={() => setLoaded(true)}
+          onError={() => setError(true)}
+          style={{
+            width: px,
+            height: px,
+            resizeMode: "contain",
+            opacity: loaded ? 1 : 0,
+          }}
+        />
+      )}
+    </View>
   );
 }

@@ -14,7 +14,7 @@ import {
   type BookActionState,
 } from "@/lib/actions/book";
 import { needsMissingPageCountPrompt } from "@/lib/services/completeReadingSession";
-import { SHELF_CONFIG } from "@/lib/constants/shelves";
+import { getShelvesInOrder } from "@/lib/constants/shelves";
 import { ShelfIcon } from "@/components/shelves/ShelfIcon";
 import { listCustomShelfIdsForBook } from "@/lib/services/customShelves";
 import { ShelfBadge } from "@/components/shelves/ShelfBadge";
@@ -150,7 +150,7 @@ export function BookShelfActions({
         <div className="mt-4">
           <p className="mb-3 text-sm text-text-muted">Not on your shelves yet.</p>
           <div className="flex flex-wrap gap-2">
-            {SHELF_CONFIG.map(({ status, title }) => (
+            {getShelvesInOrder().map(({ status, title }) => (
               <Button
                 key={status}
                 type="button"
@@ -160,7 +160,7 @@ export function BookShelfActions({
                 onClick={() => applyShelf(status)}
               >
                 <span className="inline-flex items-center gap-1.5">
-                  <ShelfIcon id={status} size="xs" />
+                  <ShelfIcon id={status} size="small" />
                   {title}
                 </span>
               </Button>

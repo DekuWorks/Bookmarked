@@ -1,6 +1,6 @@
 import { completeReadingSession } from "./completeReadingSession";
 import { supabase } from "./supabase";
-import { SHELF_CONFIG } from "../constants/shelves";
+import { getShelvesInOrder } from "../constants/shelves";
 import {
   activityMetadata,
   bookActivityContext,
@@ -56,7 +56,7 @@ export async function getUserLibraryBooks(userId: string): Promise<LibraryBookRo
 }
 
 export function groupBooksByShelf(books: LibraryBookRow[]): ShelfGroup[] {
-  return SHELF_CONFIG.map((shelf) => ({
+  return getShelvesInOrder().map((shelf) => ({
     status: shelf.status,
     title: shelf.title,
     slug: shelf.slug,

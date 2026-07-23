@@ -88,7 +88,7 @@ export default function ShelfPageClient() {
             ← Back to library
           </Link>
           <h1 className="mt-2 flex items-center justify-center gap-2 text-3xl font-bold text-puce-red sm:text-4xl">
-            <ShelfIcon id={config.status} size="lg" labeled />
+            <ShelfIcon id={config.status} size="large" labeled />
             {config.title}
           </h1>
           <p className="mx-auto mt-1 max-w-xl text-pretty text-text-muted">{config.description}</p>

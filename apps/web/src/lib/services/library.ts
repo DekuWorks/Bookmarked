@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
-import { SHELF_CONFIG } from "@/lib/constants/shelves";
+import { getShelvesInOrder } from "@/lib/constants/shelves";
 import type { ShelfStatus } from "@/types";
 
 export type LibraryBookRow = {
@@ -54,7 +54,7 @@ export async function getUserLibraryBooks(userId: string): Promise<LibraryBookRo
 }
 
 export function groupBooksByShelf(books: LibraryBookRow[]): ShelfGroup[] {
-  return SHELF_CONFIG.map((shelf) => ({
+  return getShelvesInOrder().map((shelf) => ({
     status: shelf.status,
     title: shelf.title,
     slug: shelf.slug,

@@ -15,7 +15,7 @@ const config: Record<
     className: "bg-royal-orange/25 text-puce-red",
   },
   read: {
-    label: "Read",
+    label: "Finished",
     className: "bg-primary/30 text-puce-red",
   },
 };
@@ -35,7 +35,7 @@ export function ShelfBadge({ status, className }: Props) {
         className
       )}
     >
-      <ShelfIcon id={status} size="xs" />
+      <ShelfIcon id={status} size="small" />
       {label}
     </span>
   );

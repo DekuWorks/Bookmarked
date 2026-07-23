@@ -33,7 +33,7 @@ export function BookshelfSection({
     <section className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
       <div className="flex flex-col items-center justify-center gap-2 border-b border-border px-4 py-3 text-center sm:flex-row sm:justify-between">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-puce-red">
-          <ShelfIcon id={status} size="md" />
+          <ShelfIcon id={status} size="medium" />
           {title}
           <span className="text-sm font-normal text-text-muted">({items.length})</span>
         </h2>

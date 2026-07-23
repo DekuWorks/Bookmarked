@@ -1,12 +1,12 @@
 import type { ReactNode } from "react";
 import { ShelfIcon } from "@/components/shelves/ShelfIcon";
-import type { ShelfIconId } from "@/lib/constants/shelfIcons";
+import type { ShelfIconId, ShelfIconSize } from "@/lib/constants/shelfIcons";
 import { cn } from "@/lib/utils/cn";
 
 type Props = {
   id: ShelfIconId;
   title: string;
-  size?: "sm" | "md" | "lg";
+  size?: ShelfIconSize;
   className?: string;
   titleClassName?: string;
   action?: ReactNode;
@@ -16,7 +16,7 @@ type Props = {
 export function ShelfTitleRow({
   id,
   title,
-  size = "md",
+  size = "medium",
   className,
   titleClassName = "text-base font-semibold text-puce-red",
   action,

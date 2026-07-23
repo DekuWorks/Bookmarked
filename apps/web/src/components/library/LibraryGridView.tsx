@@ -14,7 +14,7 @@ export function LibraryGridView({ shelves }: Props) {
       {shelves.map((shelf) => (
         <section key={shelf.status}>
           <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold text-puce-red">
-            <ShelfIcon id={shelf.status} size="md" />
+            <ShelfIcon id={shelf.status} size="medium" />
             {shelf.title}
           </h2>
           {shelf.items.length === 0 ? (

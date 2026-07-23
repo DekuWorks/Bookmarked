@@ -3,7 +3,7 @@
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { ShelfIcon } from "@/components/shelves/ShelfIcon";
-import { SHELF_CONFIG } from "@/lib/constants/shelves";
+import { getShelvesInOrder } from "@/lib/constants/shelves";
 import type { ShelfStatus } from "@/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -34,7 +34,7 @@ export function ShelfSelectMenu({
         Choose a shelf for <span className="font-medium text-text">{bookTitle}</span>
       </p>
       <ul className="space-y-2" role="listbox" aria-label="Shelf options">
-        {SHELF_CONFIG.map(({ status, title: shelfTitle }) => {
+        {getShelvesInOrder().map(({ status, title: shelfTitle }) => {
           const isCurrent = currentShelfStatus === status;
           return (
             <li key={status}>
@@ -52,7 +52,7 @@ export function ShelfSelectMenu({
                     : "border-border bg-background hover:border-primary hover:bg-primary/5"
                 )}
               >
-                <ShelfIcon id={status} size="md" />
+                <ShelfIcon id={status} size="medium" />
                 <span className="flex-1 font-medium text-text">{shelfTitle}</span>
                 {isCurrent ? (
                   <span className="text-xs font-medium text-primary">Current</span>

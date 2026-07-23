@@ -11,7 +11,7 @@ import { Button } from "../../src/components/Button";
 import { LoadingState } from "../../src/components/LoadingState";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { ShelfTitleRow } from "../../src/components/ShelfTitleRow";
-import { SHELF_CONFIG } from "../../src/constants/shelves";
+import { getShelvesInOrder } from "../../src/constants/shelves";
 import { SHELF_VISIBILITY_OPTIONS } from "../../src/constants/shelfVisibility";
 import { useProfile } from "../../src/hooks/useProfile";
 import {
@@ -81,7 +81,7 @@ export default function ShelfPrivacyScreen() {
   async function save() {
     if (!userId || !values) return;
 
-    for (const shelf of SHELF_CONFIG) {
+    for (const shelf of getShelvesInOrder()) {
       const result = validateShelfVisibility(values[shelf.status]);
       if (!result.ok) {
         Alert.alert("Invalid setting", result.error);
@@ -178,7 +178,7 @@ export default function ShelfPrivacyScreen() {
           Choose who can see each shelf on your public profile and library.
         </Text>
 
-        {SHELF_CONFIG.map((shelf) => (
+        {getShelvesInOrder().map((shelf) => (
           <VisibilityRow
             key={shelf.status}
             titleNode={<ShelfTitleRow id={shelf.status} title={shelf.title} />}

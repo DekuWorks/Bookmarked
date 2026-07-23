@@ -29,7 +29,7 @@ export function ReadingRoomSection({
     >
       <div className="mb-4 flex flex-col items-center justify-center gap-3 text-center sm:flex-row sm:flex-wrap">
         <h2 className="flex items-center justify-center gap-2 text-lg font-semibold text-puce-red md:text-xl">
-          {shelfIconId ? <ShelfIcon id={shelfIconId} size="md" /> : null}
+          {shelfIconId ? <ShelfIcon id={shelfIconId} size="medium" /> : null}
           {emoji && !shelfIconId ? <span aria-hidden>{emoji}</span> : null}
           {title}
         </h2>

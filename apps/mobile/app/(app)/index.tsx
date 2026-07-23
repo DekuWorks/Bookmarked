@@ -49,7 +49,7 @@ function QuickLink({
       className="flex-1 items-center rounded-2xl border border-brand-border bg-surface py-3 active:opacity-80"
     >
       {shelfIconId ? (
-        <ShelfIcon id={shelfIconId} size="md" />
+        <ShelfIcon id={shelfIconId} size="medium" />
       ) : (
         <Text className="text-xl">{icon}</Text>
       )}

@@ -6,19 +6,21 @@ Custom PNG shelf icons replace emoji for the four built-in shelf states. Mapping
 |-------|----------------|-------|-----------|
 | Want to Read | `want_to_read` | `want-to-read.png` (source `8.png`) | 📚 |
 | Currently Reading | `currently_reading` | `currently-reading.png` (source `5.png`) | 📖 |
-| Finished / Read | `read` | `read.png` (source `7.png`) | ✅ |
-| Did Not Finish | `dnf` | `dnf.png` (source `6.png`) | — |
+| Finished | `read` | `finished.png` (source `7.png`) | ✅ |
+| Did Not Finish | `dnf` | `did-not-finish.png` (source `6.png`) | — |
 
 **Config:** `apps/web/src/lib/constants/shelfIcons.ts` · `apps/mobile/src/constants/shelfIcons.ts`  
-**Assets:** `apps/web/public/images/shelves/` · `apps/mobile/assets/shelves/`  
-**Components:** `ShelfIcon` · `ShelfTitleRow` (web + mobile)
+**Assets:** `apps/web/public/assets/shelves/` · `apps/mobile/assets/shelves/` (source copies in `source/`)  
+**Components:** `ShelfIcon` · `ShelfTitleRow` (web + mobile)  
+**Docs:** `docs/DESIGN_SYSTEM.md` · `docs/ASSET_GUIDE.md` · `docs/MOBILE_UI_GUIDE.md`
 
 ## Web
 
 | Location | File | Updated |
 |----------|------|---------|
-| Shelf config (removed emoji field) | `apps/web/src/lib/constants/shelves.ts` | ✅ |
+| Shelf config (sortOrder, accessibilityLabel) | `apps/web/src/lib/constants/shelves.ts` | ✅ |
 | Central icon config | `apps/web/src/lib/constants/shelfIcons.ts` | ✅ |
+| Shelf labels | `apps/web/src/lib/constants/shelfLabels.ts` | ✅ |
 | ShelfIcon component | `apps/web/src/components/shelves/ShelfIcon.tsx` | ✅ |
 | ShelfTitleRow component | `apps/web/src/components/shelves/ShelfTitleRow.tsx` | ✅ |
 | Library — bookshelf sections | `apps/web/src/components/library/BookshelfSection.tsx` | ✅ |
@@ -36,17 +38,18 @@ Custom PNG shelf icons replace emoji for the four built-in shelf states. Mapping
 | Profile — shelf privacy | `apps/web/src/components/profile/ShelfPrivacyPanel.tsx` | ✅ |
 | Reading Room — overview tabs | `apps/web/src/components/reading-room/ReadingRoomTabs.tsx` | ✅ |
 | Reading Room — section helper | `apps/web/src/components/reading-room/ReadingRoomSection.tsx` | ✅ |
-| Library service (removed emoji from ShelfGroup) | `apps/web/src/lib/services/library.ts` | ✅ |
+| Library service | `apps/web/src/lib/services/library.ts` | ✅ |
 | Saved-book bookmark overlay hook | `apps/web/src/components/books/BookmarkedShelfBadge.tsx` | ✅ (doc only) |
-| Custom shelf collections (generic 📚) | `CustomShelfSection.tsx`, `CustomShelfCollectionsPanel.tsx`, `AddToCustomShelfMenu.tsx`, `SuggestedShelvesPanel.tsx`, `library/custom/page.tsx` | ⬜ N/A — custom shelves, not built-in |
-| Book cover placeholder (no cover image) | `apps/web/src/components/books/BookCover.tsx` | ⬜ N/A — not a shelf icon |
+| Unit tests | `apps/web/src/lib/constants/shelfIcons.test.ts` | ✅ |
+| Custom shelf collections (generic 📚) | `CustomShelfSection.tsx`, etc. | ⬜ N/A — custom shelves |
+| Book cover placeholder | `BookCover.tsx` | ⬜ N/A — not a shelf icon |
 | Message reaction emoji picker | `messageReactions.ts` | ⬜ N/A — unrelated emoji UI |
 
 ## Mobile
 
 | Location | File | Updated |
 |----------|------|---------|
-| Shelf config (removed emoji field) | `apps/mobile/src/constants/shelves.ts` | ✅ |
+| Shelf config | `apps/mobile/src/constants/shelves.ts` | ✅ |
 | Central icon config | `apps/mobile/src/constants/shelfIcons.ts` | ✅ |
 | ShelfIcon component | `apps/mobile/src/components/ShelfIcon.tsx` | ✅ |
 | ShelfTitleRow component | `apps/mobile/src/components/ShelfTitleRow.tsx` | ✅ |
@@ -59,17 +62,16 @@ Custom PNG shelf icons replace emoji for the four built-in shelf states. Mapping
 | Reader public shelf | `apps/mobile/app/(app)/reader/[username]/library/[shelf].tsx` | ✅ |
 | Search — add-to-shelf sheet | `apps/mobile/app/(app)/search.tsx` | ✅ |
 | Book details — shelf toggles | `apps/mobile/app/(app)/book/[id].tsx` | ✅ |
-| Book details — DNF action | `apps/mobile/app/(app)/book/[id].tsx` | ✅ |
 | Saved pill | `apps/mobile/src/components/SavedPill.tsx` | ✅ |
 | Profile — shelf preview | `apps/mobile/src/components/ProfileShelfPreview.tsx` | ✅ |
-| Profile — library link | `apps/mobile/app/(app)/profile.tsx` | ✅ |
 | Shelf privacy | `apps/mobile/app/(app)/shelf-privacy.tsx` | ✅ |
 | Reading Room — overview | `apps/mobile/app/(app)/index.tsx` | ✅ |
-| Library service (removed emoji from ShelfGroup) | `apps/mobile/src/services/library.ts` | ✅ |
+| All-books tabs | `apps/mobile/app/(app)/library/my-books.tsx` | ✅ |
+| Library service | `apps/mobile/src/services/library.ts` | ✅ |
 | Saved-book bookmark overlay hook | `apps/mobile/src/components/BookmarkRibbon.tsx` | ✅ (doc only) |
-| All-books list DNF tab (text label) | `apps/mobile/app/(app)/library/my-books.tsx` | ⬜ Text tab only; DNF icon used on book detail |
-| Custom shelf sections (generic 📚) | `shelf-privacy.tsx` custom rows | ⬜ N/A — custom shelves |
-| Club cards / feed (generic 📚) | `ClubCard.tsx`, etc. | ⬜ N/A — not built-in shelf icons |
+| Unit tests | `apps/mobile/src/constants/shelves.test.ts` | ✅ |
+| Custom shelf sections | `shelf-privacy.tsx` custom rows | ⬜ N/A — custom shelves |
+| Club cards / feed | `ClubCard.tsx`, etc. | ⬜ N/A — not built-in shelf icons |
 
 ## Bookmark overlay (pending asset)
 

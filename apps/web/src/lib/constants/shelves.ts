@@ -7,24 +7,32 @@ export const SHELF_CONFIG: {
   title: string;
   slug: ShelfSlug;
   description: string;
+  sortOrder: number;
+  accessibilityLabel: string;
 }[] = [
   {
     status: "want_to_read",
     title: "Want to Read",
     slug: "want-to-read",
     description: "Books waiting for you on the shelf.",
+    sortOrder: 1,
+    accessibilityLabel: "Want to Read shelf",
   },
   {
     status: "currently_reading",
     title: "Currently Reading",
     slug: "reading",
     description: "Stories you're in the middle of right now.",
+    sortOrder: 2,
+    accessibilityLabel: "Currently Reading shelf",
   },
   {
     status: "read",
-    title: "Read",
+    title: "Finished",
     slug: "read",
     description: "Books you've finished and shelved.",
+    sortOrder: 3,
+    accessibilityLabel: "Finished shelf",
   },
 ];
 
@@ -42,4 +50,9 @@ export function getShelfConfig(status: ShelfStatus) {
 
 export function getShelfConfigBySlug(slug: string) {
   return SHELF_CONFIG.find((s) => s.slug === slug) ?? null;
+}
+
+/** Built-in shelves in product order (Want to Read → Currently Reading → Finished). */
+export function getShelvesInOrder() {
+  return [...SHELF_CONFIG].sort((a, b) => a.sortOrder - b.sortOrder);
 }

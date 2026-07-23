@@ -1,11 +1,11 @@
 import { Text, View } from "react-native";
 import { ShelfIcon } from "./ShelfIcon";
-import type { ShelfIconId } from "../constants/shelfIcons";
+import type { ShelfIconId, ShelfIconSize } from "../constants/shelfIcons";
 
 type Props = {
   id: ShelfIconId;
   title: string;
-  size?: "sm" | "md" | "lg";
+  size?: ShelfIconSize;
   className?: string;
   titleClassName?: string;
 };
@@ -14,7 +14,7 @@ type Props = {
 export function ShelfTitleRow({
   id,
   title,
-  size = "md",
+  size = "medium",
   className,
   titleClassName = "text-base font-bold text-puce-red",
 }: Props) {

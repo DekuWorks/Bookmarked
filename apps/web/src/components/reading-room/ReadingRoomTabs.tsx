@@ -152,7 +152,7 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
           <div className="space-y-8">
             <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
               <h2 className="flex items-center gap-2 text-lg font-semibold text-puce-red">
-                <ShelfIcon id="currently_reading" size="md" />
+                <ShelfIcon id="currently_reading" size="medium" />
                 Currently reading
               </h2>
               <div className="mt-4">
@@ -166,7 +166,7 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
             <div className="grid gap-6 lg:grid-cols-2">
               <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
                 <h2 className="flex items-center gap-2 text-lg font-semibold text-puce-red">
-                  <ShelfIcon id="read" size="md" />
+                  <ShelfIcon id="read" size="medium" />
                   Recently finished
                 </h2>
                 <div className="mt-4">

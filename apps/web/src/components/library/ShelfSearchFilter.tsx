@@ -83,7 +83,7 @@ export function ShelfSearchFilter({
               onChange={(e) => setHideDnf(e.target.checked)}
               className="h-4 w-4 rounded border-border text-puce-red focus:ring-puce-red"
             />
-            Hide did-not-finish (DNF) books
+            Hide did-not-finish books
           </label>
         ) : null}
       </div>

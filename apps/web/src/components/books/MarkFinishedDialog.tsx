@@ -67,7 +67,7 @@ export function MarkFinishedDialog({
   return (
     <Modal open={open} onClose={onClose} title="Mark as finished">
       <p className="text-sm text-text-muted">
-        <span className="font-medium text-text">{bookTitle}</span> will move to your Read shelf,
+        <span className="font-medium text-text">{bookTitle}</span> will move to your Finished shelf,
         progress will be set to 100%, and a trail entry will be added.
       </p>
 

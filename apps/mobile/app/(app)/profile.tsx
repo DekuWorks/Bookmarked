@@ -103,7 +103,7 @@ function ProfileLink({
       className="flex-row items-center gap-3 rounded-2xl border border-brand-border bg-surface px-4 py-3 active:opacity-80"
     >
       {shelfIconId ? (
-        <ShelfIcon id={shelfIconId} size="sm" />
+        <ShelfIcon id={shelfIconId} size="small" />
       ) : (
         <Text className="text-lg">{icon}</Text>
       )}

@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CoverTile } from "./CoverTile";
 import { LoadingState } from "./LoadingState";
 import { SectionCard } from "./SectionCard";
-import { SHELF_CONFIG } from "../constants/shelves";
+import { getShelvesInOrder } from "../constants/shelves";
 import { readerLibraryPath } from "../lib/readerProfile";
 import {
   buildShelfPreview,
@@ -66,7 +66,7 @@ export function ProfileShelfPreview({
 
   return (
     <View className="gap-4">
-      {SHELF_CONFIG.map((config) => {
+      {getShelvesInOrder().map((config) => {
         const shelf = visibleShelves.find((entry) => entry.status === config.status);
         if (!shelf) return null;
         return <ShelfPreviewRow key={shelf.status} shelf={shelf} seeMoreHref={seeMoreHref} />;

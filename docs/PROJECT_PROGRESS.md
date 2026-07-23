@@ -22,7 +22,7 @@
 | 9 | Responsive QA | ✅ Complete | Mobile layout fixes, `RESPONSIVE_QA.md` checklist |
 | 10 | Production hardening | ✅ Complete | SEO metadata, validation, route audit, env docs |
 | — | Mobile app parity | 🟡 In progress | Finish → rate prompt parity shipped; premium gates added |
-| — | Custom shelf icons | ✅ Complete | PNG icons web + mobile; `docs/SHELF_ICON_AUDIT.md` |
+| — | Custom shelf icons | ✅ Complete | PNG icons web + mobile; `docs/SHELF_ICON_AUDIT.md`, `DESIGN_SYSTEM.md`, `ASSET_GUIDE.md` |
 
 Legend: ✅ Complete · 🟡 In progress · ⚪ Not started · 🔴 Blocked
 

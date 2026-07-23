@@ -3,7 +3,7 @@ import type { ShelfStatus } from "@/types";
 export const SHELF_LABELS: Record<ShelfStatus, string> = {
   want_to_read: "Want to Read",
   currently_reading: "Currently Reading",
-  read: "Read",
+  read: "Finished",
 };
 
 export function getShelfLabel(status: ShelfStatus): string {
