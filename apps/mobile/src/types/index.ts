@@ -65,6 +65,8 @@ export type {
   BookClubSummary,
   BookClubVisibility,
   BookClubWithDetails,
+  BookClubEvent,
+  BookClubEventWithClub,
   MessageProfile,
   PostAuthor,
 } from "../../../../packages/types";

@@ -12,6 +12,7 @@ import { LoadingState } from "@/components/ui/LoadingState";
 import { useToast } from "@/components/ui/Toast";
 import { ClubDiscussionCard } from "@/components/clubs/ClubDiscussionCard";
 import { ClubDiscussionComposer } from "@/components/clubs/ClubDiscussionComposer";
+import { ClubEventsPanel } from "@/components/clubs/ClubEventsPanel";
 import { ClubMembersPanel } from "@/components/clubs/ClubMembersPanel";
 import { BookPickerModal } from "@/components/clubs/BookPickerModal";
 import { CircleAvatarUpload } from "@/components/ui/CircleAvatarUpload";
@@ -345,6 +346,13 @@ function ClubDetailContent() {
           onChanged={() => void loadClub()}
         />
       </section>
+
+      <ClubEventsPanel
+        clubId={club.id}
+        isMember={isMember}
+        viewerId={user.id}
+        clubOwnerId={club.owner_id}
+      />
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-puce-red">Discussions</h2>

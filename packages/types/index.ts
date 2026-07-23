@@ -321,6 +321,23 @@ export type BookClubWithDetails = BookClubSummary & {
   members: BookClubMemberWithProfile[];
 };
 
+export interface BookClubEvent {
+  id: string;
+  club_id: string;
+  created_by: string;
+  title: string;
+  description: string | null;
+  location: string | null;
+  starts_at: string;
+  ends_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type BookClubEventWithClub = BookClubEvent & {
+  club: Pick<BookClub, "id" | "name" | "visibility">;
+};
+
 export interface UserBook {
   id: string;
   user_id: string;

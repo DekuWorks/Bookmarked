@@ -45,6 +45,8 @@ export type {
   BookClubPostWithAuthor,
   BookClubSummary,
   BookClubWithDetails,
+  BookClubEvent,
+  BookClubEventWithClub,
   ContentReaction,
   ReactionCounts,
   ReviewReply,

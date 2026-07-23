@@ -18,6 +18,7 @@ import { BookPicker } from "../../../src/components/BookPicker";
 import { Button } from "../../../src/components/Button";
 import { CircleAvatarPicker } from "../../../src/components/CircleAvatarPicker";
 import { ClubDiscussionCard } from "../../../src/components/ClubDiscussionCard";
+import { ClubEventsSection } from "../../../src/components/ClubEventsSection";
 import { EmptyState } from "../../../src/components/EmptyState";
 import { Input } from "../../../src/components/Input";
 import { LoadingState } from "../../../src/components/LoadingState";
@@ -415,6 +416,13 @@ export default function ClubDetailRoute() {
           })}
         </View>
       </View>
+
+      <ClubEventsSection
+        clubId={club.id}
+        isMember={isMember}
+        viewerId={userId ?? ""}
+        clubOwnerId={club.owner_id}
+      />
 
       <View>
         <Text className="text-lg font-semibold text-puce-red mb-3">Discussions</Text>

@@ -14,7 +14,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 |-------|------|--------|---------|
 | 1 | Navigation | ✅ | Web + mobile primary nav shipped; `/dashboard/` redirects to Reading Room |
 | 2 | Reading depth | ✅ | Web + mobile parity: 6 Reading Room tabs, completion auto-tags, session notes |
-| 3 | Community | 🔄 | Feed, messaging, clubs, trending live; events calendar not built |
+| 3 | Community | 🔄 | Feed, messaging, clubs, events calendar shipped; polish ongoing |
 | 4 | Premium | 🔄 | Schema + gates + webhook stub; Stripe / IAP not wired |
 | 5 | UI refresh | ✅ | Gradients, surface cards, branding on web + mobile |
 | 6 | Performance | ✅ | Audit + N+1 fixes + lazy loading; virtualization deferred |
@@ -109,7 +109,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Community rating on book pages | ✅ | `CommunityRatingDisplay` (web + mobile) |
 | Feed search | ✅ | `feedSearch.ts` — readers, books, posts (web + mobile) |
 | Goodreads import | ✅ | `goodreadsImport.ts` — web profile settings + mobile account settings |
-| Events calendar | ⬜ | Clubs exist; no calendar UI |
+| Events calendar | ✅ | `book_club_events` migration · `/events/` · club event panels (web + mobile) |
 | Notifications | ✅ | `notifications` table · bell + `/notifications/` |
 
 ---
@@ -213,6 +213,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Completion auto-tags | ✅ | ✅ | — |
 | Goodreads import | ✅ | ✅ | — |
 | Feed search | ✅ | ✅ | — |
+| Events calendar | ✅ | ✅ | — |
 | Public library browse | ✅ | ✅ | — |
 | Shared service code | 49 modules | 33 modules | 28同名 duplicated, not in `packages/` |
 
@@ -228,7 +229,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Database schema | `docs/DATABASE_SCHEMA.md` |
 | Master task list (MVP) | `docs/project/MASTER_TASK_LIST.md` |
 
-**Last updated:** July 23, 2026 (Phase 3 mobile parity: feed search + Goodreads import)
+**Last updated:** July 23, 2026 (Phase 3: events calendar + mobile routing fixes + expo-document-picker pod install)
 
 ---
 
@@ -236,8 +237,8 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 
 | Priority | Item | Notes |
 |----------|------|-------|
-| P1 | Events calendar | Clubs exist; no shared calendar UI — defer if multi-session |
 | P1 | Stripe checkout (web) | Needs `STRIPE_*` secrets + webhook verification in Edge Function |
 | P1 | App Store / Google Play IAP | Needs store SDK + receipt validation |
+| P1 | Native iOS rebuild | Run `npm run ios` in `apps/mobile` after pod install for Goodreads import |
 | P2 | Extract duplicated services to `packages/` | 28 modules; high effort |
 | P2 | Library virtualization | Deferred until large libraries reported |

@@ -68,6 +68,16 @@ export default function ClubsRoute() {
         </Pressable>
       </View>
 
+      <View className="px-5 pb-2">
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push("/(app)/events")}
+          className="self-center rounded-full border border-brand-border bg-surface px-4 py-2 active:opacity-80"
+        >
+          <Text className="text-sm font-semibold text-puce-red">View events</Text>
+        </Pressable>
+      </View>
+
       {active.isLoading ? (
         <LoadingState message="Loading book clubs…" />
       ) : active.isError ? (

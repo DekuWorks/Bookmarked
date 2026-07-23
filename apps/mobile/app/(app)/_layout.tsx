@@ -46,6 +46,7 @@ export default function AppTabsLayout() {
         <Tabs.Screen name="reading-room" options={{ href: null }} />
         <Tabs.Screen name="compose" options={{ href: null }} />
         <Tabs.Screen name="clubs" options={{ href: null }} />
+        <Tabs.Screen name="events" options={{ href: null }} />
         <Tabs.Screen name="notes" options={{ href: null }} />
         <Tabs.Screen name="notifications" options={{ href: null }} />
         <Tabs.Screen name="book" options={{ href: null }} />

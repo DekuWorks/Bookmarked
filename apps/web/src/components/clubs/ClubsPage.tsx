@@ -3,10 +3,12 @@
 import { Suspense, useEffect, useState } from "react";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { Button } from "@/components/ui/Button";
+import { ButtonLink } from "@/components/ui/ButtonLink";
 import { ClubCard } from "@/components/clubs/ClubCard";
 import { CreateClubModal } from "@/components/clubs/CreateClubModal";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { discoverClubs, getMyClubs } from "@/lib/services/bookClubs";
+import { eventsPath } from "@/lib/routes/clubs";
 import type { BookClubSummary } from "@/types";
 import { layout } from "@/lib/constants/layout";
 import { cn } from "@/lib/utils/cn";
@@ -63,10 +65,13 @@ function ClubsPageContent() {
           </p>
         </header>
 
-        <div className="mt-6 flex justify-center">
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Button type="button" variant="primary" onClick={() => setCreateOpen(true)}>
             Start a club
           </Button>
+          <ButtonLink href={eventsPath()} variant="secondary">
+            View events
+          </ButtonLink>
         </div>
       </div>
 
