@@ -9,7 +9,8 @@ const nextConfig: NextConfig = {
   output: "export",
   trailingSlash: true,
   turbopack: {
-    root: path.join(__dirname),
+    // Monorepo root so @bookmarked/utils path aliases resolve to packages/utils.
+    root: path.join(__dirname, "../.."),
   },
   images: {
     unoptimized: true,
