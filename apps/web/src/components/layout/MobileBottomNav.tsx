@@ -16,11 +16,14 @@ function HomeIcon({ active }: { active: boolean }) {
   return (
     <svg
       aria-hidden
-      className={cn("h-6 w-6", active ? "text-royal-orange" : "text-puce-red")}
+      className={cn(
+        "h-5 w-5 transition-colors duration-200",
+        active ? "text-royal-orange" : "text-puce-red/80"
+      )}
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
-      strokeWidth={1.75}
+      strokeWidth={active ? 2 : 1.75}
     >
       <path
         strokeLinecap="round"
@@ -35,11 +38,14 @@ function FeedIcon({ active }: { active: boolean }) {
   return (
     <svg
       aria-hidden
-      className={cn("h-6 w-6", active ? "text-royal-orange" : "text-puce-red")}
+      className={cn(
+        "h-5 w-5 transition-colors duration-200",
+        active ? "text-royal-orange" : "text-puce-red/80"
+      )}
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
-      strokeWidth={1.75}
+      strokeWidth={active ? 2 : 1.75}
     >
       <path
         strokeLinecap="round"
@@ -54,11 +60,14 @@ function SearchIcon({ active }: { active: boolean }) {
   return (
     <svg
       aria-hidden
-      className={cn("h-6 w-6", active ? "text-royal-orange" : "text-puce-red")}
+      className={cn(
+        "h-5 w-5 transition-colors duration-200",
+        active ? "text-royal-orange" : "text-puce-red/80"
+      )}
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
-      strokeWidth={1.75}
+      strokeWidth={active ? 2 : 1.75}
     >
       <path
         strokeLinecap="round"
@@ -73,11 +82,14 @@ function MessagesIcon({ active }: { active: boolean }) {
   return (
     <svg
       aria-hidden
-      className={cn("h-6 w-6", active ? "text-royal-orange" : "text-puce-red")}
+      className={cn(
+        "h-5 w-5 transition-colors duration-200",
+        active ? "text-royal-orange" : "text-puce-red/80"
+      )}
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
-      strokeWidth={1.75}
+      strokeWidth={active ? 2 : 1.75}
     >
       <path
         strokeLinecap="round"
@@ -92,11 +104,14 @@ function ProfileIcon({ active }: { active: boolean }) {
   return (
     <svg
       aria-hidden
-      className={cn("h-6 w-6", active ? "text-royal-orange" : "text-puce-red")}
+      className={cn(
+        "h-5 w-5 transition-colors duration-200",
+        active ? "text-royal-orange" : "text-puce-red/80"
+      )}
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
-      strokeWidth={1.75}
+      strokeWidth={active ? 2 : 1.75}
     >
       <path
         strokeLinecap="round"
@@ -126,36 +141,70 @@ function isActivePath(pathname: string, href: string): boolean {
 
 export function MobileBottomNav() {
   const pathname = usePathname() ?? "";
+  const activeIndex = Math.max(
+    0,
+    NAV_ITEMS.findIndex((item) => isActivePath(pathname, item.href))
+  );
+  const tabCount = NAV_ITEMS.length;
 
   return (
-    <nav
-      className="fixed inset-x-0 bottom-0 z-[100] border-t border-border bg-surface/95 shadow-[0_-4px_16px_color-mix(in_srgb,var(--color-puce-red)_6%,transparent)] backdrop-blur-md md:hidden"
-      aria-label="Mobile navigation"
+    <div
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden"
+      aria-hidden={false}
     >
-      <ul className="mx-auto flex max-w-lg items-stretch justify-around px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2">
-        {NAV_ITEMS.map((item) => {
-          const active = isActivePath(pathname, item.href);
-          return (
-            <li key={item.href} className="flex-1">
-              <AppNavLink
-                href={item.href}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "flex min-h-[48px] flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-[10px] font-medium transition-colors",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2",
-                  active
-                    ? "bg-primary/15 text-royal-orange shadow-sm"
-                    : "text-puce-red hover:bg-primary/8"
-                )}
-              >
-                {item.icon(active)}
-                <span>{item.label}</span>
-                {item.href.includes("/messages/") ? <MessagesUnreadBadge /> : null}
-              </AppNavLink>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
+      <nav
+        className={cn(
+          "pointer-events-auto mx-auto max-w-sm",
+          "rounded-full border border-border/70",
+          "bg-surface/90 backdrop-blur-xl",
+          "shadow-[0_8px_32px_color-mix(in_srgb,var(--color-puce-red)_14%,transparent),0_2px_8px_color-mix(in_srgb,var(--color-puce-red)_8%,transparent)]"
+        )}
+        aria-label="Mobile navigation"
+      >
+        <ul className="relative grid grid-cols-5 p-1.5">
+          <li
+            aria-hidden
+            className={cn(
+              "pointer-events-none absolute top-1.5 bottom-1.5 left-1.5 rounded-full",
+              "bg-primary/22 shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-primary)_35%,transparent)]",
+              "transition-transform duration-[380ms] ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+            )}
+            style={{
+              width: `calc((100% - 0.75rem) / ${tabCount})`,
+              transform: `translateX(calc(${activeIndex} * 100%))`,
+            }}
+          />
+
+          {NAV_ITEMS.map((item) => {
+            const active = isActivePath(pathname, item.href);
+            const isMessages = item.href.includes("/messages/");
+
+            return (
+              <li key={item.href} className="relative z-[1]">
+                <AppNavLink
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  aria-label={item.label}
+                  className={cn(
+                    "relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 rounded-full px-1",
+                    "text-[10px] font-medium transition-colors duration-200",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
+                    active ? "text-royal-orange" : "text-puce-red/75 hover:text-puce-red"
+                  )}
+                >
+                  <span className="relative flex items-center justify-center">
+                    {item.icon(active)}
+                    {isMessages ? (
+                      <MessagesUnreadBadge className="absolute -right-2.5 -top-1.5 ml-0 h-3.5 min-w-[14px] px-0.5 text-[8px]" />
+                    ) : null}
+                  </span>
+                  <span className="leading-none">{item.label}</span>
+                </AppNavLink>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+    </div>
   );
 }
