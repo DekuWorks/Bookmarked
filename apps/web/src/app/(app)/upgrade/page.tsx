@@ -22,7 +22,7 @@ const PREMIUM_FEATURES = [
   {
     title: "AI reading insights",
     description:
-      "Personalized recommendations, reflection prompts, and pattern summaries from your trail.",
+      "Coming soon for Premium — reflection prompts and pattern summaries from your reading journal.",
   },
   {
     title: "Early access",
@@ -52,6 +52,26 @@ export default function UpgradePage() {
       staticRedirect("/login/?redirect=%2Fupgrade%2F");
     }
   }, [user]);
+
+  // Poll subscription after Stripe redirect while webhook activates Premium.
+  useEffect(() => {
+    if (checkoutStatus !== "success" || !user) return;
+
+    void refresh();
+
+    const interval = window.setInterval(() => {
+      void refresh();
+    }, 2000);
+
+    const timeout = window.setTimeout(() => {
+      window.clearInterval(interval);
+    }, 20000);
+
+    return () => {
+      window.clearInterval(interval);
+      window.clearTimeout(timeout);
+    };
+  }, [checkoutStatus, user, refresh]);
 
   const handleSubscribe = useCallback(async () => {
     if (!user) {
