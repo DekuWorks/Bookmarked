@@ -1,12 +1,12 @@
 # App Review Resolution Center Reply
 
-Copy the text below into App Store Connect → your app → Resolution Center when resubmitting build **6** (version 1.0.0).
+Copy the text below into App Store Connect → your app → Resolution Center when resubmitting build **7** (version 1.0.0).
 
 ---
 
 Hello App Review Team,
 
-Thank you for your feedback on Bookmarked (version 1.0, build 5). We have addressed both issues in **build 6** and updated our App Review Information with a demo account and step-by-step instructions.
+Thank you for your feedback on Bookmarked (version 1.0, build 5). We have addressed both issues in **build 7** and updated our App Review Information with a demo account and step-by-step instructions.
 
 ## Guideline 1.2 — User-Generated Content
 
@@ -46,7 +46,7 @@ Please use this account for moderation feature testing. For account deletion, pl
 
 ## Build
 
-Please review **build 6** (version 1.0.0), which includes all compliance changes listed above.
+Please review **build 7** (version 1.0.0), which includes all compliance changes listed above.
 
 Thank you for your time. We are happy to provide any additional information.
 

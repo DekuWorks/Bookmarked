@@ -10,7 +10,7 @@ If the demo account is unavailable, reviewers can create a free account via Sign
 
 ---
 
-STEP-BY-STEP DEMO FLOWS (build 6)
+STEP-BY-STEP DEMO FLOWS (build 7)
 
 1) TERMS OF SERVICE / EULA (Guideline 1.2)
    a. Log out if already signed in: Profile tab → Settings (gear) → Log out.

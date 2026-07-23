@@ -2,7 +2,7 @@
 
 Record on a **physical iPhone** using Control Center → Screen Recording. Portrait orientation. Allow ~8–12 minutes total.
 
-**Before you start:** Install build 6 from TestFlight (or the build you are submitting). Enable Do Not Disturb to avoid notification banners.
+**Before you start:** Install build 7 from TestFlight (or the build you are submitting). Enable Do Not Disturb to avoid notification banners.
 
 **Demo credentials (moderation flows only — do not delete this account):**
 - Email: `appreview@bookmarked.online`
@@ -96,7 +96,7 @@ Record on a **physical iPhone** using Control Center → Screen Recording. Portr
 2. App Store Connect → **Bookmarked** → **App Review Information** → attach video (or add link if using Notes field).
 3. Paste review notes from `metadata/review_information/notes.txt`.
 4. Paste Resolution Center reply from `APP_REVIEW_REPLY.md`.
-5. Select **build 6** and submit for review.
+5. Select **build 7** and submit for review.
 
 ---
 
@@ -109,4 +109,4 @@ Record on a **physical iPhone** using Control Center → Screen Recording. Portr
 - [ ] Block flow completed with confirmation
 - [ ] Account deletion shown on throwaway account (demo account intact)
 - [ ] Video attached to App Review Information
-- [ ] Build 6 selected in ASC
+- [ ] Build 7 selected in ASC
