@@ -5,10 +5,11 @@
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
-    "ios": "expo run:ios",
+    "ios": "bash scripts/dev-ios.sh",
     "web": "expo start --web",
     "build:ios": "eas build --platform ios --profile production",
-    "submit:ios": "eas submit --platform ios --latest --profile production"
+    "submit:ios": "eas submit --platform ios --latest --profile production",
+    "ios:raw": "expo run:ios"
   },
   "dependencies": {
     "@expo-google-fonts/playfair-display": "^0.4.2",
