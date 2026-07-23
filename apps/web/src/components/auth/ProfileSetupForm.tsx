@@ -11,6 +11,8 @@ import { PREFERRED_LANGUAGES } from "@/lib/constants/languages";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import { LoadingState } from "@/components/ui/LoadingState";
+import { useActionToast } from "@/lib/hooks/useActionToast";
+import { MAX_BIO_LENGTH, MAX_DISPLAY_NAME_LENGTH, MAX_USERNAME_LENGTH } from "@/lib/constants/validation";
 import type { Profile } from "@/types";
 
 const initial: AuthActionState = {};
@@ -19,6 +21,8 @@ export function ProfileSetupForm() {
   const [state, formAction, pending] = useActionState(saveProfile, initial);
   const [profile, setProfile] = useState<Profile | null | undefined>(undefined);
   const [userId, setUserId] = useState<string | null>(null);
+
+  useActionToast(state);
 
   useEffect(() => {
     const supabase = createClient();
@@ -67,18 +71,21 @@ export function ProfileSetupForm() {
         name="username"
         autoComplete="username"
         required
+        maxLength={MAX_USERNAME_LENGTH}
         defaultValue={profile?.username ?? ""}
       />
       <Input
         label="Display name"
         name="display_name"
         autoComplete="name"
+        maxLength={MAX_DISPLAY_NAME_LENGTH}
         defaultValue={profile?.display_name ?? ""}
       />
       <Textarea
         label="Bio"
         name="bio"
         placeholder="A few words about your reading taste…"
+        maxLength={MAX_BIO_LENGTH}
         defaultValue={profile?.bio ?? ""}
       />
       <Input

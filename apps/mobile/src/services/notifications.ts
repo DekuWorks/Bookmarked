@@ -1,5 +1,16 @@
 import { supabase } from "./supabase";
-import type { NotificationWithActor } from "../types";
+import type { NotificationWithActor, Profile } from "../types";
+import { validateNotificationPreferences } from "../../../../packages/utils/profileValidation";
+
+export type NotificationPreferences = Pick<
+  Profile,
+  | "notify_messages"
+  | "notify_follows"
+  | "notify_feed"
+  | "notify_likes"
+  | "notify_comments"
+  | "notify_mentions"
+>;
 
 /**
  * Mobile notifications service. Mirrors the web service
@@ -70,6 +81,25 @@ export async function markAllNotificationsRead(userId: string): Promise<void> {
     .update({ read_at: new Date().toISOString() })
     .eq("user_id", userId)
     .is("read_at", null);
+}
+
+export async function updateNotificationPreferences(
+  userId: string,
+  prefs: Partial<NotificationPreferences>
+): Promise<{ error?: string }> {
+  const validation = validateNotificationPreferences(prefs);
+  if (!validation.ok) return { error: validation.error };
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      ...prefs,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", userId);
+
+  if (error) return { error: error.message };
+  return {};
 }
 
 // ---- Notification creation (mirrors apps/web/src/lib/services/notifications.ts)

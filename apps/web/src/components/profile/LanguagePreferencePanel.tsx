@@ -6,6 +6,7 @@ import { updatePreferredLanguage } from "@/lib/services/profile";
 import { useToast } from "@/components/ui/Toast";
 import type { Profile, PreferredLanguage } from "@/types";
 import { cn } from "@/lib/utils/cn";
+import { parsePreferredLanguage } from "@/lib/utils/profileValidation";
 
 type Props = {
   profile: Profile;
@@ -21,6 +22,13 @@ export function LanguagePreferencePanel({ profile, onLanguageChange, embedded = 
   const [saving, setSaving] = useState(false);
 
   async function handleChange(next: PreferredLanguage) {
+    const validated = parsePreferredLanguage(next);
+    if (validated !== next) {
+      toast.error("Choose a valid language.");
+      return;
+    }
+
+    const previous = language;
     setLanguage(next);
     setSaving(true);
     const result = await updatePreferredLanguage(profile.id, next);
@@ -28,12 +36,12 @@ export function LanguagePreferencePanel({ profile, onLanguageChange, embedded = 
 
     if (result.error) {
       toast.error(result.error);
-      setLanguage(profile.preferred_language ?? "en");
+      setLanguage(previous);
       return;
     }
 
     onLanguageChange?.(next);
-    toast.success("Language preference saved.");
+    toast.success("Saved");
   }
 
   const Wrapper = embedded ? "div" : "section";

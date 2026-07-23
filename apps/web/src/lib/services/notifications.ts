@@ -1,3 +1,4 @@
+import { validateNotificationPreferences } from "@/lib/utils/profileValidation";
 import { createClient } from "@/lib/supabase/client";
 import { activityEventHref } from "@/lib/routes/activity";
 import { bookDetailsReviewsPath } from "@/lib/routes/book";
@@ -222,6 +223,9 @@ export async function updateNotificationPreferences(
   userId: string,
   prefs: Partial<NotificationPreferences>
 ): Promise<{ error?: string }> {
+  const validation = validateNotificationPreferences(prefs);
+  if (!validation.ok) return { error: validation.error };
+
   const supabase = createClient();
 
   const { error } = await supabase

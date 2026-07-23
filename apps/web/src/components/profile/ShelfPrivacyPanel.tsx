@@ -13,8 +13,10 @@ import {
 } from "@/lib/services/customShelves";
 import { CreateShelfButton } from "@/components/shelves/CreateShelfButton";
 import { Button } from "@/components/ui/Button";
+import { useToast } from "@/components/ui/Toast";
 import type { Profile, ShelfStatus, ShelfVisibility, UserShelf } from "@/types";
 import { cn } from "@/lib/utils/cn";
+import { validateShelfVisibility } from "@/lib/utils/profileValidation";
 
 type Props = {
   profile: Profile;
@@ -32,6 +34,7 @@ function visibilityForProfile(profile: Profile, status: ShelfStatus): ShelfVisib
 }
 
 export function ShelfPrivacyPanel({ profile }: Props) {
+  const toast = useToast();
   const [values, setValues] = useState<Record<ShelfStatus, ShelfVisibility>>(() => ({
     want_to_read: visibilityForProfile(profile, "want_to_read"),
     currently_reading: visibilityForProfile(profile, "currently_reading"),
@@ -40,7 +43,6 @@ export function ShelfPrivacyPanel({ profile }: Props) {
   const [customShelves, setCustomShelves] = useState<UserShelf[]>([]);
   const [customValues, setCustomValues] = useState<Record<string, ShelfVisibility>>({});
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const refreshCustomShelves = useCallback(async () => {
@@ -60,7 +62,25 @@ export function ShelfPrivacyPanel({ profile }: Props) {
   async function save() {
     setSaving(true);
     setError(null);
-    setMessage(null);
+
+    for (const shelf of SHELF_CONFIG) {
+      const result = validateShelfVisibility(values[shelf.status]);
+      if (!result.ok) {
+        setSaving(false);
+        setError(result.error);
+        return;
+      }
+    }
+
+    for (const shelf of customShelves) {
+      const visibility = customValues[shelf.id] ?? shelf.visibility;
+      const result = validateShelfVisibility(visibility);
+      if (!result.ok) {
+        setSaving(false);
+        setError(result.error);
+        return;
+      }
+    }
 
     const supabase = createClient();
     const { error: saveError } = await supabase
@@ -96,7 +116,7 @@ export function ShelfPrivacyPanel({ profile }: Props) {
     }
 
     await refreshCustomShelves();
-    setMessage("Shelf privacy saved.");
+    toast.success("Saved");
   }
 
   function handleCustomShelfCreated(shelf: UserShelf) {
@@ -217,7 +237,6 @@ export function ShelfPrivacyPanel({ profile }: Props) {
           {error}
         </p>
       ) : null}
-      {message ? <p className="mt-3 text-sm text-text-muted">{message}</p> : null}
 
       <Button
         type="button"

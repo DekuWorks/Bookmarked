@@ -1,4 +1,5 @@
 import type { PreferredLanguage } from "@/types";
+import { PREFERRED_LANGUAGE_CODES, parsePreferredLanguage } from "@/lib/utils/profileValidation";
 
 export const PREFERRED_LANGUAGES: { code: PreferredLanguage; label: string }[] = [
   { code: "en", label: "English" },
@@ -7,11 +8,4 @@ export const PREFERRED_LANGUAGES: { code: PreferredLanguage; label: string }[] =
   { code: "de", label: "Deutsch" },
 ];
 
-export const PREFERRED_LANGUAGE_CODES = PREFERRED_LANGUAGES.map((lang) => lang.code);
-
-export function parsePreferredLanguage(value: string | null | undefined): PreferredLanguage {
-  if (value && PREFERRED_LANGUAGE_CODES.includes(value as PreferredLanguage)) {
-    return value as PreferredLanguage;
-  }
-  return "en";
-}
+export { PREFERRED_LANGUAGE_CODES, parsePreferredLanguage };

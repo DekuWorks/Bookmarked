@@ -3,6 +3,7 @@
 import { useId, useRef, useState } from "react";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { Button } from "@/components/ui/Button";
+import { useToast } from "@/components/ui/Toast";
 import { removeAvatar, uploadAvatar } from "@/lib/services/avatar";
 import { cn } from "@/lib/utils/cn";
 import type { Profile } from "@/types";
@@ -15,6 +16,7 @@ type Props = {
 };
 
 export function AvatarUpload({ userId, profile, onAvatarChange, className }: Props) {
+  const toast = useToast();
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url);
@@ -42,6 +44,7 @@ export function AvatarUpload({ userId, profile, onAvatarChange, className }: Pro
 
     setAvatarUrl(result.url ?? null);
     onAvatarChange?.(result.url ?? null);
+    toast.success("Saved");
   }
 
   async function handleRemove() {
@@ -58,6 +61,7 @@ export function AvatarUpload({ userId, profile, onAvatarChange, className }: Pro
 
     setAvatarUrl(null);
     onAvatarChange?.(null);
+    toast.success("Saved");
   }
 
   return (

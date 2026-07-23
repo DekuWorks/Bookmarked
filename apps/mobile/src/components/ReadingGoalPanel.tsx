@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
+import { validateReadingGoal } from "../../../../packages/utils/profileValidation";
 import { Button } from "./Button";
 import { Input } from "./Input";
 import { ProgressBar } from "./ProgressBar";
@@ -68,20 +69,16 @@ export function ReadingGoalPanel({ status }: Props) {
     setEditing(goal == null);
     if (goal == null) setGoalInput("");
     await queryClient.invalidateQueries({ queryKey: ["profile", userId] });
+    Alert.alert("Saved", goal == null ? "Reading goal cleared." : "Reading goal saved.");
   }
 
   async function saveGoal() {
-    const goal = Number(goalInput);
-    if (!Number.isFinite(goal) || goal < 1 || goal > 500) {
-      setError("Enter a whole number between 1 and 500.");
+    const goalResult = validateReadingGoal(goalInput);
+    if (!goalResult.ok) {
+      setError(goalResult.error);
       return;
     }
-    const rounded = Math.round(goal);
-    if (Math.abs(goal - rounded) > 1e-9) {
-      setError("Enter a whole number between 1 and 500.");
-      return;
-    }
-    await persist(rounded);
+    await persist(goalResult.value ?? null);
   }
 
   if (hasGoal && !editing) {

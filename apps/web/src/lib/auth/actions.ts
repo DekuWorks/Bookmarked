@@ -4,7 +4,13 @@ import {
   parseRememberMeFromForm,
 } from "@/lib/auth/rememberMe";
 import { authRedirectUrl } from "@/lib/auth/siteUrl";
-import { parsePreferredLanguage } from "@/lib/constants/languages";
+import {
+  parseFavoriteGenres,
+  parsePreferredLanguage,
+  validateBio,
+  validateDisplayName,
+  validateUsername,
+} from "@/lib/utils/profileValidation";
 
 function normalizeAppPath(path: string): string {
   if (!path.startsWith("/")) return path;
@@ -183,18 +189,16 @@ export async function saveProfile(
     return { error: "You must be signed in." };
   }
 
-  const username = String(formData.get("username") ?? "").trim();
-  if (!username) {
-    return { error: "Username is required." };
-  }
+  const usernameResult = validateUsername(String(formData.get("username") ?? ""));
+  if (!usernameResult.ok) return { error: usernameResult.error };
 
-  const display_name = String(formData.get("display_name") ?? "").trim() || null;
-  const bio = String(formData.get("bio") ?? "").trim() || null;
-  const genresRaw = String(formData.get("favorite_genres") ?? "");
-  const favorite_genres = genresRaw
-    .split(",")
-    .map((g) => g.trim())
-    .filter(Boolean);
+  const displayNameResult = validateDisplayName(String(formData.get("display_name") ?? ""));
+  if (!displayNameResult.ok) return { error: displayNameResult.error };
+
+  const bioResult = validateBio(String(formData.get("bio") ?? ""));
+  if (!bioResult.ok) return { error: bioResult.error };
+
+  const favorite_genres = parseFavoriteGenres(String(formData.get("favorite_genres") ?? ""));
   const preferred_language = parsePreferredLanguage(
     String(formData.get("preferred_language") ?? "")
   );
@@ -202,9 +206,9 @@ export async function saveProfile(
   const { error } = await supabase.from("profiles").upsert(
     {
       id: user.id,
-      username,
-      display_name,
-      bio,
+      username: usernameResult.value,
+      display_name: displayNameResult.value,
+      bio: bioResult.value,
       favorite_genres,
       preferred_language,
       updated_at: new Date().toISOString(),
@@ -218,6 +222,7 @@ export async function saveProfile(
 
   const redirectTo = String(formData.get("redirect") ?? "").trim();
   return {
+    success: "Profile saved.",
     redirect: redirectTo.startsWith("/") ? normalizeAppPath(redirectTo) : "/dashboard/",
   };
 }

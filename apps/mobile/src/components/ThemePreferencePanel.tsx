@@ -1,4 +1,4 @@
-import { Pressable, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import { useThemeColors, useThemeStore, type ThemePreference } from "../store/themeStore";
 
 const OPTIONS: { id: ThemePreference; label: string; description: string }[] = [
@@ -11,6 +11,16 @@ export function ThemePreferencePanel() {
   const preference = useThemeStore((state) => state.preference);
   const setPreference = useThemeStore((state) => state.setPreference);
   const colors = useThemeColors();
+
+  async function handleSelect(next: ThemePreference) {
+    if (next === preference) return;
+    try {
+      await setPreference(next);
+      Alert.alert("Saved", "Appearance preference saved.");
+    } catch {
+      Alert.alert("Couldn't save", "Your theme preference could not be saved.");
+    }
+  }
 
   return (
     <View
@@ -27,7 +37,7 @@ export function ThemePreferencePanel() {
           return (
             <Pressable
               key={option.id}
-              onPress={() => void setPreference(option.id)}
+              onPress={() => void handleSelect(option.id)}
               className="rounded-xl border px-4 py-3 active:opacity-80"
               style={{
                 borderColor: active ? "#C9AED0" : colors.border,

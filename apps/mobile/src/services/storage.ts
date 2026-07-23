@@ -190,6 +190,58 @@ export async function uploadGroupAvatar(
   return { url: result.url };
 }
 
+/** Upload the signed-in user's profile avatar. */
+export async function uploadProfileAvatar(
+  image: PickedImage
+): Promise<{ url?: string; error?: string }> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be signed in." };
+
+  const path = `${user.id}/avatar.${extForMime(image.mimeType)}`;
+  const result = await uploadAvatarImage(path, image);
+  if (result.error || !result.url) return result;
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ avatar_url: result.url, updated_at: new Date().toISOString() })
+    .eq("id", user.id);
+
+  if (error) return { error: error.message };
+  return { url: result.url };
+}
+
+export async function removeProfileAvatar(): Promise<{ error?: string }> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be signed in." };
+
+  const { data: files, error: listError } = await supabase.storage
+    .from(AVATAR_BUCKET)
+    .list(user.id);
+
+  if (listError) return { error: listError.message };
+
+  const paths = (files ?? [])
+    .filter((file) => file.name.startsWith("avatar."))
+    .map((file) => `${user.id}/${file.name}`);
+
+  if (paths.length > 0) {
+    const { error: removeError } = await supabase.storage.from(AVATAR_BUCKET).remove(paths);
+    if (removeError) return { error: removeError.message };
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ avatar_url: null, updated_at: new Date().toISOString() })
+    .eq("id", user.id);
+
+  if (error) return { error: error.message };
+  return {};
+}
+
 /** Upload a book club avatar (owner only; stored in book_clubs.image_url). */
 export async function uploadClubAvatar(
   clubId: string,

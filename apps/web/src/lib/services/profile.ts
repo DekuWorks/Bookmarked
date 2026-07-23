@@ -1,3 +1,4 @@
+import { parsePreferredLanguage } from "@/lib/utils/profileValidation";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/types";
 
@@ -38,11 +39,16 @@ export async function updatePreferredLanguage(
   userId: string,
   preferredLanguage: Profile["preferred_language"]
 ): Promise<{ error?: string }> {
+  const language = parsePreferredLanguage(preferredLanguage);
+  if (language !== preferredLanguage) {
+    return { error: "Choose a valid language." };
+  }
+
   const supabase = createClient();
   const { error } = await supabase
     .from("profiles")
     .update({
-      preferred_language: preferredLanguage,
+      preferred_language: language,
       updated_at: new Date().toISOString(),
     })
     .eq("id", userId);

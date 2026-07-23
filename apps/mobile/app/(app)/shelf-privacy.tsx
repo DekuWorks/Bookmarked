@@ -21,6 +21,7 @@ import {
 import { supabase } from "../../src/services/supabase";
 import { useAuthStore } from "../../src/store/authStore";
 import type { ShelfStatus, ShelfVisibility, UserShelf } from "../../src/types";
+import { validateShelfVisibility } from "../../../../packages/utils/profileValidation";
 
 function visibilityForProfile(
   profile: {
@@ -78,6 +79,24 @@ export default function ShelfPrivacyScreen() {
 
   async function save() {
     if (!userId || !values) return;
+
+    for (const shelf of SHELF_CONFIG) {
+      const result = validateShelfVisibility(values[shelf.status]);
+      if (!result.ok) {
+        Alert.alert("Invalid setting", result.error);
+        return;
+      }
+    }
+
+    for (const shelf of customShelves) {
+      const visibility = customValues[shelf.id] ?? shelf.visibility;
+      const result = validateShelfVisibility(visibility);
+      if (!result.ok) {
+        Alert.alert("Invalid setting", result.error);
+        return;
+      }
+    }
+
     setSaving(true);
 
     const { error } = await supabase

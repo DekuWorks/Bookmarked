@@ -1,6 +1,7 @@
 "use client";
 
 import { useThemePreference } from "@/components/theme/ThemeProvider";
+import { useToast } from "@/components/ui/Toast";
 import type { ThemePreference } from "@/lib/theme/storage";
 import { cn } from "@/lib/utils/cn";
 
@@ -12,6 +13,13 @@ const OPTIONS: { id: ThemePreference; label: string; description: string }[] = [
 
 export function ThemePreferencePanel() {
   const { preference, setPreference } = useThemePreference();
+  const toast = useToast();
+
+  function handleSelect(next: ThemePreference) {
+    if (next === preference) return;
+    setPreference(next);
+    toast.success("Saved");
+  }
 
   return (
     <section className="surface-card p-5 text-left">
@@ -24,7 +32,7 @@ export function ThemePreferencePanel() {
           <button
             key={option.id}
             type="button"
-            onClick={() => setPreference(option.id)}
+            onClick={() => handleSelect(option.id)}
             className={cn(
               "rounded-xl border px-4 py-3 text-left transition",
               preference === option.id

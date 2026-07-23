@@ -63,13 +63,13 @@ export default function SettingsRoute() {
             icon="✏️"
             label="Edit profile"
             description="Name, bio, avatar, and favorite genres"
-            onPress={() => router.push("/(auth)/profile-setup")}
+            onPress={() => router.push("/profile-edit")}
           />
           <SettingsLink
             icon="🔔"
             label="Notifications"
-            description="In-app and push notification preferences"
-            onPress={() => router.push("/notifications")}
+            description="In-app notification preferences"
+            onPress={() => router.push("/notification-preferences")}
           />
           <SettingsLink
             icon="🔒"

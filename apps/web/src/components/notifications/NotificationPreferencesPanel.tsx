@@ -14,6 +14,16 @@ import { useToast } from "@/components/ui/Toast";
 import type { Profile } from "@/types";
 import { cn } from "@/lib/utils/cn";
 
+type NotificationValues = {
+  notify_messages: boolean;
+  notify_follows: boolean;
+  notify_feed: boolean;
+  notify_likes: boolean;
+  notify_comments: boolean;
+  notify_mentions: boolean;
+  notify_browser: boolean;
+};
+
 type Props = {
   profile: Profile;
   embedded?: boolean;
@@ -76,23 +86,25 @@ export function NotificationPreferencesPanel({ profile, embedded = false }: Prop
     getBrowserNotificationPermission()
   );
 
-  async function savePrefs(next: typeof values) {
+  async function savePrefs(next: NotificationValues, previous: NotificationValues) {
     setSaving(true);
     const result = await updateNotificationPreferences(profile.id, next);
     setSaving(false);
 
     if (result.error) {
+      setValues(previous);
       toast.error(result.error);
       return;
     }
 
-    toast.success("Notification preferences saved.");
+    toast.success("Saved");
   }
 
   function togglePref(key: PrefKey) {
+    const previous = values;
     const next = { ...values, [key]: !values[key] };
     setValues(next);
-    void savePrefs(next);
+    void savePrefs(next, previous);
   }
 
   async function enableBrowserNotifications() {
@@ -106,22 +118,25 @@ export function NotificationPreferencesPanel({ profile, embedded = false }: Prop
 
     if (permission !== "granted") {
       toast.error("Browser notification permission was not granted.");
+      const previous = values;
       const next = { ...values, notify_browser: false };
       setValues(next);
-      void savePrefs(next);
+      void savePrefs(next, previous);
       return;
     }
 
+    const previous = values;
     const next = { ...values, notify_browser: true };
     setValues(next);
-    void savePrefs(next);
+    await savePrefs(next, previous);
     toast.success("Browser notifications enabled.");
   }
 
   async function disableBrowserNotifications() {
+    const previous = values;
     const next = { ...values, notify_browser: false };
     setValues(next);
-    void savePrefs(next);
+    await savePrefs(next, previous);
   }
 
   const Wrapper = embedded ? "div" : "section";
