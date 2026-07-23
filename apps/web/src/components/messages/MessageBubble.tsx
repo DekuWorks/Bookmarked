@@ -93,7 +93,7 @@ export function MessageBubble({
         </span>
       ) : null}
 
-      <div className="group relative max-w-[85%] pb-7 sm:max-w-[70%]">
+      <div className="group relative max-w-[85%] sm:max-w-[70%]">
         {isEditing ? (
           <div
             className={cn(
@@ -151,94 +151,99 @@ export function MessageBubble({
           </div>
         )}
 
+        {canInteract && onToggleReaction && message.reactions?.length ? (
+          <MessageReactionBar
+            reactions={message.reactions}
+            participantNames={participantNames}
+            onToggleReaction={(emoji) => onToggleReaction(message.id, emoji)}
+            alignEnd={isOwn}
+          />
+        ) : null}
+
         {showActions ? (
-          <div
-            className={cn(
-              "absolute bottom-0 z-20 flex items-center gap-0.5 rounded-full border border-border bg-surface p-0.5 shadow-sm",
-              "opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100",
-              isOwn ? "right-0" : "left-0"
-            )}
-          >
-            {onReply ? (
-              <button
-                type="button"
-                className={actionButtonClass}
-                onClick={() => onReply(message)}
-                aria-label="Reply"
-              >
-                <span className="hidden sm:inline">Reply</span>
-                <span className="sm:hidden" aria-hidden>
-                  ↩
-                </span>
-              </button>
-            ) : null}
-            {onToggleReaction ? (
-              <div className="relative">
+          <div className="relative z-30 mt-0.5 h-8 shrink-0">
+            <div
+              className={cn(
+                "absolute top-0 flex items-center gap-0.5 rounded-full border border-border bg-surface p-0.5 shadow-sm",
+                "opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100",
+                isOwn ? "right-0" : "left-0"
+              )}
+            >
+              {onReply ? (
                 <button
                   type="button"
-                  className={cn(actionButtonClass, "text-base leading-none")}
-                  onClick={() => setShowReactionPicker((open) => !open)}
-                  aria-label="Add reaction"
-                  aria-expanded={showReactionPicker}
+                  className={actionButtonClass}
+                  onClick={() => onReply(message)}
+                  aria-label="Reply"
                 >
-                  +
+                  <span className="hidden sm:inline">Reply</span>
+                  <span className="sm:hidden" aria-hidden>
+                    ↩
+                  </span>
                 </button>
-                {showReactionPicker ? (
-                  <MessageReactionPicker
-                    alignEnd={isOwn}
-                    onSelect={(emoji) => onToggleReaction(message.id, emoji)}
-                    onClose={() => setShowReactionPicker(false)}
-                  />
-                ) : null}
-              </div>
-            ) : null}
-            {isOwn && onEdit ? (
-              <button
-                type="button"
-                className={actionButtonClass}
-                onClick={() => {
-                  setDraft(message.body);
-                  setEditError(null);
-                  setIsEditing(true);
-                }}
-                aria-label="Edit message"
-              >
-                <span className="hidden sm:inline">Edit</span>
-                <span className="sm:hidden" aria-hidden>
-                  ✎
-                </span>
-              </button>
-            ) : null}
-            {isOwn && onDelete ? (
-              <button
-                type="button"
-                className={actionButtonClass}
-                onClick={() => onDelete(message.id)}
-                aria-label="Delete message"
-              >
-                <span className="hidden sm:inline">Delete</span>
-                <span className="sm:hidden" aria-hidden>
-                  ✕
-                </span>
-              </button>
-            ) : null}
+              ) : null}
+              {onToggleReaction ? (
+                <div className="relative">
+                  <button
+                    type="button"
+                    className={cn(actionButtonClass, "text-base leading-none")}
+                    onClick={() => setShowReactionPicker((open) => !open)}
+                    aria-label="Add reaction"
+                    aria-expanded={showReactionPicker}
+                  >
+                    +
+                  </button>
+                  {showReactionPicker ? (
+                    <MessageReactionPicker
+                      alignEnd={isOwn}
+                      onSelect={(emoji) => onToggleReaction(message.id, emoji)}
+                      onClose={() => setShowReactionPicker(false)}
+                    />
+                  ) : null}
+                </div>
+              ) : null}
+              {isOwn && onEdit ? (
+                <button
+                  type="button"
+                  className={actionButtonClass}
+                  onClick={() => {
+                    setDraft(message.body);
+                    setEditError(null);
+                    setIsEditing(true);
+                  }}
+                  aria-label="Edit message"
+                >
+                  <span className="hidden sm:inline">Edit</span>
+                  <span className="sm:hidden" aria-hidden>
+                    ✎
+                  </span>
+                </button>
+              ) : null}
+              {isOwn && onDelete ? (
+                <button
+                  type="button"
+                  className={actionButtonClass}
+                  onClick={() => onDelete(message.id)}
+                  aria-label="Delete message"
+                >
+                  <span className="hidden sm:inline">Delete</span>
+                  <span className="sm:hidden" aria-hidden>
+                    ✕
+                  </span>
+                </button>
+              ) : null}
+            </div>
           </div>
         ) : null}
+
+        <time
+          dateTime={message.created_at}
+          className="relative z-0 px-1 text-[11px] text-text-muted"
+        >
+          {formatMessageTimestamp(message.created_at, locale)}
+          {edited ? " · edited" : ""}
+        </time>
       </div>
-
-      {canInteract && onToggleReaction && message.reactions?.length ? (
-        <MessageReactionBar
-          reactions={message.reactions}
-          participantNames={participantNames}
-          onToggleReaction={(emoji) => onToggleReaction(message.id, emoji)}
-          alignEnd={isOwn}
-        />
-      ) : null}
-
-      <time dateTime={message.created_at} className="px-1 text-[11px] text-text-muted">
-        {formatMessageTimestamp(message.created_at, locale)}
-        {edited ? " · edited" : ""}
-      </time>
     </div>
   );
 }
