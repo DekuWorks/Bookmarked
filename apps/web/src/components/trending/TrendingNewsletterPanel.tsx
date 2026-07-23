@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BookCover } from "@/components/books/BookCover";
+import { CommunityRatingDisplay } from "@/components/books/CommunityRatingDisplay";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { fetchTrendingSections, type TrendingBook, type TrendingSection } from "@/lib/services/trending";
 import { bookDetailsPath } from "@/lib/routes/book";
@@ -32,6 +33,12 @@ function TrendingBookRow({ book }: { book: TrendingBook }) {
             <p className="mt-1 line-clamp-1 text-xs leading-relaxed text-text-muted">
               {book.author}
             </p>
+          ) : null}
+          {book.communityRating ? (
+            <CommunityRatingDisplay
+              rating={book.communityRating}
+              className="mt-2 justify-start gap-1.5"
+            />
           ) : null}
           <p className="mt-2 text-xs font-medium text-primary">
             {book.metric} {book.metricLabel}

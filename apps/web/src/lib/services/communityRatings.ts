@@ -1,9 +1,11 @@
 import { createClient } from "@/lib/supabase/client";
+import {
+  aggregateRatingsByBook,
+  computeAverageRating,
+  type CommunityRating,
+} from "../../../../../packages/utils";
 
-export type CommunityRating = {
-  averageRating: number;
-  ratingCount: number;
-};
+export type { CommunityRating };
 
 export async function getCommunityRating(bookId: string): Promise<CommunityRating | null> {
   const supabase = createClient();
@@ -17,11 +19,7 @@ export async function getCommunityRating(bookId: string): Promise<CommunityRatin
   if (error) throw error;
   if (!data?.length) return null;
 
-  const sum = data.reduce((acc, row) => acc + Number(row.rating), 0);
-  return {
-    averageRating: Math.round((sum / data.length) * 10) / 10,
-    ratingCount: data.length,
-  };
+  return computeAverageRating(data.map((row) => Number(row.rating)));
 }
 
 export async function getCommunityRatingsForBooks(
@@ -40,21 +38,10 @@ export async function getCommunityRatingsForBooks(
 
   if (error) throw error;
 
-  const buckets = new Map<string, number[]>();
-  for (const row of data ?? []) {
-    const id = row.book_id as string;
-    const list = buckets.get(id) ?? [];
-    list.push(Number(row.rating));
-    buckets.set(id, list);
-  }
-
-  const result = new Map<string, CommunityRating>();
-  for (const [bookId, ratings] of buckets) {
-    const sum = ratings.reduce((a, b) => a + b, 0);
-    result.set(bookId, {
-      averageRating: Math.round((sum / ratings.length) * 10) / 10,
-      ratingCount: ratings.length,
-    });
-  }
-  return result;
+  return aggregateRatingsByBook(
+    (data ?? []).map((row) => ({
+      book_id: row.book_id as string,
+      rating: Number(row.rating),
+    }))
+  );
 }

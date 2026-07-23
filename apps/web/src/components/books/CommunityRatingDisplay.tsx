@@ -1,5 +1,6 @@
 import { StarDisplay } from "@/components/reviews/StarDisplay";
 import type { CommunityRating } from "@/lib/services/communityRatings";
+import { formatRatingCount } from "../../../../../packages/utils";
 import { cn } from "@/lib/utils/cn";
 
 type Props = {
@@ -8,8 +9,7 @@ type Props = {
 };
 
 export function CommunityRatingDisplay({ rating, className }: Props) {
-  const countLabel =
-    rating.ratingCount === 1 ? "1 rating" : `${rating.ratingCount} ratings`;
+  const countLabel = formatRatingCount(rating.ratingCount);
 
   return (
     <div

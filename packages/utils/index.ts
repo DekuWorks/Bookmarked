@@ -39,6 +39,20 @@ export {
 } from "./completionTags";
 
 export {
+  aggregateRatingsByBook,
+  computeAverageRating,
+  formatRatingCount,
+  type CommunityRating,
+} from "./communityRating";
+
+export {
+  TRENDING_ACTIVITY_WEIGHTS,
+  addWeightedActivityCount,
+  blendTrendingScore,
+  type TrendingActivityEventType,
+} from "./trending";
+
+export {
   MAX_BIO_LENGTH,
   MAX_DISPLAY_NAME_LENGTH,
   MAX_READING_GOAL,

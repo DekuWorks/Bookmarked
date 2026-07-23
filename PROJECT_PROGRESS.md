@@ -105,8 +105,8 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Direct + group messaging | ✅ | Migration `009_messaging.sql` · `/messages/` · mobile `messages/` |
 | Message reactions & replies | ✅ | `20260723022711_message_reactions_and_replies.sql` |
 | Book clubs | ✅ | `20260713140000_book_clubs.sql` · `/clubs/` · mobile `clubs/` |
-| Trending sidebar / section | ✅ | `trending.ts` · `TrendingNewsletterPanel` (web) · `TrendingBooksSection` (mobile) |
-| Community rating on book pages | ✅ | `CommunityRatingDisplay` (web) · labeled stars on mobile book detail |
+| Trending sidebar / section | ✅ | Weighted activity scores + community ratings on trending rows (web + mobile) |
+| Community rating on book pages | ✅ | `CommunityRatingDisplay` (web) · labeled stars on mobile book detail + trending cards |
 | Direct-to-Read page count (web) | ✅ | `BookShelfActions`, `SearchResultCard`, `setBookShelfStatus`, `addCatalogBookToShelf` → `completeReadingSession` + `MissingPageCountDialog` |
 | Goodreads import → read shelf | ✅ | Web + mobile `goodreadsImport.ts` routes through `completeReadingSession` with CSV page counts |
 | `needsMissingPageCountPrompt` shared | ✅ | `packages/utils/readingCompletion.ts` (web + mobile re-export) |
@@ -128,7 +128,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Premium features gated | ✅ | `advanced_analytics`, `ai_insights` |
 | Stripe checkout (web) | ⬜ | Blocked — see `docs/STRIPE_SETUP.md` (`STRIPE_*` secrets + webhook Edge Function) |
 | App Store / Google Play IAP | ⬜ | No SDK integration |
-| Webhook signature verification | ⬜ | `subscription-webhook` Edge Function is a stub |
+| Webhook signature verification | 🔄 | Stripe HMAC verification shipped; Apple/Google relay still manual |
 | Admin grant UI | ⬜ | Manual SQL / service role |
 
 ---
@@ -203,7 +203,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Env validation at build | ✅ | `apps/web/scripts/validate-env.mjs` |
 | SEO metadata | ✅ | Per-route `layout.tsx` metadata |
 | Route audit | ✅ | 30+ web pages under `apps/web/src/app/` |
-| iOS TestFlight pipeline | 🔄 | `apps/mobile` EAS scripts; App Store submission in progress |
+| iOS TestFlight pipeline | 🔄 | EAS build 8 in progress (commit 9863eda+); build 7 submit was stale |
 
 ---
 
@@ -218,7 +218,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Feed search | ✅ | ✅ | — |
 | Events calendar | ✅ | ✅ | — |
 | Public library browse | ✅ | ✅ | — |
-| Shared service code | 49 modules | 33 modules | 28同名 duplicated, not in `packages/` |
+| Shared service code | 49 modules | 33 modules | `communityRating` + `trending` weights in `packages/utils` |
 
 ---
 
@@ -232,7 +232,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Database schema | `docs/DATABASE_SCHEMA.md` |
 | Master task list (MVP) | `docs/project/MASTER_TASK_LIST.md` |
 
-**Last updated:** July 23, 2026 (web direct-to-Read parity verified; Goodreads read import + shared page-count prompt; Stripe setup doc)
+**Last updated:** July 23, 2026 (EAS iOS build 8 started; trending weights + community ratings polish; Stripe webhook verification)
 
 ---
 
@@ -240,8 +240,8 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 
 | Priority | Item | Notes |
 |----------|------|-------|
-| P1 | Stripe checkout (web) | Blocked on `STRIPE_*` secrets — see `docs/STRIPE_SETUP.md` |
+| P1 | Submit EAS build 8 to TestFlight | `eas submit --platform ios --latest` after build completes |
+| P1 | Stripe checkout (web) | Blocked on `STRIPE_*` secrets — webhook handler ready; see `docs/STRIPE_SETUP.md` |
 | P1 | App Store / Google Play IAP | Needs store SDK + receipt validation |
-| P1 | Native iOS rebuild | Run `npm run ios` in `apps/mobile` after pod install for Goodreads import |
-| P2 | Extract duplicated services to `packages/` | `needsMissingPageCountPrompt` moved; 27 modules remain |
+| P2 | Extract duplicated services to `packages/` | `communityRating` + trending weights moved; 25 modules remain |
 | P2 | Library virtualization | Deferred until large libraries reported |

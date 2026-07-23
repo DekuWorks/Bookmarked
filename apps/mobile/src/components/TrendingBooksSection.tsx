@@ -3,7 +3,9 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { BookCover } from "./BookCover";
 import { LoadingState } from "./LoadingState";
+import { StarRating } from "./StarRating";
 import { fetchTrendingSections, type TrendingBook } from "../services/trending";
+import { formatRatingCount } from "../../../../packages/utils";
 import { SANS_FONT, SANS_FONT_BOLD, SANS_FONT_MEDIUM, SERIF_DISPLAY_FONT } from "../constants/theme";
 import { useThemeColors } from "../store/themeStore";
 
@@ -34,6 +36,17 @@ function TrendingBookCard({ book }: { book: TrendingBook }) {
         >
           {book.author}
         </Text>
+      ) : null}
+      {book.communityRating ? (
+        <View className="mt-1 flex-row items-center gap-1">
+          <StarRating value={book.communityRating.averageRating} showNumber size={12} />
+          <Text
+            className="text-[10px]"
+            style={{ fontFamily: SANS_FONT, color: colors.inkMuted }}
+          >
+            ({formatRatingCount(book.communityRating.ratingCount)})
+          </Text>
+        </View>
       ) : null}
       <Text
         className="mt-1 text-[11px]"

@@ -28,6 +28,8 @@ const PREMIUM_FEATURES = [
   },
 ] as const;
 
+const PREMIUM_PRICE = "$4.99 / month";
+
 export default function UpgradePage() {
   const user = useAuthUser();
   const { isPremium, loading } = useSubscription(user?.id);
@@ -62,7 +64,7 @@ export default function UpgradePage() {
         <section className="surface-card p-6">
           <div className="text-center">
             <p className="text-sm font-medium uppercase tracking-wide text-primary">Coming soon</p>
-            <p className="mt-2 text-3xl font-bold text-puce-red">$4.99 / month</p>
+            <p className="mt-2 text-3xl font-bold text-puce-red">{PREMIUM_PRICE}</p>
             <p className="mt-1 text-sm text-text-muted">Billed monthly. Cancel anytime.</p>
           </div>
           <ul className="mt-6 space-y-3">
@@ -76,10 +78,13 @@ export default function UpgradePage() {
               </li>
             ))}
           </ul>
-          <p className="mt-6 text-center text-sm leading-relaxed text-text-muted">
-            Stripe checkout (web) and App Store / Google Play subscriptions (mobile) are not live
-            yet. Premium gates are already wired so we can turn on billing without another release.
-          </p>
+          <div className="mt-6 rounded-xl border border-dashed border-primary/30 bg-primary/5 px-4 py-3 text-center text-sm leading-relaxed text-text-muted">
+            <p className="font-medium text-puce-red">Billing is almost ready</p>
+            <p className="mt-1">
+              Stripe checkout (web) and App Store / Google Play subscriptions (mobile) will unlock
+              Premium without another app release. Gates are already wired.
+            </p>
+          </div>
         </section>
       )}
 

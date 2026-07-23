@@ -15,8 +15,26 @@ Store in Supabase project secrets for Edge Functions. Do **not** commit to the r
 ## Current state
 
 - **Web** (`apps/web/src/app/(app)/upgrade/page.tsx`): informational “Coming soon” — no Checkout redirect
-- **Edge Function** (`supabase/functions/subscription-webhook/`): stub — needs signature verification + `user_subscriptions` upsert
+- **Edge Function** (`supabase/functions/subscription-webhook/`): Stripe signature verification + `user_subscriptions` upsert for `checkout.session.completed` and `customer.subscription.*`; manual relay via `x-subscription-webhook-secret` still supported
 - **Mobile**: no App Store / Google Play SDK yet
+
+## Webhook events handled (Stripe)
+
+| Event | Action |
+|-------|--------|
+| `checkout.session.completed` | Activate Premium when `client_reference_id` is the Supabase user UUID |
+| `customer.subscription.created` / `updated` / `deleted` | Sync tier/status from `metadata.user_id` (or `metadata.supabase_user_id`) |
+
+Checkout Sessions must set `client_reference_id` to the user's UUID. Subscriptions should include `metadata.user_id`.
+
+## Manual relay (admin / testing)
+
+```bash
+curl -X POST "$SUPABASE_URL/functions/v1/subscription-webhook" \
+  -H "Content-Type: application/json" \
+  -H "x-subscription-webhook-secret: $SUBSCRIPTION_WEBHOOK_SECRET" \
+  -d '{"user_id":"<uuid>","subscription_tier":"premium","subscription_status":"active"}'
+```
 
 ## Activation checklist
 

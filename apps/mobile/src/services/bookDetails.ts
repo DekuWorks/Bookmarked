@@ -2,6 +2,7 @@ import { supabase } from "./supabase";
 import { getBookReviews } from "./reviews";
 import { listReadingSessions } from "./readingSessions";
 import { listNotesByBook } from "./readingNotes";
+import { computeAverageRating, type CommunityRating } from "../../../../packages/utils";
 import type { Book, ReadingNote, ReadingSession, Review, UserBook } from "../types";
 
 /**
@@ -10,7 +11,7 @@ import type { Book, ReadingNote, ReadingSession, Review, UserBook } from "../typ
  * rating, reading sessions, and reading notes.
  */
 
-export type CommunityRating = { averageRating: number; ratingCount: number };
+export type { CommunityRating };
 
 export type BookDetailsData = {
   book: Book;
@@ -33,11 +34,7 @@ async function getCommunityRating(bookId: string): Promise<CommunityRating | nul
   if (error) throw error;
   if (!data?.length) return null;
 
-  const sum = data.reduce((acc, row) => acc + Number(row.rating), 0);
-  return {
-    averageRating: Math.round((sum / data.length) * 10) / 10,
-    ratingCount: data.length,
-  };
+  return computeAverageRating(data.map((row) => Number(row.rating)));
 }
 
 export async function getBookDetails(

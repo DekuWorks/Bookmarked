@@ -1,4 +1,11 @@
 import { createClient } from "@/lib/supabase/client";
+import {
+  addWeightedActivityCount,
+  aggregateRatingsByBook,
+  blendTrendingScore,
+  type CommunityRating,
+  type TrendingActivityEventType,
+} from "../../../../../packages/utils";
 
 export type TrendingBook = {
   bookId: string;
@@ -7,6 +14,7 @@ export type TrendingBook = {
   coverUrl: string | null;
   metric: number;
   metricLabel: string;
+  communityRating: CommunityRating | null;
 };
 
 export type TrendingSection = {
@@ -41,26 +49,73 @@ async function loadBooksByIds(bookIds: string[]): Promise<Map<string, TrendingBo
       coverUrl: book.cover_url,
       metric: 0,
       metricLabel: "",
+      communityRating: null,
     });
   }
   return map;
 }
 
+async function loadCommunityRatings(bookIds: string[]): Promise<Map<string, CommunityRating>> {
+  if (bookIds.length === 0) return new Map();
+
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("reviews")
+    .select("book_id, rating")
+    .in("book_id", bookIds)
+    .eq("visibility", "public")
+    .not("rating", "is", null);
+
+  if (error) throw error;
+
+  return aggregateRatingsByBook(
+    (data ?? []).map((row) => ({
+      book_id: row.book_id as string,
+      rating: Number(row.rating),
+    }))
+  );
+}
+
 function topBooks(
-  counts: Map<string, number>,
+  scores: Map<string, number>,
   books: Map<string, TrendingBook>,
+  ratings: Map<string, CommunityRating>,
   metricLabel: string,
-  limit = 5
+  limit = 5,
+  roundMetric = true
 ): TrendingBook[] {
-  return [...counts.entries()]
+  return [...scores.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, limit)
     .map(([bookId, metric]) => {
       const base = books.get(bookId);
       if (!base) return null;
-      return { ...base, metric, metricLabel };
+      const displayMetric = roundMetric ? Math.round(metric * 10) / 10 : Math.round(metric);
+      return {
+        ...base,
+        metric: displayMetric,
+        metricLabel,
+        communityRating: ratings.get(bookId) ?? null,
+      };
     })
     .filter((b): b is TrendingBook => b != null);
+}
+
+function compositeTrendingScores(
+  activityCounts: Map<string, number>,
+  shelvedCounts: Map<string, number>,
+  reviewCounts: Map<string, number>
+): Map<string, number> {
+  const bookIds = new Set([
+    ...activityCounts.keys(),
+    ...shelvedCounts.keys(),
+    ...reviewCounts.keys(),
+  ]);
+  const scores = new Map<string, number>();
+  for (const bookId of bookIds) {
+    scores.set(bookId, blendTrendingScore(bookId, activityCounts, shelvedCounts, reviewCounts));
+  }
+  return scores;
 }
 
 export async function fetchTrendingSections(): Promise<TrendingSection[]> {
@@ -76,7 +131,7 @@ export async function fetchTrendingSections(): Promise<TrendingSection[]> {
       .gte("created_at", since),
     supabase
       .from("activity_events")
-      .select("metadata_json")
+      .select("event_type, metadata_json")
       .gte("created_at", since)
       .in("event_type", ["book_added", "book_finished", "review_created"]),
   ]);
@@ -97,34 +152,48 @@ export async function fetchTrendingSections(): Promise<TrendingSection[]> {
     reviewCounts.set(id, (reviewCounts.get(id) ?? 0) + 1);
   }
 
-  const trendingCounts = new Map<string, number>();
+  const activityCounts = new Map<string, number>();
   for (const row of activityRows.data ?? []) {
     const meta = row.metadata_json as { book_id?: string } | null;
     const id = meta?.book_id;
     if (!id) continue;
-    trendingCounts.set(id, (trendingCounts.get(id) ?? 0) + 1);
+    const eventType = row.event_type as TrendingActivityEventType;
+    if (eventType in { book_added: 1, book_finished: 1, review_created: 1 }) {
+      addWeightedActivityCount(activityCounts, id, eventType);
+    }
   }
 
+  const trendingScores = compositeTrendingScores(activityCounts, shelvedCounts, reviewCounts);
+
   const allIds = [
-    ...new Set([...shelvedCounts.keys(), ...reviewCounts.keys(), ...trendingCounts.keys()]),
+    ...new Set([
+      ...shelvedCounts.keys(),
+      ...reviewCounts.keys(),
+      ...activityCounts.keys(),
+      ...trendingScores.keys(),
+    ]),
   ];
-  const books = await loadBooksByIds(allIds);
+
+  const [books, ratings] = await Promise.all([
+    loadBooksByIds(allIds),
+    loadCommunityRatings(allIds),
+  ]);
 
   return [
     {
       id: "trending",
       title: "Trending Books",
-      books: topBooks(trendingCounts, books, "activity this week"),
+      books: topBooks(trendingScores, books, ratings, "trend score this week"),
     },
     {
       id: "shelved",
       title: "Most Shelved This Week",
-      books: topBooks(shelvedCounts, books, "shelved this week"),
+      books: topBooks(shelvedCounts, books, ratings, "shelved this week", 5, false),
     },
     {
       id: "reviewed",
       title: "Most Reviewed",
-      books: topBooks(reviewCounts, books, "reviews this week"),
+      books: topBooks(reviewCounts, books, ratings, "reviews this week", 5, false),
     },
   ].filter((section) => section.books.length > 0);
 }

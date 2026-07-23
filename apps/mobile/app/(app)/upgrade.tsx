@@ -19,7 +19,13 @@ const PREMIUM_FEATURES = [
     title: "Early access",
     description: "Try new community and library features before they roll out to everyone.",
   },
+  {
+    title: "Support Bookmarked",
+    description: "Help us build a reader-first platform without ads or data selling.",
+  },
 ] as const;
+
+const PREMIUM_PRICE = "$4.99 / month";
 
 export default function UpgradeRoute() {
   const router = useRouter();
@@ -60,7 +66,7 @@ export default function UpgradeRoute() {
             <Text className="text-center text-sm font-medium uppercase tracking-wide text-primary">
               Coming soon
             </Text>
-            <Text className="mt-2 text-center text-3xl font-bold text-puce-red">$4.99 / month</Text>
+            <Text className="mt-2 text-center text-3xl font-bold text-puce-red">{PREMIUM_PRICE}</Text>
             <Text className="mt-1 text-center text-sm text-ink-muted">
               Billed monthly. Cancel anytime.
             </Text>
@@ -77,10 +83,15 @@ export default function UpgradeRoute() {
               ))}
             </View>
 
-            <Text className="mt-6 text-center text-sm text-ink-muted">
-              In-app purchases are not live yet. Premium gates are in place so we can launch
-              billing without another app release.
-            </Text>
+            <View className="mt-6 rounded-xl border border-dashed border-primary/30 bg-primary/5 px-4 py-3">
+              <Text className="text-center text-sm font-medium text-puce-red">
+                Billing is almost ready
+              </Text>
+              <Text className="mt-1 text-center text-sm leading-5 text-ink-muted">
+                In-app purchases will unlock Premium without another app release. Gates are
+                already wired.
+              </Text>
+            </View>
           </View>
         )}
 
