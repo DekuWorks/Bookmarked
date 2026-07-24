@@ -11,6 +11,11 @@ export {
 } from "./subscription";
 
 export {
+  PREMIUM_FEATURE_LINKS,
+  type PremiumFeatureLink,
+} from "./premiumFeatures";
+
+export {
   IAP_ALLOWED_PREMIUM_SKUS,
   IAP_PREMIUM_MONTHLY_ANDROID,
   IAP_PREMIUM_MONTHLY_IOS,

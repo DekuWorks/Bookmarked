@@ -1,41 +1,74 @@
-import { useRouter } from "expo-router";
-import { ScrollView, Text, View } from "react-native";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
+import { Linking, ScrollView, Text, View } from "react-native";
 import { Button } from "../../src/components/Button";
 import { LoadingState } from "../../src/components/LoadingState";
+import { PremiumBadge } from "../../src/components/PremiumBadge";
+import { PremiumFeatureList } from "../../src/components/PremiumFeatureList";
 import { PremiumFeatureLock } from "../../src/components/PremiumFeatureLock";
 import { PremiumUpgradeActions } from "../../src/components/PremiumUpgradeActions";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { useSubscription } from "../../src/hooks/useSubscription";
+import { useSubscriptionActivationPoll } from "../../src/hooks/useSubscriptionActivationPoll";
+import { createBillingPortalSession } from "../../src/services/stripePortal";
 import { useAuthStore } from "../../src/store/authStore";
 
-const PREMIUM_FEATURES = [
-  {
-    title: "Advanced analytics",
-    description: "Reading heatmaps, pace trends, and deeper stats in your Reading Room.",
-  },
-  {
-    title: "AI reading insights",
-    description:
-      "Personalized highlights, patterns, and reflection prompts from your reading journal (OpenAI-powered).",
-  },
-  {
-    title: "Early access",
-    description: "Try new community and library features before they roll out to everyone.",
-  },
-  {
-    title: "Support Bookmarked",
-    description: "Help us build a reader-first platform without ads or data selling.",
-  },
-] as const;
-
 const PREMIUM_PRICE = "$4.99 / month";
+const APPLE_SUBSCRIPTIONS_URL = "https://apps.apple.com/account/subscriptions";
 
 export default function UpgradeRoute() {
   const router = useRouter();
+  const { checkout } = useLocalSearchParams<{ checkout?: string }>();
   const userId = useAuthStore((s) => s.user?.id);
-  const { isPremium, loading, refetch } = useSubscription();
+  const { subscription, isPremium, loading, refetch } = useSubscription();
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalError, setPortalError] = useState<string | null>(null);
 
-  if (loading) {
+  const checkoutStatus = typeof checkout === "string" ? checkout : undefined;
+  const checkoutSucceeded = checkoutStatus === "success";
+
+  const { activating, timedOut } = useSubscriptionActivationPoll({
+    enabled: checkoutSucceeded && Boolean(userId),
+    isPremium,
+    refetch,
+  });
+
+  const optimisticSubscribed = checkoutSucceeded && timedOut && !isPremium;
+  const showSubscribedUI = isPremium || optimisticSubscribed;
+  const awaitingActivation = checkoutSucceeded && !showSubscribedUI;
+
+  useFocusEffect(
+    useCallback(() => {
+      void refetch();
+    }, [refetch])
+  );
+
+  const handleManageStripe = useCallback(async () => {
+    setPortalError(null);
+    setPortalLoading(true);
+
+    try {
+      const result = await createBillingPortalSession();
+      if (result.ok) {
+        await Linking.openURL(result.url);
+        return;
+      }
+
+      setPortalError(result.error);
+    } catch (error) {
+      setPortalError(
+        error instanceof Error ? error.message : "Could not open billing portal. Please try again."
+      );
+    } finally {
+      setPortalLoading(false);
+    }
+  }, []);
+
+  const handleManageApple = useCallback(() => {
+    void Linking.openURL(APPLE_SUBSCRIPTIONS_URL);
+  }, []);
+
+  if (loading && !awaitingActivation) {
     return (
       <View className="flex-1 bg-background">
         <ScreenHeader title="Bookmarked Premium" />
@@ -43,6 +76,11 @@ export default function UpgradeRoute() {
       </View>
     );
   }
+
+  const showStripeManage =
+    subscription?.subscription_provider === "stripe" && Boolean(subscription.stripe_customer_id);
+  const showAppleManage = subscription?.subscription_provider === "apple";
+  const showPricing = !showSubscribedUI && !awaitingActivation;
 
   return (
     <View className="flex-1 bg-background">
@@ -53,19 +91,60 @@ export default function UpgradeRoute() {
           next. One subscription works across web and mobile.
         </Text>
 
-        {isPremium ? (
-          <View className="rounded-2xl border border-primary/30 bg-primary/10 p-6">
-            <Text className="text-center text-lg font-semibold text-puce-red">
-              You&apos;re on Premium
+        {awaitingActivation && activating ? (
+          <View className="rounded-2xl border border-primary/30 bg-primary/10 p-4">
+            <Text className="text-center font-medium text-puce-red">Activating Premium…</Text>
+            <Text className="mt-1 text-center text-sm text-ink-muted">
+              Thanks for subscribing! We&apos;re unlocking your benefits now — this usually takes just
+              a few seconds.
             </Text>
-            <Text className="mt-2 text-center text-sm text-ink-muted">
-              Thanks for supporting Bookmarked. Premium features are unlocked on your account.
-            </Text>
-            <View className="mt-4">
-              <Button title="Back to Reading Room" variant="ghost" onPress={() => router.back()} />
-            </View>
           </View>
-        ) : (
+        ) : null}
+
+        {showSubscribedUI ? (
+          <View className="rounded-2xl border border-primary/30 bg-primary/10 p-6">
+            <View className="items-center">
+              <PremiumBadge compact />
+              <Text className="mt-3 text-center text-lg font-semibold text-puce-red">
+                You&apos;re subscribed
+              </Text>
+              <Text className="mt-2 text-center text-sm text-ink-muted">
+                {optimisticSubscribed
+                  ? "Payment received — your Premium benefits are unlocking and will sync across web and mobile shortly."
+                  : "Thanks for supporting Bookmarked. Premium features are unlocked on your account."}
+              </Text>
+            </View>
+
+            <PremiumFeatureList />
+
+            <View className="mt-4 gap-2">
+              <Button title="Open Reading Room" variant="ghost" onPress={() => router.push("/")} />
+              {showStripeManage ? (
+                <Button
+                  title="Manage subscription"
+                  variant="secondary"
+                  loading={portalLoading}
+                  onPress={() => void handleManageStripe()}
+                />
+              ) : null}
+              {showAppleManage ? (
+                <Button
+                  title="Manage subscription"
+                  variant="secondary"
+                  onPress={handleManageApple}
+                />
+              ) : null}
+            </View>
+            {portalError ? (
+              <Text className="mt-3 text-center text-sm text-red-600">{portalError}</Text>
+            ) : null}
+            {showAppleManage ? (
+              <Text className="mt-3 text-center text-xs text-ink-muted">
+                Opens App Store subscription settings.
+              </Text>
+            ) : null}
+          </View>
+        ) : showPricing ? (
           <View className="rounded-2xl border border-brand-border bg-surface p-6">
             <Text className="text-center text-sm font-medium uppercase tracking-wide text-primary">
               Bookmarked Premium
@@ -75,17 +154,7 @@ export default function UpgradeRoute() {
               Billed monthly. Cancel anytime.
             </Text>
 
-            <View className="mt-6 gap-3">
-              {PREMIUM_FEATURES.map((feature) => (
-                <View
-                  key={feature.title}
-                  className="rounded-xl border border-brand-border bg-background/60 px-4 py-3"
-                >
-                  <Text className="font-semibold text-puce-red">{feature.title}</Text>
-                  <Text className="mt-1 text-sm text-ink-muted">{feature.description}</Text>
-                </View>
-              ))}
-            </View>
+            <PremiumFeatureList />
 
             {userId ? (
               <PremiumUpgradeActions userId={userId} onSubscriptionUpdated={() => void refetch()} />
@@ -95,18 +164,14 @@ export default function UpgradeRoute() {
               </Text>
             )}
           </View>
-        )}
+        ) : null}
 
-        {!isPremium ? (
+        {!showSubscribedUI && !awaitingActivation ? (
           <PremiumFeatureLock
             compact
             title="Preview what Premium unlocks"
             description="Advanced analytics and AI insights are already wired behind Premium gates in your Reading Room."
           />
-        ) : null}
-
-        {!isPremium ? (
-          <Button title="Refresh subscription status" variant="ghost" onPress={() => void refetch()} />
         ) : null}
       </ScrollView>
     </View>

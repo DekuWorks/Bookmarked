@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { FlatList, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { BrandTopHeader } from "../../src/components/BrandTopHeader";
@@ -62,13 +62,29 @@ function QuickLink({
   );
 }
 
+function parseReadingRoomTabParam(value: string | string[] | undefined): ReadingRoomTab | null {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (!raw) return null;
+  return READING_ROOM_TAB_OPTIONS.some((option) => option.id === raw)
+    ? (raw as ReadingRoomTab)
+    : null;
+}
+
 export default function HomeReadingRoom() {
   const router = useRouter();
+  const { tab: tabParam } = useLocalSearchParams<{ tab?: string }>();
   const colors = useThemeColors();
   const userId = useAuthStore((s) => s.user?.id);
   const { data: profile, refetch: refetchProfile } = useProfile();
   const { onScroll } = useTabBarScroll();
   const [tab, setTab] = useState<ReadingRoomTab>("overview");
+
+  useEffect(() => {
+    const nextTab = parseReadingRoomTabParam(tabParam);
+    if (nextTab) {
+      setTab(nextTab);
+    }
+  }, [tabParam]);
   const [sessions, setSessions] = useState<Awaited<ReturnType<typeof listUserReadingSessions>> | null>(
     null
   );

@@ -9,14 +9,17 @@ export function useSubscription(userId: string | undefined) {
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [loading, setLoading] = useState(Boolean(userId));
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (options?: { silent?: boolean }) => {
     if (!userId) {
       setSubscription(null);
       setLoading(false);
       return;
     }
 
-    setLoading(true);
+    if (!options?.silent) {
+      setLoading(true);
+    }
+
     try {
       const row = await getUserSubscription(userId);
       setSubscription(row);
@@ -24,7 +27,9 @@ export function useSubscription(userId: string | undefined) {
       console.error("[subscription] refresh failed:", error);
       setSubscription(null);
     } finally {
-      setLoading(false);
+      if (!options?.silent) {
+        setLoading(false);
+      }
     }
   }, [userId]);
 

@@ -313,7 +313,7 @@ function buildReflectionPrompts(
   if (prompts.length === 0) {
     prompts.push({
       id: "prompt-start",
-      title: "Start your reading journal",
+      title: "Start your reading trail",
       body: "Log a reading session and add a short note — insights get richer as your trail grows.",
       emoji: "🌱",
     });

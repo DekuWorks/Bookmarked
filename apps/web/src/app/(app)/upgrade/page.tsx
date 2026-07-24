@@ -6,48 +6,55 @@ import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useToast } from "@/components/ui/Toast";
+import { PremiumBadge } from "@/components/premium/PremiumBadge";
+import { PremiumFeatureList } from "@/components/premium/PremiumFeatureList";
 import { PremiumFeatureLock } from "@/components/premium/PremiumFeatureLock";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { useSubscription } from "@/lib/hooks/useSubscription";
+import { useSubscriptionActivationPoll } from "@/lib/hooks/useSubscriptionActivationPoll";
 import { layout } from "@/lib/constants/layout";
 import { staticRedirect } from "@/lib/navigation/staticRedirect";
+import { createBillingPortalSession } from "@/lib/services/stripePortal";
 import { createPremiumCheckoutSession, getPremiumCheckoutAvailability } from "@/lib/services/stripeCheckout";
 
-const PREMIUM_FEATURES = [
-  {
-    title: "Advanced analytics",
-    description:
-      "Reading heatmaps, pace trends, monthly breakdowns, and deeper stats on your Progress tab.",
-  },
-  {
-    title: "AI reading insights",
-    description:
-      "Personalized highlights, reading patterns, and reflection prompts powered by OpenAI from your journal.",
-  },
-  {
-    title: "Early access",
-    description: "Try new community, library, and mobile features before they roll out to everyone.",
-  },
-  {
-    title: "Support Bookmarked",
-    description: "Help us build a reader-first platform without ads or data selling.",
-  },
-] as const;
-
 const PREMIUM_PRICE = "$4.99 / month";
+
+function clearCheckoutQueryParam(): void {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  url.searchParams.delete("checkout");
+  window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+}
 
 export default function UpgradePage() {
   const user = useAuthUser();
   const toast = useToast();
   const searchParams = useSearchParams();
-  const { isPremium, loading, refresh } = useSubscription(user?.id);
+  const { subscription, isPremium, loading, refresh } = useSubscription(user?.id);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [portalError, setPortalError] = useState<string | null>(null);
   const [checkoutUnavailable, setCheckoutUnavailable] = useState(false);
   const [checkoutMode, setCheckoutMode] = useState<"live" | "test" | "unknown" | null>(null);
   const [availabilityLoading, setAvailabilityLoading] = useState(true);
 
   const checkoutStatus = searchParams.get("checkout");
+  const checkoutSucceeded = checkoutStatus === "success";
+
+  const { activating, timedOut } = useSubscriptionActivationPoll({
+    enabled: checkoutSucceeded && Boolean(user),
+    isPremium,
+    refresh,
+    onActivated: () => {
+      toast.success("Premium is active — enjoy your new features!");
+      clearCheckoutQueryParam();
+    },
+  });
+
+  const optimisticSubscribed = checkoutSucceeded && timedOut && !isPremium;
+  const showSubscribedUI = isPremium || optimisticSubscribed;
+  const awaitingActivation = checkoutSucceeded && !showSubscribedUI;
 
   useEffect(() => {
     let cancelled = false;
@@ -70,25 +77,11 @@ export default function UpgradePage() {
     }
   }, [user]);
 
-  // Poll subscription after Stripe redirect while webhook activates Premium.
   useEffect(() => {
-    if (checkoutStatus !== "success" || !user) return;
-
-    void refresh();
-
-    const interval = window.setInterval(() => {
-      void refresh();
-    }, 2000);
-
-    const timeout = window.setTimeout(() => {
-      window.clearInterval(interval);
-    }, 20000);
-
-    return () => {
-      window.clearInterval(interval);
-      window.clearTimeout(timeout);
-    };
-  }, [checkoutStatus, user, refresh]);
+    if (checkoutStatus === "success" && isPremium) {
+      clearCheckoutQueryParam();
+    }
+  }, [checkoutStatus, isPremium]);
 
   const handleSubscribe = useCallback(async () => {
     if (!user) {
@@ -128,13 +121,40 @@ export default function UpgradePage() {
     }
   }, [toast, user]);
 
-  if (user === undefined || (user && loading) || availabilityLoading) {
+  const handleManageSubscription = useCallback(async () => {
+    setPortalError(null);
+    setPortalLoading(true);
+
+    try {
+      const result = await createBillingPortalSession("/upgrade/");
+      if (result.ok) {
+        window.location.href = result.url;
+        return;
+      }
+
+      setPortalError(result.error);
+      toast.error(result.error);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Could not open billing portal. Please try again.";
+      setPortalError(message);
+      toast.error(message);
+    } finally {
+      setPortalLoading(false);
+    }
+  }, [toast]);
+
+  if (user === undefined || (user && loading && !awaitingActivation) || availabilityLoading) {
     return <LoadingState message="Loading plans…" />;
   }
 
   if (!user) {
     return <LoadingState message="Redirecting to sign in…" />;
   }
+
+  const showStripeManage =
+    subscription?.subscription_provider === "stripe" && Boolean(subscription.stripe_customer_id);
+  const showPricing = !showSubscribedUI && !awaitingActivation;
 
   return (
     <div className={layout.pageStack}>
@@ -146,39 +166,64 @@ export default function UpgradePage() {
         </p>
       </header>
 
-      {checkoutStatus === "success" ? (
-        <section className="surface-card border-primary/30 bg-primary/10 p-4 text-center text-sm text-text-muted">
-          <p className="font-medium text-puce-red">Thanks for subscribing!</p>
-          <p className="mt-1">
-            Your Premium access may take a moment to activate.{" "}
-            <button
-              type="button"
-              className="font-medium text-primary underline-offset-2 hover:underline"
-              onClick={() => void refresh()}
-            >
-              Refresh status
-            </button>
-          </p>
-        </section>
-      ) : null}
-
       {checkoutStatus === "canceled" ? (
         <section className="surface-card p-4 text-center text-sm text-text-muted">
           Checkout was canceled. You can subscribe whenever you&apos;re ready.
         </section>
       ) : null}
 
-      {isPremium ? (
-        <section className="surface-card border-primary/30 bg-primary/10 p-6 text-center">
-          <p className="text-lg font-semibold text-puce-red">You&apos;re on Premium</p>
-          <p className="mt-2 text-sm text-text-muted">
-            Thanks for supporting Bookmarked. Premium features are unlocked on web and mobile.
+      {awaitingActivation && activating ? (
+        <section className="surface-card border-primary/30 bg-primary/10 p-4 text-center text-sm text-text-muted">
+          <p className="font-medium text-puce-red">Activating Premium…</p>
+          <p className="mt-1">
+            Thanks for subscribing! We&apos;re unlocking your benefits now — this usually takes just
+            a few seconds.
           </p>
-          <ButtonLink href="/reading-room/?tab=progress" variant="outline" size="sm" className="mt-4">
-            Open Reading Room
-          </ButtonLink>
         </section>
-      ) : (
+      ) : null}
+
+      {showSubscribedUI ? (
+        <section className="surface-card overflow-hidden border-primary/30 bg-primary/10 p-4 sm:p-6">
+          <div className="text-center">
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <p className="text-sm font-medium uppercase tracking-wide text-primary">
+                Bookmarked Premium
+              </p>
+              <PremiumBadge compact />
+            </div>
+            <p className="mt-3 text-lg font-semibold text-puce-red">You&apos;re subscribed</p>
+            <p className="mt-2 text-sm text-text-muted">
+              {optimisticSubscribed
+                ? "Payment received — your Premium benefits are unlocking and will sync across web and mobile shortly."
+                : "Thanks for supporting Bookmarked. Premium features are unlocked on web and mobile."}
+            </p>
+          </div>
+
+          <PremiumFeatureList />
+
+          <div className="mt-6 flex flex-wrap justify-center gap-2">
+            <ButtonLink href="/reading-room/?tab=progress" variant="outline" size="sm">
+              Open Reading Room
+            </ButtonLink>
+            {showStripeManage ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                loading={portalLoading}
+                onClick={() => void handleManageSubscription()}
+              >
+                Manage subscription
+              </Button>
+            ) : null}
+          </div>
+          {portalError ? <p className="mt-3 text-center text-sm text-red-600">{portalError}</p> : null}
+          {!showStripeManage && subscription?.subscription_provider === "apple" ? (
+            <p className="mt-3 text-center text-xs text-text-muted">
+              Manage or cancel in iOS Settings → Subscriptions.
+            </p>
+          ) : null}
+        </section>
+      ) : showPricing ? (
         <section className="surface-card overflow-hidden p-4 sm:p-6">
           <div className="text-center">
             <p className="text-sm font-medium uppercase tracking-wide text-primary">
@@ -187,17 +232,8 @@ export default function UpgradePage() {
             <p className="mt-2 text-3xl font-bold text-puce-red">{PREMIUM_PRICE}</p>
             <p className="mt-1 text-sm text-text-muted">Billed monthly. Cancel anytime.</p>
           </div>
-          <ul className="mt-6 space-y-3">
-            {PREMIUM_FEATURES.map((feature) => (
-              <li
-                key={feature.title}
-                className="rounded-xl border border-border bg-background/60 px-4 py-3 text-left transition-shadow hover:shadow-sm"
-              >
-                <p className="font-semibold text-puce-red">{feature.title}</p>
-                <p className="mt-1 text-sm leading-relaxed text-text-muted">{feature.description}</p>
-              </li>
-            ))}
-          </ul>
+
+          <PremiumFeatureList />
 
           {checkoutUnavailable ? (
             <div className="mt-6 rounded-xl border border-dashed border-primary/30 bg-primary/5 px-4 py-3 text-center text-sm leading-relaxed text-text-muted">
@@ -229,9 +265,9 @@ export default function UpgradePage() {
             </div>
           )}
         </section>
-      )}
+      ) : null}
 
-      {!isPremium ? (
+      {!showSubscribedUI && !awaitingActivation ? (
         <PremiumFeatureLock
           title="Preview what Premium unlocks"
           description="Advanced analytics and AI insights are already wired behind Premium gates in your Reading Room."
