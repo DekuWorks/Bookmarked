@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
 import { RefreshControl, ScrollView, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
-import { parseReadingRoomTab } from "@bookmarked/utils/readingRoomTabs";
+import { parseReadingRoomTab } from "../../../../packages/utils/readingRoomTabs";
 import { BrandTopHeader } from "../../src/components/BrandTopHeader";
 import { ScreenGradientWash } from "../../src/components/ScreenGradientWash";
 import { LoadingState } from "../../src/components/LoadingState";

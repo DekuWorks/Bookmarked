@@ -6,24 +6,22 @@ import { OverviewBookShelf, useDeferredOverviewSections } from "./OverviewBookSh
 import { CoverTile } from "../CoverTile";
 import { LoadingState } from "../LoadingState";
 import { SectionCard } from "../SectionCard";
-import type { LibraryBook } from "../../services/library";
+import type { LibraryBookRow } from "../../services/library";
 import { selectRecentlyFinishedBooks } from "../../../../../packages/utils/readingRoomHistory";
 
 type Props = {
   userId: string;
-  books: LibraryBook[];
-  currentlyReading: LibraryBook[];
+  books: LibraryBookRow[];
+  currentlyReading: LibraryBookRow[];
   onSelectTab: (tab: "trail" | "history") => void;
 };
 
 function QuickLink({
   icon,
-  shelfIconId,
   label,
   onPress,
 }: {
   icon?: string;
-  shelfIconId?: "currently_reading" | "want_to_read";
   label: string;
   onPress: () => void;
 }) {

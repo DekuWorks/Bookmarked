@@ -4,13 +4,13 @@ import { useRouter } from "expo-router";
 import { BookCover } from "../BookCover";
 import { SectionCard } from "../SectionCard";
 import { StarRating } from "../StarRating";
-import type { LibraryBook } from "../../services/library";
+import type { LibraryBookRow } from "../../services/library";
 
 type Props = {
   title: string;
   shelfIconId?: "read" | "currently_reading" | "want_to_read";
   emoji?: string;
-  items: LibraryBook[];
+  items: LibraryBookRow[];
   emptyMessage: string;
   viewAllLabel: string;
   onViewAll: () => void;
