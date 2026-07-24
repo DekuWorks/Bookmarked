@@ -123,27 +123,57 @@ export async function setBookShelfStatus(
   const resolvedPageCount = book.page_count ?? catalogPageCountHint;
 
   if (shelf_status === "read" && previousShelf !== "read") {
-    const { data: saved, error: upsertError } = await supabase
-      .from("user_books")
-      .upsert(
-        {
-          user_id: user.id,
-          book_id: bookId,
-          updated_at: now,
-          started_at: userBook?.started_at ?? now,
-        },
-        { onConflict: "user_id,book_id" }
-      )
-      .select("id, started_at, read_count, is_favorite, rating, completion_tags")
-      .single();
+    let userBookId = userBook?.id;
+    let startedAt = userBook?.started_at ?? now;
+    let readCount = userBook?.read_count;
+    let isFavorite = userBook?.is_favorite;
+    let rating = userBook?.rating;
+    let completionTags = userBook?.completion_tags;
 
-    if (upsertError) return { error: upsertError.message };
+    if (userBookId) {
+      if (!userBook?.started_at) {
+        const { error: startedError } = await supabase
+          .from("user_books")
+          .update({ started_at: now, updated_at: now })
+          .eq("id", userBookId);
+        if (startedError) return { error: startedError.message };
+        startedAt = now;
+      }
+    } else {
+      const { data: saved, error: upsertError } = await supabase
+        .from("user_books")
+        .upsert(
+          {
+            user_id: user.id,
+            book_id: bookId,
+            shelf_status: "want_to_read",
+            updated_at: now,
+            started_at: now,
+          },
+          { onConflict: "user_id,book_id" }
+        )
+        .select("id, started_at, read_count, is_favorite, rating, completion_tags")
+        .single();
+
+      if (upsertError) return { error: upsertError.message };
+
+      userBookId = saved.id;
+      startedAt = saved.started_at ?? now;
+      readCount = saved.read_count;
+      isFavorite = saved.is_favorite;
+      rating = saved.rating;
+      completionTags = saved.completion_tags;
+    }
+
+    if (!userBookId) {
+      return { error: "Could not update this book on your shelf." };
+    }
 
     const completion = await completeReadingSession({
       supabase,
       userId: user.id,
       bookId,
-      userBookId: saved.id,
+      userBookId,
       bookTitle: book.title,
       book: {
         id: book.id,
@@ -154,20 +184,17 @@ export async function setBookShelfStatus(
       },
       editionSelected,
       previousPage,
-      readNumber: Number(userBook?.read_count) || 1,
-      finishedAt: userBook?.finished_at ?? now,
-      startedAt: saved.started_at ?? userBook?.started_at ?? now,
+      readNumber: Number(readCount) || 1,
+      finishedAt: now,
+      startedAt,
       manualPageCount,
-      source:
-        Number(userBook?.read_count) > 1 || Number(saved.read_count) > 1
-          ? "reread"
-          : "shelf_move",
+      source: Number(readCount) > 1 ? "reread" : "shelf_move",
       applyCompletionTags: true,
       completionTagsState: {
-        read_count: saved.read_count ?? userBook?.read_count,
-        is_favorite: saved.is_favorite ?? userBook?.is_favorite,
-        rating: saved.rating ?? userBook?.rating,
-        completion_tags: saved.completion_tags ?? userBook?.completion_tags,
+        read_count: readCount,
+        is_favorite: isFavorite,
+        rating,
+        completion_tags: completionTags,
       },
     });
 

@@ -113,10 +113,10 @@ export default function BookScreen() {
     enabled: Boolean(userId) && Boolean(bookId),
   });
 
-  function invalidate() {
-    queryClient.invalidateQueries({ queryKey: ["book-details", bookId, userId] });
-    queryClient.invalidateQueries({ queryKey: ["library"] });
-    queryClient.invalidateQueries({ queryKey: ["home-feed"] });
+  async function invalidate() {
+    await queryClient.invalidateQueries({ queryKey: ["book-details", bookId, userId] });
+    await queryClient.invalidateQueries({ queryKey: ["library"] });
+    await queryClient.invalidateQueries({ queryKey: ["home-feed"] });
   }
 
   const data = details.data;
@@ -133,8 +133,11 @@ export default function BookScreen() {
   async function applyShelf(shelf: ShelfStatus, manualPageCount?: number) {
     if (!userId || !book) return;
     const result = await setShelfStatus(userId, book, shelf, { manualPageCount });
-    if (result.error) Alert.alert("Error", result.error);
-    invalidate();
+    if (result.error) {
+      Alert.alert("Error", result.error);
+      return;
+    }
+    await invalidate();
   }
 
   async function changeShelf(shelf: ShelfStatus) {

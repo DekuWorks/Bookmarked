@@ -31,6 +31,7 @@ type Props = {
   pageCount?: number | null;
   editionSelected?: boolean;
   previousPage?: number;
+  onShelfChange?: (result: BookActionState) => void;
 };
 
 export function BookShelfActions({
@@ -41,6 +42,7 @@ export function BookShelfActions({
   pageCount = null,
   editionSelected = false,
   previousPage = 0,
+  onShelfChange,
 }: Props) {
   const user = useAuthUser();
   const toast = useToast();
@@ -90,6 +92,7 @@ export function BookShelfActions({
         setMenuOpen(false);
         setMissingPageOpen(false);
         setPendingShelf(null);
+        onShelfChange?.(result);
       }
     } finally {
       setPending(false);

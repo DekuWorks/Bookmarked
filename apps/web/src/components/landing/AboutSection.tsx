@@ -9,8 +9,8 @@ export function AboutSection() {
           and thoughtful reviews — without the noise of a crowded social network.
         </p>
         <p className="mx-auto mt-4 max-w-3xl text-pretty leading-relaxed text-text-muted">
-          Create an account on the web today. When our mobile app launches, you will sign in with
-          the same profile, shelves, and history.
+          Create an account on the web or iOS. Sign in with the same profile, shelves, and history
+          everywhere.
         </p>
       </div>
     </section>

@@ -16,10 +16,10 @@ What is wired in code vs what still needs owner action (secrets, App Store appro
 
 | Secret | Required for | Status |
 |--------|--------------|--------|
-| `STRIPE_SECRET_KEY` | Web checkout | ✅ Set (test mode) |
+| `STRIPE_SECRET_KEY` | Web checkout | ✅ Set (**live** — `create-checkout-session` reports `mode: live`) |
 | `STRIPE_PRICE_ID` | Web checkout | ✅ Set |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhooks | ✅ Set |
-| `OPENAI_API_KEY` | AI insights (OpenAI path) | ❌ **You must set** — clients fall back to rule-based insights |
+| `OPENAI_API_KEY` | AI insights (OpenAI path) | ✅ Set — edge function uses OpenAI when user is Premium + has data |
 | `OPENAI_MODEL` | AI model override | Optional |
 | `APPLE_PREMIUM_PRODUCT_IDS` | IAP server allowlist | Optional (defaults to production SKU) |
 | `SUBSCRIPTION_WEBHOOK_SECRET` | Manual subscription relay | Optional |
@@ -31,6 +31,10 @@ List secrets (names only):
 ```
 
 ## Owner action: Stripe live mode
+
+**Status: complete** (Jul 2026). `create-checkout-session` reports `available: true`, `mode: live`.
+
+If you rotate keys or add a staging project, follow:
 
 1. Enable Stripe live mode in [Stripe Dashboard](https://dashboard.stripe.com).
 2. Create production catalog:
@@ -71,6 +75,10 @@ Optional env overrides (`apps/mobile/.env` / EAS secrets):
 Details: `docs/APP_STORE_IAP.md`
 
 ## Owner action: OpenAI (AI insights)
+
+**Status: secret set.** Deploy is current (`ai-insights` v5, Jul 2026).
+
+To rotate the key:
 
 ```bash
 ./scripts/supabase-cli.sh secrets set OPENAI_API_KEY=sk-...

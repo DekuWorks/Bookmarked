@@ -8,16 +8,13 @@ export function HeroSection() {
   return (
     <section className="relative overflow-hidden px-4 py-14 sm:px-6 sm:py-20 lg:px-8 lg:py-28">
       <div className="mx-auto max-w-7xl text-center">
-        <p className="mb-4 inline-block rounded-full bg-royal-orange/20 px-4 py-1.5 text-sm font-medium text-puce-red">
-          Web-first · Mobile coming soon
-        </p>
         <h1 className="text-balance text-3xl font-bold tracking-tight text-puce-red sm:text-4xl md:text-5xl lg:text-6xl">
           We believe every reader{" "}
           <span className="text-primary">deserves a home</span>
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-pretty text-base text-text-muted sm:text-lg md:text-xl">
           Search books, organize shelves, track progress, and share reviews — all in one cozy,
-          reader-focused home on the web.
+          reader-focused home on the web and iOS.
         </p>
         <div className="mx-auto mt-10 flex w-full max-w-md flex-col items-stretch justify-center gap-3 sm:max-w-none sm:flex-row sm:items-center sm:justify-center sm:gap-4">
           <Link

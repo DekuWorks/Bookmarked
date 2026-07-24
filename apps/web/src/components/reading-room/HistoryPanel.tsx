@@ -31,13 +31,10 @@ export function HistoryPanel({ books, sessions }: Props) {
 
   return (
     <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-puce-red">Recently Finished Books</h2>
-          <p className="mt-1 text-sm text-text-muted">
-            Finished books and recent reading sessions.
-          </p>
-        </div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-lg font-semibold text-puce-red">
+          Recently finished books and reading sessions
+        </h2>
         <HistorySortSelect value={sort} onChange={setSort} className="sm:min-w-[220px]" />
       </div>
 

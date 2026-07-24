@@ -57,7 +57,7 @@ export function PreviewDashboardSection() {
               <ShelfBadge status="read" />
             </div>
             <p className="mt-4 text-sm text-text-muted">
-              Organize every title in one place — synced when mobile arrives.
+              Organize every title in one place — synced across web and iOS.
             </p>
           </DashboardCard>
         </div>

@@ -301,6 +301,7 @@ function BookDetailsContent() {
           pageCount={book.page_count}
           editionSelected={Boolean(book.isbn)}
           previousPage={Number(userBook?.progress_pages) || 0}
+          onShelfChange={() => loadBookDetails()}
         />
         <ReadingProgressPanel
           bookId={book.id}

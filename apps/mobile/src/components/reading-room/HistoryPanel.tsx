@@ -38,12 +38,8 @@ export function HistoryPanel({ books, sessions }: Props) {
 
   return (
     <View className="gap-4">
-      <SectionCard title="Recently Finished Books" shelfIconId="read">
-        <Text className="text-sm text-ink-muted">
-          Finished books and recent reading sessions.
-        </Text>
-
-        <View className="mt-4">
+      <SectionCard title="Recently finished books and reading sessions" shelfIconId="read">
+        <View className="mt-1">
           <HistorySortSelect value={sort} onChange={setSort} />
         </View>
 

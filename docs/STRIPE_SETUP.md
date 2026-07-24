@@ -8,13 +8,13 @@ See also: `docs/PRODUCTION_BILLING.md` for the full production cutover checklist
 
 | Secret | Status |
 |--------|--------|
-| `STRIPE_SECRET_KEY` | ✅ Set |
+| `STRIPE_SECRET_KEY` | ✅ Set (**live** — probe `GET /functions/v1/create-checkout-session` → `mode: live`) |
 | `STRIPE_PRICE_ID` | ✅ Set |
 | `STRIPE_WEBHOOK_SECRET` | ✅ Set |
-| `OPENAI_API_KEY` | ❌ Not set (AI insights use rule-based fallback) |
+| `OPENAI_API_KEY` | ✅ Set |
 | `SUBSCRIPTION_WEBHOOK_SECRET` | ❌ Not set (optional — manual relay / admin grants) |
 
-> Stripe keys in Supabase are currently **test mode** (`sk_test_…`). Switch to live keys for real charges — see [Production cutover](#production-cutover).
+> Stripe checkout is in **live mode** as of Jul 2026. Use test keys only in a separate Supabase project or when rotating back for staging.
 
 ## Required secrets
 

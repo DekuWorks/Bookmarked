@@ -252,21 +252,51 @@ export async function addCatalogBookToShelf(
   const now = new Date().toISOString();
 
   if (shelf_status === "read" && previousShelf !== "read") {
-    const { data: userBook, error: shelfError } = await supabase
-      .from("user_books")
-      .upsert(
-        {
-          user_id: user.id,
-          book_id: bookId,
-          updated_at: now,
-          started_at: existingUserBook?.started_at ?? now,
-        },
-        { onConflict: "user_id,book_id" }
-      )
-      .select("id, started_at, read_count, is_favorite, rating, completion_tags")
-      .single();
+    let userBookId = existingUserBook?.id;
+    let startedAt = existingUserBook?.started_at ?? now;
+    let readCount = existingUserBook?.read_count;
+    let isFavorite = existingUserBook?.is_favorite;
+    let rating = existingUserBook?.rating;
+    let completionTags = existingUserBook?.completion_tags;
 
-    if (shelfError) return { error: ADD_BOOK_ERROR };
+    if (userBookId) {
+      if (!existingUserBook?.started_at) {
+        const { error: startedError } = await supabase
+          .from("user_books")
+          .update({ started_at: now, updated_at: now })
+          .eq("id", userBookId);
+        if (startedError) return { error: ADD_BOOK_ERROR };
+        startedAt = now;
+      }
+    } else {
+      const { data: userBook, error: shelfError } = await supabase
+        .from("user_books")
+        .upsert(
+          {
+            user_id: user.id,
+            book_id: bookId,
+            shelf_status: "want_to_read",
+            updated_at: now,
+            started_at: now,
+          },
+          { onConflict: "user_id,book_id" }
+        )
+        .select("id, started_at, read_count, is_favorite, rating, completion_tags")
+        .single();
+
+      if (shelfError) return { error: ADD_BOOK_ERROR };
+
+      userBookId = userBook.id;
+      startedAt = userBook.started_at ?? now;
+      readCount = userBook.read_count;
+      isFavorite = userBook.is_favorite;
+      rating = userBook.rating;
+      completionTags = userBook.completion_tags;
+    }
+
+    if (!userBookId) {
+      return { error: ADD_BOOK_ERROR };
+    }
 
     const { data: bookRow } = await supabase
       .from("books")
@@ -278,7 +308,7 @@ export async function addCatalogBookToShelf(
       supabase,
       userId: user.id,
       bookId,
-      userBookId: userBook.id,
+      userBookId,
       bookTitle: bookRow?.title ?? input.title,
       book: {
         id: bookId,
@@ -289,20 +319,21 @@ export async function addCatalogBookToShelf(
       },
       editionSelected: Boolean(input.edition_key?.trim() || input.isbn?.trim()),
       previousPage,
-      readNumber: Number(existingUserBook?.read_count) || 1,
+      readNumber: Number(readCount) || 1,
       finishedAt: now,
-      startedAt: userBook.started_at ?? now,
+      startedAt,
       manualPageCount,
-      source: Number(existingUserBook?.read_count) > 1 ? "reread" : "search_add",
-      applyCompletionTags: Boolean(existingUserBook),
-      completionTagsState: existingUserBook
-        ? {
-            read_count: userBook.read_count ?? existingUserBook.read_count,
-            is_favorite: userBook.is_favorite ?? existingUserBook.is_favorite,
-            rating: userBook.rating ?? existingUserBook.rating,
-            completion_tags: userBook.completion_tags ?? existingUserBook.completion_tags,
-          }
-        : undefined,
+      source: Number(readCount) > 1 ? "reread" : "search_add",
+      applyCompletionTags: Boolean(existingUserBook ?? userBookId),
+      completionTagsState:
+        existingUserBook || userBookId
+          ? {
+              read_count: readCount,
+              is_favorite: isFavorite,
+              rating,
+              completion_tags: completionTags,
+            }
+          : undefined,
     });
 
     if (completion.error) return { error: completion.error };

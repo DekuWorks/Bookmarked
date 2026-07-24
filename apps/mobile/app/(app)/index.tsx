@@ -7,6 +7,7 @@ import { BrandTopHeader } from "../../src/components/BrandTopHeader";
 import { CoverTile } from "../../src/components/CoverTile";
 import { ScreenGradientWash } from "../../src/components/ScreenGradientWash";
 import { LoadingState } from "../../src/components/LoadingState";
+import { AnalyticsGrid } from "../../src/components/AnalyticsGrid";
 import { ReadingGoalPanel } from "../../src/components/ReadingGoalPanel";
 import { ReadingInsightsSection } from "../../src/components/ReadingInsightsSection";
 import { SectionCard } from "../../src/components/SectionCard";
@@ -24,6 +25,7 @@ import {
 } from "../../src/constants/readingRoomTabs";
 import { useProfile } from "../../src/hooks/useProfile";
 import { getUserLibraryBooks } from "../../src/services/library";
+import { loadReadingAnalytics } from "../../src/services/analytics";
 import { computeReadingGoal } from "../../src/services/readingGoal";
 import { searchNotesWithBooks } from "../../src/services/readingNotes";
 import { listUserReviews } from "../../src/services/readingRoom";
@@ -81,6 +83,17 @@ export default function HomeReadingRoom() {
     enabled: Boolean(userId),
   });
 
+  const analytics = useQuery({
+    queryKey: ["reading-analytics", userId, library.dataUpdatedAt],
+    queryFn: () =>
+      loadReadingAnalytics(
+        userId as string,
+        library.data ?? [],
+        profile?.favorite_genres ?? null
+      ),
+    enabled: Boolean(userId) && tab === "progress" && library.data != null,
+  });
+
   const loadSessions = useCallback(async () => {
     if (!userId) return;
     const rows = await listUserReadingSessions(userId);
@@ -134,6 +147,7 @@ export default function HomeReadingRoom() {
   function refreshAll() {
     library.refetch();
     void refetchProfile();
+    if (tab === "progress") void analytics.refetch();
     if (tab === "trail" || tab === "history") void loadSessions();
     if (tab === "reviews") void loadReviews();
     if (tab === "notes") void loadNotes();
@@ -289,6 +303,15 @@ export default function HomeReadingRoom() {
           <>
             <SectionCard title="Reading goal" emoji="🎯">
               <ReadingGoalPanel status={goal} />
+            </SectionCard>
+            <SectionCard title="Reading statistics" emoji="📈">
+              {analytics.isLoading ? (
+                <LoadingState message="Loading statistics…" />
+              ) : analytics.data ? (
+                <AnalyticsGrid analytics={analytics.data} readingGoal={goal} />
+              ) : (
+                <Text className="text-ink-muted">Sign in to view your reading statistics.</Text>
+              )}
             </SectionCard>
             <ReadingInsightsSection />
           </>
