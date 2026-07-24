@@ -10,14 +10,9 @@ import { AiInsightsPanel } from "@/components/premium/AiInsightsPanel";
 import { PremiumFeatureLock } from "@/components/premium/PremiumFeatureLock";
 import { NotesSearchForm } from "@/components/notes/NotesSearchForm";
 import { NotesSearchResultCard } from "@/components/notes/NotesSearchResultCard";
-import { BookMiniGrid } from "@/components/reading-room/BookMiniGrid";
-import { CurrentlyReadingRow } from "@/components/reading-room/CurrentlyReadingRow";
-import { ShelfIcon } from "@/components/shelves/ShelfIcon";
+import { OverviewTab } from "@/components/reading-room/OverviewTab";
 import { ReadingGoalPanel } from "@/components/reading-goal/ReadingGoalPanel";
-import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { TrailPanel } from "@/components/reading-room/TrailPanel";
-import { ButtonLink } from "@/components/ui/ButtonLink";
-import { bookDetailsPath } from "@/lib/routes/book";
 import { searchNotesWithBooks } from "@/lib/services/readingNotes";
 import type { ReadingRoomData } from "@/lib/services/readingRoom";
 import { listUserReviews, type UserReviewWithBook } from "@/lib/services/readingRoom";
@@ -67,11 +62,6 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
     () => data.shelves.flatMap((shelf) => shelf.items),
     [data.shelves]
   );
-
-  const continueReadingBook = data.currentlyReading.find((b) => b.books?.id);
-  const continueReadingHref = continueReadingBook?.books?.id
-    ? bookDetailsPath(continueReadingBook.books.id)
-    : "/search/";
 
   const loadSessions = useCallback(async () => {
     const rows = await listUserReadingSessions(userId);
@@ -143,67 +133,15 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
 
       <div role="tabpanel" aria-label={READING_ROOM_TAB_OPTIONS.find((t) => t.id === tab)?.label}>
         {tab === "overview" ? (
-          <div className="space-y-8">
-            <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
-              <h2 className="flex items-center gap-2 text-lg font-semibold text-puce-red">
-                <ShelfIcon id="currently_reading" size="medium" />
-                Currently reading
-              </h2>
-              <div className="mt-4">
-                <CurrentlyReadingRow
-                  items={data.currentlyReading}
-                  onItemsChange={onRefresh}
-                />
-              </div>
-            </section>
-
-            <div className="grid gap-6 lg:grid-cols-2">
-              <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
-                <h2 className="flex items-center gap-2 text-lg font-semibold text-puce-red">
-                  <ShelfIcon id="read" size="medium" />
-                  Recently finished
-                </h2>
-                <div className="mt-4">
-                  <BookMiniGrid
-                    items={data.recentlyFinished}
-                    emptyMessage="Finished books will appear here."
-                    emptyAction={{ label: "Browse your library", href: "/library/read/" }}
-                  />
-                </div>
-              </section>
-
-              <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
-                <h2 className="text-lg font-semibold text-puce-red">Favorites</h2>
-                <p className="mt-1 text-xs text-text-muted">
-                  Mark favorites on any book page
-                </p>
-                <div className="mt-4">
-                  <BookMiniGrid
-                    items={data.favorites}
-                    emptyMessage="Star books from their detail page to collect favorites here."
-                    emptyAction={{ label: "Find a book", href: "/search/" }}
-                  />
-                </div>
-              </section>
-            </div>
-
-            <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
-              <h2 className="text-lg font-semibold text-puce-red">Quick actions</h2>
-              <div className="mt-4 flex flex-wrap justify-center gap-2">
-                <ButtonLink href="/search/" variant="secondary" size="sm">
-                  Search books
-                </ButtonLink>
-                <ButtonLink href={continueReadingHref} variant="primary" size="sm">
-                  Continue reading
-                </ButtonLink>
-                <ButtonLink href="/library/" variant="outline" size="sm">
-                  Open library
-                </ButtonLink>
-              </div>
-            </section>
-
-            <ActivityFeed userId={userId} />
-          </div>
+          <OverviewTab
+            userId={userId}
+            data={{
+              currentlyReading: data.currentlyReading,
+              recentlyFinished: data.recentlyFinished,
+              favorites: data.favorites,
+            }}
+            onRefresh={onRefresh}
+          />
         ) : null}
 
         {tab === "progress" ? (

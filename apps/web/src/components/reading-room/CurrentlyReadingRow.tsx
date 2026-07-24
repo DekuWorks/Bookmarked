@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { BookCover } from "@/components/books/BookCover";
 import { ButtonLink } from "@/components/ui/ButtonLink";
@@ -21,17 +20,17 @@ export function CurrentlyReadingRow({ items, onItemsChange }: Props) {
 
   if (items.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-border bg-background px-4 py-8 text-center text-sm text-text-muted">
-        Pick up a book from your{" "}
-        <Link href="/search" className="font-medium text-primary hover:underline">
-          search
-        </Link>{" "}
-        or{" "}
-        <Link href="/library/want-to-read" className="font-medium text-primary hover:underline">
-          want-to-read shelf
-        </Link>{" "}
-        to start reading.
-      </p>
+      <div className="rounded-xl border border-dashed border-border bg-background px-4 py-10 text-center">
+        <p className="text-sm text-text-muted">You aren&apos;t currently reading anything.</p>
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+          <ButtonLink href="/search/" variant="secondary" size="sm">
+            Browse books
+          </ButtonLink>
+          <ButtonLink href="/library/want-to-read/" variant="primary" size="sm">
+            Start reading
+          </ButtonLink>
+        </div>
+      </div>
     );
   }
 

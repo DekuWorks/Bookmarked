@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { FlatList, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { useLocalSearchParams } from "expo-router";
+import { RefreshControl, ScrollView, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
+import { parseReadingRoomTab } from "@bookmarked/utils/readingRoomTabs";
 import { BrandTopHeader } from "../../src/components/BrandTopHeader";
-import { CoverTile } from "../../src/components/CoverTile";
 import { ScreenGradientWash } from "../../src/components/ScreenGradientWash";
 import { LoadingState } from "../../src/components/LoadingState";
 import { AnalyticsGrid } from "../../src/components/AnalyticsGrid";
@@ -12,11 +12,9 @@ import { ReadingGoalPanel } from "../../src/components/ReadingGoalPanel";
 import { ReadingInsightsSection } from "../../src/components/ReadingInsightsSection";
 import { SectionCard } from "../../src/components/SectionCard";
 import { SegmentedTabs } from "../../src/components/SegmentedTabs";
-import { ShelfIcon } from "../../src/components/ShelfIcon";
-import type { ShelfIconId } from "../../src/constants/shelfIcons";
-import { ActivityFeed } from "../../src/components/reading-room/ActivityFeed";
 import { HistoryPanel } from "../../src/components/reading-room/HistoryPanel";
 import { NotesPanel } from "../../src/components/reading-room/NotesPanel";
+import { OverviewTab } from "../../src/components/reading-room/OverviewTab";
 import { ReviewsPanel } from "../../src/components/reading-room/ReviewsPanel";
 import { TrailPanel } from "../../src/components/reading-room/TrailPanel";
 import {
@@ -34,44 +32,13 @@ import { TAB_BAR_SPACE, useTabBarScroll } from "../../src/navigation/TabBarScrol
 import { SERIF_DISPLAY_FONT } from "../../src/constants/theme";
 import { useAuthStore } from "../../src/store/authStore";
 import { useThemeColors } from "../../src/store/themeStore";
-import { selectRecentlyFinishedBooks } from "../../../../packages/utils/readingRoomHistory";
 
-function QuickLink({
-  icon,
-  shelfIconId,
-  label,
-  onPress,
-}: {
-  icon?: string;
-  shelfIconId?: ShelfIconId;
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      className="flex-1 items-center rounded-2xl border border-brand-border bg-surface py-3 active:opacity-80"
-    >
-      {shelfIconId ? (
-        <ShelfIcon id={shelfIconId} size="medium" />
-      ) : (
-        <Text className="text-xl">{icon}</Text>
-      )}
-      <Text className="mt-1 text-xs font-medium text-puce-red">{label}</Text>
-    </Pressable>
-  );
-}
-
-function parseReadingRoomTabParam(value: string | string[] | undefined): ReadingRoomTab | null {
+function parseReadingRoomTabParam(value: string | string[] | undefined): ReadingRoomTab {
   const raw = Array.isArray(value) ? value[0] : value;
-  if (!raw) return null;
-  return READING_ROOM_TAB_OPTIONS.some((option) => option.id === raw)
-    ? (raw as ReadingRoomTab)
-    : null;
+  return parseReadingRoomTab(raw ?? null);
 }
 
 export default function HomeReadingRoom() {
-  const router = useRouter();
   const { tab: tabParam } = useLocalSearchParams<{ tab?: string }>();
   const colors = useThemeColors();
   const userId = useAuthStore((s) => s.user?.id);
@@ -80,11 +47,9 @@ export default function HomeReadingRoom() {
   const [tab, setTab] = useState<ReadingRoomTab>("overview");
 
   useEffect(() => {
-    const nextTab = parseReadingRoomTabParam(tabParam);
-    if (nextTab) {
-      setTab(nextTab);
-    }
+    setTab(parseReadingRoomTabParam(tabParam));
   }, [tabParam]);
+
   const [sessions, setSessions] = useState<Awaited<ReturnType<typeof listUserReadingSessions>> | null>(
     null
   );
@@ -151,14 +116,8 @@ export default function HomeReadingRoom() {
     () => books.filter((b) => b.shelf_status === "currently_reading"),
     [books]
   );
-  const recentlyFinished = useMemo(
-    () => selectRecentlyFinishedBooks(books),
-    [books]
-  );
-  const favorites = useMemo(() => books.filter((b) => b.is_favorite).slice(0, 8), [books]);
   const goal = computeReadingGoal(books, profile?.yearly_reading_goal ?? null);
   const name = profile?.display_name?.trim() || profile?.username?.trim() || "reader";
-  const continueReadingBook = currentlyReading.find((b) => b.books?.id);
 
   function refreshAll() {
     library.refetch();
@@ -195,7 +154,7 @@ export default function HomeReadingRoom() {
           />
         }
       >
-        <View>
+        <View accessibilityRole="header">
           <Text
             className="text-3xl"
             style={{ fontFamily: SERIF_DISPLAY_FONT, color: colors.puceRed }}
@@ -209,110 +168,13 @@ export default function HomeReadingRoom() {
           <SegmentedTabs options={READING_ROOM_TAB_OPTIONS} value={tab} onChange={setTab} />
         </ScrollView>
 
-        {tab === "overview" ? (
-          <>
-            <SectionCard
-              title="Currently reading"
-              shelfIconId="currently_reading"
-              action={
-              <Pressable onPress={() => router.push("/library/reading")}>
-                <Text className="text-sm font-semibold text-primary-dark">View shelf ›</Text>
-              </Pressable>
-            }>
-              {currentlyReading.length === 0 ? (
-                <Text className="text-ink-muted">
-                  Nothing in progress. Add a book from Search to start reading.
-                </Text>
-              ) : (
-                <FlatList
-                  horizontal
-                  data={currentlyReading}
-                  keyExtractor={(item) => item.id}
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ gap: 12 }}
-                  renderItem={({ item }) => (
-                    <CoverTile
-                      bookId={item.books?.id}
-                      title={item.books?.title}
-                      author={item.books?.author}
-                      coverUrl={item.books?.cover_url}
-                      progressPercent={item.progress_percent}
-                    />
-                  )}
-                />
-              )}
-            </SectionCard>
-
-            <View className="flex-row gap-3">
-              <View className="flex-1">
-                <SectionCard title="Recently finished" shelfIconId="read">
-                  {recentlyFinished.length === 0 ? (
-                    <Text className="text-ink-muted">Books you finish will appear here.</Text>
-                  ) : (
-                    <FlatList
-                      horizontal
-                      data={recentlyFinished}
-                      keyExtractor={(item) => item.id}
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={{ gap: 12 }}
-                      renderItem={({ item }) => (
-                        <CoverTile
-                          bookId={item.books?.id}
-                          title={item.books?.title}
-                          author={item.books?.author}
-                          coverUrl={item.books?.cover_url}
-                        />
-                      )}
-                    />
-                  )}
-                </SectionCard>
-              </View>
-
-              <View className="flex-1">
-                <SectionCard title="Favorites" emoji="⭐">
-                  {favorites.length === 0 ? (
-                    <Text className="text-ink-muted">
-                      Star books from their detail page to collect favorites here.
-                    </Text>
-                  ) : (
-                    <FlatList
-                      horizontal
-                      data={favorites}
-                      keyExtractor={(item) => item.id}
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={{ gap: 12 }}
-                      renderItem={({ item }) => (
-                        <CoverTile
-                          bookId={item.books?.id}
-                          title={item.books?.title}
-                          author={item.books?.author}
-                          coverUrl={item.books?.cover_url}
-                        />
-                      )}
-                    />
-                  )}
-                </SectionCard>
-              </View>
-            </View>
-
-            <SectionCard title="Quick actions" emoji="⚡">
-              <View className="flex-row gap-3">
-                <QuickLink icon="🔍" label="Search" onPress={() => router.push("/search")} />
-                <QuickLink
-                  shelfIconId="currently_reading"
-                  label="Continue"
-                  onPress={() =>
-                    continueReadingBook?.books?.id
-                      ? router.push(`/book/${continueReadingBook.books.id}`)
-                      : router.push("/search")
-                  }
-                />
-                <QuickLink shelfIconId="want_to_read" label="Library" onPress={() => router.push("/library")} />
-              </View>
-            </SectionCard>
-
-            {userId ? <ActivityFeed userId={userId} /> : null}
-          </>
+        {tab === "overview" && userId ? (
+          <OverviewTab
+            userId={userId}
+            books={books}
+            currentlyReading={currentlyReading}
+            onSelectTab={setTab}
+          />
         ) : null}
 
         {tab === "progress" ? (

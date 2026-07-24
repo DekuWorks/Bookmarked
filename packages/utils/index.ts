@@ -106,6 +106,12 @@ export {
 } from "./readingRoomHistory";
 
 export {
+  parseReadingRoomTab,
+  READING_ROOM_TAB_OPTIONS,
+  type ReadingRoomTab,
+} from "./readingRoomTabs";
+
+export {
   MAX_BIO_LENGTH,
   MAX_DISPLAY_NAME_LENGTH,
   MAX_READING_GOAL,

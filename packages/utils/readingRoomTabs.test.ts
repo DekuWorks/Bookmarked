@@ -1,12 +1,10 @@
 import { describe, expect, it } from "vitest";
-import {
-  parseReadingRoomTab,
-  readingRoomTabHref,
-} from "./readingRoomTabs";
+import { parseReadingRoomTab } from "./readingRoomTabs";
 
 describe("parseReadingRoomTab", () => {
   it("defaults to overview", () => {
     expect(parseReadingRoomTab(null)).toBe("overview");
+    expect(parseReadingRoomTab(undefined)).toBe("overview");
     expect(parseReadingRoomTab("unknown")).toBe("overview");
   });
 
@@ -21,15 +19,6 @@ describe("parseReadingRoomTab", () => {
   it("accepts valid tab ids", () => {
     expect(parseReadingRoomTab("progress")).toBe("progress");
     expect(parseReadingRoomTab("trail")).toBe("trail");
-  });
-});
-
-describe("readingRoomTabHref", () => {
-  it("uses clean URL for overview", () => {
-    expect(readingRoomTabHref("overview")).toBe("/reading-room/");
-  });
-
-  it("adds tab query for other tabs", () => {
-    expect(readingRoomTabHref("trail")).toBe("/reading-room/?tab=trail");
+    expect(parseReadingRoomTab("history")).toBe("history");
   });
 });

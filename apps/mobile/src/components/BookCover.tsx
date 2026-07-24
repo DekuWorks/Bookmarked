@@ -24,6 +24,7 @@ export function BookCover({
       source={{ uri: url }}
       className={`${sizeClassName} rounded-md bg-primary/20`}
       resizeMode="cover"
+      accessibilityLabel={title?.trim() ? `Cover of ${title.trim()}` : "Book cover"}
     />
   ) : (
     <View
