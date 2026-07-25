@@ -281,8 +281,14 @@ function curvePartLength(curve: NamedCurve): number {
   return curve === "P-384" ? 48 : 32;
 }
 
+function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  const copy = new Uint8Array(bytes.byteLength);
+  copy.set(bytes);
+  return copy.buffer;
+}
+
 async function sha256Hex(bytes: Uint8Array): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  const digest = await crypto.subtle.digest("SHA-256", toArrayBuffer(bytes));
   return Array.from(new Uint8Array(digest))
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
@@ -328,7 +334,7 @@ async function parseCertificate(base64Der: string): Promise<ParsedCertificate> {
 async function importEcdsaPublicKey(certificate: ParsedCertificate): Promise<CryptoKey> {
   return crypto.subtle.importKey(
     "spki",
-    certificate.subjectPublicKeyInfo,
+    toArrayBuffer(certificate.subjectPublicKeyInfo),
     { name: "ECDSA", namedCurve: certificate.curve },
     false,
     ["verify"]
@@ -348,8 +354,8 @@ async function verifyCertificateSignature(
   return crypto.subtle.verify(
     { name: "ECDSA", hash: certificate.signatureHash },
     key,
-    rawSignature,
-    certificate.tbsCertificate
+    toArrayBuffer(rawSignature),
+    toArrayBuffer(certificate.tbsCertificate)
   );
 }
 
@@ -418,8 +424,8 @@ export async function verifyAppleJws<TPayload extends object = JsonObject>(
   const valid = await crypto.subtle.verify(
     { name: "ECDSA", hash: "SHA-256" },
     key,
-    signature,
-    data
+    toArrayBuffer(signature),
+    toArrayBuffer(data)
   );
 
   if (!valid) fail("Apple JWS signature is invalid", "invalid_jws_signature");
