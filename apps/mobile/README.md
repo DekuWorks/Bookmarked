@@ -2,10 +2,10 @@
 
 React Native (Expo, SDK 54) app for Bookmarked. It shares the same Supabase
 backend and the `packages/types` type definitions with the web app
-(`apps/web`), and provides the core navigation shell, authentication, and
-foundation screens (Feed, Library, Search, Profile).
+(`apps/web`), and provides the shipped native mobile experience for Reading
+Room, library, search, feed, messaging, clubs/events, profiles, and Premium.
 
-This is the **foundation**, not full feature parity with the web app.
+Mobile parity is tracked in the root `PROJECT_PROGRESS.md` file.
 
 ## Stack
 
@@ -79,14 +79,22 @@ apps/mobile/
     index.tsx                # entry redirect (auth/profile-setup/tabs)
     (auth)/                  # login, signup, forgot-password, profile-setup
     (app)/                   # authenticated bottom tabs
-      _layout.tsx            # Tabs: Home / Library / Search / Clubs / Profile
-      index.tsx              # Home → Feed
-      library.tsx            # Library (shelves)
+      _layout.tsx            # Tabs: Home / Feed / Search / Messages / Profile
+      index.tsx              # Reading Room home
+      library/               # Library shelves + import
       search.tsx             # Search (ISBNdb)
+      feed.tsx               # Social feed + search
+      messages/              # Direct + group messages
+      book/[id].tsx          # Book detail, progress, notes, reviews
       clubs/                 # Book Clubs (nested stack)
         _layout.tsx          # Stack: list + detail
         index.tsx            # Discover / Your clubs
         [id].tsx             # Club detail (book, members, discussions)
+      events.tsx             # Club/community event calendar
+      notes.tsx              # Reading notes
+      notifications.tsx      # Notification center
+      reader/[username]/     # Public reader profile/library
+      upgrade.tsx            # Premium upgrade / App Store IAP
       profile.tsx            # Profile + logout
   src/
     components/              # Button, Input, BookCover, Avatar, FeedCard, ...
@@ -137,7 +145,7 @@ are defined in `tailwind.config.js`:
 The Feed header uses an `expo-linear-gradient` lavender→background wash to
 match the web `feed-header-gradient`.
 
-## Status: what works vs. stubbed
+## Status: shipped surfaces
 
 **Working**
 
@@ -146,30 +154,24 @@ match the web `feed-header-gradient`.
 - Password reset emails open the **web** `/reset-password/` page
   (`EXPO_PUBLIC_SITE_URL`, default `https://bookmarked.online`). After resetting
   on the web, return to the app and log in with the new password.
-- Bottom-tab navigation shell with brand styling.
-- Feed: read-only list of recent public reading activity.
-- Library: user's books grouped by shelf (Want to Read / Reading / Read).
+- Bottom-tab navigation shell with Reading Room as Home.
+- Reading Room: Overview, Progress, Trail, Notes, Reviews, and History tabs.
+- Feed: posts/activity, reader/book/post search, reactions, comments, and composer.
+- Library: shelves, shelf writes, Goodreads import, DNF / expected read date.
 - Search: live ISBNdb book search via the shared Edge Function.
+- Book detail: progress, mark finished, notes, ratings/reviews, community rating, shelf actions.
+- Messaging: direct and group conversations, replies, reactions, attachments, pins.
 - Book Clubs: discover public clubs, view your clubs, and open a club detail
   (current book, members, discussion feed). Join / leave and post discussions.
-- Profile: identity, favorite genres, avatar, logout.
-
-**Stubbed / not yet implemented**
-
-- Writing actions (adding books to shelves, posting, following) — read-only for now.
-- Push notifications, messaging, reading sessions/notes.
-- Book club owner management (create/edit club, set current book, remove
-  members, delete) — stays on the web app for now.
-- A dedicated reviews UI. Ratings/emojis currently surface via the feed only.
-- Book detail screens and deep links from feed/search results.
-- Following-aware feed ranking (currently a simple public activity feed).
+- Events: club/community event calendar.
+- Notifications: in-app notification center.
+- Public reader profiles and reader library browsing.
+- Profile: identity, favorite genres, avatar, settings, Goodreads import, account deletion, logout.
+- Premium: App Store IAP on iOS store builds, restore purchases, and web Stripe fallback.
 
 ## Recommended next steps
 
-1. Add book-detail + "add to shelf" flows (write path against `user_books`).
-2. Port the following-aware/for-you feed ranking from
-   `apps/web/src/lib/services/socialFeed.ts`.
-3. Extract the shared Supabase query logic into `packages/` so web + mobile
-   share services, not just types.
-4. Bump `expo`/`expo-router` to the latest SDK 54 patch (`npx expo install --check`).
-5. Replace placeholder icon/splash assets with final brand artwork.
+1. Submit/verify the latest production EAS build in TestFlight and App Review.
+2. Run the Premium sandbox checklist in `docs/APP_STORE_IAP.md`, including restore purchases.
+3. Continue extracting duplicated web/mobile services into `packages/`.
+4. Add automated E2E smoke coverage for auth, the reading loop, messaging, and Premium gates.

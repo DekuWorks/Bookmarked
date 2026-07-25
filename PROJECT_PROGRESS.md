@@ -15,10 +15,10 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | 1 | Navigation | ✅ | Web + mobile primary nav shipped; `/dashboard/` redirects to Reading Room |
 | 2 | Reading depth | ✅ | Web + mobile parity: 6 Reading Room tabs, completion auto-tags, session notes |
 | 3 | Community | 🔄 | Feed, messaging, clubs, events calendar shipped; polish ongoing |
-| 4 | Premium | 🔄 | Stripe web + iOS IAP wired; Apple JWS verification pending |
+| 4 | Premium | 🔄 | Stripe web + iOS IAP wired; Apple JWS verification implemented; App Store review pending |
 | 5 | UI refresh | ✅ | Gradients, surface cards, branding on web + mobile |
 | 6 | Performance | ✅ | Audit + N+1 fixes + lazy loading; virtualization deferred |
-| 7 | Database | ✅ | 55 migrations, indexes, `docs/DATABASE_SCHEMA.md` |
+| 7 | Database | ✅ | 59 migrations, indexes, `docs/DATABASE_SCHEMA.md` |
 | 8 | Security | ✅ | RLS hardening, private message attachments, `docs/SECURITY_AUDIT.md` |
 | 9 | Responsive QA | ✅ | Web responsive + mobile layout; premium/upgrade mobile pass |
 | 10 | Production hardening | ✅ | SEO metadata, env validation, route audit |
@@ -121,17 +121,17 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 
 | Item | Status | Notes / references |
 |------|--------|-------------------|
-| `user_subscriptions` table + RLS | ✅ | `20260722120000_user_subscriptions.sql` · `apple_original_transaction_id` (`20260723190000`) |
+| `user_subscriptions` table + RLS | ✅ | `20260722120000_user_subscriptions.sql` · billing writes locked to service role (`20260726200000`) |
 | `canAccessFeature()` | ✅ | `packages/utils/subscription.ts` |
 | Web subscription hook + gates | ✅ | `useSubscription.ts` · `PremiumFeatureLock` · `/upgrade/` |
 | Mobile subscription hook + gates | ✅ | `apps/mobile/src/hooks/useSubscription.ts` · `/(app)/upgrade` |
 | Premium features gated | ✅ | `advanced_analytics`, `ai_insights` |
 | AI reading insights (OpenAI) | ✅ | `packages/utils/aiInsights.ts` · `supabase/functions/ai-insights` · web + mobile `AiInsightsPanel` · see `docs/AI_INSIGHTS.md` |
-| Stripe checkout (web) | ✅ | `create-checkout-session` + `/upgrade/` Subscribe CTA; test keys active — live cutover in `docs/PRODUCTION_BILLING.md` |
-| App Store IAP (iOS) | ✅ | `expo-iap` + `useAppleIap` + `apple-iap-verify` — see `docs/APP_STORE_IAP.md` |
+| Stripe checkout (web) | ✅ | `create-checkout-session` + `/upgrade/` Subscribe CTA; live status in `docs/PRODUCTION_BILLING.md` |
+| App Store IAP (iOS) | ✅ | `expo-iap` + `PremiumUpgradeActions` + `apple-iap-verify` — see `docs/APP_STORE_IAP.md` |
 | Google Play IAP | ⬜ | Android uses web Stripe link from upgrade screen |
 | Mobile web upgrade UX | ✅ | `/upgrade/` responsive layout; Stripe checkout works in mobile Safari |
-| Webhook signature verification | 🔄 | Stripe HMAC; Apple ASN decodes JWS (full cert verification deferred) |
+| Webhook signature verification | ✅ | Stripe HMAC; Apple StoreKit / ASN JWS signature + Apple Root CA - G3 chain verification |
 | Admin grant UI | ⬜ | Manual SQL / service role |
 
 ---
@@ -169,7 +169,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 
 | Item | Status | Notes / references |
 |------|--------|-------------------|
-| 55 forward migrations | ✅ | `supabase/migrations/` |
+| 59 forward migrations | ✅ | `supabase/migrations/` |
 | RLS on all public tables | ✅ | See `docs/SECURITY_AUDIT.md` |
 | Hot-path indexes | ✅ | `20260723120000_phase7_schema_indexes.sql` |
 | Schema documentation | ✅ | `docs/DATABASE_SCHEMA.md` |
@@ -207,7 +207,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Env validation at build | ✅ | `apps/web/scripts/validate-env.mjs` |
 | SEO metadata | ✅ | Per-route `layout.tsx` metadata |
 | Route audit | ✅ | 30+ web pages under `apps/web/src/app/` |
-| iOS TestFlight pipeline | 🔄 | EAS build 8 in progress; build 9 queued from `fbffabe+` (trending/premium polish) |
+| iOS TestFlight pipeline | 🔄 | Verify latest production EAS build and submit through TestFlight/App Review |
 
 ---
 
@@ -227,10 +227,10 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Pinned messages (single pin UI) | ✅ | ✅ | — |
 | Session notes on book detail | ✅ | ✅ | — |
 | Community ratings on trending | ✅ | ✅ | — |
-| Premium upgrade | ✅ Stripe | ✅ IAP + web link | Apple JWS verify pending |
+| Premium upgrade | ✅ Stripe | ✅ IAP + web link | App Store approval / sandbox verification pending |
 | Upgrade page (mobile web) | ✅ responsive | N/A (native screen) | — |
 | Public library browse | ✅ | ✅ | — |
-| Shared service code | 49 modules | 33 modules | `communityRating` + trending in `packages/utils` |
+| Shared service code | 53 modules | 42 modules | Continue extracting duplicated web/mobile services to `packages/` |
 
 ---
 
@@ -244,7 +244,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Database schema | `docs/DATABASE_SCHEMA.md` |
 | Master task list (MVP) | `docs/project/MASTER_TASK_LIST.md` |
 
-**Last updated:** July 23, 2026 (dual-platform parity audit; iOS IAP upgrade flow; mobile analytics heatmap)
+**Last updated:** July 25, 2026 (Premium Apple JWS verification; subscription RLS lockdown; mobile README refresh)
 
 ---
 
@@ -252,10 +252,8 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 
 | Priority | Item | Notes |
 |----------|------|-------|
-| P1 | Submit EAS build 8 to TestFlight | Auto-submit monitor running; `eas submit` after build 8 finishes |
-| P1 | EAS build 9 (trending/premium) | Started from `fbffabe+`; submit when finished |
-| P1 | Stripe live mode cutover | Run `setup-stripe-catalog.sh --live`; set live secrets — see `docs/PRODUCTION_BILLING.md` |
-| P1 | App Store Connect IAP review | Production subscription `com.dekuworks.bookmarked.premium.monthly`; sandbox TestFlight test — see `docs/APP_STORE_IAP.md` |
-| P1 | OpenAI API key | Set `OPENAI_API_KEY` for server-side AI insights — see `docs/AI_INSIGHTS.md` |
+| P1 | TestFlight / App Review submission | Verify latest production EAS build, sandbox purchase, and restore flow — see `docs/APP_STORE_IAP.md` |
+| P1 | App Store Connect IAP review | Production subscription `com.dekuworks.bookmarked.premium.monthly`; submit with next app build |
+| P1 | Optional App Store Server API lookup | Add owner-provided `.p8` credentials for transaction freshness checks if desired |
 | P2 | Extract duplicated services to `packages/` | `communityRating` + trending weights moved; 25 modules remain |
 | P2 | Library virtualization | Deferred until large libraries reported |

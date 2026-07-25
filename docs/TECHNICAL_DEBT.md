@@ -1,5 +1,9 @@
 # Bookmarked — Technical Debt Register
 
+> **Archived snapshot.** The current technical debt register is
+> `../TECHNICAL_DEBT.md`. This copy is kept for historical context and may
+> contain stale mobile and billing status.
+
 > Documented during Phase 0 audit (July 2026). Items are prioritized by impact on maintainability and user experience.
 
 ---

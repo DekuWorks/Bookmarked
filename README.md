@@ -7,16 +7,16 @@ Bookmarked is a **web-first** reading platform where users can create accounts, 
 | Path | Description |
 |------|-------------|
 | `apps/web` | Next.js + TypeScript + Tailwind (primary product) |
-| `apps/mobile` | React Native + Expo (Phase 3) |
+| `apps/mobile` | React Native + Expo native app |
 | `packages/types` | Shared TypeScript types |
 | `docs/` | Project, architecture, UI, and AI workflow docs |
 | `supabase/migrations/` | PostgreSQL schema and RLS |
 
 ## Build order
 
-1. **Web app** — landing, auth, dashboard, library, search  
-2. **Backend** — Supabase tables and policies (shared)  
-3. **Mobile app** — same backend and types later  
+1. **Web app** — landing, auth, Reading Room, library, search, feed, messaging, Premium
+2. **Backend** — Supabase tables, policies, Edge Functions, billing webhooks
+3. **Mobile app** — native Reading Room, library, search, feed, messaging, clubs/events, Premium
 
 ## Web app
 
@@ -99,24 +99,25 @@ Code sends `emailRedirectTo` → `/profile/setup/` and password-reset `redirectT
 | `/messages/thread?id=` | Conversation thread (static-safe query route) |
 | `/feed` | Social feed + reader discovery |
 | `/reader/?username=` | Public reader profile + Message button |
+| `/upgrade` | Premium subscription checkout |
 
 ## Database
 
-Apply migrations in order via Supabase SQL Editor or `supabase db push`:
+Apply migrations in order via Supabase SQL Editor or `supabase db push`.
+There are currently **59 forward migrations**; see `supabase/migrations/` and
+`docs/DATABASE_SCHEMA.md` for the canonical schema reference.
 
 CLI auth on macOS / Cursor agents: see [docs/SUPABASE_CLI.md](docs/SUPABASE_CLI.md).
 
-| Migration | Purpose |
-|-----------|---------|
-| `001_phase0_schema.sql` | Core tables, RLS, profiles, books, user_books, reviews, activity |
-| `002_preferred_library_view.sql` | `profiles.preferred_library_view` (bookshelf / grid) |
-| `003_book_metadata_and_reviews_unique.sql` | Book publisher/subjects; one review per user per book |
-| `004_yearly_reading_goal.sql` | `profiles.yearly_reading_goal` for yearly book targets |
-| `005_social_follows_and_feed.sql` | Follow graph and activity visibility |
-| `006_profiles_fk_for_embeds.sql` | Profile FKs for PostgREST embeds |
-| `007_shelf_visibility.sql` | Per-shelf visibility + RLS |
-| `008_books_catalog_update.sql` | Books catalog update policy |
-| `009_messaging.sql` | Direct + group messaging tables and RLS |
+Key migration groups:
+
+| Area | Examples |
+|------|----------|
+| Core library/reviews/feed | `001_phase0_schema.sql` through `009_messaging.sql` |
+| Social/community | posts, comments/reactions, follows, messaging attachments, clubs/events |
+| Reading depth | reading sessions, notes, moods, completion page counts |
+| Premium | `20260722120000_user_subscriptions.sql`, Stripe/Apple IDs, billing RLS lockdown |
+| Hardening | indexes, RLS audits, notifications realtime, content moderation |
 
 ## Phase 2 smoke test
 
@@ -146,7 +147,7 @@ Manual checklist (requires Supabase env configured):
 - [Design system](docs/ui/DESIGN_SYSTEM.md)
 - [Progress tracker](docs/progress/PROGRESS_TRACKER.md)
 
-## Mobile (later)
+## Mobile app
 
 ```bash
 cd apps/mobile
@@ -154,3 +155,17 @@ cp .env.example .env
 npm install
 npm start
 ```
+
+The mobile app is a shipped Expo app sharing the same Supabase backend. It
+includes Reading Room parity, library/search/feed, messaging, clubs/events,
+reader profiles, notifications, and Premium upgrade/restore flows. See
+`apps/mobile/README.md` and `PROJECT_PROGRESS.md` for the current parity matrix.
+
+## Premium / billing
+
+- Web Premium uses Stripe Checkout via Supabase Edge Functions.
+- iOS Premium uses App Store subscriptions via `expo-iap`.
+- Stripe webhooks and Apple StoreKit/App Store Server Notification JWS payloads
+  are verified before writing subscription state.
+- Owner action for App Store Connect review and TestFlight sandbox validation is
+  tracked in `docs/APP_STORE_IAP.md` and `docs/PRODUCTION_BILLING.md`.

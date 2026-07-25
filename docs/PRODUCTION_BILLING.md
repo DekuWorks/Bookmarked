@@ -11,6 +11,7 @@ What is wired in code vs what still needs owner action (secrets, App Store appro
 | Premium gates | `canAccessFeature('advanced_analytics' \| 'ai_insights')` on web + mobile |
 | Shared product IDs | `packages/utils/iap.ts` — production + sandbox constants |
 | Stripe catalog script | `scripts/setup-stripe-catalog.sh` — pass `--live` for production |
+| Subscription RLS | Clients can select their own row; service-role functions/triggers own inserts and updates |
 
 ## Supabase secrets status
 
@@ -21,6 +22,7 @@ What is wired in code vs what still needs owner action (secrets, App Store appro
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhooks | ✅ Set |
 | `OPENAI_API_KEY` | AI insights (OpenAI path) | ✅ Set — edge function uses OpenAI when user is Premium + has data |
 | `OPENAI_MODEL` | AI model override | Optional |
+| `APPLE_BUNDLE_ID` | IAP JWS bundle validation | Optional (defaults to `com.dekuworks.bookmarked`) |
 | `APPLE_PREMIUM_PRODUCT_IDS` | IAP server allowlist | Optional (defaults to production SKU) |
 | `SUBSCRIPTION_WEBHOOK_SECRET` | Manual subscription relay | Optional |
 
@@ -64,7 +66,14 @@ Details: `docs/STRIPE_SETUP.md`
 2. Submit subscription for review with your next app build
 3. Production EAS build (`eas build --profile production`)
 4. TestFlight sandbox purchase → verify Premium unlocks
-5. After App Review approval, production purchases use the same product ID
+5. Restore purchase after reinstall → verify Premium unlocks from the server-verified restored transaction
+6. After App Review approval, production purchases use the same product ID
+
+JWS verification status:
+
+- `apple-iap-verify` verifies StoreKit JWS signatures and Apple Root CA - G3 certificate chains before granting Premium.
+- `subscription-webhook?provider=apple` verifies App Store Server Notification JWS envelopes and nested transaction JWS payloads before renewal/cancellation updates.
+- Optional App Store Server API transaction lookup still requires owner-provided App Store Connect API credentials.
 
 Optional env overrides (`apps/mobile/.env` / EAS secrets):
 

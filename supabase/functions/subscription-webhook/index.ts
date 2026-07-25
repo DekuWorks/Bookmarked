@@ -3,6 +3,8 @@
  *
  * Configure secrets:
  * - SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (auto-injected by Supabase)
+ * - APPLE_BUNDLE_ID — expected iOS bundle id (default: com.dekuworks.bookmarked)
+ * - APPLE_PREMIUM_PRODUCT_IDS — comma-separated SKUs (default: com.dekuworks.bookmarked.premium.monthly)
  * - SUBSCRIPTION_WEBHOOK_SECRET — shared secret for manual / relay payloads
  * - STRIPE_WEBHOOK_SECRET — Stripe signing secret (whsec_…)
  *
@@ -12,6 +14,10 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import {
+  AppleJwsVerificationError,
+  verifyAppleJws,
+} from "../_shared/apple-jws.ts";
 
 const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
@@ -23,6 +29,9 @@ const CORS_HEADERS: Record<string, string> = {
 type SubscriptionProvider = "stripe" | "apple" | "google" | "manual";
 type SubscriptionTier = "free" | "premium";
 type SubscriptionStatus = "inactive" | "active" | "trialing" | "past_due" | "canceled";
+
+const DEFAULT_APPLE_BUNDLE_ID = "com.dekuworks.bookmarked";
+const DEFAULT_APPLE_PRODUCT_IDS = ["com.dekuworks.bookmarked.premium.monthly"];
 
 type WebhookPayload = {
   user_id: string;
@@ -37,6 +46,14 @@ type StripeEvent = {
   data: {
     object: Record<string, unknown>;
   };
+};
+
+type AppleTransactionPayload = {
+  transactionId?: string;
+  originalTransactionId?: string;
+  bundleId?: string;
+  productId?: string;
+  expiresDate?: number;
 };
 
 type SubscriptionUpdate = {
@@ -68,6 +85,19 @@ function timingSafeEqual(a: string, b: string): boolean {
     mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
   }
   return mismatch === 0;
+}
+
+function expectedAppleBundleId(): string {
+  return Deno.env.get("APPLE_BUNDLE_ID")?.trim() || DEFAULT_APPLE_BUNDLE_ID;
+}
+
+function allowedAppleProductIds(): string[] {
+  const raw = Deno.env.get("APPLE_PREMIUM_PRODUCT_IDS")?.trim();
+  if (!raw) return DEFAULT_APPLE_PRODUCT_IDS;
+  return raw
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
 }
 
 function parseStripeSignatureHeader(header: string): { timestamp: string; signatures: string[] } | null {
@@ -351,7 +381,7 @@ Deno.serve(async (req) => {
   }
 
   const providedSecret = req.headers.get("x-subscription-webhook-secret")?.trim();
-  if (providedSecret !== webhookSecret) {
+  if (!providedSecret || !timingSafeEqual(providedSecret, webhookSecret)) {
     return jsonResponse({ error: "Unauthorized" }, 401);
   }
 
@@ -376,20 +406,6 @@ Deno.serve(async (req) => {
   return upsertSubscription(payload.user_id, update);
 });
 
-function decodeJwsPayload(jws: string): Record<string, unknown> | null {
-  const parts = jws.split(".");
-  if (parts.length < 2) return null;
-
-  try {
-    const segment = parts[1];
-    const padded = segment + "=".repeat((4 - (segment.length % 4)) % 4);
-    const json = atob(padded.replace(/-/g, "+").replace(/_/g, "/"));
-    return JSON.parse(json) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
-}
-
 type AppleNotificationPayload = {
   notificationType?: string;
   subtype?: string;
@@ -399,45 +415,84 @@ type AppleNotificationPayload = {
   };
 };
 
+function validateAppleTransactionPayload(transaction: AppleTransactionPayload): Response | null {
+  if (transaction.bundleId !== expectedAppleBundleId()) {
+    return jsonResponse({ error: "Apple notification bundle id does not match this app" }, 400);
+  }
+
+  if (!transaction.productId || !allowedAppleProductIds().includes(transaction.productId)) {
+    return jsonResponse({ error: "Apple notification has unknown subscription product" }, 400);
+  }
+
+  if (!transaction.originalTransactionId) {
+    return jsonResponse({ error: "Apple notification missing original transaction id" }, 400);
+  }
+
+  return null;
+}
+
+function appleTransactionExpiresAt(transaction: AppleTransactionPayload): string | null {
+  return typeof transaction.expiresDate === "number" && Number.isFinite(transaction.expiresDate)
+    ? new Date(transaction.expiresDate).toISOString()
+    : null;
+}
+
 function subscriptionFromAppleNotification(
-  notification: AppleNotificationPayload
+  notification: AppleNotificationPayload,
+  transaction: AppleTransactionPayload
 ): SubscriptionUpdate | null {
-  const signedTransaction = notification.data?.signedTransactionInfo;
-  if (!signedTransaction) return null;
-
-  const transaction = decodeJwsPayload(signedTransaction);
-  if (!transaction) return null;
-
   const notificationType = notification.notificationType ?? "";
-  const expiresMs = transaction.expiresDate;
-  const expiresAt =
-    typeof expiresMs === "number" && Number.isFinite(expiresMs)
-      ? new Date(expiresMs).toISOString()
-      : null;
-
-  const originalTransactionId =
-    typeof transaction.originalTransactionId === "string"
-      ? transaction.originalTransactionId
-      : null;
+  const subtype = notification.subtype ?? "";
+  const expiresAt = appleTransactionExpiresAt(transaction);
+  const originalTransactionId = transaction.originalTransactionId ?? null;
 
   const activeTypes = new Set([
     "SUBSCRIBED",
     "DID_RENEW",
     "DID_CHANGE_RENEWAL_STATUS",
+    "DID_CHANGE_RENEWAL_PREF",
     "OFFER_REDEEMED",
+    "REFUND_DECLINED",
+  ]);
+  const pastDueTypes = new Set([
+    "DID_FAIL_TO_RENEW",
+    "GRACE_PERIOD",
+    "BILLING_RETRY",
   ]);
   const inactiveTypes = new Set([
     "EXPIRED",
     "GRACE_PERIOD_EXPIRED",
     "REVOKE",
     "REFUND",
-    "REFUND_DECLINED",
   ]);
+
+  if (
+    notificationType === "DID_CHANGE_RENEWAL_STATUS" &&
+    subtype === "AUTO_RENEW_DISABLED"
+  ) {
+    return {
+      subscription_tier: "premium",
+      subscription_status: "active",
+      subscription_provider: "apple",
+      subscription_expires_at: expiresAt,
+      apple_original_transaction_id: originalTransactionId,
+    };
+  }
 
   if (activeTypes.has(notificationType)) {
     return {
       subscription_tier: "premium",
       subscription_status: "active",
+      subscription_provider: "apple",
+      subscription_expires_at: expiresAt,
+      apple_original_transaction_id: originalTransactionId,
+    };
+  }
+
+  if (pastDueTypes.has(notificationType) || pastDueTypes.has(subtype)) {
+    return {
+      subscription_tier: "premium",
+      subscription_status: "past_due",
       subscription_provider: "apple",
       subscription_expires_at: expiresAt,
       apple_original_transaction_id: originalTransactionId,
@@ -497,12 +552,49 @@ async function handleAppleServerNotification(rawBody: string): Promise<Response>
     return jsonResponse({ error: "Missing signedPayload" }, 400);
   }
 
-  const notification = decodeJwsPayload(signedPayload) as AppleNotificationPayload | null;
-  if (!notification) {
-    return jsonResponse({ error: "Could not decode signedPayload" }, 400);
+  let notification: AppleNotificationPayload;
+  try {
+    const verified = await verifyAppleJws<AppleNotificationPayload>(signedPayload);
+    notification = verified.payload;
+  } catch (verificationError) {
+    const message =
+      verificationError instanceof AppleJwsVerificationError
+        ? verificationError.message
+        : "Apple notification verification failed";
+    return jsonResponse({ error: message }, 401);
   }
 
-  const update = subscriptionFromAppleNotification(notification);
+  const signedTransaction = notification.data?.signedTransactionInfo?.trim();
+  if (!signedTransaction) {
+    return jsonResponse({
+      ok: true,
+      ignored: true,
+      reason: "No signed transaction info",
+      type: notification.notificationType ?? "unknown",
+    });
+  }
+
+  let transaction: AppleTransactionPayload;
+  try {
+    const verifiedTransaction = await verifyAppleJws<AppleTransactionPayload>(signedTransaction);
+    transaction = verifiedTransaction.payload;
+
+    const signedRenewal = notification.data?.signedRenewalInfo?.trim();
+    if (signedRenewal) {
+      await verifyAppleJws(signedRenewal);
+    }
+  } catch (verificationError) {
+    const message =
+      verificationError instanceof AppleJwsVerificationError
+        ? verificationError.message
+        : "Apple transaction verification failed";
+    return jsonResponse({ error: message }, 401);
+  }
+
+  const transactionError = validateAppleTransactionPayload(transaction);
+  if (transactionError) return transactionError;
+
+  const update = subscriptionFromAppleNotification(notification, transaction);
   if (!update) {
     return jsonResponse({
       ok: true,

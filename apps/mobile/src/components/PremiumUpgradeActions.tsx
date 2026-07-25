@@ -1,7 +1,7 @@
 import Constants from "expo-constants";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Linking, Platform, Text, View } from "react-native";
-import { ErrorCode, useIAP, type Purchase } from "expo-iap";
+import { ErrorCode, getAvailablePurchases, useIAP, type Purchase } from "expo-iap";
 import {
   IAP_PREMIUM_PRICE_LABEL,
 } from "../../../../packages/utils/iap";
@@ -105,7 +105,26 @@ export function PremiumUpgradeActions({ userId, onSubscriptionUpdated }: Props) 
 
     try {
       await restorePurchases();
-      onSubscriptionUpdated();
+      const restoredPurchases = await getAvailablePurchases();
+      const premiumPurchases = restoredPurchases.filter(
+        (purchase) => purchase.productId === APPLE_PREMIUM_PRODUCT_ID
+      );
+
+      if (premiumPurchases.length === 0) {
+        setError("No active Bookmarked Premium purchase was found for this Apple ID.");
+        return;
+      }
+
+      for (const purchase of premiumPurchases) {
+        const result = await verifyApplePurchaseOnServer(purchase);
+        if (result.ok) {
+          onSubscriptionUpdated();
+          return;
+        }
+      }
+
+      setError("Could not verify an active Bookmarked Premium purchase.");
+      return;
     } catch (restoreError) {
       const message =
         restoreError instanceof Error

@@ -4,14 +4,20 @@
  * Requires Authorization: Bearer <user JWT>.
  *
  * Secrets:
+ * - APPLE_BUNDLE_ID — expected iOS bundle id (default: com.dekuworks.bookmarked)
  * - APPLE_PREMIUM_PRODUCT_IDS — comma-separated SKUs (default: com.dekuworks.bookmarked.premium.monthly)
  *
- * Production: verify JWS with Apple App Store Server API + Server Notifications V2.
+ * Production hardening: JWS signatures are verified against Apple's x5c chain.
+ * Optional App Store Server API transaction lookup can still be layered on top.
  * See docs/APP_STORE_IAP.md.
  */
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import {
+  AppleJwsVerificationError,
+  verifyAppleJws,
+} from "../_shared/apple-jws.ts";
 
 const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
@@ -21,6 +27,7 @@ const CORS_HEADERS: Record<string, string> = {
 };
 
 const DEFAULT_PRODUCT_IDS = ["com.dekuworks.bookmarked.premium.monthly"];
+const DEFAULT_BUNDLE_ID = "com.dekuworks.bookmarked";
 
 type VerifyPayload = {
   transaction_id?: string;
@@ -30,11 +37,24 @@ type VerifyPayload = {
   expires_at?: string | null;
 };
 
+type StoreKitTransactionPayload = {
+  transactionId?: string;
+  originalTransactionId?: string;
+  bundleId?: string;
+  productId?: string;
+  expiresDate?: number;
+  appAccountToken?: string;
+};
+
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
   });
+}
+
+function expectedBundleId(): string {
+  return Deno.env.get("APPLE_BUNDLE_ID")?.trim() || DEFAULT_BUNDLE_ID;
 }
 
 function allowedProductIds(): string[] {
@@ -46,44 +66,76 @@ function allowedProductIds(): string[] {
     .filter(Boolean);
 }
 
-function decodeJwsPayload(jws: string): Record<string, unknown> | null {
-  const parts = jws.split(".");
-  if (parts.length < 2) return null;
-
-  try {
-    const segment = parts[1];
-    const padded = segment + "=".repeat((4 - (segment.length % 4)) % 4);
-    const json = atob(padded.replace(/-/g, "+").replace(/_/g, "/"));
-    return JSON.parse(json) as Record<string, unknown>;
-  } catch {
-    return null;
+function originalTransactionIdFromPayload(
+  payload: VerifyPayload,
+  transaction: StoreKitTransactionPayload
+): string | null {
+  if (
+    typeof transaction.originalTransactionId === "string" &&
+    transaction.originalTransactionId.length > 0
+  ) {
+    return transaction.originalTransactionId;
   }
-}
 
-function expiresAtFromJws(jws: string | null | undefined): string | null {
-  if (!jws) return null;
-  const payload = decodeJwsPayload(jws);
-  if (!payload) return null;
-
-  const expiresDate = payload.expiresDate;
-  if (typeof expiresDate === "number" && Number.isFinite(expiresDate)) {
-    return new Date(expiresDate).toISOString();
+  if (payload.original_transaction_id?.trim()) {
+    return payload.original_transaction_id.trim();
   }
 
   return null;
 }
 
-function originalTransactionIdFromPayload(payload: VerifyPayload): string | null {
-  if (payload.original_transaction_id?.trim()) {
-    return payload.original_transaction_id.trim();
+function validateTransactionPayload(params: {
+  transaction: StoreKitTransactionPayload;
+  request: VerifyPayload;
+  userId: string;
+  allowedProducts: string[];
+}): { expiresAt: string; originalTransactionId: string } | Response {
+  const { transaction, request, userId, allowedProducts } = params;
+
+  if (transaction.bundleId !== expectedBundleId()) {
+    return jsonResponse({ error: "Purchase bundle id does not match this app" }, 400);
   }
 
-  const token = payload.purchase_token?.trim();
-  if (!token) return null;
+  if (!transaction.productId || !allowedProducts.includes(transaction.productId)) {
+    return jsonResponse({ error: "Unknown subscription product" }, 400);
+  }
 
-  const decoded = decodeJwsPayload(token);
-  const fromJws = decoded?.originalTransactionId;
-  return typeof fromJws === "string" && fromJws.length > 0 ? fromJws : null;
+  if (request.product_id?.trim() !== transaction.productId) {
+    return jsonResponse({ error: "Purchase product does not match request" }, 400);
+  }
+
+  if (
+    request.transaction_id?.trim() &&
+    transaction.transactionId &&
+    request.transaction_id.trim() !== transaction.transactionId
+  ) {
+    return jsonResponse({ error: "Purchase transaction does not match request" }, 400);
+  }
+
+  if (
+    transaction.appAccountToken &&
+    transaction.appAccountToken.toLowerCase() !== userId.toLowerCase()
+  ) {
+    return jsonResponse({ error: "Purchase account token does not match user" }, 400);
+  }
+
+  if (typeof transaction.expiresDate !== "number" || !Number.isFinite(transaction.expiresDate)) {
+    return jsonResponse({ error: "Purchase token is missing subscription expiry" }, 400);
+  }
+
+  if (transaction.expiresDate <= Date.now()) {
+    return jsonResponse({ error: "Subscription purchase is expired" }, 400);
+  }
+
+  const originalTransactionId = originalTransactionIdFromPayload(request, transaction);
+  if (!originalTransactionId) {
+    return jsonResponse({ error: "Purchase token is missing original transaction id" }, 400);
+  }
+
+  return {
+    expiresAt: new Date(transaction.expiresDate).toISOString(),
+    originalTransactionId,
+  };
 }
 
 Deno.serve(async (req) => {
@@ -142,15 +194,31 @@ Deno.serve(async (req) => {
     return jsonResponse(
       {
         available: false,
-        error: "Purchase verification is not fully configured",
-        hint: "Set up Apple Server API verification — see docs/APP_STORE_IAP.md",
+        error: "Purchase token is required for verification",
       },
       503
     );
   }
 
-  const expiresAt =
-    payload.expires_at?.trim() || expiresAtFromJws(purchaseToken) || null;
+  let transaction: StoreKitTransactionPayload;
+  try {
+    const verified = await verifyAppleJws<StoreKitTransactionPayload>(purchaseToken);
+    transaction = verified.payload;
+  } catch (verificationError) {
+    const message =
+      verificationError instanceof AppleJwsVerificationError
+        ? verificationError.message
+        : "Purchase verification failed";
+    return jsonResponse({ error: message }, 401);
+  }
+
+  const validation = validateTransactionPayload({
+    transaction,
+    request: payload,
+    userId: userData.user.id,
+    allowedProducts: allowed,
+  });
+  if (validation instanceof Response) return validation;
 
   const supabase = createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -164,9 +232,8 @@ Deno.serve(async (req) => {
         subscription_tier: "premium",
         subscription_status: "active",
         subscription_provider: "apple",
-        subscription_expires_at: expiresAt,
-        apple_original_transaction_id:
-          originalTransactionIdFromPayload(payload) ?? transactionId,
+        subscription_expires_at: validation.expiresAt,
+        apple_original_transaction_id: validation.originalTransactionId,
       },
       { onConflict: "user_id" }
     )
@@ -181,7 +248,6 @@ Deno.serve(async (req) => {
   return jsonResponse({
     ok: true,
     subscription: data,
-    verified: false,
-    hint: "JWS decoded without Apple cert chain verification — see docs/APP_STORE_IAP.md",
+    verified: true,
   });
 });

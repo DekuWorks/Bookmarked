@@ -1,6 +1,6 @@
 # Bookmarked — Database Schema
 
-> Phase 7 audit (July 2026). 44 migrations. All `public` tables have RLS enabled.
+> Phase 7 audit (updated July 25, 2026). 59 migrations. All `public` tables have RLS enabled.
 
 ---
 
