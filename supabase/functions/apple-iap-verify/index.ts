@@ -70,14 +70,18 @@ function originalTransactionIdFromPayload(
   payload: VerifyPayload,
   transaction: StoreKitTransactionPayload
 ): string | null {
+  if (
+    typeof transaction.originalTransactionId === "string" &&
+    transaction.originalTransactionId.length > 0
+  ) {
+    return transaction.originalTransactionId;
+  }
+
   if (payload.original_transaction_id?.trim()) {
     return payload.original_transaction_id.trim();
   }
 
-  return typeof transaction.originalTransactionId === "string" &&
-    transaction.originalTransactionId.length > 0
-    ? transaction.originalTransactionId
-    : null;
+  return null;
 }
 
 function validateTransactionPayload(params: {
