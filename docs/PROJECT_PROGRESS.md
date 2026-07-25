@@ -1,5 +1,8 @@
 # Bookmarked — Project Progress
 
+> **Archived snapshot.** The current progress tracker is `../PROJECT_PROGRESS.md`.
+> This copy is kept for historical context and may contain stale phase details.
+
 > Post-MVP refinement tracker. Updated July 2026.
 
 **Live:** https://bookmarked.online

@@ -11,6 +11,7 @@ Bookmarked Premium on iOS uses **App Store subscriptions** (`expo-iap`). Web bil
 | Sandbox override | `EXPO_PUBLIC_APPLE_PREMIUM_SANDBOX_PRODUCT_ID` (only if separate SKU) |
 | Price | $4.99 / month |
 | Env override (mobile) | `EXPO_PUBLIC_APPLE_PREMIUM_PRODUCT_ID` |
+| Env override (Edge Functions) | `APPLE_BUNDLE_ID`, `APPLE_PREMIUM_PRODUCT_IDS` |
 
 ## App Store Connect setup
 
@@ -56,6 +57,7 @@ Secrets (optional):
 
 | Secret | Purpose |
 |--------|---------|
+| `APPLE_BUNDLE_ID` | Expected iOS bundle id; defaults to `com.dekuworks.bookmarked` |
 | `APPLE_PREMIUM_PRODUCT_IDS` | Comma-separated allowed SKUs |
 
 The function currently:
@@ -63,17 +65,29 @@ The function currently:
 1. Authenticates the Supabase user JWT.
 2. Validates `product_id` against allowed SKUs.
 3. Requires a `purchase_token` (StoreKit JWS).
-4. Upserts `user_subscriptions` with `subscription_provider: apple`.
+4. Verifies the JWS ES256 signature and `x5c` certificate chain against Apple Root CA - G3.
+5. Validates the JWS bundle ID, product ID, transaction ID, `appAccountToken`, and subscription expiry.
+6. Upserts `user_subscriptions` with `subscription_provider: apple`.
 
-### Production hardening (manual)
+### Server Notifications V2
 
-For production, add:
+Webhook: `supabase/functions/subscription-webhook?provider=apple`
 
-1. **App Store Server API** — verify the JWS (`purchase_token`) with Apple’s public keys.
-2. **App Store Server Notifications V2** — webhook to `subscription-webhook?provider=apple` for renewals, cancellations, billing retries.
-3. Map `originalTransactionId` → `user_id` via `apple_original_transaction_id` (migration `20260723190000_apple_original_transaction_id.sql`).
+The webhook verifies the outer App Store Server Notification JWS and the nested
+`signedTransactionInfo` JWS before applying renewal, cancellation, refund, and
+billing-retry updates. It maps `originalTransactionId` → `user_id` via
+`apple_original_transaction_id`.
 
-Until JWS verification is deployed, TestFlight purchases may return 503 if `purchase_token` is missing.
+### Remaining production hardening (optional)
+
+Apple JWS signature + certificate-chain verification is implemented in-repo.
+The remaining optional hardening is an App Store Server API transaction lookup
+(`GET /inApps/v1/transactions/{transactionId}`) for an additional server-to-server
+freshness check. That requires App Store Connect API credentials (`.p8`, key ID,
+issuer ID), so it is owner-action rather than repo-only work.
+
+Purchases still return an error if StoreKit does not provide a `purchase_token`,
+because Premium is no longer granted from client-supplied transaction metadata alone.
 
 ## Cross-platform Premium
 
@@ -88,7 +102,7 @@ Gates: `packages/utils/subscription.ts` → `canAccessFeature('advanced_analytic
 ## Testing checklist
 
 - [ ] Sandbox purchase on TestFlight → Premium unlocks in Reading Room Progress tab
-- [ ] Restore purchases after reinstall
+- [ ] Restore purchases after reinstall → restored purchase verifies on server
 - [ ] Web Stripe checkout → same account shows Premium in iOS app (pull to refresh / reopen)
 - [ ] iOS “Subscribe on web” opens Safari checkout and returns to success URL
 - [ ] Non-premium users still see `PremiumFeatureLock` on analytics + AI insights

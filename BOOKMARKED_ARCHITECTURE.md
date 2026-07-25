@@ -237,9 +237,12 @@ Both use the same project URL and anon key. All data access is subject to **Row 
 | Function | Purpose |
 |----------|---------|
 | `isbndb` | ISBNdb API proxy — keeps API key server-side |
-| `subscription-webhook` | Premium subscription upsert stub (service role) |
+| `create-checkout-session` | Stripe Checkout session creation |
+| `create-billing-portal-session` | Stripe Billing Portal session creation |
+| `subscription-webhook` | Stripe/Apple/manual subscription webhook updates (service role) |
+| `apple-iap-verify` | StoreKit JWS verification and Apple Premium grants |
+| `ai-insights` | Premium-gated AI reading insights |
 | `delete-account` | Account deletion |
-| `og-card` | Open Graph card generation |
 | `share-preview` | Share link previews |
 | `rate-limit-stub` | Rate limiting placeholder |
 
@@ -259,7 +262,7 @@ Subscriptions used for: `user_books`, `reading_sessions`, `reading_notes`, `post
 
 ## 6. Database schema overview
 
-**55 migrations** in `supabase/migrations/`. All `public` tables have RLS enabled.
+**59 migrations** in `supabase/migrations/`. All `public` tables have RLS enabled.
 
 ### Core domains
 
@@ -329,7 +332,7 @@ Parallel component set in React Native: `BookCover`, `FeedCard`, `MarkFinishedSh
 | `packages/types` | `Profile`, `Review`, `Post`, `ShelfStatus`, `PremiumFeature`, … |
 | `packages/utils` | `canAccessFeature`, `readingCompletion` math, `profanity`, `profileValidation`, `messageAttachments` |
 
-**Not shared:** UI components, most service query logic (28 service files duplicated by name across web/mobile).
+**Not shared:** UI components, most service query logic (53 web / 42 mobile service files, with many duplicated by name).
 
 ---
 
@@ -359,7 +362,7 @@ Business logic for reading completion is partially shared via `packages/utils/re
 Search (ISBNdb) → Add to shelf → Book detail
     → Update progress (user_books + reading_sessions)
     → Mark finished → completeReadingSession()
-    → shelf_status = read, session row, activity event, completion_tags (web)
+    → shelf_status = read, session row, activity event, completion_tags
     → Rate / review (optional, per read_number)
 ```
 
@@ -420,15 +423,15 @@ Public reader (/reader/?username=) — identity, shelf preview, posts, follow
 | Library + custom shelves | ✅ | ✅ | |
 | Book detail + shelf actions | ✅ | ✅ | |
 | Reading progress + finish | ✅ | ✅ | |
-| Completion auto-tags | ✅ | ⬜ | Web only in `completeReadingSession` |
-| Reading Room tabs | 6 | 3 | Mobile missing Notes, Reviews, History |
-| Reviews (full UI) | ✅ | 🔄 | Mobile: book page + sheets |
+| Completion auto-tags | ✅ | ✅ | Applied by web + mobile `completeReadingSession` |
+| Reading Room tabs | 6 | 6 | Overview, Progress, Trail, Notes, Reviews, History |
+| Reviews (full UI) | ✅ | ✅ | Mobile: Reading Room reviews + book page sheets |
 | Messaging | ✅ | ✅ | |
 | Book clubs | ✅ | ✅ | |
 | Feed + trending | ✅ | ✅ | |
-| Feed search | ✅ | ⬜ | |
-| Goodreads import | ✅ | ⬜ | |
-| Premium gates | ✅ | ✅ | No live billing |
+| Feed search | ✅ | ✅ | |
+| Goodreads import | ✅ | ✅ | |
+| Premium gates | ✅ | ✅ | Stripe + iOS IAP wired; App Store review pending |
 | Notifications | ✅ | ✅ | |
 | Public profiles | ✅ | ✅ | |
 

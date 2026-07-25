@@ -33,56 +33,46 @@
 
 ## P1 — Web / mobile parity gaps
 
-### Duplicated service layer (28 modules)
+### Duplicated service layer (53 web / 42 mobile service files)
 
 **Impact:** High — maintenance burden, subtle behavioral drift
 
-Same-named service files exist in both `apps/web/src/lib/services/` and `apps/mobile/src/services/` with separate implementations. Only `packages/utils` (`readingCompletion`, `subscription`, `profanity`) is truly shared.
+Same-named service files exist in both `apps/web/src/lib/services/` and `apps/mobile/src/services/` with separate implementations. `packages/utils` now carries more shared logic, but much of the query/mutation layer is still duplicated.
 
 Examples of drift risk:
 
 | Module | Drift observed |
 |--------|----------------|
-| `completeReadingSession.ts` | Web applies `completion_tags` via `computeCompletionTags`; mobile omits them |
+| `completeReadingSession.ts` | Web and mobile are aligned now, but still maintain parallel implementations |
 | `socialFeed.ts` | Separate hydration logic (web had N+1 fix; mobile must stay in sync manually) |
 | `library.ts` | Mobile has DNF / `expected_read_date`; must verify web parity |
 
 **Mitigation:** Extract query/mutation functions into `packages/services/` consumed by both apps.
 
-### Mobile Reading Room incomplete
+### Mobile status docs drift
 
-**Impact:** Medium
+**Impact:** Low–medium
 
-Web has 6 tabs (`readingRoomTabs.ts`): Overview, Progress, Trail, Notes, Reviews, History. Mobile Home (`apps/mobile/app/(app)/index.tsx`) has 3: Overview, Progress, Trail.
-
-Notes exist at `/(app)/notes` but are not integrated into Reading Room tabs. No mobile Reviews or History tab equivalent to web.
-
-### Mobile README severely outdated
-
-**Impact:** Medium — misleads contributors
-
-`apps/mobile/README.md` "Status" section claims messaging, book detail, reviews, and shelf writes are "stubbed / not yet implemented." Code audit shows these are implemented (`book/[id].tsx`, `messages/`, `RateReviewSheet`, `library.ts` writes).
-
-**Mitigation:** Rewrite mobile README status section to match current parity matrix in `PROJECT_PROGRESS.md`.
+Mobile Reading Room parity is implemented (`packages/utils/readingRoomTabs.ts`, `apps/mobile/app/(app)/index.tsx`), and the mobile README has been refreshed. Older docs under `docs/project/` and `docs/progress/` still describe mobile as scaffold-only and should be treated as MVP-era history unless updated.
 
 ---
 
 ## P1 — Billing & premium
 
-### Premium gates without live payments
+### App Store production approval still external
 
-**Impact:** Medium — architecture ready, revenue not enabled
+**Impact:** Medium — iOS revenue depends on App Store review and sandbox validation
 
-- `user_subscriptions` table + RLS (`20260722120000_user_subscriptions.sql`)
-- `canAccessFeature()` in `packages/utils/subscription.ts`
-- Gates: `advanced_analytics`, `ai_insights` on web + mobile
-- **No Stripe, App Store, or Google Play SDK integration**
+- Stripe checkout and HMAC webhook verification are implemented.
+- iOS IAP uses `expo-iap`, `apple-iap-verify`, and `subscription-webhook?provider=apple`.
+- Apple StoreKit / App Store Server Notification JWS signatures and Apple Root CA - G3 certificate chains are verified in code.
+- Remaining production work is external: App Store Connect subscription review, TestFlight sandbox purchase/restore validation, and optional App Store Server API transaction lookup with owner-provided `.p8` credentials.
 
-### Webhook stub without signature verification
+### Billing RLS must stay service-role only
 
-**Impact:** High once billing goes live
+**Impact:** High
 
-`supabase/functions/subscription-webhook/index.ts` accepts POST with shared secret header but does not verify Stripe/App Store/Google payloads. Must not be used in production without provider-specific verification.
+`user_subscriptions` owners can select their own row, but clients must not insert/update billing state. Keep subscription writes in service-role Edge Functions or security-definer triggers only (`20260726200000_lock_down_user_subscriptions_rls.sql`).
 
 ---
 
@@ -146,9 +136,9 @@ Each page loads data via `useEffect` + Supabase. Navigating Dashboard ↔ Readin
 | Doc | Issue |
 |-----|-------|
 | `docs/project/MASTER_TASK_LIST.md` | Says mobile is "scaffold only" and catalog is Open Library — both outdated |
-| `apps/mobile/README.md` | Claims core write flows are stubbed — false |
+| `apps/mobile/README.md` | Refreshed; older docs still contain pre-parity mobile claims |
 | Phase numbering | MVP phases (MASTER_TASK_LIST 0–2) vs refinement phases (PROJECT_PROGRESS 1–10) collide |
-| `README.md` (root) | Migration table lists only 9 migrations; 55 exist |
+| `README.md` (root) | Migration table lists only early migrations; 59 exist |
 
 **Mitigation:** Cross-link root audit docs; update README migration table.
 
@@ -156,7 +146,7 @@ Each page loads data via `useEffect` + Supabase. Navigating Dashboard ↔ Readin
 
 ## P3 — Database & RLS
 
-### 55 migrations, no down migrations
+### 59 migrations, no down migrations
 
 **Impact:** Low — standard for Supabase
 
@@ -212,7 +202,7 @@ Generally good baseline (skip link, focus-visible, 44px touch targets). Gaps:
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| Events calendar | Not started | Clubs exist; no calendar UI |
+| Events calendar | ✅ | Web + mobile calendar UI shipped |
 | Feed search (mobile) | ✅ | `feedSearch.ts` + `FeedScreen` search UI |
 | Goodreads import (mobile) | ✅ | `goodreadsImport.ts` + `LibraryImportPanel` in settings |
 | Library virtualization | Deferred | |
@@ -226,12 +216,9 @@ Generally good baseline (skip link, focus-visible, 44px touch targets). Gaps:
 | Priority | Item | Effort |
 |----------|------|--------|
 | P0 | Document static-export constraints (done — this audit) | — |
-| P1 | Sync `completeReadingSession` completion_tags to mobile | Low |
 | P1 | Extract shared services to `packages/` | High |
-| P1 | Wire Stripe + IAP to `subscription-webhook` with real verification | High |
-| P1 | Events calendar UI (clubs + community) | High |
-| P1 | Update `apps/mobile/README.md` status section | Low |
-| P2 | Mobile Reading Room Notes/Reviews/History tabs | Medium |
+| P1 | TestFlight/App Review purchase + restore validation | Medium |
+| P1 | Optional App Store Server API transaction lookup | Medium |
 | P2 | Adopt React Query on web OR accept duplicate-fetch pattern | Medium |
 | P2 | Remove or wire `LibraryAnalyticsPanel` | Low |
 | P2 | Update root `README.md` + `MASTER_TASK_LIST.md` catalog/mobile claims | Low |
