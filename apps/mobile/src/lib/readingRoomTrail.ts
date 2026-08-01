@@ -1,4 +1,6 @@
-import type { UserReadingSession } from "@/lib/services/readingSessions";
+import type { UserReadingSession } from "../services/readingSessions";
+
+/** Mirrors apps/web/src/lib/reading-room/trail.ts for mobile Trail parity. */
 
 export type BookSessionGroup = {
   key: string;
@@ -35,15 +37,6 @@ export function groupSessionsByBook(sessions: UserReadingSession[]): BookSession
   return [...groups.values()].sort((a, b) =>
     a.bookTitle.localeCompare(b.bookTitle, undefined, { sensitivity: "base" })
   );
-}
-
-export function filterBookGroupsByQuery(
-  groups: BookSessionGroup[],
-  query: string
-): BookSessionGroup[] {
-  const trimmed = query.trim().toLowerCase();
-  if (!trimmed) return groups;
-  return groups.filter((group) => group.bookTitle.toLowerCase().includes(trimmed));
 }
 
 export function groupSessionsByReadNumber(sessions: UserReadingSession[]): ReadSessionGroup[] {

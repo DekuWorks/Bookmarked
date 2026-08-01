@@ -196,11 +196,25 @@ export {
 } from "./noteTag";
 
 export {
+  DISCOVERY_CARD_ROW_PX,
   discoveryReviewState,
   discoveryReviewSummaryLabel,
   clampDiscoveryTags,
   type DiscoveryReviewState,
 } from "./discoveryCard";
+
+export {
+  DEFAULT_PAGE_SIZE,
+  paginateItems,
+  type PageSlice,
+} from "./pagination";
+
+export {
+  filterTrailBookGroupsByQuery,
+  sortTrailBookGroups,
+  type TrailSortableGroup,
+  type TrailSortableSession,
+} from "./readingRoomTrail";
 
 export {
   MAX_BIO_LENGTH,

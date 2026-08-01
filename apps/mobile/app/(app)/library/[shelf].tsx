@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { useQueryClient } from "@tanstack/react-query";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { Button } from "../../../src/components/Button";
 import { BookSpine } from "../../../src/components/library/BookSpine";
 import { LibraryViewToggle } from "../../../src/components/library/LibraryViewToggle";
 import { CoverTile } from "../../../src/components/CoverTile";
@@ -12,12 +14,16 @@ import { ShelfIcon } from "../../../src/components/ShelfIcon";
 import { ShelfTitleRow } from "../../../src/components/ShelfTitleRow";
 import { useLibrary } from "../../../src/hooks/useLibrary";
 import { useLibraryViewMode } from "../../../src/hooks/useLibraryViewMode";
+import { clearBuiltInShelf } from "../../../src/services/library";
+import { useAuthStore } from "../../../src/store/authStore";
 
 export default function LibraryShelfScreen() {
   const { shelf: shelfSlugParam } = useLocalSearchParams<{ shelf: string }>();
   const shelfSlug = decodeURIComponent(String(shelfSlugParam ?? ""));
   const config = getShelfConfigBySlug(shelfSlug);
   const router = useRouter();
+  const userId = useAuthStore((s) => s.user?.id);
+  const queryClient = useQueryClient();
   const { data: shelves, isLoading, isError } = useLibrary();
   const { view, setView, isPending } = useLibraryViewMode();
 
@@ -25,6 +31,30 @@ export default function LibraryShelfScreen() {
     () => (config ? (shelves ?? []).find((entry) => entry.status === config.status) : null),
     [config, shelves]
   );
+
+  function confirmClearShelf() {
+    if (!config || !userId) return;
+    Alert.alert(
+      `Clear ${config.title}?`,
+      `This removes every book from ${config.title} only. Your books and any other shelf associations stay intact.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Clear shelf",
+          style: "destructive",
+          onPress: async () => {
+            const result = await clearBuiltInShelf(userId, config.status);
+            if (result.error) {
+              Alert.alert("Couldn't clear shelf", result.error);
+              return;
+            }
+            await queryClient.invalidateQueries({ queryKey: ["library"] });
+            Alert.alert("Shelf cleared", `Books were removed from ${config.title} only.`);
+          },
+        },
+      ]
+    );
+  }
 
   if (!config) {
     return (
@@ -67,6 +97,14 @@ export default function LibraryShelfScreen() {
           <Text className="mt-2 text-sm font-medium text-ink">
             {shelf.items.length} book{shelf.items.length === 1 ? "" : "s"}
           </Text>
+          {shelf.items.length > 0 ? (
+            <Button
+              title="Clear shelf"
+              variant="ghost"
+              onPress={confirmClearShelf}
+              className="mt-3 self-start"
+            />
+          ) : null}
         </View>
 
         <LibraryViewToggle view={view} onChange={setView} disabled={isPending} />

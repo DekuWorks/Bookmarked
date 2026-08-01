@@ -6,6 +6,7 @@ import { StarRating } from "./StarRating";
 import { fetchTrendingSections, type TrendingBook } from "../services/trending";
 import type { FeedDiscoverySectionId } from "../../../../packages/utils";
 import {
+  DISCOVERY_CARD_ROW_PX,
   discoveryReviewState,
   discoveryReviewSummaryLabel,
   formatRatingCount,
@@ -41,23 +42,34 @@ function Card({ book }: { book: TrendingBook }) {
       style={{ width: CARD_WIDTH, marginRight: 12 }}
       className="active:opacity-80"
     >
-      <View style={{ height: 340 }}>
-        <BookCover url={book.coverUrl} title={book.title} sizeClassName="w-28 h-40" />
+      <View>
+        <View
+          style={{ height: DISCOVERY_CARD_ROW_PX.coverHeight, overflow: "hidden" }}
+        >
+          <BookCover url={book.coverUrl} title={book.title} sizeClassName="w-28 h-40" />
+        </View>
         <Text
           className="mt-2 text-xs"
-          style={{ fontFamily: SANS_FONT_BOLD, color: colors.ink, minHeight: 32 }}
+          style={{ fontFamily: SANS_FONT_BOLD, color: colors.ink, height: DISCOVERY_CARD_ROW_PX.title }}
           numberOfLines={2}
         >
           {book.title}
         </Text>
         <Text
           className="mt-0.5 text-[11px]"
-          style={{ fontFamily: SANS_FONT, color: colors.inkMuted, minHeight: 14 }}
+          style={{ fontFamily: SANS_FONT, color: colors.inkMuted, height: DISCOVERY_CARD_ROW_PX.author }}
           numberOfLines={1}
         >
           {book.author?.trim() || " "}
         </Text>
-        <View style={{ minHeight: 36, marginTop: 4, justifyContent: "center" }}>
+        <View
+          style={{
+            height: DISCOVERY_CARD_ROW_PX.rating,
+            marginTop: 4,
+            justifyContent: "center",
+            overflow: "hidden",
+          }}
+        >
           {book.communityRating ? (
             <View className="flex-row items-center gap-1">
               <StarRating value={book.communityRating.averageRating} showNumber size={12} />
@@ -66,16 +78,21 @@ function Card({ book }: { book: TrendingBook }) {
               </Text>
             </View>
           ) : (
-            <Text className="text-[10px]" style={{ fontFamily: SANS_FONT, color: colors.inkMuted }}>
+            <Text
+              className="text-[10px]"
+              style={{ fontFamily: SANS_FONT, color: colors.inkMuted }}
+              numberOfLines={1}
+            >
               {summary}
             </Text>
           )}
         </View>
-        <View style={{ minHeight: 28, marginTop: 4 }} />
-        <View style={{ minHeight: 20, marginTop: 4 }} />
+        <View style={{ height: DISCOVERY_CARD_ROW_PX.review, marginTop: 4 }} />
+        <View style={{ height: DISCOVERY_CARD_ROW_PX.tags, marginTop: 4 }} />
         <Text
           className="mt-1 text-[11px]"
-          style={{ fontFamily: SANS_FONT_MEDIUM, color: colors.inkMuted, marginTop: "auto" }}
+          style={{ fontFamily: SANS_FONT_MEDIUM, color: colors.inkMuted, height: DISCOVERY_CARD_ROW_PX.metric }}
+          numberOfLines={1}
         >
           {book.metric} {book.metricLabel}
         </Text>

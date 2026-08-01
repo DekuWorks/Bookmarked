@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { BookMiniGrid } from "@/components/reading-room/BookMiniGrid";
 import { HistorySortSelect } from "@/components/reading-room/HistorySortSelect";
+import { BookListPagination } from "@/components/reading-room/BookListPagination";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { formatSessionDate } from "@/lib/reading-room/trail";
 import type { LibraryBookRow } from "@/lib/services/library";
@@ -11,10 +12,11 @@ import type { UserReadingSession } from "@/lib/services/readingSessions";
 import { cn } from "@/lib/utils/cn";
 import {
   DEFAULT_HISTORY_SORT,
-  countFinishedHistoryBooks,
-  selectHistoryBooks,
+  filterFinishedHistoryBooks,
+  sortHistoryBooks,
   type HistorySortMode,
 } from "@bookmarked/utils/readingRoomHistory";
+import { DEFAULT_PAGE_SIZE, paginateItems } from "@bookmarked/utils/pagination";
 
 type Props = {
   books: LibraryBookRow[];
@@ -23,12 +25,24 @@ type Props = {
 
 export function HistoryPanel({ books, sessions }: Props) {
   const [sort, setSort] = useState<HistorySortMode>(DEFAULT_HISTORY_SORT);
+  const [page, setPage] = useState(1);
 
-  const finishedBooks = useMemo(
-    () => selectHistoryBooks(books, sort),
+  const sortedFinishedBooks = useMemo(
+    () => sortHistoryBooks(filterFinishedHistoryBooks(books), sort),
     [books, sort]
   );
-  const totalFinishedBooks = useMemo(() => countFinishedHistoryBooks(books), [books]);
+  // Reset to page 1 whenever the sort changes (adjust state during render, per
+  // https://react.dev/learn/you-might-not-need-an-effect, instead of a setState-in-effect).
+  const [prevSort, setPrevSort] = useState(sort);
+  if (sort !== prevSort) {
+    setPrevSort(sort);
+    setPage(1);
+  }
+
+  const finishedBooksPage = useMemo(
+    () => paginateItems(sortedFinishedBooks, page, DEFAULT_PAGE_SIZE),
+    [sortedFinishedBooks, page]
+  );
 
   return (
     <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
@@ -40,15 +54,18 @@ export function HistoryPanel({ books, sessions }: Props) {
       </div>
 
       <div className="mt-6">
-        {totalFinishedBooks > finishedBooks.length ? (
-          <p className="mb-3 text-sm text-text-muted">
-            Showing {finishedBooks.length} of {totalFinishedBooks} finished books for this sort.
-          </p>
-        ) : null}
         <BookMiniGrid
-          items={finishedBooks}
+          items={finishedBooksPage.pageItems}
           emptyMessage="Books you finish will appear here."
           emptyAction={{ label: "Browse library", href: "/library/read/" }}
+        />
+        <BookListPagination
+          page={finishedBooksPage.page}
+          totalPages={finishedBooksPage.totalPages}
+          total={finishedBooksPage.total}
+          pageSize={finishedBooksPage.pageSize}
+          onPageChange={setPage}
+          label="finished books"
         />
       </div>
 

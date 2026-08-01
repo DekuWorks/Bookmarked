@@ -8,11 +8,13 @@ import type { LibraryBookRow } from "../../services/library";
 import type { UserReadingSession } from "../../services/readingSessions";
 import {
   DEFAULT_HISTORY_SORT,
-  countFinishedHistoryBooks,
-  selectHistoryBooks,
+  filterFinishedHistoryBooks,
+  sortHistoryBooks,
   type HistorySortMode,
 } from "../../../../../packages/utils/readingRoomHistory";
+import { DEFAULT_PAGE_SIZE, paginateItems } from "../../../../../packages/utils/pagination";
 import { HistorySortSelect } from "./HistorySortSelect";
+import { BookListPagination } from "./BookListPagination";
 
 function formatSessionDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -30,12 +32,24 @@ type Props = {
 export function HistoryPanel({ books, sessions }: Props) {
   const router = useRouter();
   const [sort, setSort] = useState<HistorySortMode>(DEFAULT_HISTORY_SORT);
+  const [page, setPage] = useState(1);
 
-  const finishedBooks = useMemo(
-    () => selectHistoryBooks(books, sort),
+  const sortedFinishedBooks = useMemo(
+    () => sortHistoryBooks(filterFinishedHistoryBooks(books), sort),
     [books, sort]
   );
-  const totalFinishedBooks = useMemo(() => countFinishedHistoryBooks(books), [books]);
+  // Reset to page 1 whenever the sort changes (adjust state during render instead of a
+  // setState-in-effect — see https://react.dev/learn/you-might-not-need-an-effect).
+  const [prevSort, setPrevSort] = useState(sort);
+  if (sort !== prevSort) {
+    setPrevSort(sort);
+    setPage(1);
+  }
+
+  const finishedBooksPage = useMemo(
+    () => paginateItems(sortedFinishedBooks, page, DEFAULT_PAGE_SIZE),
+    [sortedFinishedBooks, page]
+  );
 
   return (
     <View className="gap-4">
@@ -44,18 +58,12 @@ export function HistoryPanel({ books, sessions }: Props) {
           <HistorySortSelect value={sort} onChange={setSort} />
         </View>
 
-        {totalFinishedBooks > finishedBooks.length ? (
-          <Text className="mt-3 text-sm text-ink-muted">
-            Showing {finishedBooks.length} of {totalFinishedBooks} finished books for this sort.
-          </Text>
-        ) : null}
-
-        {finishedBooks.length === 0 ? (
+        {finishedBooksPage.total === 0 ? (
           <Text className="mt-4 text-sm text-ink-muted">Books you finish will appear here.</Text>
         ) : (
           <FlatList
             horizontal
-            data={finishedBooks}
+            data={finishedBooksPage.pageItems}
             keyExtractor={(item) => item.id}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ gap: 12, marginTop: 16 }}
@@ -69,6 +77,15 @@ export function HistoryPanel({ books, sessions }: Props) {
             )}
           />
         )}
+
+        <BookListPagination
+          page={finishedBooksPage.page}
+          totalPages={finishedBooksPage.totalPages}
+          total={finishedBooksPage.total}
+          pageSize={finishedBooksPage.pageSize}
+          onPageChange={setPage}
+          label="finished books"
+        />
 
         <Pressable
           onPress={() => router.push("/library/read")}

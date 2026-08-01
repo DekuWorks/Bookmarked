@@ -7,14 +7,18 @@ import { getShelfConfigBySlug } from "@/lib/constants/shelves";
 import { ShelfTitleRow } from "@/components/shelves/ShelfTitleRow";
 import { getProfile } from "@/lib/services/profile";
 import {
+  clearBuiltInShelf,
   computeShelfStats,
   getUserLibraryBooks,
   groupBooksByShelf,
 } from "@/lib/services/library";
 import { ShelfStatsPanel } from "@/components/library/ShelfStatsPanel";
 import { ShelfSearchFilter } from "@/components/library/ShelfSearchFilter";
+import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
+import { Modal } from "@/components/ui/Modal";
+import { useToast } from "@/components/ui/Toast";
 import { layout } from "@/lib/constants/layout";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import type { LibraryViewMode } from "@/types";
@@ -23,11 +27,14 @@ import type { ShelfGroup } from "@/lib/services/library";
 export default function ShelfPageClient() {
   const params = useParams<{ shelf: string }>();
   const user = useAuthUser();
+  const toast = useToast();
   const config = getShelfConfigBySlug(params.shelf);
   const [shelfGroup, setShelfGroup] = useState<ShelfGroup | null>(null);
   const [stats, setStats] = useState<ReturnType<typeof computeShelfStats> | null>(null);
   const [preferredView, setPreferredView] = useState<LibraryViewMode>("bookshelf");
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [clearOpen, setClearOpen] = useState(false);
+  const [clearing, setClearing] = useState(false);
 
   useEffect(() => {
     if (user === undefined) return;
@@ -48,6 +55,21 @@ export default function ShelfPageClient() {
         setLoadError("Could not load this shelf. Please refresh and try again.");
       });
   }, [user, config]);
+
+  async function handleClear() {
+    if (!user || !config || !shelfGroup) return;
+    setClearing(true);
+    const result = await clearBuiltInShelf(user.id, config.status);
+    setClearing(false);
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+    setShelfGroup((current) => (current ? { ...current, items: [] } : current));
+    setStats(computeShelfStats([], config.status));
+    setClearOpen(false);
+    toast.success(`Cleared ${config.title}. Books remain in your library and other shelves.`);
+  }
 
   if (!config) {
     return (
@@ -103,7 +125,31 @@ export default function ShelfPageClient() {
         <ButtonLink href="/search" variant="secondary">
           Add books
         </ButtonLink>
+        {shelfGroup.items.length > 0 ? (
+          <Button type="button" variant="outline" onClick={() => setClearOpen(true)}>
+            Clear shelf
+          </Button>
+        ) : null}
       </header>
+
+      <Modal
+        open={clearOpen}
+        onClose={() => !clearing && setClearOpen(false)}
+        title={`Clear ${config.title}?`}
+      >
+        <p className="mb-4 text-sm text-text-muted">
+          This removes every book from {config.title} only. Your books and any other shelf
+          associations stay intact.
+        </p>
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="ghost" disabled={clearing} onClick={() => setClearOpen(false)}>
+            Cancel
+          </Button>
+          <Button type="button" loading={clearing} onClick={() => void handleClear()}>
+            Clear shelf
+          </Button>
+        </div>
+      </Modal>
 
       <ShelfStatsPanel stats={stats} status={config.status} />
 

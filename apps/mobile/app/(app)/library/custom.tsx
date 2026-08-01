@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { useQuery } from "@tanstack/react-query";
+import { Button } from "../../../src/components/Button";
 import { BookSpine } from "../../../src/components/library/BookSpine";
 import { LibraryViewToggle } from "../../../src/components/library/LibraryViewToggle";
 import { CoverTile } from "../../../src/components/CoverTile";
@@ -96,9 +97,12 @@ export default function CustomShelfScreen() {
             {shelf.items.length} book{shelf.items.length === 1 ? "" : "s"}
           </Text>
           {shelf.items.length > 0 ? (
-            <Pressable onPress={confirmClearShelf} className="mt-3 self-start active:opacity-70">
-              <Text className="text-sm font-semibold text-rust">Clear shelf</Text>
-            </Pressable>
+            <Button
+              title="Clear shelf"
+              variant="ghost"
+              onPress={confirmClearShelf}
+              className="mt-3 self-start"
+            />
           ) : null}
         </View>
 

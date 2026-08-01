@@ -27,6 +27,7 @@ function session(
     completed_at: null,
     created_at: "2026-01-01T12:00:00.000Z",
     bookTitle: "Dune",
+    bookAuthor: null,
     bookId: "book-1",
     ...overrides,
   };

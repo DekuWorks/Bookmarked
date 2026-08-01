@@ -6,8 +6,9 @@ import { SessionMoodChip } from "@/components/books/SessionMoodPicker";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { LoadingState } from "@/components/ui/LoadingState";
+import { HistorySortSelect } from "@/components/reading-room/HistorySortSelect";
+import { BookListPagination } from "@/components/reading-room/BookListPagination";
 import {
-  filterBookGroupsByQuery,
   formatSessionDate,
   groupSessionsByBook,
   groupSessionsByReadNumber,
@@ -17,6 +18,15 @@ import {
 import { bookDetailsPath } from "@/lib/routes/book";
 import type { UserReadingSession } from "@/lib/services/readingSessions";
 import { cn } from "@/lib/utils/cn";
+import {
+  DEFAULT_HISTORY_SORT,
+  type HistorySortMode,
+} from "@bookmarked/utils/readingRoomHistory";
+import { DEFAULT_PAGE_SIZE, paginateItems } from "@bookmarked/utils/pagination";
+import {
+  filterTrailBookGroupsByQuery,
+  sortTrailBookGroups,
+} from "@bookmarked/utils/readingRoomTrail";
 
 type TrailView = "books" | "sessions" | "detail";
 
@@ -29,15 +39,35 @@ export function TrailPanel({ sessions }: Props) {
   const [selectedBookKey, setSelectedBookKey] = useState<string | null>(null);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [sort, setSort] = useState<HistorySortMode>(DEFAULT_HISTORY_SORT);
+  const [page, setPage] = useState(1);
 
   const bookGroups = useMemo(
     () => (sessions ? groupSessionsByBook(sessions) : []),
     [sessions]
   );
   const filteredBookGroups = useMemo(
-    () => filterBookGroupsByQuery(bookGroups, searchQuery),
+    () => filterTrailBookGroupsByQuery(bookGroups, searchQuery),
     [bookGroups, searchQuery]
   );
+  const sortedBookGroups = useMemo(
+    () => sortTrailBookGroups(filteredBookGroups, sort),
+    [filteredBookGroups, sort]
+  );
+  // Reset to page 1 whenever the search/sort selection changes (adjust state during render,
+  // per https://react.dev/learn/you-might-not-need-an-effect, instead of a setState-in-effect).
+  const bookPageResetKey = `${searchQuery}::${sort}`;
+  const [prevBookPageResetKey, setPrevBookPageResetKey] = useState(bookPageResetKey);
+  if (bookPageResetKey !== prevBookPageResetKey) {
+    setPrevBookPageResetKey(bookPageResetKey);
+    setPage(1);
+  }
+
+  const bookPage = useMemo(
+    () => paginateItems(sortedBookGroups, page, DEFAULT_PAGE_SIZE),
+    [sortedBookGroups, page]
+  );
+
   const activeBook = bookGroups.find((group) => group.key === selectedBookKey) ?? null;
   const readGroups = useMemo(
     () => (activeBook ? groupSessionsByReadNumber(activeBook.sessions) : []),
@@ -210,11 +240,12 @@ export function TrailPanel({ sessions }: Props) {
         autoComplete="off"
         className="mt-6"
       />
-      {filteredBookGroups.length === 0 ? (
+      <HistorySortSelect value={sort} onChange={setSort} className="mt-3" id="trail-sort" />
+      {bookPage.total === 0 ? (
         <p className="mt-4 text-center text-sm text-text-muted">No books match your search.</p>
       ) : (
         <ul className="mt-4 space-y-2" role="list">
-          {filteredBookGroups.map((group) => (
+          {bookPage.pageItems.map((group) => (
             <li key={group.key}>
               <button
                 type="button"
@@ -231,6 +262,14 @@ export function TrailPanel({ sessions }: Props) {
           ))}
         </ul>
       )}
+      <BookListPagination
+        page={bookPage.page}
+        totalPages={bookPage.totalPages}
+        total={bookPage.total}
+        pageSize={bookPage.pageSize}
+        onPageChange={setPage}
+        label="books"
+      />
     </section>
   );
 }

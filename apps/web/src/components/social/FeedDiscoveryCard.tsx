@@ -60,7 +60,7 @@ export function FeedDiscoveryCard({ sectionId, className }: Props) {
         {SECTION_TITLES[sectionId] ?? section.title}
       </h2>
       <p className="mt-1 text-sm text-text-muted">Scroll to explore what readers are loving.</p>
-      <ul className="bookshelf-row mt-4 items-stretch gap-3 pb-1">
+      <ul className="mt-4 flex items-stretch gap-3 overflow-x-auto pb-1">
         {section.books.map((book) => (
           <DiscoveryBookCard key={book.bookId} book={book} />
         ))}

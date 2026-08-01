@@ -62,6 +62,22 @@ export function groupBooksByShelf(books: LibraryBookRow[]): ShelfGroup[] {
   }));
 }
 
+/** Removes every book with this shelf status from the user's library. Other shelf statuses are untouched. */
+export async function clearBuiltInShelf(
+  userId: string,
+  status: ShelfStatus
+): Promise<{ error?: string }> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("user_books")
+    .delete()
+    .eq("user_id", userId)
+    .eq("shelf_status", status);
+
+  if (error) return { error: error.message };
+  return {};
+}
+
 const SHELVED_CATALOG_SOURCES = new Set(["isbndb", "open_library"]);
 
 /** Catalog external IDs (ISBNs / legacy work ids) for books on the viewer's shelves. */
