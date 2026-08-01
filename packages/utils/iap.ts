@@ -13,7 +13,8 @@ export const IAP_PREMIUM_MONTHLY_IOS = IAP_PREMIUM_MONTHLY_IOS_PRODUCTION;
 /** Google Play subscription SKU (future — billing uses web link on Android for now). */
 export const IAP_PREMIUM_MONTHLY_ANDROID = "bookmarked_premium_monthly";
 
-export const IAP_PREMIUM_PRICE_LABEL = "$4.99 / month";
+export const IAP_PREMIUM_PRICE_LABEL = "$5.99 / month";
+export const IAP_PREMIUM_YEARLY_PRICE_LABEL = "$59.99 / year";
 
 export const IAP_ALLOWED_PREMIUM_SKUS = [
   IAP_PREMIUM_MONTHLY_IOS_PRODUCTION,

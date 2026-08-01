@@ -53,6 +53,11 @@ function NotesSearchContent() {
         <p className="mx-auto mt-1 max-w-2xl text-pretty text-text-muted">
           Find quotes and reflections across every book in your library.
         </p>
+        <p className="mt-3">
+          <Link href="/quote-graphics/" className="text-sm font-medium text-primary hover:underline">
+            Create a quote graphic →
+          </Link>
+        </p>
       </header>
 
       <NotesSearchForm />

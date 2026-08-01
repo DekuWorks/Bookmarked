@@ -14,6 +14,7 @@ export type {
   SubscriptionTier,
   SubscriptionStatus,
   SubscriptionProvider,
+  FeatureKey,
   PremiumFeature,
   UserSubscription,
 } from "../../../../packages/types";

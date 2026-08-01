@@ -23,7 +23,8 @@ Set with `./scripts/supabase-cli.sh secrets set KEY=value` (never commit to the 
 | Secret | Purpose |
 |--------|---------|
 | `STRIPE_SECRET_KEY` | Create Checkout Sessions (`sk_live_…` for production) |
-| `STRIPE_PRICE_ID` | Recurring price ID for Premium (`price_…`, $4.99/mo) |
+| `STRIPE_PRICE_ID` | Plus monthly price (`price_…`, **$5.99/mo**) — from catalog script, do not invent |
+| `STRIPE_PRICE_ID_YEARLY` | Plus yearly price (`price_…`, **$59.99/yr**) — optional until yearly catalog exists |
 | `STRIPE_WEBHOOK_SECRET` | Verify Stripe webhook signatures (`whsec_…`) |
 | `SUBSCRIPTION_WEBHOOK_SECRET` | Optional — manual / relay payloads (admin grants) |
 
@@ -33,18 +34,18 @@ Optional web build env (not required for checkout — redirect is server-side):
 |----------|---------|
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe.js if you add embedded elements later |
 
-## Catalog (Bookmarked Premium)
+## Catalog (Bookmarked Plus)
 
-The upgrade page (`/upgrade/`) shows **monthly billing only** — `$4.99 / month`. The Edge Function reads a single `STRIPE_PRICE_ID` (no annual tier in code yet).
+Upgrade UI offers **monthly ($5.99)** and **yearly ($59.99)**. Edge Function `create-checkout-session` accepts `{ interval: "month" | "year" }`.
 
 | Field | Value |
 |-------|-------|
-| Product name | `Bookmarked Premium` |
-| Description | Advanced analytics, AI reading insights, and early access across web and mobile. |
-| Billing | Recurring monthly, USD $4.99 (`499` cents) |
-| Product metadata | `app=bookmarked`, `tier=premium`, `plan_code=premium` |
-| Price lookup key | `bookmarked_premium_monthly` |
-| Price metadata | `app=bookmarked`, `tier=premium`, `interval=monthly` |
+| Product name | `Bookmarked Plus` (script also reuses legacy `Bookmarked Premium`) |
+| Billing monthly | USD $5.99 (`599` cents), lookup `bookmarked_plus_monthly` |
+| Billing yearly | USD $59.99 (`5999` cents), lookup `bookmarked_plus_yearly` |
+| Product metadata | `app=bookmarked`, `tier=plus`, `plan_code=plus` |
+
+> Existing live `$4.99` prices remain until you run the catalog script and rotate secrets. Do **not** invent new live `price_` IDs in docs.
 
 ### Create catalog (test or live)
 

@@ -3,17 +3,19 @@ import { useCallback, useState } from "react";
 import { Linking, ScrollView, Text, View } from "react-native";
 import { Button } from "../../src/components/Button";
 import { LoadingState } from "../../src/components/LoadingState";
-import { PremiumBadge } from "../../src/components/PremiumBadge";
+import { PlusBadge } from "../../src/components/PlusBadge";
 import { PremiumFeatureList } from "../../src/components/PremiumFeatureList";
 import { PremiumFeatureLock } from "../../src/components/PremiumFeatureLock";
 import { PremiumUpgradeActions } from "../../src/components/PremiumUpgradeActions";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
+import { SubscriptionComparison } from "../../src/components/SubscriptionComparison";
 import { useSubscription } from "../../src/hooks/useSubscription";
 import { useSubscriptionActivationPoll } from "../../src/hooks/useSubscriptionActivationPoll";
 import { createBillingPortalSession } from "../../src/services/stripePortal";
 import { useAuthStore } from "../../src/store/authStore";
 
-const PLUS_PRICE = "$4.99 / month";
+const PLUS_PRICE = "$5.99 / month";
+const PLUS_YEARLY_PRICE = "$59.99 / year";
 const APPLE_SUBSCRIPTIONS_URL = "https://apps.apple.com/account/subscriptions";
 
 export default function UpgradeRoute() {
@@ -104,7 +106,7 @@ export default function UpgradeRoute() {
         {showSubscribedUI ? (
           <View className="rounded-2xl border border-primary/30 bg-primary/10 p-6">
             <View className="items-center">
-              <PremiumBadge compact />
+              <PlusBadge compact />
               <Text className="mt-3 text-center text-lg font-semibold text-puce-red">
                 You&apos;re subscribed
               </Text>
@@ -150,9 +152,12 @@ export default function UpgradeRoute() {
               Bookmarked Plus
             </Text>
             <Text className="mt-2 text-center text-3xl font-bold text-puce-red">{PLUS_PRICE}</Text>
-            <Text className="mt-1 text-center text-sm text-ink-muted">
-              Billed monthly. Cancel anytime.
-            </Text>
+            <Text className="mt-1 text-center text-sm text-ink-muted">{PLUS_YEARLY_PRICE}</Text>
+            <Text className="mt-1 text-center text-sm text-ink-muted">Cancel anytime.</Text>
+
+            <View className="mt-6">
+              <SubscriptionComparison />
+            </View>
 
             <PremiumFeatureList />
 

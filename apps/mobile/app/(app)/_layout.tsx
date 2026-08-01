@@ -58,6 +58,9 @@ export default function AppTabsLayout() {
         <Tabs.Screen name="profile-edit" options={{ href: null }} />
         <Tabs.Screen name="notification-preferences" options={{ href: null }} />
         <Tabs.Screen name="upgrade" options={{ href: null }} />
+        <Tabs.Screen name="reading-dna" options={{ href: null }} />
+        <Tabs.Screen name="challenges" options={{ href: null }} />
+        <Tabs.Screen name="quote-graphics" options={{ href: null }} />
       </Tabs>
     </TabBarScrollProvider>
   );

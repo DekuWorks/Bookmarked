@@ -42,6 +42,12 @@ export default function NotesScreen() {
     <View className="flex-1 bg-background">
       <ScreenHeader title="Reading Notes" />
       <View className="bg-background px-4 pb-2">
+        <Pressable
+          onPress={() => router.push("/quote-graphics")}
+          className="mb-3 self-start rounded-full bg-primary/15 px-3 py-1.5"
+        >
+          <Text className="text-sm font-semibold text-puce-red">Create quote graphic →</Text>
+        </Pressable>
         <Input
           placeholder="Search your notes and quotes"
           autoCapitalize="none"

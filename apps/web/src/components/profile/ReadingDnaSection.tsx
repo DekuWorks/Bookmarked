@@ -1,54 +1,113 @@
-import { computeReadingDna } from "@bookmarked/utils/readingDna";
+"use client";
+
+import { useEffect, useState } from "react";
+import { computeReadingDna, titleCaseDnaLabel, type ReadingDna } from "@bookmarked/utils/readingDna";
+import { UpgradePrompt } from "@/components/premium/UpgradePrompt";
 import { ButtonLink } from "@/components/ui/ButtonLink";
+import { readingDnaPath } from "@/lib/routes/readingDna";
+import {
+  loadComputedReadingDna,
+  persistReadingDnaSnapshot,
+} from "@/lib/services/readingDna";
+
+type AccessFeature =
+  | "full_reading_dna"
+  | "reading_dna_dashboard"
+  | "reading_dna_ai_insights"
+  | "reading_dna_book_matches"
+  | "book_matches"
+  | "reading_dna_match"
+  | "reader_map";
 
 type Props = {
+  userId: string;
   favoriteGenres: string[];
-  canAccess: (feature: "reading_dna_dashboard" | "reading_dna_ai_insights" | "book_matches" | "reading_dna_match" | "reader_map") => boolean;
+  canAccess: (feature: AccessFeature) => boolean;
 };
 
-export function ReadingDnaSection({ favoriteGenres, canAccess }: Props) {
-  const dna = computeReadingDna({
-    shelves: favoriteGenres.map((genre) => ({ genre })),
-  });
-  const hasPlus = canAccess("reading_dna_dashboard");
+export function ReadingDnaSection({ userId, favoriteGenres, canAccess }: Props) {
+  const [dna, setDna] = useState<ReadingDna>(() =>
+    computeReadingDna({ shelves: favoriteGenres.map((genre) => ({ genre })) })
+  );
+  const [loading, setLoading] = useState(true);
+
+  const hasPlus = canAccess("full_reading_dna");
   const hasHome = canAccess("reading_dna_match");
+  const heroTraits = hasPlus ? dna.personaTraits : dna.topTraits;
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    void loadComputedReadingDna(userId, favoriteGenres)
+      .then((computed) => {
+        if (cancelled) return;
+        setDna(computed);
+        void persistReadingDnaSnapshot(userId, computed);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDna(computeReadingDna({ shelves: favoriteGenres.map((genre) => ({ genre })) }));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, favoriteGenres]);
 
   return (
-    <section className="surface-card mt-6 p-5 text-left">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-lg font-semibold text-puce-red">Reading DNA</p>
-          <p className="mt-1 text-sm text-text-muted">Your evolving reader profile, built from books, shelves, ratings, and reviews.</p>
+    <section className="surface-card mt-6 overflow-hidden text-left">
+      <div className="bg-gradient-to-br from-puce-red via-[#7a3d4a] to-primary px-5 py-6 text-white sm:px-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">
+              Bookmarked
+            </p>
+            <h2 className="mt-1 font-display text-2xl sm:text-3xl">My Reading DNA</h2>
+            <p className="mt-2 max-w-xl text-sm text-white/85">
+              {loading ? "Shaping your DNA from your library…" : dna.summary}
+            </p>
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-medium backdrop-blur">
+              {hasPlus ? (hasHome ? "Home" : "Plus") : "Free · Top 3"}
+            </span>
+            <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] uppercase tracking-wide text-white/85">
+              Confidence · {dna.confidence}
+            </span>
+          </div>
         </div>
-        <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-          {hasPlus ? "Full dashboard" : "Top traits"}
-        </span>
+
+        <div className="mt-5 flex flex-wrap gap-2">
+          {heroTraits.length ? (
+            heroTraits.map((trait) => (
+              <span
+                key={`${trait.category}-${trait.label}`}
+                className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-sm font-medium backdrop-blur"
+              >
+                <span aria-hidden>{trait.emoji}</span>
+                {trait.persona ?? titleCaseDnaLabel(trait.label)}
+              </span>
+            ))
+          ) : (
+            <span className="text-sm text-white/80">No traits yet — finish a few books to begin.</span>
+          )}
+        </div>
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        {dna.topTraits.length ? dna.topTraits.map((trait) => (
-          <span key={`${trait.category}-${trait.label}`} className="rounded-full bg-primary/15 px-3 py-1 text-sm font-medium capitalize text-puce-red">
-            {trait.label}
-          </span>
-        )) : <p className="text-sm text-text-muted">{dna.summary}</p>}
-      </div>
-
-      {hasPlus ? (
-        <div className="mt-4 rounded-xl bg-primary/5 p-3 text-sm text-text-muted">
-          <p>{dna.summary}</p>
-          <p className="mt-2 font-medium text-text">AI insights and book matches are ready for your growing reading history.</p>
-        </div>
-      ) : (
-        <p className="mt-4 text-sm text-text-muted">Unlock Bookmarked Plus for the full DNA dashboard, AI insights, and book matches.</p>
-      )}
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        {!hasPlus ? <ButtonLink href="/upgrade/" variant="secondary" size="sm">Explore Plus</ButtonLink> : null}
-        {hasHome ? (
-          <span className="rounded-lg border border-primary/20 px-3 py-2 text-sm text-primary">DNA Match % and Reader Map filters update monthly.</span>
-        ) : (
-          <span className="text-xs text-text-muted">Home adds monthly DNA updates, DNA Match %, and Reader Map filters.</span>
-        )}
+      <div className="space-y-4 p-5 sm:p-6">
+        {!hasPlus ? (
+          <UpgradePrompt
+            compact
+            title="Unlock your full Reading DNA"
+            description="Free shows your top 3 traits. Open the full DNA page for Genre, Vibe, Emotion, and Trope strands — Plus unlocks the complete view."
+          />
+        ) : null}
+        <ButtonLink href={readingDnaPath()} variant="secondary" size="sm">
+          Open full Reading DNA
+        </ButtonLink>
       </div>
     </section>
   );

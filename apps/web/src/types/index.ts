@@ -9,6 +9,7 @@ export type {
   SubscriptionTier,
   SubscriptionStatus,
   SubscriptionProvider,
+  FeatureKey,
   PremiumFeature,
   UserSubscription,
   Book,

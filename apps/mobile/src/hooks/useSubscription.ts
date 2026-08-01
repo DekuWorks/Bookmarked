@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getUserSubscription, toSubscriptionAccess } from "../services/subscription";
 import { canAccessFeature, isPremiumSubscriber } from "../utils/subscription";
 import { useAuthStore } from "../store/authStore";
-import type { PremiumFeature } from "../types";
+import type { FeatureKey, PremiumFeature } from "../types";
 
 export function useSubscription() {
   const userId = useAuthStore((s) => s.user?.id);
@@ -19,7 +19,7 @@ export function useSubscription() {
     subscription: query.data ?? null,
     loading: query.isLoading,
     isPremium: isPremiumSubscriber(access),
-    canAccess: (feature: PremiumFeature) => canAccessFeature(feature, access),
+    canAccess: (feature: FeatureKey | PremiumFeature) => canAccessFeature(feature, access),
     refetch: query.refetch,
   };
 }

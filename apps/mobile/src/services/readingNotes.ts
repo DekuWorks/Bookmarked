@@ -1,4 +1,9 @@
 import { supabase } from "./supabase";
+import {
+  ENTITLEMENT_LIMIT_MESSAGES,
+  canSaveQuote,
+  toSubscriptionAccessFromRow,
+} from "../utils/subscription";
 import type { ReadingNote, ReadingNoteCategory, ReadingNoteVisibility } from "../types";
 
 /**
@@ -147,6 +152,30 @@ export async function createReadingNote(
   };
 
   if (!payload.note && !payload.quote) return { error: "Add a quote or a note." };
+
+  const countsAsQuote =
+    Boolean(payload.quote) || payload.category === "favorite_quote";
+
+  if (countsAsQuote) {
+    const [{ count, error: countError }, { data: subscription }] = await Promise.all([
+      supabase
+        .from("reading_notes")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .or("quote.not.is.null,category.eq.favorite_quote"),
+      supabase
+        .from("user_subscriptions")
+        .select("subscription_tier, subscription_status, subscription_expires_at")
+        .eq("user_id", userId)
+        .maybeSingle(),
+    ]);
+
+    if (countError) return { error: countError.message };
+
+    if (!canSaveQuote(count ?? 0, toSubscriptionAccessFromRow(subscription))) {
+      return { error: ENTITLEMENT_LIMIT_MESSAGES.saved_quotes };
+    }
+  }
 
   const { data, error } = await supabase
     .from("reading_notes")

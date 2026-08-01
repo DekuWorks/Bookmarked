@@ -1,5 +1,10 @@
 import { createClient } from "@/lib/supabase/client";
 import { SHELF_CONFIG } from "@/lib/constants/shelves";
+import {
+  ENTITLEMENT_LIMIT_MESSAGES,
+  canCreateCustomShelf,
+  toSubscriptionAccessFromRow,
+} from "@/lib/utils/subscription";
 import type { ShelfVisibility, UserShelf } from "@/types";
 
 export type CustomShelfBookItem = {
@@ -229,6 +234,26 @@ export async function createCustomShelf(
 
   if (user.id !== userId) {
     return { error: "Session mismatch. Please refresh and try again." };
+  }
+
+  const [{ count: shelfCount, error: countError }, { data: subscription }] = await Promise.all([
+    supabase
+      .from("user_shelves")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id),
+    supabase
+      .from("user_subscriptions")
+      .select("subscription_tier, subscription_status, subscription_expires_at")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+  ]);
+
+  if (countError) {
+    return { error: countError.message };
+  }
+
+  if (!canCreateCustomShelf(shelfCount ?? 0, toSubscriptionAccessFromRow(subscription))) {
+    return { error: ENTITLEMENT_LIMIT_MESSAGES.custom_shelves };
   }
 
   const baseSlug = slugifyShelfName(trimmedName);

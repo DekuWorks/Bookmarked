@@ -42,7 +42,11 @@ export async function getPremiumCheckoutAvailability(): Promise<CheckoutAvailabi
   }
 }
 
-export async function createPremiumCheckoutSession(): Promise<CheckoutResult> {
+export type CheckoutInterval = "month" | "year";
+
+export async function createPremiumCheckoutSession(
+  interval: CheckoutInterval = "month"
+): Promise<CheckoutResult> {
   const supabase = createClient();
   const {
     data: { session },
@@ -66,7 +70,7 @@ export async function createPremiumCheckoutSession(): Promise<CheckoutResult> {
       apikey: anonKey,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({}),
+    body: JSON.stringify({ interval }),
   });
 
   const body = (await response.json().catch(() => null)) as {

@@ -15,8 +15,10 @@ import { ClubDiscussionComposer } from "@/components/clubs/ClubDiscussionCompose
 import { ClubEventsPanel } from "@/components/clubs/ClubEventsPanel";
 import { ClubMembersPanel } from "@/components/clubs/ClubMembersPanel";
 import { BookPickerModal } from "@/components/clubs/BookPickerModal";
+import { FeatureLimitModal } from "@/components/premium/FeatureLimitModal";
 import { CircleAvatarUpload } from "@/components/ui/CircleAvatarUpload";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { isEntitlementLimitError } from "@/lib/utils/subscription";
 import { useClubDiscussionsRealtime } from "@/lib/hooks/useClubDiscussionsRealtime";
 import {
   deleteClub,
@@ -45,6 +47,7 @@ function ClubDetailContent() {
   const [discussions, setDiscussions] = useState<BookClubPostWithAuthor[] | null>(null);
   const [actionPending, setActionPending] = useState(false);
   const [bookPickerOpen, setBookPickerOpen] = useState(false);
+  const [limitOpen, setLimitOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<
     "overview" | "discussions" | "schedule" | "bookshelf" | "members" | "stats"
   >("overview");
@@ -98,6 +101,10 @@ function ClubDetailContent() {
     const result = await joinClub(clubId);
     setActionPending(false);
     if (result.error) {
+      if (isEntitlementLimitError(result.error)) {
+        setLimitOpen(true);
+        return;
+      }
       toast.error(result.error);
       return;
     }
@@ -192,6 +199,12 @@ function ClubDetailContent() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
+      <FeatureLimitModal
+        open={limitOpen}
+        onClose={() => setLimitOpen(false)}
+        featureLabel="Book clubs"
+        limitMessage="Free members can join 3 book clubs. Upgrade to Bookmarked Plus for unlimited clubs."
+      />
       <p>
         <Link href={clubsPath()} className="text-sm font-medium text-primary hover:underline">
           ← Back to book clubs

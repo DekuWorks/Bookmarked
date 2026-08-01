@@ -54,11 +54,50 @@ export type SubscriptionStatus =
   | "active"
   | "trialing"
   | "past_due"
-  | "canceled";
+  | "canceled"
+  | "expired"
+  | "grace_period";
 
 export type SubscriptionProvider = "stripe" | "apple" | "google" | "manual";
 
+/**
+ * Canonical gated capability keys (Free limits + Plus/Home unlocks).
+ * Use with `canAccessFeature` / `ENTITLEMENTS` in `@bookmarked/utils`.
+ */
+export type FeatureKey =
+  | "custom_shelves"
+  | "saved_quotes"
+  | "quote_graphics"
+  | "joined_book_clubs"
+  | "reading_challenges"
+  | "advanced_reading_insights"
+  | "reading_speed"
+  | "reading_time"
+  | "pages_by_week"
+  | "pages_by_month"
+  | "reading_habits"
+  | "favorite_authors"
+  | "mood_analytics"
+  | "year_over_year_comparison"
+  | "advanced_reading_goals"
+  | "reading_heatmaps"
+  | "monthly_wrapped"
+  | "ai_reading_companion"
+  | "quote_scanner"
+  | "advanced_reviews"
+  | "club_polls"
+  | "club_analytics"
+  | "full_reading_dna"
+  | "reading_dna_ai_insights"
+  | "reading_dna_book_matches"
+  | "reading_dna_year_comparison";
+
+/**
+ * @deprecated Prefer `FeatureKey`. Kept as a union alias plus legacy string keys
+ * so existing call sites compile while migrating.
+ */
 export type PremiumFeature =
+  | FeatureKey
   | "tracker"
   | "library"
   | "goals"
@@ -69,8 +108,6 @@ export type PremiumFeature =
   | "stats"
   | "reading_dna_traits"
   | "reading_insights"
-  | "reading_speed"
-  | "mood_analytics"
   | "heatmaps"
   | "ai_companion"
   | "quote_vault"
@@ -78,7 +115,6 @@ export type PremiumFeature =
   | "unlimited_clubs"
   | "unlimited_challenges"
   | "reading_dna_dashboard"
-  | "reading_dna_ai_insights"
   | "book_matches"
   | "book_map"
   | "reader_map"
@@ -86,9 +122,7 @@ export type PremiumFeature =
   | "premium_events"
   | "concierge"
   | "priority_support"
-  /** @deprecated Use the explicit Plus capabilities above. */
   | "advanced_analytics"
-  /** @deprecated Use `reading_dna_ai_insights` or `basic_ai`. */
   | "ai_insights";
 
 export interface UserSubscription {

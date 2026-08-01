@@ -53,8 +53,11 @@ function subscriptionIsActive(row: {
   subscription_expires_at: string | null;
 }): boolean {
   if (!["plus", "home"].includes(row.subscription_tier)) return false;
-  if (!["active", "trialing"].includes(row.subscription_status)) return false;
-  if (!row.subscription_expires_at) return true;
+  const status = row.subscription_status;
+  if (status === "expired" || status === "inactive") return false;
+  const entitled = ["active", "trialing", "past_due", "grace_period", "canceled"].includes(status);
+  if (!entitled) return false;
+  if (!row.subscription_expires_at) return status !== "canceled";
   const expiresAt = new Date(row.subscription_expires_at).getTime();
   return Number.isFinite(expiresAt) && expiresAt > Date.now();
 }

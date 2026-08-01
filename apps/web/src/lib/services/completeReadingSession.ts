@@ -190,11 +190,26 @@ export async function completeReadingSession(
     }),
   });
 
+  // Soft DNA refresh after a meaningful finish — never block completion UX.
+  void refreshReadingDnaAfterFinish(userId);
+
   return {
     resolution,
     sessionId: savedSessionId,
     promptReview: true,
     pageCountPending,
   };
+}
+
+async function refreshReadingDnaAfterFinish(userId: string): Promise<void> {
+  try {
+    const { loadComputedReadingDna, persistReadingDnaSnapshot } = await import(
+      "@/lib/services/readingDna"
+    );
+    const dna = await loadComputedReadingDna(userId);
+    await persistReadingDnaSnapshot(userId, dna);
+  } catch (error) {
+    console.warn("[completeReadingSession] DNA persist skipped:", error);
+  }
 }
 

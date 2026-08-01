@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { AddCustomNoteCategoryModal } from "@/components/books/AddCustomNoteCategoryModal";
+import { FeatureLimitModal } from "@/components/premium/FeatureLimitModal";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
@@ -13,6 +14,7 @@ import {
   type ReadingNoteInput,
 } from "@/lib/services/readingNotes";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { isEntitlementLimitError } from "@/lib/utils/subscription";
 import type { ReadingNote, ReadingNoteCategory, ReadingNoteVisibility } from "@/types";
 
 const selectClassName =
@@ -33,6 +35,7 @@ export function ReadingNoteForm({ userBookId, initialNote, onSaved, onCancel }: 
   const { categories, refresh: refreshCategories } = useReadingNoteCategories(user?.id);
   const [saving, setSaving] = useState(false);
   const [showAddCategory, setShowAddCategory] = useState(false);
+  const [limitOpen, setLimitOpen] = useState(false);
   const [quote, setQuote] = useState(initialNote?.quote ?? "");
   const [note, setNote] = useState(initialNote?.note ?? "");
   const [pageNumber, setPageNumber] = useState(
@@ -82,6 +85,10 @@ export function ReadingNoteForm({ userBookId, initialNote, onSaved, onCancel }: 
     setSaving(false);
 
     if (result.error) {
+      if (isEntitlementLimitError(result.error)) {
+        setLimitOpen(true);
+        return;
+      }
       toast.error(result.error);
       return;
     }
@@ -101,6 +108,12 @@ export function ReadingNoteForm({ userBookId, initialNote, onSaved, onCancel }: 
 
   return (
     <>
+      <FeatureLimitModal
+        open={limitOpen}
+        onClose={() => setLimitOpen(false)}
+        featureLabel="Saved quotes"
+        limitMessage="Free members can save 25 quotes. Upgrade to Bookmarked Plus for unlimited quote vault space."
+      />
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
         <Textarea
           label="Quote"

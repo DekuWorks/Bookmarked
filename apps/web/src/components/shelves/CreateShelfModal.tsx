@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { FeatureLimitModal } from "@/components/premium/FeatureLimitModal";
 import {
   createCustomShelf,
   validateCustomShelfInput,
@@ -11,6 +12,10 @@ import {
 import { SHELF_VISIBILITY_OPTIONS } from "@/lib/services/shelfVisibility";
 import type { ShelfVisibility, UserShelf } from "@/types";
 import { cn } from "@/lib/utils/cn";
+
+function isCustomShelfLimitError(message: string): boolean {
+  return /1 custom shelf|unlimited shelves/i.test(message);
+}
 
 type Props = {
   open: boolean;
@@ -38,6 +43,7 @@ export function CreateShelfModal({
   const [visibility, setVisibility] = useState<ShelfVisibility>("public");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [limitOpen, setLimitOpen] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -84,6 +90,15 @@ export function CreateShelfModal({
     setSaving(false);
 
     if (result.error) {
+      if (isCustomShelfLimitError(result.error)) {
+        setName("");
+        setGenre("");
+        setVisibility("public");
+        setError(null);
+        onClose();
+        setLimitOpen(true);
+        return;
+      }
       setError(result.error);
       return;
     }
@@ -99,6 +114,13 @@ export function CreateShelfModal({
   }
 
   return (
+    <>
+    <FeatureLimitModal
+      open={limitOpen}
+      onClose={() => setLimitOpen(false)}
+      featureLabel="Custom shelves"
+      limitMessage="Free members can create 1 custom shelf. Upgrade to Bookmarked Plus for unlimited shelves."
+    />
     <Modal open={open} onClose={handleClose} title="Create a shelf">
       <form onSubmit={(e) => void handleSubmit(e)}>
         <p className="mb-4 text-sm text-text-muted">
@@ -159,5 +181,6 @@ export function CreateShelfModal({
         </div>
       </form>
     </Modal>
+    </>
   );
 }

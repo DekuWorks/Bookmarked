@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import { Button } from "../../src/components/Button";
+import { FeatureLimitModal } from "../../src/components/FeatureLimitModal";
 import { LoadingState } from "../../src/components/LoadingState";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { ShelfTitleRow } from "../../src/components/ShelfTitleRow";
@@ -56,6 +57,7 @@ export default function ShelfPrivacyScreen() {
   const [newName, setNewName] = useState("");
   const [newVisibility, setNewVisibility] = useState<ShelfVisibility>("public");
   const [creating, setCreating] = useState(false);
+  const [limitOpen, setLimitOpen] = useState(false);
 
   const refreshCustomShelves = useCallback(async () => {
     if (!userId) return;
@@ -154,6 +156,11 @@ export default function ShelfPrivacyScreen() {
     });
     setCreating(false);
     if (result.error) {
+      if (/1 custom shelf|unlimited shelves/i.test(result.error)) {
+        setCreateOpen(false);
+        setLimitOpen(true);
+        return;
+      }
       Alert.alert("Couldn't create shelf", result.error);
       return;
     }
@@ -175,6 +182,12 @@ export default function ShelfPrivacyScreen() {
   return (
     <View className="flex-1 bg-background">
       <ScreenHeader title="Shelf privacy" />
+      <FeatureLimitModal
+        open={limitOpen}
+        onClose={() => setLimitOpen(false)}
+        featureLabel="Custom shelves"
+        limitMessage="Free members can create 1 custom shelf. Upgrade to Bookmarked Plus for unlimited shelves."
+      />
       <ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: 48 }}
         keyboardShouldPersistTaps="handled"

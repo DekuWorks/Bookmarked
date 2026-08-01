@@ -6,18 +6,24 @@ import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useToast } from "@/components/ui/Toast";
-import { PremiumBadge } from "@/components/premium/PremiumBadge";
+import { PlusBadge } from "@/components/premium/PlusBadge";
 import { PremiumFeatureList } from "@/components/premium/PremiumFeatureList";
 import { PremiumFeatureLock } from "@/components/premium/PremiumFeatureLock";
+import { SubscriptionComparison } from "@/components/premium/SubscriptionComparison";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useSubscriptionActivationPoll } from "@/lib/hooks/useSubscriptionActivationPoll";
 import { layout } from "@/lib/constants/layout";
 import { staticRedirect } from "@/lib/navigation/staticRedirect";
 import { createBillingPortalSession } from "@/lib/services/stripePortal";
-import { createPremiumCheckoutSession, getPremiumCheckoutAvailability } from "@/lib/services/stripeCheckout";
+import {
+  createPremiumCheckoutSession,
+  getPremiumCheckoutAvailability,
+  type CheckoutInterval,
+} from "@/lib/services/stripeCheckout";
 
-const PLUS_PRICE = "$4.99 / month";
+const PLUS_PRICE = "$5.99 / month";
+const PLUS_YEARLY_PRICE = "$59.99 / year";
 
 function clearCheckoutQueryParam(): void {
   if (typeof window === "undefined") return;
@@ -31,7 +37,7 @@ export default function UpgradePage() {
   const toast = useToast();
   const searchParams = useSearchParams();
   const { subscription, isPremium, loading, refresh } = useSubscription(user?.id);
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState<CheckoutInterval | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [portalError, setPortalError] = useState<string | null>(null);
@@ -83,43 +89,46 @@ export default function UpgradePage() {
     }
   }, [checkoutStatus, isPremium]);
 
-  const handleSubscribe = useCallback(async () => {
-    if (!user) {
-      const message = "Sign in to subscribe.";
-      setCheckoutError(message);
-      toast.error(message);
-      staticRedirect("/login/?redirect=%2Fupgrade%2F");
-      return;
-    }
-
-    setCheckoutError(null);
-    setCheckoutLoading(true);
-
-    try {
-      const result = await createPremiumCheckoutSession();
-
-      if (result.ok) {
-        window.location.href = result.url;
+  const handleSubscribe = useCallback(
+    async (interval: CheckoutInterval = "month") => {
+      if (!user) {
+        const message = "Sign in to subscribe.";
+        setCheckoutError(message);
+        toast.error(message);
+        staticRedirect("/login/?redirect=%2Fupgrade%2F");
         return;
       }
 
-      if (!result.available) {
-        setCheckoutUnavailable(true);
+      setCheckoutError(null);
+      setCheckoutLoading(interval);
+
+      try {
+        const result = await createPremiumCheckoutSession(interval);
+
+        if (result.ok) {
+          window.location.href = result.url;
+          return;
+        }
+
+        if (!result.available) {
+          setCheckoutUnavailable(true);
+          toast.error(result.error);
+          return;
+        }
+
+        setCheckoutError(result.error);
         toast.error(result.error);
-        return;
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Could not start checkout. Please try again.";
+        setCheckoutError(message);
+        toast.error(message);
+      } finally {
+        setCheckoutLoading(null);
       }
-
-      setCheckoutError(result.error);
-      toast.error(result.error);
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Could not start checkout. Please try again.";
-      setCheckoutError(message);
-      toast.error(message);
-    } finally {
-      setCheckoutLoading(false);
-    }
-  }, [toast, user]);
+    },
+    [toast, user]
+  );
 
   const handleManageSubscription = useCallback(async () => {
     setPortalError(null);
@@ -189,7 +198,7 @@ export default function UpgradePage() {
               <p className="text-sm font-medium uppercase tracking-wide text-primary">
                 Bookmarked Plus
               </p>
-              <PremiumBadge compact />
+              <PlusBadge compact />
             </div>
             <p className="mt-3 text-lg font-semibold text-puce-red">You&apos;re subscribed</p>
             <p className="mt-2 text-sm text-text-muted">
@@ -230,7 +239,12 @@ export default function UpgradePage() {
               Bookmarked Plus
             </p>
             <p className="mt-2 text-3xl font-bold text-puce-red">{PLUS_PRICE}</p>
-            <p className="mt-1 text-sm text-text-muted">Billed monthly. Cancel anytime.</p>
+            <p className="mt-1 text-sm text-text-muted">{PLUS_YEARLY_PRICE}</p>
+            <p className="mt-1 text-sm text-text-muted">Cancel anytime.</p>
+          </div>
+
+          <div className="mt-6">
+            <SubscriptionComparison />
           </div>
 
           <PremiumFeatureList />
@@ -248,17 +262,28 @@ export default function UpgradePage() {
               <Button
                 size="lg"
                 className="w-full"
-                loading={checkoutLoading}
-                onClick={() => void handleSubscribe()}
+                loading={checkoutLoading === "month"}
+                disabled={checkoutLoading !== null}
+                onClick={() => void handleSubscribe("month")}
               >
-                Subscribe to Plus with Stripe
+                Subscribe monthly — {PLUS_PRICE}
+              </Button>
+              <Button
+                size="lg"
+                variant="secondary"
+                className="w-full"
+                loading={checkoutLoading === "year"}
+                disabled={checkoutLoading !== null}
+                onClick={() => void handleSubscribe("year")}
+              >
+                Subscribe yearly — {PLUS_YEARLY_PRICE}
               </Button>
               {checkoutError ? (
                 <p className="text-center text-sm text-red-600">{checkoutError}</p>
               ) : (
                 <p className="text-center text-xs text-text-muted">
                   Secure checkout via Stripe. Manage or cancel anytime from your Stripe customer
-                  portal.
+                  portal. Yearly requires STRIPE_PRICE_ID_YEARLY after catalog setup.
                   {checkoutMode === "test" ? " (Stripe test mode — no real charges.)" : null}
                 </p>
               )}

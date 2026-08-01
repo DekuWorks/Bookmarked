@@ -7,11 +7,14 @@
  * - STRIPE_WEBHOOK_SECRET — Stripe signing secret (whsec_…)
  *
  * Stripe: point webhook to POST /functions/v1/subscription-webhook?provider=stripe
+ * Apple ASN V2: POST /functions/v1/subscription-webhook?provider=apple
  * Manual relay: POST with header x-subscription-webhook-secret
+ *
+ * Idempotent: Stripe/Apple event IDs are recorded in subscription_events.
  */
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 
 const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
@@ -22,7 +25,14 @@ const CORS_HEADERS: Record<string, string> = {
 
 type SubscriptionProvider = "stripe" | "apple" | "google" | "manual";
 type SubscriptionTier = "free" | "plus" | "home";
-type SubscriptionStatus = "inactive" | "active" | "trialing" | "past_due" | "canceled";
+type SubscriptionStatus =
+  | "inactive"
+  | "active"
+  | "trialing"
+  | "past_due"
+  | "canceled"
+  | "expired"
+  | "grace_period";
 
 type WebhookPayload = {
   user_id: string;
@@ -30,9 +40,12 @@ type WebhookPayload = {
   subscription_status?: SubscriptionStatus;
   subscription_provider?: SubscriptionProvider;
   subscription_expires_at?: string | null;
+  event_id?: string;
+  event_type?: string;
 };
 
 type StripeEvent = {
+  id?: string;
   type: string;
   data: {
     object: Record<string, unknown>;
@@ -120,8 +133,9 @@ function stripeStatusFromSubscription(status: string | undefined): SubscriptionS
     case "unpaid":
       return "past_due";
     case "canceled":
-    case "incomplete_expired":
       return "canceled";
+    case "incomplete_expired":
+      return "expired";
     default:
       return "inactive";
   }
@@ -150,6 +164,14 @@ function userIdFromStripeObject(object: Record<string, unknown>): string | null 
   return null;
 }
 
+function tierFromStripeObject(object: Record<string, unknown>): SubscriptionTier {
+  const metadata = object.metadata as Record<string, string> | undefined;
+  const tier = metadata?.tier ?? metadata?.subscription_tier;
+  if (tier === "home") return "home";
+  if (tier === "plus" || tier === "premium") return "plus";
+  return "plus";
+}
+
 function subscriptionFromStripeEvent(event: StripeEvent): SubscriptionUpdate | null {
   const object = event.data.object;
   const stripeCustomerId = stripeCustomerIdFromObject(object);
@@ -159,7 +181,7 @@ function subscriptionFromStripeEvent(event: StripeEvent): SubscriptionUpdate | n
       const userId = userIdFromStripeObject(object);
       if (!userId) return null;
       return {
-        subscription_tier: "plus",
+        subscription_tier: tierFromStripeObject(object),
         subscription_status: "active",
         subscription_provider: "stripe",
         subscription_expires_at: null,
@@ -175,10 +197,15 @@ function subscriptionFromStripeEvent(event: StripeEvent): SubscriptionUpdate | n
       const status = stripeStatusFromSubscription(
         typeof object.status === "string" ? object.status : undefined
       );
-      const isPaid = status === "active" || status === "trialing";
+      const isEntitled =
+        status === "active" ||
+        status === "trialing" ||
+        status === "past_due" ||
+        status === "grace_period" ||
+        (status === "canceled" && Boolean(unixToIso(object.current_period_end)));
 
       return {
-        subscription_tier: isPaid ? "plus" : "free",
+        subscription_tier: isEntitled ? tierFromStripeObject(object) : "free",
         subscription_status: status,
         subscription_provider: "stripe",
         subscription_expires_at:
@@ -214,6 +241,15 @@ function subscriptionFromStripeEvent(event: StripeEvent): SubscriptionUpdate | n
   }
 }
 
+function serviceClient(): SupabaseClient | null {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")?.trim();
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim();
+  if (!supabaseUrl || !serviceRoleKey) return null;
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
 async function resolveUserIdForStripeEvent(
   event: StripeEvent,
   update: SubscriptionUpdate
@@ -225,13 +261,8 @@ async function resolveUserIdForStripeEvent(
   const stripeCustomerId = update.stripe_customer_id;
   if (!stripeCustomerId) return null;
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")?.trim();
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim();
-  if (!supabaseUrl || !serviceRoleKey) return null;
-
-  const supabase = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const supabase = serviceClient();
+  if (!supabase) return null;
 
   const { data, error } = await supabase
     .from("user_subscriptions")
@@ -247,20 +278,60 @@ async function resolveUserIdForStripeEvent(
   return data?.user_id ?? null;
 }
 
+async function claimEvent(
+  supabase: SupabaseClient,
+  provider: SubscriptionProvider,
+  eventId: string,
+  eventType: string,
+  userId: string | null,
+  payload: Record<string, unknown>
+): Promise<"claimed" | "duplicate" | "error"> {
+  const { error } = await supabase.from("subscription_events").insert({
+    provider,
+    event_id: eventId,
+    event_type: eventType,
+    user_id: userId,
+    payload,
+  });
+
+  if (!error) return "claimed";
+  if (error.code === "23505") return "duplicate";
+  console.error("[subscription-webhook] event insert failed:", error.message);
+  return "error";
+}
+
 async function upsertSubscription(
   userId: string,
-  update: SubscriptionUpdate
+  update: SubscriptionUpdate,
+  eventMeta?: {
+    provider: SubscriptionProvider;
+    eventId: string;
+    eventType: string;
+    payload?: Record<string, unknown>;
+  }
 ): Promise<Response> {
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")?.trim();
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim();
-  if (!supabaseUrl || !serviceRoleKey) {
+  const supabase = serviceClient();
+  if (!supabase) {
     console.error("[subscription-webhook] Supabase service credentials missing");
     return jsonResponse({ error: "Server misconfigured" }, 500);
   }
 
-  const supabase = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  if (eventMeta) {
+    const claim = await claimEvent(
+      supabase,
+      eventMeta.provider,
+      eventMeta.eventId,
+      eventMeta.eventType,
+      userId,
+      eventMeta.payload ?? { update }
+    );
+    if (claim === "duplicate") {
+      return jsonResponse({ ok: true, duplicate: true, event_id: eventMeta.eventId });
+    }
+    if (claim === "error") {
+      return jsonResponse({ error: "Failed to record subscription event" }, 500);
+    }
+  }
 
   const { data, error } = await supabase
     .from("user_subscriptions")
@@ -271,6 +342,16 @@ async function upsertSubscription(
   if (error) {
     console.error("[subscription-webhook] upsert failed:", error.message);
     return jsonResponse({ error: "Failed to update subscription" }, 500);
+  }
+
+  const { error: entitlementError } = await supabase.rpc("refresh_subscription_entitlements", {
+    p_user_id: userId,
+  });
+  if (entitlementError) {
+    console.error(
+      "[subscription-webhook] entitlement refresh failed:",
+      entitlementError.message
+    );
   }
 
   return jsonResponse({ ok: true, subscription: data });
@@ -331,7 +412,16 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Stripe event missing valid user_id metadata" }, 400);
     }
 
-    return upsertSubscription(userId, update);
+    const eventId = typeof event.id === "string" && event.id.length > 0
+      ? event.id
+      : `stripe:${event.type}:${userId}:${update.subscription_status}`;
+
+    return upsertSubscription(userId, update, {
+      provider: "stripe",
+      eventId,
+      eventType: event.type,
+      payload: { type: event.type, id: event.id ?? null },
+    });
   }
 
   if (providerParam === "apple") {
@@ -373,7 +463,16 @@ Deno.serve(async (req) => {
     subscription_expires_at: payload.subscription_expires_at ?? null,
   };
 
-  return upsertSubscription(payload.user_id, update);
+  const eventId =
+    payload.event_id?.trim() ||
+    `manual:${payload.user_id}:${payload.event_type ?? "manual"}:${Date.now()}`;
+
+  return upsertSubscription(payload.user_id, update, {
+    provider: update.subscription_provider,
+    eventId,
+    eventType: payload.event_type ?? "manual.upsert",
+    payload: payload as unknown as Record<string, unknown>,
+  });
 });
 
 function decodeJwsPayload(jws: string): Record<string, unknown> | null {
@@ -393,6 +492,7 @@ function decodeJwsPayload(jws: string): Record<string, unknown> | null {
 type AppleNotificationPayload = {
   notificationType?: string;
   subtype?: string;
+  notificationUUID?: string;
   data?: {
     signedTransactionInfo?: string;
     signedRenewalInfo?: string;
@@ -409,6 +509,7 @@ function subscriptionFromAppleNotification(
   if (!transaction) return null;
 
   const notificationType = notification.notificationType ?? "";
+  const subtype = notification.subtype ?? "";
   const expiresMs = transaction.expiresDate;
   const expiresAt =
     typeof expiresMs === "number" && Number.isFinite(expiresMs)
@@ -420,19 +521,24 @@ function subscriptionFromAppleNotification(
       ? transaction.originalTransactionId
       : null;
 
+  if (notificationType === "DID_FAIL_TO_RENEW" && subtype === "GRACE_PERIOD") {
+    return {
+      subscription_tier: "plus",
+      subscription_status: "grace_period",
+      subscription_provider: "apple",
+      subscription_expires_at: expiresAt,
+      apple_original_transaction_id: originalTransactionId,
+    };
+  }
+
   const activeTypes = new Set([
     "SUBSCRIBED",
     "DID_RENEW",
     "DID_CHANGE_RENEWAL_STATUS",
     "OFFER_REDEEMED",
   ]);
-  const inactiveTypes = new Set([
-    "EXPIRED",
-    "GRACE_PERIOD_EXPIRED",
-    "REVOKE",
-    "REFUND",
-    "REFUND_DECLINED",
-  ]);
+  const expiredTypes = new Set(["EXPIRED", "GRACE_PERIOD_EXPIRED"]);
+  const revokedTypes = new Set(["REVOKE", "REFUND", "REFUND_DECLINED"]);
 
   if (activeTypes.has(notificationType)) {
     return {
@@ -444,7 +550,17 @@ function subscriptionFromAppleNotification(
     };
   }
 
-  if (inactiveTypes.has(notificationType)) {
+  if (expiredTypes.has(notificationType)) {
+    return {
+      subscription_tier: "free",
+      subscription_status: "expired",
+      subscription_provider: "apple",
+      subscription_expires_at: expiresAt,
+      apple_original_transaction_id: originalTransactionId,
+    };
+  }
+
+  if (revokedTypes.has(notificationType)) {
     return {
       subscription_tier: "free",
       subscription_status: "canceled",
@@ -462,13 +578,8 @@ async function resolveUserIdForAppleOriginalTransaction(
 ): Promise<string | null> {
   if (!originalTransactionId) return null;
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")?.trim();
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim();
-  if (!supabaseUrl || !serviceRoleKey) return null;
-
-  const supabase = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const supabase = serviceClient();
+  if (!supabase) return null;
 
   const { data, error } = await supabase
     .from("user_subscriptions")
@@ -524,5 +635,17 @@ async function handleAppleServerNotification(rawBody: string): Promise<Response>
     });
   }
 
-  return upsertSubscription(userId, update);
+  const eventId =
+    notification.notificationUUID?.trim() ||
+    `apple:${notification.notificationType ?? "unknown"}:${update.apple_original_transaction_id ?? userId}`;
+
+  return upsertSubscription(userId, update, {
+    provider: "apple",
+    eventId,
+    eventType: notification.notificationType ?? "apple.notification",
+    payload: {
+      notificationType: notification.notificationType ?? null,
+      subtype: notification.subtype ?? null,
+    },
+  });
 }

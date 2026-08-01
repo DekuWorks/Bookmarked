@@ -1,0 +1,83 @@
+# Feature Gating Matrix
+
+Canonical entitlements for Bookmarked membership (web + native iOS).
+
+- **Tiers:** `SubscriptionTier = "free" | "plus" | "home"`
+- **Keys:** `FeatureKey` in [`packages/types/index.ts`](../packages/types/index.ts)
+- **Limits:** `ENTITLEMENTS` in [`packages/utils/subscription.ts`](../packages/utils/subscription.ts)
+- **API:** `canAccessFeature`, `getEntitlements`, `canCreateCustomShelf`, `canSaveQuote`, `canCreateQuoteGraphic`, `canJoinBookClub`, `canJoinReadingChallenge`, `getReadingDnaAccess`
+
+## Status legend
+
+Complete · Partially complete · Missing · Bugged · Requires DB · Requires UI · Requires iOS parity · Requires subscription gating · Requires Higgsfield design · Requires AI · Requires admin
+
+## FeatureKey → tier access
+
+| FeatureKey | Free | Plus | Home | Enforcement today | Product status |
+|---|---|---|---|---|---|
+| `custom_shelves` | limit 1 | unlimited | unlimited | Create + FeatureLimitModal (web + iOS) | Partially complete |
+| `saved_quotes` | limit 25 | unlimited | unlimited | `createReadingNote` counts quotes; FeatureLimitModal wired | Partially complete · Requires quote-vault polish |
+| `quote_graphics` | 3 / month | unlimited | unlimited | `usage_counters` + `consumeQuoteGraphicSlot`; generator UI stub | Partially complete · Requires UI |
+| `joined_book_clubs` | limit 3 | unlimited | unlimited | `joinClub` enforces + FeatureLimitModal | Partially complete |
+| `reading_challenges` | 3 / year | unlimited | unlimited | Tables + `joinReadingChallenge` enforce yearly cap; UI thin | Partially complete · Requires UI |
+| `advanced_reading_insights` | no | yes | yes | Insights panels gated via aliases | Partially complete · Requires UI polish |
+| `reading_speed` | no | yes | yes | Partial analytics | Partially complete |
+| `reading_time` | no | yes | yes | Partial analytics | Partially complete |
+| `pages_by_week` | no | yes | yes | Partial analytics | Partially complete |
+| `pages_by_month` | no | yes | yes | Partial analytics | Partially complete |
+| `reading_habits` | no | yes | yes | DNA habits derived client-side | Partially complete |
+| `favorite_authors` | no | yes | yes | Missing dedicated vault | Missing · Requires UI · Requires DB |
+| `mood_analytics` | no | yes | yes | Feelings exist; analytics incomplete | Partially complete |
+| `year_over_year_comparison` | no | yes | yes | Missing | Missing · Requires UI |
+| `advanced_reading_goals` | no | yes | yes | Yearly goal exists; extras missing | Partially complete · Requires DB |
+| `reading_heatmaps` | no | yes | yes | Mobile heatmap present; web parity uneven | Partially complete |
+| `monthly_wrapped` | no | yes | yes | Missing productized Wrapped | Missing · Requires Higgsfield design · Requires UI |
+| `ai_reading_companion` | no | yes | yes | Edge fn exists; companion UX incomplete | Partially complete · Requires AI |
+| `quote_scanner` | no | yes | yes | Missing | Missing · Requires AI · Requires UI |
+| `advanced_reviews` | no | yes | yes | Base reviews exist; chapter/character ratings missing | Partially complete · Requires DB · Requires UI |
+| `club_polls` | no | yes | yes | Missing | Missing · Requires DB · Requires UI |
+| `club_analytics` | no | yes | yes | Basic club stats only | Partially complete |
+| `full_reading_dna` | top 3 only | full | advanced | Confidence-aware compute + profile dashboard; Higgsfield assets blocked | Partially complete · Requires Higgsfield design |
+| `reading_dna_ai_insights` | no | yes | yes | Stubbed in DNA section | Partially complete · Requires AI |
+| `reading_dna_book_matches` | no | yes | yes | Stubbed CTA | Partially complete |
+| `reading_dna_year_comparison` | no | yes | yes | Missing | Missing · Requires UI |
+
+## Home-only (beyond FeatureKey)
+
+| Surface | Free | Plus | Home | Status |
+|---|---|---|---|---|
+| Book Map | no | no | yes | Missing |
+| Reader Map | no | no | yes | Missing |
+| DNA Match % / badges | no | no | yes | Missing · Requires UI |
+| Premium events / concierge | no | no | yes | Missing |
+| Priority support | no | no | yes | Missing |
+
+## Pricing (meeting brief vs code)
+
+| Plan | Brief | Current upgrade UI |
+|---|---|---|
+| Plus | $5.99 / mo · $59.99 / yr | UI + checkout interval wired; run `setup-stripe-catalog.sh` and set secrets (do not invent live IDs) |
+| Home | $9.99 / mo · $99.99 / yr | Not sold as separate checkout SKU yet |
+
+## Downgrade policy
+
+- Preserve all user data (shelves, quotes, club memberships, challenges).
+- Block new creation beyond Free limits via helpers (`canCreate*`).
+- Existing over-limit items remain readable/editable; do not auto-delete.
+
+## Legacy aliases
+
+`PremiumFeature` remains a deprecated superset. `canAccessFeature` maps aliases such as:
+
+- `custom_shelf` → `custom_shelves`
+- `reading_dna_dashboard` → `full_reading_dna`
+- `book_matches` → `reading_dna_book_matches`
+- `advanced_analytics` / `reading_insights` → `advanced_reading_insights`
+- `heatmaps` → `reading_heatmaps`
+- `ai_companion` / `ai_insights` → companion / DNA AI keys
+
+## Rules
+
+1. Never scatter ad-hoc `tier === "plus"` checks in UI — use `canAccessFeature` / limit helpers.
+2. Never trust client-reported tier alone for purchase fulfillment — refresh from Stripe/IAP + `user_subscriptions`.
+3. Soft paywalls preferred; hard blocks only at create/join boundaries.

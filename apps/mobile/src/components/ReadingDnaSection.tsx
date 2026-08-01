@@ -1,63 +1,120 @@
-import { computeReadingDna } from "../../../../packages/utils/readingDna";
-import { Text, View } from "react-native";
-import { Button } from "./Button";
+import { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { useRouter } from "expo-router";
+import {
+  computeReadingDna,
+  titleCaseDnaLabel,
+  type ReadingDna,
+} from "../../../../packages/utils/readingDna";
+import {
+  loadComputedReadingDna,
+  persistReadingDnaSnapshot,
+} from "../services/readingDna";
+import { SANS_FONT, SANS_FONT_BOLD, SANS_FONT_MEDIUM, SERIF_DISPLAY_FONT } from "../constants/theme";
+import { useThemeColors } from "../store/themeStore";
+import { UpgradePrompt } from "./UpgradePrompt";
+
+type AccessFeature =
+  | "full_reading_dna"
+  | "reading_dna_dashboard"
+  | "reading_dna_ai_insights"
+  | "reading_dna_book_matches"
+  | "book_matches"
+  | "reading_dna_match";
 
 type Props = {
+  userId: string;
   favoriteGenres: string[];
-  canAccess: (feature: "reading_dna_dashboard" | "reading_dna_match") => boolean;
-  onUpgrade: () => void;
+  canAccess: (feature: AccessFeature) => boolean;
+  onUpgrade?: () => void;
 };
 
-export function ReadingDnaSection({ favoriteGenres, canAccess, onUpgrade }: Props) {
-  const dna = computeReadingDna({ shelves: favoriteGenres.map((genre) => ({ genre })) });
-  const hasPlus = canAccess("reading_dna_dashboard");
+export function ReadingDnaSection({ userId, favoriteGenres, canAccess }: Props) {
+  const router = useRouter();
+  const colors = useThemeColors();
+  const [dna, setDna] = useState<ReadingDna>(() =>
+    computeReadingDna({ shelves: favoriteGenres.map((genre) => ({ genre })) })
+  );
+  const [loading, setLoading] = useState(true);
+
+  const hasPlus = canAccess("full_reading_dna");
   const hasHome = canAccess("reading_dna_match");
 
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    void loadComputedReadingDna(userId, favoriteGenres)
+      .then((computed) => {
+        if (cancelled) return;
+        setDna(computed);
+        void persistReadingDnaSnapshot(userId, computed);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDna(computeReadingDna({ shelves: favoriteGenres.map((genre) => ({ genre })) }));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, favoriteGenres]);
+
+  const heroTraits = useMemo(
+    () => (hasPlus ? dna.personaTraits : dna.topTraits),
+    [dna.personaTraits, dna.topTraits, hasPlus]
+  );
+
   return (
-    <View className="mt-6 rounded-2xl border border-brand-border bg-surface p-4">
-      <View className="flex-row items-start justify-between gap-3">
-        <View className="flex-1">
-          <Text className="text-lg font-semibold text-puce-red">Reading DNA</Text>
-          <Text className="mt-1 text-sm text-ink-muted">
-            Your evolving reader profile from books, shelves, ratings, and reviews.
-          </Text>
-        </View>
-        <Text className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-          {hasPlus ? "Full dashboard" : "Top traits"}
+    <View className="mt-6 overflow-hidden rounded-2xl border border-brand-border bg-surface">
+      <View className="bg-puce-red px-4 py-5">
+        <Text className="text-xs uppercase tracking-widest text-white/80" style={{ fontFamily: SANS_FONT_BOLD }}>
+          Bookmarked
         </Text>
+        <Text className="mt-1 text-2xl text-white" style={{ fontFamily: SERIF_DISPLAY_FONT }}>
+          My Reading DNA
+        </Text>
+        <Text className="mt-2 text-sm text-white/85" style={{ fontFamily: SANS_FONT }}>
+          {loading ? "Shaping your DNA from your library…" : dna.summary}
+        </Text>
+        <Text
+          className="mt-2 text-[11px] uppercase tracking-wide text-white/75"
+          style={{ fontFamily: SANS_FONT_MEDIUM }}
+        >
+          {hasPlus ? (hasHome ? "Home" : "Plus") : "Free · Top 3"} · Confidence {dna.confidence}
+        </Text>
+        <View className="mt-4 flex-row flex-wrap gap-2" accessibilityLabel="Top Reading DNA traits">
+          {heroTraits.map((trait) => (
+            <Text
+              key={`${trait.category}-${trait.label}`}
+              className="rounded-full bg-white/15 px-3 py-1.5 text-sm text-white"
+              style={{ fontFamily: SANS_FONT_MEDIUM }}
+            >
+              {trait.emoji} {trait.persona ?? titleCaseDnaLabel(trait.label)}
+            </Text>
+          ))}
+        </View>
       </View>
 
-      <View className="mt-4 flex-row flex-wrap gap-2">
-        {dna.topTraits.map((trait) => (
-          <Text
-            key={`${trait.category}-${trait.label}`}
-            className="rounded-full bg-primary/15 px-3 py-1 text-sm font-medium capitalize text-puce-red"
-          >
-            {trait.label}
-          </Text>
-        ))}
+      <View className="gap-3 p-4">
+        {!hasPlus ? (
+          <UpgradePrompt
+            title="Unlock your full Reading DNA"
+            description="Free shows your top 3 traits. Open the full DNA page for every strand — Plus unlocks the complete view."
+          />
+        ) : null}
+        {loading ? <ActivityIndicator color={colors.puceRed} /> : null}
+        <Pressable
+          onPress={() => router.push("/(app)/reading-dna")}
+          className="self-start rounded-full bg-puce-red px-4 py-2 active:opacity-80"
+          accessibilityRole="button"
+          accessibilityLabel="Open full Reading DNA"
+        >
+          <Text style={{ fontFamily: SANS_FONT_BOLD, color: "#fff" }}>Open full Reading DNA</Text>
+        </Pressable>
       </View>
-
-      {hasPlus ? (
-        <Text className="mt-4 text-sm leading-5 text-ink-muted">
-          {dna.summary} AI insights and book-match hooks are ready for your reading history.
-        </Text>
-      ) : (
-        <View className="mt-4">
-          <Text className="text-sm leading-5 text-ink-muted">
-            Unlock Bookmarked Plus for your full DNA dashboard, AI insights, and book matches.
-          </Text>
-          <View className="mt-3 self-start">
-            <Button title="Explore Plus" variant="secondary" onPress={onUpgrade} />
-          </View>
-        </View>
-      )}
-
-      <Text className="mt-4 text-xs text-ink-muted">
-        {hasHome
-          ? "Home: monthly DNA updates, DNA Match %, and Reader Map filters."
-          : "Bookmarked Home adds monthly DNA updates, DNA Match %, and Reader Map filters."}
-      </Text>
     </View>
   );
 }

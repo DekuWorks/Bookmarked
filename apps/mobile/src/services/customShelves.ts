@@ -1,5 +1,10 @@
 import { supabase } from "./supabase";
 import { SHELF_CONFIG } from "../constants/shelves";
+import {
+  ENTITLEMENT_LIMIT_MESSAGES,
+  canCreateCustomShelf,
+  toSubscriptionAccessFromRow,
+} from "../utils/subscription";
 import type { ShelfVisibility, UserShelf } from "../types";
 
 /**
@@ -159,6 +164,24 @@ export async function createCustomShelf(
   const baseSlug = slugifyShelfName(trimmedName);
   if (isReservedShelfSlug(baseSlug)) {
     return { error: "That name matches a built-in shelf. Choose a different name." };
+  }
+
+  const [{ count: shelfCount, error: countError }, { data: subscription }] = await Promise.all([
+    supabase
+      .from("user_shelves")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId),
+    supabase
+      .from("user_subscriptions")
+      .select("subscription_tier, subscription_status, subscription_expires_at")
+      .eq("user_id", userId)
+      .maybeSingle(),
+  ]);
+
+  if (countError) return { error: countError.message };
+
+  if (!canCreateCustomShelf(shelfCount ?? 0, toSubscriptionAccessFromRow(subscription))) {
+    return { error: ENTITLEMENT_LIMIT_MESSAGES.custom_shelves };
   }
 
   const slug = await uniqueSlugForUser(userId, baseSlug);

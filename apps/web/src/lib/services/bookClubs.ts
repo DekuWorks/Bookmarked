@@ -1,5 +1,10 @@
 import { createClient } from "@/lib/supabase/client";
 import { clubDiscussionMetadata, recordActivity } from "@/lib/services/activity";
+import {
+  ENTITLEMENT_LIMIT_MESSAGES,
+  canJoinBookClub,
+  toSubscriptionAccessFromRow,
+} from "@/lib/utils/subscription";
 import type {
   BookClub,
   BookClubBook,
@@ -403,6 +408,33 @@ export async function createClub(
 export async function joinClub(clubId: string): Promise<{ error?: string }> {
   try {
     const { supabase, user } = await requireUser();
+
+    const { data: existing } = await supabase
+      .from("book_club_members")
+      .select("club_id")
+      .eq("club_id", clubId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (existing) return {};
+
+    const [{ count, error: countError }, { data: subscription }] = await Promise.all([
+      supabase
+        .from("book_club_members")
+        .select("club_id", { count: "exact", head: true })
+        .eq("user_id", user.id),
+      supabase
+        .from("user_subscriptions")
+        .select("subscription_tier, subscription_status, subscription_expires_at")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+    ]);
+
+    if (countError) return { error: countError.message };
+
+    if (!canJoinBookClub(count ?? 0, toSubscriptionAccessFromRow(subscription))) {
+      return { error: ENTITLEMENT_LIMIT_MESSAGES.joined_book_clubs };
+    }
 
     const { error } = await supabase.from("book_club_members").insert({
       club_id: clubId,

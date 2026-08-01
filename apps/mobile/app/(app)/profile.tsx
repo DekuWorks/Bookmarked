@@ -74,11 +74,14 @@ export default function ProfileRoute() {
         </View>
       ) : null}
 
-      <ReadingDnaSection
-        favoriteGenres={profile?.favorite_genres ?? []}
-        canAccess={canAccess}
-        onUpgrade={() => router.push("/upgrade")}
-      />
+      {profile?.id ? (
+        <ReadingDnaSection
+          userId={profile.id}
+          favoriteGenres={profile?.favorite_genres ?? []}
+          canAccess={canAccess}
+          onUpgrade={() => router.push("/upgrade")}
+        />
+      ) : null}
       {profile?.id ? <PublicReviewsSection userId={profile.id} readerName={name} /> : null}
 
       <View className="mt-8 gap-2">
@@ -87,6 +90,9 @@ export default function ProfileRoute() {
         ) : null}
         <ProfileLink shelfIconId="want_to_read" label="Library" onPress={() => router.push("/library")} />
         <ProfileLink icon="📝" label="Reading Notes" onPress={() => router.push("/notes")} />
+        <ProfileLink icon="🖼" label="Quote graphics" onPress={() => router.push("/quote-graphics")} />
+        <ProfileLink icon="🏁" label="Challenges" onPress={() => router.push("/challenges")} />
+        <ProfileLink icon="🧬" label="Reading DNA" onPress={() => router.push("/reading-dna")} />
         <ProfileLink icon="♣️" label="Book Clubs" onPress={() => router.push("/clubs")} />
       </View>
 

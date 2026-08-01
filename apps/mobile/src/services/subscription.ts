@@ -11,6 +11,10 @@ const DEFAULT_SUBSCRIPTION: UserSubscription = {
   updated_at: "",
 };
 
+/**
+ * Reads subscription state. Clients cannot write tier/status (RLS);
+ * rows are created by the profiles trigger / service role.
+ */
 export async function getUserSubscription(userId: string): Promise<UserSubscription> {
   const { data, error } = await supabase
     .from("user_subscriptions")
@@ -21,14 +25,10 @@ export async function getUserSubscription(userId: string): Promise<UserSubscript
   if (error) throw error;
 
   if (!data) {
-    const { data: created, error: insertError } = await supabase
-      .from("user_subscriptions")
-      .insert({ user_id: userId })
-      .select("*")
-      .single();
-
-    if (insertError) throw insertError;
-    return created as UserSubscription;
+    return {
+      ...DEFAULT_SUBSCRIPTION,
+      user_id: userId,
+    };
   }
 
   return data as UserSubscription;

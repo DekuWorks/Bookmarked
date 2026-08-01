@@ -1,4 +1,9 @@
-import type { PremiumFeature, SubscriptionStatus, SubscriptionTier } from "../types";
+import type {
+  FeatureKey,
+  PremiumFeature,
+  SubscriptionStatus,
+  SubscriptionTier,
+} from "../types";
 
 export type SubscriptionAccess = {
   subscription_tier: SubscriptionTier;
@@ -6,77 +11,367 @@ export type SubscriptionAccess = {
   subscription_expires_at: string | null;
 };
 
-export const MEMBERSHIP_FEATURES = {
-  free: [
-    "tracker",
-    "library",
-    "goals",
-    "feed",
-    "reviews",
-    "custom_shelf",
-    "basic_ai",
-    "stats",
-    "reading_dna_traits",
-  ],
-  plus: [
-    "reading_insights",
-    "reading_speed",
-    "mood_analytics",
-    "heatmaps",
-    "ai_companion",
-    "quote_vault",
-    "unlimited_quotes",
-    "unlimited_clubs",
-    "unlimited_challenges",
-    "reading_dna_dashboard",
-    "reading_dna_ai_insights",
-    "book_matches",
-    // Compatibility aliases for the existing feature gates.
-    "advanced_analytics",
-    "ai_insights",
-  ],
-  home: [
-    "book_map",
-    "reader_map",
-    "reading_dna_match",
-    "premium_events",
-    "concierge",
-    "priority_support",
-  ],
-} as const satisfies Record<SubscriptionTier, readonly PremiumFeature[]>;
+export type ReadingDnaAccess = "top_three" | "full" | "advanced";
 
-const FREE_FEATURES = new Set<PremiumFeature>(MEMBERSHIP_FEATURES.free);
-const PLUS_FEATURES = new Set<PremiumFeature>(MEMBERSHIP_FEATURES.plus);
-const HOME_FEATURES = new Set<PremiumFeature>(MEMBERSHIP_FEATURES.home);
+export type TierEntitlements = {
+  customShelves: number;
+  savedQuotes: number;
+  quoteGraphicsPerMonth: number;
+  joinedBookClubs: number;
+  readingChallengesPerYear: number;
+  advancedReadingInsights: boolean;
+  monthlyWrapped: boolean;
+  aiReadingCompanion: boolean;
+  quoteScanner: boolean;
+  advancedReviews: boolean;
+  clubPolls: boolean;
+  clubAnalytics: boolean;
+  readingDNAAccess: ReadingDnaAccess;
+};
 
-function subscriptionIsActive(access: SubscriptionAccess): boolean {
-  if (access.subscription_tier === "free") return false;
-  if (!["active", "trialing"].includes(access.subscription_status)) return false;
+/** Canonical numeric/boolean limits per membership tier. */
+export const ENTITLEMENTS = {
+  free: {
+    customShelves: 1,
+    savedQuotes: 25,
+    quoteGraphicsPerMonth: 3,
+    joinedBookClubs: 3,
+    readingChallengesPerYear: 3,
+    advancedReadingInsights: false,
+    monthlyWrapped: false,
+    aiReadingCompanion: false,
+    quoteScanner: false,
+    advancedReviews: false,
+    clubPolls: false,
+    clubAnalytics: false,
+    readingDNAAccess: "top_three",
+  },
+  plus: {
+    customShelves: Infinity,
+    savedQuotes: Infinity,
+    quoteGraphicsPerMonth: Infinity,
+    joinedBookClubs: Infinity,
+    readingChallengesPerYear: Infinity,
+    advancedReadingInsights: true,
+    monthlyWrapped: true,
+    aiReadingCompanion: true,
+    quoteScanner: true,
+    advancedReviews: true,
+    clubPolls: true,
+    clubAnalytics: true,
+    readingDNAAccess: "full",
+  },
+  home: {
+    customShelves: Infinity,
+    savedQuotes: Infinity,
+    quoteGraphicsPerMonth: Infinity,
+    joinedBookClubs: Infinity,
+    readingChallengesPerYear: Infinity,
+    advancedReadingInsights: true,
+    monthlyWrapped: true,
+    aiReadingCompanion: true,
+    quoteScanner: true,
+    advancedReviews: true,
+    clubPolls: true,
+    clubAnalytics: true,
+    readingDNAAccess: "advanced",
+  },
+} as const satisfies Record<SubscriptionTier, TierEntitlements>;
 
-  if (!access.subscription_expires_at) return true;
+/** Plus FeatureKeys (and Home includes these + Home-only product surfaces). */
+export const PLUS_FEATURE_KEYS = [
+  "custom_shelves",
+  "saved_quotes",
+  "quote_graphics",
+  "joined_book_clubs",
+  "reading_challenges",
+  "advanced_reading_insights",
+  "reading_speed",
+  "reading_time",
+  "pages_by_week",
+  "pages_by_month",
+  "reading_habits",
+  "favorite_authors",
+  "mood_analytics",
+  "year_over_year_comparison",
+  "advanced_reading_goals",
+  "reading_heatmaps",
+  "monthly_wrapped",
+  "ai_reading_companion",
+  "quote_scanner",
+  "advanced_reviews",
+  "club_polls",
+  "club_analytics",
+  "full_reading_dna",
+  "reading_dna_ai_insights",
+  "reading_dna_book_matches",
+  "reading_dna_year_comparison",
+] as const satisfies readonly FeatureKey[];
+
+/** Home-only product surfaces beyond the FeatureKey matrix (maps, concierge, etc.). */
+export const HOME_ONLY_FEATURES = [
+  "book_map",
+  "reader_map",
+  "reading_dna_match",
+  "premium_events",
+  "concierge",
+  "priority_support",
+] as const;
+
+type HomeOnlyFeature = (typeof HOME_ONLY_FEATURES)[number];
+
+/** Legacy PremiumFeature / UI keys → canonical FeatureKey (or free-pass / home-only). */
+const LEGACY_FEATURE_ALIASES: Record<string, FeatureKey | "free" | HomeOnlyFeature> = {
+  tracker: "free",
+  library: "free",
+  goals: "free",
+  feed: "free",
+  reviews: "free",
+  basic_ai: "free",
+  stats: "free",
+  reading_dna_traits: "free",
+  custom_shelf: "custom_shelves",
+  reading_insights: "advanced_reading_insights",
+  advanced_analytics: "advanced_reading_insights",
+  heatmaps: "reading_heatmaps",
+  ai_companion: "ai_reading_companion",
+  ai_insights: "reading_dna_ai_insights",
+  quote_vault: "saved_quotes",
+  unlimited_quotes: "saved_quotes",
+  unlimited_clubs: "joined_book_clubs",
+  unlimited_challenges: "reading_challenges",
+  reading_dna_dashboard: "full_reading_dna",
+  book_matches: "reading_dna_book_matches",
+  book_map: "book_map",
+  reader_map: "reader_map",
+  reading_dna_match: "reading_dna_match",
+  premium_events: "premium_events",
+  concierge: "concierge",
+  priority_support: "priority_support",
+};
+
+const FEATURE_KEY_SET = new Set<string>(PLUS_FEATURE_KEYS);
+const HOME_ONLY_SET = new Set<string>(HOME_ONLY_FEATURES);
+
+function resolveFeature(feature: FeatureKey | PremiumFeature | string): {
+  kind: "free" | "feature" | "home" | "unknown";
+  key?: FeatureKey | HomeOnlyFeature;
+} {
+  if (feature in LEGACY_FEATURE_ALIASES) {
+    const mapped = LEGACY_FEATURE_ALIASES[feature]!;
+    if (mapped === "free") return { kind: "free" };
+    if (HOME_ONLY_SET.has(mapped)) return { kind: "home", key: mapped as HomeOnlyFeature };
+    return { kind: "feature", key: mapped as FeatureKey };
+  }
+  if (FEATURE_KEY_SET.has(feature)) return { kind: "feature", key: feature as FeatureKey };
+  if (HOME_ONLY_SET.has(feature)) return { kind: "home", key: feature as HomeOnlyFeature };
+  return { kind: "unknown" };
+}
+
+/** Statuses that grant paid entitlements (subject to expiry when set). */
+const ENTITLED_STATUSES = new Set<SubscriptionStatus>([
+  "active",
+  "trialing",
+  "past_due",
+  "grace_period",
+  // Canceled-at-period-end: keep access until subscription_expires_at.
+  "canceled",
+]);
+
+export function subscriptionIsActive(access: SubscriptionAccess | null | undefined): boolean {
+  if (!access || access.subscription_tier === "free") return false;
+  if (access.subscription_status === "expired" || access.subscription_status === "inactive") {
+    return false;
+  }
+  if (!ENTITLED_STATUSES.has(access.subscription_status)) return false;
+
+  if (!access.subscription_expires_at) {
+    // Canceled without an expiry must not retain access indefinitely.
+    return access.subscription_status !== "canceled";
+  }
 
   const expiresAt = new Date(access.subscription_expires_at).getTime();
   return Number.isFinite(expiresAt) && expiresAt > Date.now();
 }
 
+export function resolveSubscriptionTier(
+  access: SubscriptionAccess | null | undefined
+): SubscriptionTier {
+  if (!subscriptionIsActive(access) || !access) return "free";
+  return access.subscription_tier;
+}
+
+export function getEntitlements(
+  tierOrAccess: SubscriptionTier | SubscriptionAccess | null | undefined
+): TierEntitlements {
+  const tier: SubscriptionTier =
+    typeof tierOrAccess === "string"
+      ? tierOrAccess
+      : resolveSubscriptionTier(tierOrAccess);
+  return ENTITLEMENTS[tier];
+}
+
+/**
+ * Feature-flag style access for canonical FeatureKey (and legacy PremiumFeature aliases).
+ * Free-tier limits (e.g. 1 custom shelf) are enforced via limit helpers, not this boolean.
+ */
 export function canAccessFeature(
-  feature: PremiumFeature | string,
+  feature: FeatureKey | PremiumFeature | string,
   access: SubscriptionAccess | null | undefined
 ): boolean {
-  const membershipFeature = feature as PremiumFeature;
-  if (!FREE_FEATURES.has(membershipFeature) && !PLUS_FEATURES.has(membershipFeature) && !HOME_FEATURES.has(membershipFeature)) {
-    return true;
-  }
+  const resolved = resolveFeature(feature);
+  if (resolved.kind === "unknown") return true;
+  if (resolved.kind === "free") return true;
 
-  if (FREE_FEATURES.has(membershipFeature)) return true;
-  if (!access || !subscriptionIsActive(access)) return false;
-  if (PLUS_FEATURES.has(membershipFeature)) return true;
-  return access.subscription_tier === "home";
+  const tier = resolveSubscriptionTier(access);
+  if (resolved.kind === "home") return tier === "home";
+
+  // FeatureKey matrix: free users get limited DNA/top traits only via readingDNAAccess;
+  // boolean FeatureKeys that map to false on free require plus/home.
+  const key = resolved.key as FeatureKey;
+  const entitlements = ENTITLEMENTS[tier];
+
+  switch (key) {
+    case "custom_shelves":
+    case "saved_quotes":
+    case "quote_graphics":
+    case "joined_book_clubs":
+    case "reading_challenges":
+      // Always "accessible"; enforce counts with limit helpers.
+      return true;
+    case "advanced_reading_insights":
+    case "reading_speed":
+    case "reading_time":
+    case "pages_by_week":
+    case "pages_by_month":
+    case "reading_habits":
+    case "favorite_authors":
+    case "mood_analytics":
+    case "year_over_year_comparison":
+    case "advanced_reading_goals":
+    case "reading_heatmaps":
+      return entitlements.advancedReadingInsights;
+    case "monthly_wrapped":
+      return entitlements.monthlyWrapped;
+    case "ai_reading_companion":
+      return entitlements.aiReadingCompanion;
+    case "quote_scanner":
+      return entitlements.quoteScanner;
+    case "advanced_reviews":
+      return entitlements.advancedReviews;
+    case "club_polls":
+      return entitlements.clubPolls;
+    case "club_analytics":
+      return entitlements.clubAnalytics;
+    case "full_reading_dna":
+      return entitlements.readingDNAAccess === "full" || entitlements.readingDNAAccess === "advanced";
+    case "reading_dna_ai_insights":
+    case "reading_dna_book_matches":
+    case "reading_dna_year_comparison":
+      return entitlements.readingDNAAccess === "full" || entitlements.readingDNAAccess === "advanced";
+    default:
+      return tier !== "free";
+  }
 }
 
 export function isPremiumSubscriber(
   access: SubscriptionAccess | null | undefined
 ): boolean {
-  if (!access) return false;
   return subscriptionIsActive(access);
 }
+
+export function canCreateCustomShelf(
+  currentCount: number,
+  access: SubscriptionAccess | null | undefined
+): boolean {
+  return currentCount < getEntitlements(access).customShelves;
+}
+
+export function canSaveQuote(
+  currentCount: number,
+  access: SubscriptionAccess | null | undefined
+): boolean {
+  return currentCount < getEntitlements(access).savedQuotes;
+}
+
+export function canCreateQuoteGraphic(
+  createdThisMonth: number,
+  access: SubscriptionAccess | null | undefined
+): boolean {
+  return createdThisMonth < getEntitlements(access).quoteGraphicsPerMonth;
+}
+
+export function canJoinBookClub(
+  joinedCount: number,
+  access: SubscriptionAccess | null | undefined
+): boolean {
+  return joinedCount < getEntitlements(access).joinedBookClubs;
+}
+
+export function canJoinReadingChallenge(
+  joinedThisYear: number,
+  access: SubscriptionAccess | null | undefined
+): boolean {
+  return joinedThisYear < getEntitlements(access).readingChallengesPerYear;
+}
+
+export function getReadingDnaAccess(
+  access: SubscriptionAccess | null | undefined
+): ReadingDnaAccess {
+  return getEntitlements(access).readingDNAAccess;
+}
+
+/** Normalize a DB subscription row into SubscriptionAccess (never trust client tier alone). */
+export function toSubscriptionAccessFromRow(
+  row: {
+    subscription_tier?: string | null;
+    subscription_status?: string | null;
+    subscription_expires_at?: string | null;
+  } | null | undefined
+): SubscriptionAccess {
+  const tier = row?.subscription_tier;
+  const status = row?.subscription_status;
+  return {
+    subscription_tier:
+      tier === "plus" || tier === "home" || tier === "free" ? tier : "free",
+    subscription_status:
+      status === "active" ||
+      status === "trialing" ||
+      status === "past_due" ||
+      status === "canceled" ||
+      status === "expired" ||
+      status === "grace_period"
+        ? status
+        : "inactive",
+    subscription_expires_at: row?.subscription_expires_at ?? null,
+  };
+}
+
+export const ENTITLEMENT_LIMIT_MESSAGES = {
+  custom_shelves:
+    "Free members can create 1 custom shelf. Upgrade to Bookmarked Plus for unlimited shelves.",
+  saved_quotes:
+    "Free members can save 25 quotes. Upgrade to Bookmarked Plus for unlimited quote vault space.",
+  quote_graphics:
+    "Free members can create 3 quote graphics per month. Upgrade to Bookmarked Plus for unlimited graphics.",
+  joined_book_clubs:
+    "Free members can join 3 book clubs. Upgrade to Bookmarked Plus for unlimited clubs.",
+  reading_challenges:
+    "Free members can join 3 reading challenges per year. Upgrade to Bookmarked Plus for unlimited challenges.",
+} as const;
+
+export type EntitlementLimitFeature = keyof typeof ENTITLEMENT_LIMIT_MESSAGES;
+
+export function isEntitlementLimitError(message: string): boolean {
+  const normalized = message.toLocaleLowerCase();
+  return Object.values(ENTITLEMENT_LIMIT_MESSAGES).some((entry) =>
+    normalized.includes(entry.toLocaleLowerCase().slice(0, 32))
+  ) || /upgrade to bookmarked plus/i.test(message);
+}
+
+/** @deprecated Prefer ENTITLEMENTS + FeatureKey. Compatibility export for older docs/UI. */
+export const MEMBERSHIP_FEATURES = {
+  free: ["tracker", "library", "goals", "feed", "reviews", "custom_shelf", "basic_ai", "stats", "reading_dna_traits"],
+  plus: PLUS_FEATURE_KEYS,
+  home: HOME_ONLY_FEATURES,
+} as const;

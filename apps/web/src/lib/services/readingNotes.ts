@@ -1,10 +1,22 @@
 import { createClient } from "@/lib/supabase/client";
+import {
+  ENTITLEMENT_LIMIT_MESSAGES,
+  canSaveQuote,
+  toSubscriptionAccessFromRow,
+} from "@/lib/utils/subscription";
 import type {
   ReadingNote,
   ReadingNoteCategory,
   ReadingNoteVisibility,
 } from "@/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
+
+function countsTowardSavedQuotes(input: {
+  quote?: string | null;
+  category?: ReadingNoteCategory;
+}): boolean {
+  return Boolean(normalizeText(input.quote)) || input.category === "favorite_quote";
+}
 
 export type ReadingNoteInput = {
   userBookId: string;
@@ -57,6 +69,27 @@ export async function createReadingNote(
 
   if (!payload.note && !payload.quote) {
     return { error: "Add a quote or a note." };
+  }
+
+  if (countsTowardSavedQuotes(payload)) {
+    const [{ count, error: countError }, { data: subscription }] = await Promise.all([
+      supabase
+        .from("reading_notes")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .or("quote.not.is.null,category.eq.favorite_quote"),
+      supabase
+        .from("user_subscriptions")
+        .select("subscription_tier, subscription_status, subscription_expires_at")
+        .eq("user_id", userId)
+        .maybeSingle(),
+    ]);
+
+    if (countError) return { error: countError.message };
+
+    if (!canSaveQuote(count ?? 0, toSubscriptionAccessFromRow(subscription))) {
+      return { error: ENTITLEMENT_LIMIT_MESSAGES.saved_quotes };
+    }
   }
 
   const { data, error } = await supabase

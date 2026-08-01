@@ -1,17 +1,10 @@
-import { Text, View } from "react-native";
+import { PlusBadge } from "./PlusBadge";
 
 type Props = {
   compact?: boolean;
 };
 
+/** @deprecated Prefer `PlusBadge`. */
 export function PremiumBadge({ compact }: Props) {
-  return (
-    <View className="rounded-full bg-primary/25 px-3 py-1">
-      <Text
-        className={`font-semibold uppercase tracking-wide text-puce-red ${compact ? "text-[10px]" : "text-xs"}`}
-      >
-        Premium
-      </Text>
-    </View>
-  );
+  return <PlusBadge compact={compact} label="Plus" />;
 }

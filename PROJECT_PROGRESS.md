@@ -364,6 +364,24 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 
 ---
 
+## Free / Plus / Reading DNA (master phases)
+
+Tracking against the Free/Plus/Reading DNA master spec (Phases 1–42). Distinct from historical Phase 1–10 above.
+
+| Master phase | Status | Notes |
+|--------------|--------|-------|
+| 1 — Audit docs | ✅ | `docs/BASIC_FEATURE_AUDIT.md`, `PLUS_FEATURE_AUDIT.md`, `SUBSCRIPTION_ARCHITECTURE.md`, `READING_DNA_DATA_AUDIT.md`, `READING_DNA_ALGORITHM.md`, `HIGGSFIELD_READING_DNA_DESIGN.md`, `FEATURE_GATING_MATRIX.md` |
+| 2 — Entitlements | 🔄 | FeatureKey + ENTITLEMENTS; shelves/quotes/clubs/challenges/graphics limits wired in service layer |
+| 3 — Billing foundation | 🔄 | Migration `20260801190000_…`; webhook idempotency; checkout intervals — **operator Stripe/ASC catalog cutover still open** |
+| 4 — Paywall UX | 🔄 | Paywall kit + FeatureLimitModal on shelves, quotes, clubs |
+| 5–8 — Free library basics | ⏳ | Calendar / permanent shelves polish |
+| 20–24 / 27–28 / 35 — Reading DNA core | 🔄 | DNA pages; snapshot RPC; persist on profile/DNA load **and** `completeReadingSession` (soft fail); Higgsfield blocked |
+| Quote graphics Free UX | 🔄 | Remaining count + consume slot + FeatureLimitModal; AI render flag off |
+| Challenges browse/join | 🔄 | Thin UI + seed migration `20260801220000_seed_reading_challenges.sql` (5 public 2026 challenges) |
+| Remaining (Wrapped, AI graphics, snapshot QA) | ⏳ | Ship as capacity allows |
+
+---
+
 ## Related documentation
 
 | Doc | Path |
@@ -373,8 +391,11 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Extended progress (prior) | `docs/PROJECT_PROGRESS.md` |
 | Database schema | `docs/DATABASE_SCHEMA.md` |
 | Master task list (MVP) | `docs/project/MASTER_TASK_LIST.md` |
+| Feature gating matrix | `docs/FEATURE_GATING_MATRIX.md` |
+| Subscription architecture | `docs/SUBSCRIPTION_ARCHITECTURE.md` |
+| Reading DNA algorithm | `docs/READING_DNA_ALGORITHM.md` |
 
-**Last updated:** August 1, 2026 (Sprints 10–12 platform polish, series foundation, and native shelf fixes)
+**Last updated:** August 1, 2026 (DNA persist on finish + seeded challenges)
 
 ---
 
@@ -382,10 +403,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 
 | Priority | Item | Notes |
 |----------|------|-------|
-| P1 | Submit EAS build 8 to TestFlight | Auto-submit monitor running; `eas submit` after build 8 finishes |
-| P1 | EAS build 9 (trending/premium) | Started from `fbffabe+`; submit when finished |
-| P1 | Stripe live mode cutover | Run `setup-stripe-catalog.sh --live`; set live secrets — see `docs/PRODUCTION_BILLING.md` |
-| P1 | App Store Connect IAP review | Production subscription `com.dekuworks.bookmarked.premium.monthly`; sandbox TestFlight test — see `docs/APP_STORE_IAP.md` |
-| P1 | OpenAI API key | Set `OPENAI_API_KEY` for server-side AI insights — see `docs/AI_INSIGHTS.md` |
-| P2 | Extract duplicated services to `packages/` | `communityRating` + trending weights moved; 25 modules remain |
-| P2 | Library virtualization | Deferred until large libraries reported |
+| P0 | Apply migrations + deploy RPC | `…190000`, `…200000`, `…210000` upsert DNA, `…220000` challenge seeds |
+| P1 | Enable AI quote graphics flag | When Higgsfield/AI ready; keep Free monthly consume semantics |
+| P1 | Higgsfield assets | Re-auth MCP — see `docs/higgsfield/BLOCKER.md` |
+| P1 | Stripe/ASC catalog cutover | Operator-only; leave documented |

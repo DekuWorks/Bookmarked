@@ -104,7 +104,10 @@ export function PremiumUpgradeActions({ userId, onSubscriptionUpdated }: Props) 
     setRestoring(true);
 
     try {
+      // StoreKit restore delivers purchases via onPurchaseSuccess → apple-iap-verify.
       await restorePurchases();
+      // Refresh server entitlement snapshot after verify callbacks settle.
+      await new Promise((resolve) => setTimeout(resolve, 750));
       onSubscriptionUpdated();
     } catch (restoreError) {
       const message =

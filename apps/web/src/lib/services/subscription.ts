@@ -1,16 +1,16 @@
 import { createClient } from "@/lib/supabase/client";
 import type { UserSubscription } from "@/types";
 
-const DEFAULT_SUBSCRIPTION: UserSubscription = {
-  user_id: "",
-  subscription_tier: "free",
-  subscription_status: "inactive",
-  subscription_provider: null,
-  subscription_expires_at: null,
-  created_at: "",
-  updated_at: "",
+const DEFAULT_SUBSCRIPTION = {
+  subscription_tier: "free" as const,
+  subscription_status: "inactive" as const,
+  subscription_expires_at: null as string | null,
 };
 
+/**
+ * Reads subscription state. Clients cannot write tier/status (RLS);
+ * rows are created by the profiles trigger / service role.
+ */
 export async function getUserSubscription(userId: string): Promise<UserSubscription> {
   const supabase = createClient();
   const { data, error } = await supabase
@@ -22,14 +22,17 @@ export async function getUserSubscription(userId: string): Promise<UserSubscript
   if (error) throw error;
 
   if (!data) {
-    const { data: created, error: insertError } = await supabase
-      .from("user_subscriptions")
-      .insert({ user_id: userId })
-      .select("*")
-      .single();
-
-    if (insertError) throw insertError;
-    return created as UserSubscription;
+    return {
+      user_id: userId,
+      subscription_tier: "free",
+      subscription_status: "inactive",
+      subscription_provider: null,
+      subscription_expires_at: null,
+      stripe_customer_id: null,
+      apple_original_transaction_id: null,
+      created_at: "",
+      updated_at: "",
+    };
   }
 
   return data as UserSubscription;

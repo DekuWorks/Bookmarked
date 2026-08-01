@@ -2,9 +2,11 @@
  * Verifies an App Store subscription purchase and updates user_subscriptions.
  *
  * Requires Authorization: Bearer <user JWT>.
+ * Clients never send tier — this function writes Plus after product_id allowlist check.
  *
  * Secrets:
- * - APPLE_PREMIUM_PRODUCT_IDS — comma-separated SKUs (default: com.dekuworks.bookmarked.premium.monthly)
+ * - APPLE_PREMIUM_PRODUCT_IDS — comma-separated SKUs
+ *   (default: com.dekuworks.bookmarked.premium.monthly)
  *
  * Production: verify JWS with Apple App Store Server API + Server Notifications V2.
  * See docs/APP_STORE_IAP.md.
@@ -156,13 +158,35 @@ Deno.serve(async (req) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
+  const eventId = `apple-verify:${transactionId}`;
+  const { error: eventError } = await supabase.from("subscription_events").insert({
+    provider: "apple",
+    event_id: eventId,
+    event_type: "client.verify",
+    user_id: userData.user.id,
+    payload: {
+      product_id: productId,
+      transaction_id: transactionId,
+      expires_at: expiresAt,
+    },
+  });
+
+  // 23505 = already processed this transaction (idempotent restore/retry)
+  if (eventError && eventError.code !== "23505") {
+    console.error("[apple-iap-verify] event insert failed:", eventError.message);
+    return jsonResponse({ error: "Failed to record purchase event" }, 500);
+  }
+
+  const status =
+    expiresAt && new Date(expiresAt).getTime() <= Date.now() ? "expired" : "active";
+
   const { data, error } = await supabase
     .from("user_subscriptions")
     .upsert(
       {
         user_id: userData.user.id,
-        subscription_tier: "plus",
-        subscription_status: "active",
+        subscription_tier: status === "expired" ? "free" : "plus",
+        subscription_status: status,
         subscription_provider: "apple",
         subscription_expires_at: expiresAt,
         apple_original_transaction_id:
@@ -178,9 +202,17 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Failed to update subscription" }, 500);
   }
 
+  const { error: entitlementError } = await supabase.rpc("refresh_subscription_entitlements", {
+    p_user_id: userData.user.id,
+  });
+  if (entitlementError) {
+    console.error("[apple-iap-verify] entitlement refresh failed:", entitlementError.message);
+  }
+
   return jsonResponse({
     ok: true,
     subscription: data,
+    duplicate: eventError?.code === "23505",
     verified: false,
     hint: "JWS decoded without Apple cert chain verification — see docs/APP_STORE_IAP.md",
   });

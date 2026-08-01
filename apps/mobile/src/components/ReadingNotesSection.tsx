@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "./Button";
+import { FeatureLimitModal } from "./FeatureLimitModal";
 import {
   createReadingNote,
   deleteReadingNote,
@@ -22,6 +23,7 @@ import {
   listNoteCategories,
   type ReadingNoteCategoryMeta,
 } from "../services/noteCategories";
+import { isEntitlementLimitError } from "../utils/subscription";
 import type { ReadingNote, ReadingNoteCategory, ReadingNoteVisibility } from "../types";
 
 type Props = {
@@ -52,6 +54,7 @@ export function ReadingNotesSection({ userId, userBookId, initialNotes, onChange
   const [visibility, setVisibility] = useState<ReadingNoteVisibility>("private");
   const [newCategory, setNewCategory] = useState("");
   const [saving, setSaving] = useState(false);
+  const [limitOpen, setLimitOpen] = useState(false);
 
   useEffect(() => {
     setNotes(initialNotes);
@@ -125,6 +128,11 @@ export function ReadingNotesSection({ userId, userBookId, initialNotes, onChange
       : await createReadingNote(userId, payload);
     setSaving(false);
     if (result.error) {
+      if (isEntitlementLimitError(result.error)) {
+        setEditorOpen(false);
+        setLimitOpen(true);
+        return;
+      }
       Alert.alert("Couldn't save note", result.error);
       return;
     }
@@ -149,6 +157,12 @@ export function ReadingNotesSection({ userId, userBookId, initialNotes, onChange
 
   return (
     <View>
+      <FeatureLimitModal
+        open={limitOpen}
+        onClose={() => setLimitOpen(false)}
+        featureLabel="Saved quotes"
+        limitMessage="Free members can save 25 quotes. Upgrade to Bookmarked Plus for unlimited quote vault space."
+      />
       <View className="mb-2 flex-row items-center justify-between">
         <Text className="text-base font-bold text-puce-red">
           Reading notes {notes.length ? `(${notes.length})` : ""}

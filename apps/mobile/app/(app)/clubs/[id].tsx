@@ -20,8 +20,10 @@ import { CircleAvatarPicker } from "../../../src/components/CircleAvatarPicker";
 import { ClubDiscussionCard } from "../../../src/components/ClubDiscussionCard";
 import { ClubEventsSection } from "../../../src/components/ClubEventsSection";
 import { EmptyState } from "../../../src/components/EmptyState";
+import { FeatureLimitModal } from "../../../src/components/FeatureLimitModal";
 import { Input } from "../../../src/components/Input";
 import { LoadingState } from "../../../src/components/LoadingState";
+import { isEntitlementLimitError } from "../../../src/utils/subscription";
 import {
   useClub,
   useClubDiscussions,
@@ -86,6 +88,7 @@ export default function ClubDetailRoute() {
   const [editDescription, setEditDescription] = useState("");
   const [editVisibility, setEditVisibility] = useState<BookClubVisibility>("public");
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [limitOpen, setLimitOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<
     "overview" | "discussions" | "schedule" | "bookshelf" | "members" | "stats"
   >("overview");
@@ -100,7 +103,13 @@ export default function ClubDetailRoute() {
 
   async function handleJoin() {
     const result = await joinMutation.mutateAsync();
-    if (result.error) Alert.alert("Couldn't join", result.error);
+    if (result.error) {
+      if (isEntitlementLimitError(result.error)) {
+        setLimitOpen(true);
+        return;
+      }
+      Alert.alert("Couldn't join", result.error);
+    }
   }
 
   async function handleLeave() {
@@ -275,6 +284,12 @@ export default function ClubDetailRoute() {
   const header = (
     <View className="gap-5 pb-4">
       <Stack.Screen options={{ title: club.name }} />
+      <FeatureLimitModal
+        open={limitOpen}
+        onClose={() => setLimitOpen(false)}
+        featureLabel="Book clubs"
+        limitMessage="Free members can join 3 book clubs. Upgrade to Bookmarked Plus for unlimited clubs."
+      />
 
       <View className="rounded-2xl border border-brand-border bg-surface p-4">
         <View className="flex-row items-start gap-4">

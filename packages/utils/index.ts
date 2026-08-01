@@ -5,20 +5,60 @@ export {
 } from "./profanity";
 
 export {
-  canAccessFeature,
-  isPremiumSubscriber,
+  ENTITLEMENTS,
+  PLUS_FEATURE_KEYS,
+  HOME_ONLY_FEATURES,
   MEMBERSHIP_FEATURES,
+  canAccessFeature,
+  canCreateCustomShelf,
+  canCreateQuoteGraphic,
+  canJoinBookClub,
+  canJoinReadingChallenge,
+  canSaveQuote,
+  getEntitlements,
+  getReadingDnaAccess,
+  isPremiumSubscriber,
+  resolveSubscriptionTier,
+  subscriptionIsActive,
+  toSubscriptionAccessFromRow,
+  ENTITLEMENT_LIMIT_MESSAGES,
+  isEntitlementLimitError,
+  type EntitlementLimitFeature,
+  type ReadingDnaAccess,
   type SubscriptionAccess,
+  type TierEntitlements,
 } from "./subscription";
 
 export {
+  FREE_READING_DNA_TRAIT_COUNT,
+  TOP_TRAITS_DICTIONARY,
   computeReadingDna,
   readingDnaMatchPercent,
+  titleCaseDnaLabel,
   type ReadingDna,
+  type ReadingDnaCategoryBreakdown,
+  type ReadingDnaConfidence,
   type ReadingDnaInput,
   type ReadingDnaTrait,
   type ReadingDnaTraitCategory,
 } from "./readingDna";
+
+export {
+  USAGE_COUNTER_KEYS,
+  monthPeriodKey,
+  periodKeyForCounter,
+  yearPeriodKey,
+  type UsageCounterKey,
+} from "./usageCounters";
+
+export {
+  READING_DNA_PERSIST_DEBOUNCE_MS,
+  readingDnaFingerprint,
+  readingDnaPeriodKey,
+  readingDnaSnapshotPayload,
+  readingDnaTraitsPayload,
+  type ReadingDnaTraitPayload,
+} from "./readingDnaPersist";
 
 export {
   PREMIUM_FEATURE_LINKS,
@@ -32,6 +72,7 @@ export {
   IAP_PREMIUM_MONTHLY_IOS_PRODUCTION,
   IAP_PREMIUM_MONTHLY_IOS_SANDBOX,
   IAP_PREMIUM_PRICE_LABEL,
+  IAP_PREMIUM_YEARLY_PRICE_LABEL,
   isAllowedPremiumSku,
   resolveIosPremiumProductId,
   type IapPremiumSku,

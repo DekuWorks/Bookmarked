@@ -116,6 +116,7 @@ export default function ProfilePage() {
         </div>
         <ReadingStreakCard streak={readingStreak} className="mt-6" />
         <ReadingDnaSection
+          userId={user.id}
           favoriteGenres={profile?.favorite_genres ?? []}
           canAccess={canAccess}
         />
@@ -160,6 +161,15 @@ export default function ProfilePage() {
           >
             <SettingsIcon />
             Account settings
+          </ButtonLink>
+          <ButtonLink href="/reading-dna/" variant="secondary" size="sm">
+            Reading DNA
+          </ButtonLink>
+          <ButtonLink href="/quote-graphics/" variant="outline" size="sm">
+            Quote graphics
+          </ButtonLink>
+          <ButtonLink href="/challenges/" variant="outline" size="sm">
+            Challenges
           </ButtonLink>
           <ButtonLink href="/upgrade/" variant="secondary" size="sm">
             {isPremium ? "Membership" : "Explore membership"}

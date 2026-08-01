@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { getUserSubscription, toSubscriptionAccess } from "@/lib/services/subscription";
 import { canAccessFeature, isPremiumSubscriber } from "@/lib/utils/subscription";
-import type { PremiumFeature, UserSubscription } from "@/types";
+import type { FeatureKey, PremiumFeature, UserSubscription } from "@/types";
 
 export function useSubscription(userId: string | undefined) {
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
@@ -66,7 +66,7 @@ export function useSubscription(userId: string | undefined) {
     subscription,
     loading,
     isPremium: isPremiumSubscriber(access),
-    canAccess: (feature: PremiumFeature) => canAccessFeature(feature, access),
+    canAccess: (feature: FeatureKey | PremiumFeature) => canAccessFeature(feature, access),
     refresh,
   };
 }

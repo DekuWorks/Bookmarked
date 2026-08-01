@@ -1,10 +1,11 @@
 /**
- * Creates a Stripe Checkout Session for Bookmarked Premium.
+ * Creates a Stripe Checkout Session for Bookmarked Plus.
  * Requires Authorization: Bearer <user JWT>.
  *
  * Secrets:
  * - STRIPE_SECRET_KEY
- * - STRIPE_PRICE_ID — recurring price for Premium ($4.99/mo)
+ * - STRIPE_PRICE_ID — Plus monthly ($5.99/mo) price_…
+ * - STRIPE_PRICE_ID_YEARLY — Plus yearly ($59.99/yr) price_… (optional until catalog cutover)
  */
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
@@ -18,6 +19,8 @@ const CORS_HEADERS: Record<string, string> = {
 };
 
 const SITE_URL = "https://bookmarked.online";
+
+type BillingInterval = "month" | "year";
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -33,6 +36,7 @@ async function createStripeCheckoutSession(params: {
   email?: string | null;
   successUrl: string;
   cancelUrl: string;
+  interval: BillingInterval;
 }): Promise<{ url: string; sessionId: string }> {
   const body = new URLSearchParams({
     mode: "subscription",
@@ -43,6 +47,11 @@ async function createStripeCheckoutSession(params: {
     cancel_url: params.cancelUrl,
     "subscription_data[metadata][user_id]": params.userId,
     "subscription_data[metadata][supabase_user_id]": params.userId,
+    "subscription_data[metadata][tier]": "plus",
+    "subscription_data[metadata][interval]": params.interval,
+    "metadata[user_id]": params.userId,
+    "metadata[tier]": "plus",
+    "metadata[interval]": params.interval,
   });
 
   if (params.email) {
@@ -79,17 +88,26 @@ async function createStripeCheckoutSession(params: {
 function stripeCheckoutConfig(): {
   available: boolean;
   mode: "live" | "test" | "unknown";
+  monthlyConfigured: boolean;
+  yearlyConfigured: boolean;
 } {
   const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY")?.trim();
-  const stripePriceId = Deno.env.get("STRIPE_PRICE_ID")?.trim();
-  const available = Boolean(stripeSecretKey && stripePriceId);
+  const monthlyPriceId = Deno.env.get("STRIPE_PRICE_ID")?.trim();
+  const yearlyPriceId = Deno.env.get("STRIPE_PRICE_ID_YEARLY")?.trim();
+  const monthlyConfigured = Boolean(stripeSecretKey && monthlyPriceId);
+  const yearlyConfigured = Boolean(stripeSecretKey && yearlyPriceId);
+  const available = monthlyConfigured;
   const mode = stripeSecretKey?.startsWith("sk_live_")
     ? "live"
     : stripeSecretKey?.startsWith("sk_test_")
       ? "test"
       : "unknown";
 
-  return { available, mode };
+  return { available, mode, monthlyConfigured, yearlyConfigured };
+}
+
+function parseInterval(value: unknown): BillingInterval {
+  return value === "year" || value === "yearly" ? "year" : "month";
 }
 
 Deno.serve(async (req) => {
@@ -102,6 +120,14 @@ Deno.serve(async (req) => {
     return jsonResponse({
       available: config.available,
       mode: config.available ? config.mode : undefined,
+      intervals: {
+        month: config.monthlyConfigured,
+        year: config.yearlyConfigured,
+      },
+      pricing: {
+        month: "$5.99",
+        year: "$59.99",
+      },
     });
   }
 
@@ -109,14 +135,14 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Method not allowed" }, 405);
   }
 
-  const { available, mode } = stripeCheckoutConfig();
+  const { available, mode, yearlyConfigured } = stripeCheckoutConfig();
 
   if (!available) {
     return jsonResponse(
       {
         available: false,
         error: "Stripe checkout is not configured",
-        hint: "Set STRIPE_SECRET_KEY and STRIPE_PRICE_ID in Supabase project secrets.",
+        hint: "Set STRIPE_SECRET_KEY and STRIPE_PRICE_ID ($5.99/mo) in Supabase project secrets. Optionally STRIPE_PRICE_ID_YEARLY ($59.99/yr).",
       },
       503
     );
@@ -145,7 +171,11 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Unauthorized" }, 401);
   }
 
-  let payload: { success_url?: string; cancel_url?: string } = {};
+  let payload: {
+    success_url?: string;
+    cancel_url?: string;
+    interval?: string;
+  } = {};
   if (req.headers.get("content-type")?.includes("application/json")) {
     try {
       payload = (await req.json()) as typeof payload;
@@ -154,11 +184,26 @@ Deno.serve(async (req) => {
     }
   }
 
+  const interval = parseInterval(payload.interval);
+  if (interval === "year" && !yearlyConfigured) {
+    return jsonResponse(
+      {
+        available: true,
+        error: "Yearly Plus checkout is not configured yet",
+        hint: "Create the $59.99/yr Stripe price and set STRIPE_PRICE_ID_YEARLY. See docs/STRIPE_SETUP.md.",
+      },
+      503
+    );
+  }
+
   const successUrl = payload.success_url?.trim() || `${SITE_URL}/upgrade/?checkout=success`;
   const cancelUrl = payload.cancel_url?.trim() || `${SITE_URL}/upgrade/?checkout=canceled`;
 
   const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY")?.trim() ?? "";
-  const stripePriceId = Deno.env.get("STRIPE_PRICE_ID")?.trim() ?? "";
+  const stripePriceId =
+    interval === "year"
+      ? (Deno.env.get("STRIPE_PRICE_ID_YEARLY")?.trim() ?? "")
+      : (Deno.env.get("STRIPE_PRICE_ID")?.trim() ?? "");
 
   try {
     const session = await createStripeCheckoutSession({
@@ -168,11 +213,13 @@ Deno.serve(async (req) => {
       email: userData.user.email,
       successUrl,
       cancelUrl,
+      interval,
     });
 
     return jsonResponse({
       available: true,
       mode,
+      interval,
       url: session.url,
       sessionId: session.sessionId,
     });
