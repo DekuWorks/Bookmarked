@@ -72,24 +72,24 @@ export function OverviewBookShelf({
                   sizeClassName="h-24 w-16"
                   saved
                 />
-                <View className="min-w-0 flex-1">
-                  <View className="flex-row items-start gap-2">
-                    <Text className="flex-1 text-sm font-semibold text-ink" numberOfLines={2}>
-                      {book?.title ?? "Untitled"}
-                    </Text>
-                    {showFavoriteBadge && item.is_favorite ? (
-                      <Text
-                        className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-puce-red"
-                        accessibilityLabel="Favorite"
-                      >
-                        ★
-                      </Text>
-                    ) : null}
-                  </View>
+                <View className="min-w-0 flex-1 overflow-hidden">
+                  <Text className="text-sm font-semibold text-ink" numberOfLines={2}>
+                    {book?.title ?? "Untitled"}
+                  </Text>
                   {book?.author ? (
                     <Text className="mt-1 text-xs text-ink-muted" numberOfLines={1}>
                       {book.author}
                     </Text>
+                  ) : null}
+                  {showFavoriteBadge && item.is_favorite ? (
+                    <View className="mt-2 self-start rounded-full bg-primary/15 px-2.5 py-0.5">
+                      <Text
+                        className="text-[10px] font-semibold uppercase tracking-wide text-puce-red"
+                        accessibilityLabel="Favorite"
+                      >
+                        ★ Favorite
+                      </Text>
+                    </View>
                   ) : null}
                   {item.rating != null && item.rating > 0 ? (
                     <View className="mt-2">

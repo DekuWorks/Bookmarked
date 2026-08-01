@@ -75,22 +75,20 @@ export function OverviewBookShelf({
                   sizes="80px"
                   bookmarked
                 />
-                <div className="min-w-0 flex-1 text-left">
-                  <div className="flex items-start gap-2">
-                    <p className="line-clamp-2 flex-1 text-sm font-semibold text-text">
-                      {book?.title ?? "Untitled"}
-                    </p>
-                    {showFavoriteBadge && ub.is_favorite ? (
-                      <span
-                        className="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-puce-red"
-                        aria-label="Favorite"
-                      >
-                        ★ Favorite
-                      </span>
-                    ) : null}
-                  </div>
+                <div className="min-w-0 flex-1 overflow-hidden text-left">
+                  <p className="line-clamp-2 text-sm font-semibold text-text">
+                    {book?.title ?? "Untitled"}
+                  </p>
                   {book?.author ? (
                     <p className="mt-1 line-clamp-1 text-xs text-text-muted">{book.author}</p>
+                  ) : null}
+                  {showFavoriteBadge && ub.is_favorite ? (
+                    <span
+                      className="mt-2 inline-flex items-center justify-center rounded-full bg-primary/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-puce-red"
+                      aria-label="Favorite"
+                    >
+                      ★ Favorite
+                    </span>
                   ) : null}
                   {ub.rating != null && ub.rating > 0 ? (
                     <div className="mt-2">
