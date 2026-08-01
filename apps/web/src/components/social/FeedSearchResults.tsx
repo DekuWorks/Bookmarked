@@ -86,7 +86,7 @@ export function FeedSearchResults({ query, results, loading, error }: Props) {
                   href={bookDetailsPath(book.id)}
                   className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3 shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
                 >
-                  <div className="h-16 w-11 shrink-0 overflow-hidden rounded-md">
+                  <div className="h-16 w-11 shrink-0 rounded-md">
                     <BookCover
                       title={book.title}
                       author={book.author}

@@ -41,7 +41,7 @@ export function BookCover({
   return (
     <View className="relative" style={{ overflow: "visible" }}>
       {cover}
-      <View className="absolute" style={{ top: -4, right: -4, overflow: "visible" }}>
+      <View className="absolute" style={{ top: -4, left: -4, zIndex: 20, overflow: "visible" }}>
         <SavedBookBadge size={badgeSize} />
       </View>
     </View>

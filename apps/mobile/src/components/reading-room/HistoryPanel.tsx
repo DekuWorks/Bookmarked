@@ -58,6 +58,7 @@ export function HistoryPanel({ books, sessions }: Props) {
                 title={item.books?.title}
                 author={item.books?.author}
                 coverUrl={item.books?.cover_url}
+                saved
               />
             )}
           />

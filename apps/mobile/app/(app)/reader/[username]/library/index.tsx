@@ -123,6 +123,7 @@ export default function ReaderLibraryScreen() {
                       coverUrl={item.books?.cover_url}
                       widthClassName="w-20"
                       coverSizeClassName="w-20 h-28"
+                      saved
                     />
                   ))}
                 </View>

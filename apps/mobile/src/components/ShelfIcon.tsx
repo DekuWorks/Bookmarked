@@ -34,10 +34,10 @@ export function ShelfIcon({ id, size = "small", style, labeled = false }: Props)
           height: frame,
           alignItems: "center",
           justifyContent: "center",
+          overflow: "visible",
           borderRadius: 6,
-          borderWidth: 1,
-          borderColor: "rgba(100, 47, 55, 0.12)",
-          backgroundColor: "rgba(255, 255, 255, 0.5)",
+          borderWidth: 0,
+          backgroundColor: "transparent",
         },
         style,
       ]}

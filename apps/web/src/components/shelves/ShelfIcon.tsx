@@ -37,7 +37,7 @@ export function ShelfIcon({
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-md border border-border/40 bg-surface/60",
+        "inline-flex shrink-0 items-center justify-center overflow-visible rounded-md bg-transparent",
         animate &&
           "motion-safe:opacity-0 motion-safe:animate-[shelf-icon-in_200ms_ease-out_forwards]",
         className

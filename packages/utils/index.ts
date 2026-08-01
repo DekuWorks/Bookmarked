@@ -112,6 +112,13 @@ export {
 } from "./readingRoomTabs";
 
 export {
+  formatNoteChapter,
+  formatNoteLocation,
+  type FormatNoteLocationOptions,
+  type NoteLocationInput,
+} from "./readingNotes";
+
+export {
   MAX_BIO_LENGTH,
   MAX_DISPLAY_NAME_LENGTH,
   MAX_READING_GOAL,
