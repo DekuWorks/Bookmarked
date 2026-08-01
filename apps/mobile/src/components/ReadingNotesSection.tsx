@@ -23,6 +23,7 @@ import {
   type ReadingNoteCategoryMeta,
 } from "../services/noteCategories";
 import type { ReadingNote, ReadingNoteCategory, ReadingNoteVisibility } from "../types";
+import { formatNoteLocation } from "../../../../packages/utils/readingNotes";
 
 type Props = {
   userId: string;
@@ -165,6 +166,7 @@ export function ReadingNotesSection({ userId, userBookId, initialNotes, onChange
       ) : (
         notes.map((n) => {
           const meta = getReadingNoteCategoryMeta(n.category as ReadingNoteCategory, categories);
+          const location = formatNoteLocation(n);
           return (
             <View key={n.id} className="mb-3 rounded-2xl border border-brand-border bg-surface p-3">
               <View className="flex-row items-center justify-between">
@@ -185,13 +187,7 @@ export function ReadingNotesSection({ userId, userBookId, initialNotes, onChange
                 <Text className="mt-2 italic leading-5 text-ink">“{n.quote}”</Text>
               ) : null}
               {n.note ? <Text className="mt-2 leading-5 text-ink">{n.note}</Text> : null}
-              {n.page_number != null || n.chapter ? (
-                <Text className="mt-2 text-xs text-ink-muted">
-                  {n.chapter ? n.chapter : ""}
-                  {n.chapter && n.page_number != null ? " · " : ""}
-                  {n.page_number != null ? `p. ${n.page_number}` : ""}
-                </Text>
-              ) : null}
+              {location ? <Text className="mt-2 text-xs text-ink-muted">{location}</Text> : null}
             </View>
           );
         })

@@ -40,7 +40,7 @@ export function BookCard({
   return (
     <article
       className={cn(
-        "flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-sm transition hover:shadow-md",
+        "flex flex-col rounded-xl border border-border bg-surface shadow-sm transition hover:shadow-md",
         className
       )}
     >

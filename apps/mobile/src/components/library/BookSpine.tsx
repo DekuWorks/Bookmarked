@@ -57,7 +57,7 @@ export function BookSpine({ bookId, title, author, coverUrl, pageCount }: Props)
             </Text>
           </View>
         )}
-        <View className="absolute -top-0.5 right-0.5">
+        <View className="absolute -left-0.5 -top-0.5" style={{ zIndex: 20 }}>
           <SavedBookBadge size="small" />
         </View>
       </View>

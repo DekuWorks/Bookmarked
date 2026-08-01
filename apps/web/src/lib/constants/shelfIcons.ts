@@ -5,17 +5,17 @@ export type ShelfIconId = ShelfStatus | "dnf";
 
 export type ShelfIconSize = "small" | "medium" | "large";
 
-/** Pixel sizes per spec: small 24–32, medium 48–72, large 96–160 (object-fit contain). */
+/** Shared artwork sizes for shelf icons. Frames stay transparent; artwork is object-fit contain. */
 export const SHELF_ICON_SIZE_PX: Record<ShelfIconSize, number> = {
-  small: 28,
-  medium: 56,
-  large: 128,
+  small: 34,
+  medium: 68,
+  large: 154,
 };
 
 export const SHELF_ICON_FRAME_PX: Record<ShelfIconSize, number> = {
-  small: 32,
-  medium: 64,
-  large: 144,
+  small: 40,
+  medium: 76,
+  large: 168,
 };
 
 export type ShelfIconConfig = {

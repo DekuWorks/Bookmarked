@@ -93,6 +93,7 @@ export function OverviewTab({ userId, books, currentlyReading, onSelectTab }: Pr
                 author={item.books?.author}
                 coverUrl={item.books?.cover_url}
                 progressPercent={item.progress_percent}
+                saved
               />
             ))}
           </View>

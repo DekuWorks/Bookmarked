@@ -32,7 +32,7 @@ export function FeedBookAttachment({ book, className, variant = "default" }: Pro
       <div className={cn("flex items-stretch gap-4", compact ? "p-2.5" : "p-3.5")}>
         <Link
           href={bookDetailsPath(book.id)}
-          className={cn("relative shrink-0 overflow-hidden rounded-lg shadow-sm", coverClass)}
+          className={cn("relative shrink-0 rounded-lg shadow-sm", coverClass)}
         >
           <BookCover
             title={book.title}

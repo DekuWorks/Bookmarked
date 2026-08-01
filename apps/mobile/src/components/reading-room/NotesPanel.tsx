@@ -4,6 +4,7 @@ import { BookCover } from "../BookCover";
 import { LoadingState } from "../LoadingState";
 import { SectionCard } from "../SectionCard";
 import { READING_NOTE_CATEGORIES, type ReadingNoteWithBook } from "../../services/readingNotes";
+import { formatNoteLocation } from "../../../../../packages/utils/readingNotes";
 
 function categoryMeta(value: ReadingNoteWithBook["category"]) {
   return READING_NOTE_CATEGORIES.find((c) => c.value === value);
@@ -39,6 +40,7 @@ export function NotesPanel({ notes }: Props) {
           <View className="gap-3">
             {notes.map((note) => {
               const meta = categoryMeta(note.category);
+              const location = formatNoteLocation(note);
               return (
                 <Pressable
                   key={note.id}
@@ -60,6 +62,11 @@ export function NotesPanel({ notes }: Props) {
                     {note.note ? (
                       <Text className="mt-1 text-sm text-ink" numberOfLines={2}>
                         {note.note}
+                      </Text>
+                    ) : null}
+                    {location ? (
+                      <Text className="mt-1 text-xs text-ink-muted" numberOfLines={1}>
+                        {location}
                       </Text>
                     ) : null}
                     {note.book ? (

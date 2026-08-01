@@ -13,10 +13,10 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Phase | Name | Status | Summary |
 |-------|------|--------|---------|
 | 1 | Navigation | ✅ | Web + mobile primary nav shipped; `/dashboard/` redirects to Reading Room |
-| 2 | Reading depth | ✅ | Web + mobile parity: 6 Reading Room tabs, completion auto-tags, session notes |
+| 2 | Reading depth | ✅ | Web + native iOS parity: 6 Reading Room tabs, completion auto-tags, session notes, labeled note locations |
 | 3 | Community | 🔄 | Feed, messaging, clubs, events calendar shipped; polish ongoing |
 | 4 | Premium | 🔄 | Stripe web + iOS IAP wired; Apple JWS verification pending |
-| 5 | UI refresh | ✅ | Gradients, surface cards, branding on web + mobile |
+| 5 | UI refresh | ✅ | Gradients, surface cards, branding on web + native iOS; Second Sprint Overview icon polish |
 | 6 | Performance | ✅ | Audit + N+1 fixes + lazy loading; virtualization deferred |
 | 7 | Database | ✅ | 55 migrations, indexes, `docs/DATABASE_SCHEMA.md` |
 | 8 | Security | ✅ | RLS hardening, private message attachments, `docs/SECURITY_AUDIT.md` |
@@ -71,6 +71,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 |------|--------|-------------------|
 | Per-book journal (sessions) | ✅ | `ReadingJournalSection.tsx` · `reading_sessions` |
 | Reading notes | ✅ | `reading_notes` · `/notes/` (web) · `apps/mobile/app/(app)/notes.tsx` |
+| Note location labels | ✅ | Shared `formatNoteLocation()` renders `Page 366 • Chapter 36` on web + native iOS |
 | Trail tab (web) | ✅ | `TrailPanel.tsx` — tab label **Journal** (legacy `?tab=journal` alias) |
 | Reading Room tabs (web) | ✅ | Overview, Progress, Journal, Notes, Reviews, History — `readingRoomTabs.ts` |
 | Reading Room tabs (mobile) | ✅ | Same 6 tabs — `apps/mobile/app/(app)/index.tsx` |
@@ -129,7 +130,6 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | AI reading insights (OpenAI) | ✅ | `packages/utils/aiInsights.ts` · `supabase/functions/ai-insights` · web + mobile `AiInsightsPanel` · see `docs/AI_INSIGHTS.md` |
 | Stripe checkout (web) | ✅ | `create-checkout-session` + `/upgrade/` Subscribe CTA; test keys active — live cutover in `docs/PRODUCTION_BILLING.md` |
 | App Store IAP (iOS) | ✅ | `expo-iap` + `useAppleIap` + `apple-iap-verify` — see `docs/APP_STORE_IAP.md` |
-| Google Play IAP | ⬜ | Android uses web Stripe link from upgrade screen |
 | Mobile web upgrade UX | ✅ | `/upgrade/` responsive layout; Stripe checkout works in mobile Safari |
 | Webhook signature verification | 🔄 | Stripe HMAC; Apple ASN decodes JWS (full cert verification deferred) |
 | Admin grant UI | ⬜ | Manual SQL / service role |
@@ -145,6 +145,8 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Surface cards | ✅ | `.surface-card` utility · `SectionCard` (mobile) |
 | Branding components | ✅ | `BookmarkedLogo`, `SavedBookBadge` · `docs/BRANDING_ASSET_AUDIT.md` |
 | Custom shelf icons | ✅ | `docs/SHELF_ICON_AUDIT.md` · `ShelfIcon` (web + mobile) |
+| Second Sprint Overview icons | ✅ | Purple shelf icons enlarged via shared tokens; visible icon boxes removed on web + native iOS |
+| Saved bookmark badge placement | ✅ | Badge moved to top-left/spine side in reusable cover/badge components |
 | Auth / form polish | ✅ | `.form-panel`, pill search inputs |
 | Nav active states | ✅ | Bottom nav pill animation (web) · `FloatingTabBar` (mobile) |
 
@@ -193,7 +195,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Item | Status | Notes / references |
 |------|--------|-------------------|
 | Web responsive layouts | ✅ | Mobile-first Tailwind · bottom nav · `docs/RESPONSIVE_QA.md` |
-| Mobile layout spot-check | ✅ | Feed, library, messages, composer safe-area |
+| Native iOS layout spot-check | ✅ | Feed, library, messages, composer safe-area |
 | Message composer / tab bar overlap | ✅ | Sticky offsets |
 | Premium upgrade + pill tabs (mobile web) | ✅ | `/upgrade/` padding, pill-tab scroll, premium lock tap targets |
 
@@ -244,7 +246,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Database schema | `docs/DATABASE_SCHEMA.md` |
 | Master task list (MVP) | `docs/project/MASTER_TASK_LIST.md` |
 
-**Last updated:** July 23, 2026 (dual-platform parity audit; iOS IAP upgrade flow; mobile analytics heatmap)
+**Last updated:** August 1, 2026 (Second Sprint Home Overview icon polish; shared note location labels; web + native iOS scope)
 
 ---
 

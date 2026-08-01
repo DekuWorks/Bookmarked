@@ -15,6 +15,7 @@ import {
 import { ReadingNoteForm } from "@/components/books/ReadingNoteForm";
 import type { ReadingNote } from "@/types";
 import { cn } from "@/lib/utils/cn";
+import { formatNoteLocation } from "@bookmarked/utils/readingNotes";
 
 function formatNoteDate(iso: string): string {
   const date = new Date(iso);
@@ -45,6 +46,7 @@ export function ReadingNoteCard({ note, userBookId, onChange }: Props) {
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const categoryMeta = getReadingNoteCategoryMeta(note.category, customLookup);
+  const location = formatNoteLocation(note);
 
   async function handleDelete() {
     if (!window.confirm("Delete this note?")) return;
@@ -84,17 +86,11 @@ export function ReadingNoteCard({ note, userBookId, onChange }: Props) {
           <p className="text-sm font-semibold text-text" suppressHydrationWarning>
             {formatNoteDate(note.created_at)}
           </p>
-          {(note.page_number != null || note.chapter) && (
+          {location ? (
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-text-muted">
-              {note.page_number != null ? <span>Page {note.page_number}</span> : null}
-              {note.page_number != null && note.chapter ? (
-                <span aria-hidden className="text-border">
-                  ·
-                </span>
-              ) : null}
-              {note.chapter ? <span>{note.chapter}</span> : null}
+              <span>{location}</span>
             </div>
-          )}
+          ) : null}
         </div>
         <span
           className={cn(readingNoteCategoryPill, "shrink-0", categoryMeta.tagClassName)}

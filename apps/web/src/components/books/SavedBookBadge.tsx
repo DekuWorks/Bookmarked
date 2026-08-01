@@ -26,7 +26,7 @@ export function SavedBookBadge({ className, size = "medium" }: Props) {
   return (
     <div
       className={cn(
-        "pointer-events-none absolute right-0 top-0 z-20 overflow-visible",
+        "pointer-events-none absolute left-0 top-0 z-20 overflow-visible",
         sizeClass[size],
         className
       )}
@@ -38,7 +38,7 @@ export function SavedBookBadge({ className, size = "medium" }: Props) {
         src={BRAND_ASSETS.savedBadge.src}
         alt=""
         fill
-        className="object-contain object-right-top"
+        className="object-contain object-left-top"
         sizes="2rem"
         unoptimized
       />

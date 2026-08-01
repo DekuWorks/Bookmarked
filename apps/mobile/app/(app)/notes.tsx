@@ -15,6 +15,7 @@ import {
 import { TAB_BAR_SPACE, useTabBarScroll } from "../../src/navigation/TabBarScroll";
 import { useAuthStore } from "../../src/store/authStore";
 import type { ReadingNoteCategory } from "../../src/types";
+import { formatNoteLocation } from "../../../../packages/utils/readingNotes";
 
 function categoryMeta(value: ReadingNoteCategory) {
   return READING_NOTE_CATEGORIES.find((c) => c.value === value);
@@ -85,6 +86,7 @@ export default function NotesScreen() {
           contentContainerStyle={{ padding: 16, paddingBottom: TAB_BAR_SPACE, flexGrow: 1 }}
           renderItem={({ item }) => {
             const meta = categoryMeta(item.category);
+            const location = formatNoteLocation(item);
             return (
               <Pressable
                 onPress={() => item.book && router.push(`/book/${item.book.id}`)}
@@ -105,6 +107,11 @@ export default function NotesScreen() {
                   {item.note ? (
                     <Text className="mt-1 text-ink" numberOfLines={3}>
                       {item.note}
+                    </Text>
+                  ) : null}
+                  {location ? (
+                    <Text className="mt-1 text-xs text-ink-muted" numberOfLines={1}>
+                      {location}
                     </Text>
                   ) : null}
                   {item.book ? (

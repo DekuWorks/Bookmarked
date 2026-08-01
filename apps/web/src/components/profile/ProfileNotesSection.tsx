@@ -20,6 +20,7 @@ import {
 import { bookDetailsNotesPath } from "@/lib/routes/book";
 import { cn } from "@/lib/utils/cn";
 import type { ReadingNoteVisibility } from "@/types";
+import { formatNoteLocation } from "@bookmarked/utils/readingNotes";
 
 type Props = {
   userId: string;
@@ -71,6 +72,7 @@ function ProfileNoteCard({
   const { customLookup } = useReadingNoteCategories(note.user_id);
   const categoryMeta = getReadingNoteCategoryMeta(note.category, customLookup);
   const bookHref = note.book ? bookDetailsNotesPath(note.book.id) : null;
+  const location = formatNoteLocation(note);
 
   return (
     <li className={readingNoteTimelineItem}>
@@ -78,7 +80,7 @@ function ProfileNoteCard({
 
       {note.book ? (
         <Link href={bookHref ?? "#"} className={readingNoteBookLink}>
-          <div className="h-14 w-10 shrink-0 overflow-hidden rounded shadow-sm">
+          <div className="h-14 w-10 shrink-0 rounded shadow-sm">
             <BookCover
               title={note.book.title}
               coverUrl={note.book.cover_url}
@@ -97,17 +99,11 @@ function ProfileNoteCard({
           <p className="text-sm font-semibold text-text" suppressHydrationWarning>
             {formatNoteDate(note.created_at)}
           </p>
-          {(note.page_number != null || note.chapter) && (
+          {location ? (
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-text-muted">
-              {note.page_number != null ? <span>Page {note.page_number}</span> : null}
-              {note.page_number != null && note.chapter ? (
-                <span aria-hidden className="text-border">
-                  ·
-                </span>
-              ) : null}
-              {note.chapter ? <span>{note.chapter}</span> : null}
+              <span>{location}</span>
             </div>
-          )}
+          ) : null}
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           {showVisibility ? (

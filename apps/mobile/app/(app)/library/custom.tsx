@@ -102,6 +102,7 @@ export default function CustomShelfScreen() {
                 coverUrl={item.books?.cover_url}
                 widthClassName="w-[30%]"
                 coverSizeClassName="w-full aspect-[2/3]"
+                saved
               />
             ))}
           </View>

@@ -11,6 +11,8 @@ type Props = {
   progressPercent?: number | null;
   widthClassName?: string;
   coverSizeClassName?: string;
+  saved?: boolean;
+  badgeSize?: "small" | "medium" | "large";
 };
 
 /** Tappable book cover tile that deep-links to the book screen. */
@@ -22,6 +24,8 @@ export function CoverTile({
   progressPercent,
   widthClassName = "w-24",
   coverSizeClassName = "w-24 h-36",
+  saved = false,
+  badgeSize = "medium",
 }: Props) {
   const router = useRouter();
   return (
@@ -30,7 +34,13 @@ export function CoverTile({
       onPress={() => bookId && router.push(`/book/${bookId}`)}
       className={`${widthClassName} active:opacity-80`}
     >
-      <BookCover url={coverUrl} title={title} sizeClassName={coverSizeClassName} />
+      <BookCover
+        url={coverUrl}
+        title={title}
+        sizeClassName={coverSizeClassName}
+        saved={saved}
+        badgeSize={badgeSize}
+      />
       {progressPercent != null && progressPercent > 0 ? (
         <View className="mt-1">
           <ProgressBar percent={progressPercent} />

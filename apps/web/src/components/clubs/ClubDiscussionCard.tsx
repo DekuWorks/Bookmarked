@@ -100,7 +100,7 @@ export function ClubDiscussionCard({ post, viewerId, onDeleted }: Props) {
             <div className="mt-3 flex items-center gap-3 rounded-lg border border-border p-3 hover:border-primary/40">
               <Link
                 href={bookDetailsPath(post.book.id)}
-                className="h-20 w-14 shrink-0 overflow-hidden rounded-md shadow-sm"
+                className="h-20 w-14 shrink-0 rounded-md shadow-sm"
               >
                 <BookCover
                   title={post.book.title}
