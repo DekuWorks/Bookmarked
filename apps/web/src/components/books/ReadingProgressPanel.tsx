@@ -303,7 +303,7 @@ export function ReadingProgressPanel({
             });
           }}
         >
-          Reading trail
+          Trail
         </Button>
         <Button
           type="button"

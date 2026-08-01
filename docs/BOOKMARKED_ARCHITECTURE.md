@@ -8,7 +8,7 @@
 
 ## 1. System overview
 
-Bookmarked is a reading-life platform: search books, manage shelves, track progress, journal notes, write reviews, follow readers, post to a social feed, join book clubs, and message other users.
+Bookmarked is a reading-life platform: search books, manage shelves, track progress, Trail session notes, write reviews, follow readers, post to a social feed, join book clubs, and message other users.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -103,12 +103,12 @@ No global store on web. Page-level `useState`/`useEffect`, `ToastProvider` conte
 | Page | Purpose | Key components |
 |------|---------|----------------|
 | **Dashboard** | “What should I read today?” | `CurrentlyReadingRow`, `ReadingGoalPanel`, Quick Actions, `ActivityFeed` |
-| **Reading Room** | Reading-life hub (tabs) | Overview, Progress, Journal, Notes, Reviews, History |
+| **Reading Room** | Reading-life hub (tabs) | Overview, Progress, Trail, Notes, Reviews, History |
 | **Library** | Organize books only | `LibraryViewShell`, `CustomShelfCollectionsPanel`, sort/filter |
 | **Feed** | Social discovery | `FeedPostsPanel`, `PostComposer` |
 | **Search** | Find & add books | `SearchForm`, ISBNdb results |
 | **Profile** | Identity + settings | Avatar, bio, streak, notification/language/import prefs |
-| **Book detail** | Per-book hub | Progress, reviews, journal, notes |
+| **Book detail** | Per-book hub | Progress, reviews, Trail, notes |
 
 ### 4.2 Navigation
 
@@ -138,7 +138,7 @@ Direct-to-Read and all finish paths call `completeReadingSession` (`apps/web/src
 |------|--------|-----|
 | Add book | `books` upsert, `user_books` insert | `BookShelfActions`, search results |
 | Track progress | `user_books`, `reading_sessions` | `ReadingProgressPanel` |
-| Journal session notes | `reading_sessions.note` | `ReadingJournalSection` (per book) |
+| Trail session notes | `reading_sessions.note` | `ReadingJournalSection` legacy internal component (per book) |
 | Reading notes | `reading_notes` | `ReadingNotesSection`, `/notes/` search |
 | Finish | `user_books`, `reading_sessions` (`page_count_status`, `total_pages`, `completed_at`) | `markBookFinished`, shelf move, `MissingPageCountDialog` |
 

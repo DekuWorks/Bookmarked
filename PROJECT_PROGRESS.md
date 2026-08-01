@@ -12,8 +12,8 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 
 | Phase | Name | Status | Summary |
 |-------|------|--------|---------|
-| 1 | Navigation | ✅ | Web + mobile primary nav shipped; `/dashboard/` redirects to Reading Room |
-| 2 | Reading depth | ✅ | Web + mobile parity: 6 Reading Room tabs, completion auto-tags, session notes |
+| 1 | Navigation | ✅ | Web + native iOS primary nav shipped; `/dashboard/` redirects to Reading Room; Home tabs evenly distributed |
+| 2 | Reading depth | ✅ | Web + native iOS parity: 6 Reading Room tabs, completion auto-tags, Trail, notes, reviews, History |
 | 3 | Community | 🔄 | Feed, messaging, clubs, events calendar shipped; polish ongoing |
 | 4 | Premium | 🔄 | Stripe web + iOS IAP wired; Apple JWS verification pending |
 | 5 | UI refresh | ✅ | Gradients, surface cards, branding on web + mobile |
@@ -65,16 +65,15 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Reading Room reviews tab (web) | ✅ | `ReviewsPanel.tsx` — two-column cards, 5 filters, share-to-feed |
 | Dedicated reviews UI (mobile) | ✅ | `ReviewsPanel.tsx` parity + book detail `RateReviewSheet` |
 
-### 2.3 Journal / Trail / Notes
+### 2.3 Trail / Notes
 
 | Item | Status | Notes / references |
 |------|--------|-------------------|
-| Per-book journal (sessions) | ✅ | `ReadingJournalSection.tsx` · `reading_sessions` |
+| Per-book Trail sessions | ✅ | `ReadingJournalSection.tsx` (legacy internal name) · `reading_sessions` |
 | Reading notes | ✅ | `reading_notes` · `/notes/` (web) · `apps/mobile/app/(app)/notes.tsx` |
-| Trail tab (web) | ✅ | `TrailPanel.tsx` — tab label **Journal** (legacy `?tab=journal` alias) |
-| Reading Room tabs (web) | ✅ | Overview, Progress, Journal, Notes, Reviews, History — `readingRoomTabs.ts` |
-| Reading Room tabs (mobile) | ✅ | Same 6 tabs — `apps/mobile/app/(app)/index.tsx` |
-| History tab | ✅ | `HistoryPanel.tsx` — Recently Finished Books, `finished_at` sort, library-style filters |
+| Trail tab (web + iOS) | ✅ | `TrailPanel.tsx` — tab label **Trail**; legacy `?tab=journal` alias retained only for old links |
+| Reading Room tabs (web + iOS) | ✅ | Overview, Progress, Trail, Notes, Reviews, History — `readingRoomTabs.ts` |
+| History tab | ✅ | `HistoryPanel.tsx` — sorted 10-book preview, full read shelf link |
 
 ### 2.4 Streaks & auto tags
 
@@ -114,6 +113,19 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Goodreads import | ✅ | `goodreadsImport.ts` — web profile settings + mobile account settings |
 | Events calendar | ✅ | `book_club_events` migration · `/events/` · club event panels (web + mobile) |
 | Notifications | ✅ | `notifications` table · bell + `/notifications/` |
+
+---
+
+## Fourth Sprint — Home Tab ✅
+
+| Item | Status | Notes / references |
+|------|--------|-------------------|
+| Even Home tab distribution | ✅ | Web `ReadingRoomTabs` uses a responsive equal-width tab grid; native iOS `SegmentedTabs` uses compact equal-width pills |
+| Trail terminology | ✅ | User-facing labels now use **Trail**; legacy `journal` URL/query aliases remain compatibility-only |
+| Trail layout alignment | ✅ | Web Trail owns the same rounded card shell, spacing, loading, and empty-state language as History |
+| History 10-book display cap | ✅ | Shared `selectHistoryBooks()` applies filter → sort → limit 10 on web + native iOS |
+| History data preservation | ✅ | Display-only cap; no finished books, sessions, notes, reviews, stats, or shelves are deleted |
+| Database pagination review | ⚠️ | Current Reading Room loads full library for stats/goals; true DB-paginated History across title/author/date sorts needs a dedicated Supabase RPC/view |
 
 ---
 
@@ -193,7 +205,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Item | Status | Notes / references |
 |------|--------|-------------------|
 | Web responsive layouts | ✅ | Mobile-first Tailwind · bottom nav · `docs/RESPONSIVE_QA.md` |
-| Mobile layout spot-check | ✅ | Feed, library, messages, composer safe-area |
+| Native iOS layout spot-check | ✅ | Feed, library, messages, composer safe-area |
 | Message composer / tab bar overlap | ✅ | Sticky offsets |
 | Premium upgrade + pill tabs (mobile web) | ✅ | `/upgrade/` padding, pill-tab scroll, premium lock tap targets |
 
@@ -244,7 +256,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Database schema | `docs/DATABASE_SCHEMA.md` |
 | Master task list (MVP) | `docs/project/MASTER_TASK_LIST.md` |
 
-**Last updated:** July 23, 2026 (dual-platform parity audit; iOS IAP upgrade flow; mobile analytics heatmap)
+**Last updated:** August 1, 2026 (Fourth Sprint Home tab: tab distribution, Trail terminology/layout, History 10-book cap; web + native iOS scope)
 
 ---
 

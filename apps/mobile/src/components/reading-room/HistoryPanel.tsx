@@ -8,8 +8,8 @@ import type { LibraryBookRow } from "../../services/library";
 import type { UserReadingSession } from "../../services/readingSessions";
 import {
   DEFAULT_HISTORY_SORT,
-  filterFinishedHistoryBooks,
-  sortHistoryBooks,
+  countFinishedHistoryBooks,
+  selectHistoryBooks,
   type HistorySortMode,
 } from "../../../../../packages/utils/readingRoomHistory";
 import { HistorySortSelect } from "./HistorySortSelect";
@@ -32,9 +32,10 @@ export function HistoryPanel({ books, sessions }: Props) {
   const [sort, setSort] = useState<HistorySortMode>(DEFAULT_HISTORY_SORT);
 
   const finishedBooks = useMemo(
-    () => sortHistoryBooks(filterFinishedHistoryBooks(books), sort),
+    () => selectHistoryBooks(books, sort),
     [books, sort]
   );
+  const totalFinishedBooks = useMemo(() => countFinishedHistoryBooks(books), [books]);
 
   return (
     <View className="gap-4">
@@ -42,6 +43,12 @@ export function HistoryPanel({ books, sessions }: Props) {
         <View className="mt-1">
           <HistorySortSelect value={sort} onChange={setSort} />
         </View>
+
+        {totalFinishedBooks > finishedBooks.length ? (
+          <Text className="mt-3 text-sm text-ink-muted">
+            Showing {finishedBooks.length} of {totalFinishedBooks} finished books for this sort.
+          </Text>
+        ) : null}
 
         {finishedBooks.length === 0 ? (
           <Text className="mt-4 text-sm text-ink-muted">Books you finish will appear here.</Text>

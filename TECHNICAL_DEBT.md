@@ -96,11 +96,11 @@ Reading goal, activity charts, and suggested shelves appear across Reading Room 
 
 **Mitigation:** Wire intentionally or delete dead component.
 
-### Per-book vs user-wide journal/notes
+### Per-book vs user-wide Trail/notes
 
 **Impact:** Low–medium
 
-`ReadingJournalSection` and `ReadingNotesSection` are per-book on book detail. Reading Room aggregates user-wide data via separate service calls. No unified timeline component.
+`ReadingJournalSection` (legacy internal name for per-book Trail sessions) and `ReadingNotesSection` are per-book on book detail. Reading Room aggregates user-wide data via separate service calls. No unified timeline component.
 
 ### Profile vs public reader overlap
 

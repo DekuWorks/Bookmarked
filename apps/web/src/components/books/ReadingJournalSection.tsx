@@ -180,7 +180,7 @@ export function ReadingJournalSection({ sessions, loading, onSessionUpdate }: Pr
   return (
     <CollapsibleSection
       id="reading-trail"
-      title="Reading trail"
+      title="Trail"
       description="Your reading history for this book — newest first."
       badge={badge}
     >
@@ -221,7 +221,7 @@ export function ReadingJournalSection({ sessions, loading, onSessionUpdate }: Pr
                 aria-expanded={expanded}
                 onClick={() => setExpanded((value) => !value)}
               >
-                {expanded ? "Show less" : "View full reading trail"}
+                {expanded ? "Show less" : "View full Trail"}
               </Button>
             </div>
           ) : null}

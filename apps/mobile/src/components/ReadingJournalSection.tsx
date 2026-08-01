@@ -166,7 +166,7 @@ export function ReadingJournalSection({ sessions, loading, onSessionUpdate }: Pr
       : `${sessions.length} ${sessions.length === 1 ? "entry" : "entries"}`;
 
   return (
-    <SectionCard title="Reading trail" emoji="🥾" action={badge ? <Text className="text-xs text-ink-muted">{badge}</Text> : undefined}>
+    <SectionCard title="Trail" emoji="🥾" action={badge ? <Text className="text-xs text-ink-muted">{badge}</Text> : undefined}>
       <Text className="mb-3 text-sm text-ink-muted">
         Your reading history for this book — newest first.
       </Text>
@@ -202,7 +202,7 @@ export function ReadingJournalSection({ sessions, loading, onSessionUpdate }: Pr
               className="mt-4 items-center rounded-xl border border-brand-border py-2 active:opacity-80"
             >
               <Text className="text-sm font-semibold text-puce-red">
-                {expanded ? "Show less" : "View full reading trail"}
+                {expanded ? "Show less" : "View full Trail"}
               </Text>
             </Pressable>
           ) : null}

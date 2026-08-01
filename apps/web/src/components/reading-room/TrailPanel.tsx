@@ -69,24 +69,32 @@ export function TrailPanel({ sessions }: Props) {
   }
 
   if (sessions === null) {
-    return <LoadingState message="Loading trail…" />;
+    return (
+      <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
+        <h2 className="text-lg font-semibold text-puce-red">Trail</h2>
+        <LoadingState message="Loading trail…" />
+      </section>
+    );
   }
 
   if (!sessions.length) {
     return (
-      <p className="mt-6 text-center text-sm text-text-muted">
-        Save reading progress to build your trail.
-      </p>
+      <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
+        <h2 className="text-lg font-semibold text-puce-red">Trail</h2>
+        <p className="mt-4 rounded-xl border border-dashed border-border bg-background px-4 py-8 text-center text-sm text-text-muted">
+          Save reading progress to build your trail.
+        </p>
+      </section>
     );
   }
 
   if (view === "detail" && activeBook && activeSession) {
     return (
-      <div className="mt-6 space-y-4 text-left">
+      <section className="rounded-2xl border border-border bg-surface/90 p-5 text-left shadow-sm md:p-6">
         <Button type="button" variant="ghost" size="sm" onClick={backToSessions}>
           ← Back to sessions
         </Button>
-        <div className="rounded-lg border border-border bg-background/50 px-4 py-4">
+        <div className="mt-4 rounded-lg border border-border bg-background/50 px-4 py-4">
           <p className="text-base font-semibold text-text">{activeBook.bookTitle}</p>
           {activeSession.read_number > 1 ? (
             <p className="mt-1 text-xs font-medium text-puce-red">
@@ -123,17 +131,17 @@ export function TrailPanel({ sessions }: Props) {
             </div>
           ) : null}
         </div>
-      </div>
+      </section>
     );
   }
 
   if (view === "sessions" && activeBook) {
     return (
-      <div className="mt-6 space-y-4 text-left">
+      <section className="rounded-2xl border border-border bg-surface/90 p-5 text-left shadow-sm md:p-6">
         <Button type="button" variant="ghost" size="sm" onClick={backToBooks}>
           ← Back to books
         </Button>
-        <div>
+        <div className="mt-4">
           <h3 className="text-base font-semibold text-text">{activeBook.bookTitle}</h3>
           {activeBook.bookId ? (
             <Link
@@ -181,12 +189,16 @@ export function TrailPanel({ sessions }: Props) {
             </div>
           ))}
         </div>
-      </div>
+      </section>
     );
   }
 
   return (
-    <div className="mt-6 space-y-4 text-left">
+    <section className="rounded-2xl border border-border bg-surface/90 p-5 text-left shadow-sm md:p-6">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-lg font-semibold text-puce-red">Trail</h2>
+        <p className="text-sm text-text-muted">Pick a book to view its session notes.</p>
+      </div>
       <Input
         type="search"
         variant="search"
@@ -196,11 +208,12 @@ export function TrailPanel({ sessions }: Props) {
         value={searchQuery}
         onChange={(event) => setSearchQuery(event.target.value)}
         autoComplete="off"
+        className="mt-6"
       />
       {filteredBookGroups.length === 0 ? (
-        <p className="text-center text-sm text-text-muted">No books match your search.</p>
+        <p className="mt-4 text-center text-sm text-text-muted">No books match your search.</p>
       ) : (
-        <ul className="space-y-2" role="list">
+        <ul className="mt-4 space-y-2" role="list">
           {filteredBookGroups.map((group) => (
             <li key={group.key}>
               <button
@@ -218,6 +231,6 @@ export function TrailPanel({ sessions }: Props) {
           ))}
         </ul>
       )}
-    </div>
+    </section>
   );
 }

@@ -20,6 +20,7 @@ export type HistorySortMode =
   | "added_oldest";
 
 export const DEFAULT_HISTORY_SORT: HistorySortMode = "added_newest";
+export const DEFAULT_HISTORY_VISIBLE_LIMIT = 10;
 
 export const HISTORY_SORT_OPTIONS: { mode: HistorySortMode; label: string }[] = [
   { mode: "title_asc", label: "Title A–Z" },
@@ -128,6 +129,31 @@ export function filterFinishedHistoryBooks<
   return books.filter(
     (book) => book.shelf_status === "read" && !isDnfBook(book)
   );
+}
+
+export function countFinishedHistoryBooks<
+  T extends HistorySortableBook & {
+    shelf_status?: string;
+    dnf?: boolean;
+    completion_tags?: string[] | null;
+  },
+>(books: T[]): number {
+  return filterFinishedHistoryBooks(books).length;
+}
+
+export function selectHistoryBooks<
+  T extends HistorySortableBook & {
+    shelf_status?: string;
+    dnf?: boolean;
+    completion_tags?: string[] | null;
+  },
+>(
+  books: T[],
+  sort: HistorySortMode = DEFAULT_HISTORY_SORT,
+  limit = DEFAULT_HISTORY_VISIBLE_LIMIT
+): T[] {
+  const sorted = sortHistoryBooks(filterFinishedHistoryBooks(books), sort);
+  return Number.isFinite(limit) ? sorted.slice(0, Math.max(0, limit)) : sorted;
 }
 
 const DEFAULT_RECENTLY_FINISHED_LIMIT = 6;

@@ -111,7 +111,7 @@ export function OverviewTab({ userId, data, onRefresh }: Props) {
             Open library
           </ButtonLink>
           <ButtonLink href={readingRoomTabHref("trail")} variant="outline" size="sm">
-            Reading trail
+            Trail
           </ButtonLink>
         </div>
       </ReadingRoomSection>

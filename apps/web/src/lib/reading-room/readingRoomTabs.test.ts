@@ -31,5 +31,6 @@ describe("readingRoomTabHref", () => {
 
   it("adds tab query for other tabs", () => {
     expect(readingRoomTabHref("trail")).toBe("/reading-room/?tab=trail");
+    expect(readingRoomTabHref("history")).toBe("/reading-room/?tab=history");
   });
 });
