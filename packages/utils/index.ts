@@ -97,8 +97,11 @@ export {
 
 export {
   DEFAULT_HISTORY_SORT,
+  DEFAULT_HISTORY_VISIBLE_LIMIT,
+  countFinishedHistoryBooks,
   filterFinishedHistoryBooks,
   HISTORY_SORT_OPTIONS,
+  selectHistoryBooks,
   selectRecentlyFinishedBooks,
   sortHistoryBooks,
   type HistorySortableBook,

@@ -11,8 +11,8 @@ import type { UserReadingSession } from "@/lib/services/readingSessions";
 import { cn } from "@/lib/utils/cn";
 import {
   DEFAULT_HISTORY_SORT,
-  filterFinishedHistoryBooks,
-  sortHistoryBooks,
+  countFinishedHistoryBooks,
+  selectHistoryBooks,
   type HistorySortMode,
 } from "@bookmarked/utils/readingRoomHistory";
 
@@ -25,9 +25,10 @@ export function HistoryPanel({ books, sessions }: Props) {
   const [sort, setSort] = useState<HistorySortMode>(DEFAULT_HISTORY_SORT);
 
   const finishedBooks = useMemo(
-    () => sortHistoryBooks(filterFinishedHistoryBooks(books), sort),
+    () => selectHistoryBooks(books, sort),
     [books, sort]
   );
+  const totalFinishedBooks = useMemo(() => countFinishedHistoryBooks(books), [books]);
 
   return (
     <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
@@ -39,6 +40,11 @@ export function HistoryPanel({ books, sessions }: Props) {
       </div>
 
       <div className="mt-6">
+        {totalFinishedBooks > finishedBooks.length ? (
+          <p className="mb-3 text-sm text-text-muted">
+            Showing {finishedBooks.length} of {totalFinishedBooks} finished books for this sort.
+          </p>
+        ) : null}
         <BookMiniGrid
           items={finishedBooks}
           emptyMessage="Books you finish will appear here."

@@ -113,7 +113,7 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
   return (
     <div className="space-y-6">
       <div
-        className="pill-tabs overflow-x-auto"
+        className="pill-tabs reading-room-tablist"
         role="tablist"
         aria-label="Reading room sections"
       >
@@ -123,15 +123,22 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
             href={readingRoomTabHref(option.id)}
             role="tab"
             aria-selected={tab === option.id}
+            id={`reading-room-tab-${option.id}`}
+            aria-controls="reading-room-panel"
             data-active={tab === option.id ? "true" : "false"}
-            className="pill-tab shrink-0"
+            className="pill-tab"
           >
             {option.label}
           </Link>
         ))}
       </div>
 
-      <div role="tabpanel" aria-label={READING_ROOM_TAB_OPTIONS.find((t) => t.id === tab)?.label}>
+      <div
+        id="reading-room-panel"
+        role="tabpanel"
+        aria-labelledby={`reading-room-tab-${tab}`}
+        aria-label={READING_ROOM_TAB_OPTIONS.find((t) => t.id === tab)?.label}
+      >
         {tab === "overview" ? (
           <OverviewTab
             userId={userId}
@@ -209,15 +216,7 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
           </div>
         ) : null}
 
-        {tab === "trail" ? (
-          <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6 text-left">
-            <h2 className="text-center text-lg font-semibold text-puce-red">Trail</h2>
-            <p className="mt-1 text-center text-sm text-text-muted">
-              Pick a book to view its session notes.
-            </p>
-            <TrailPanel sessions={sessions} />
-          </section>
-        ) : null}
+        {tab === "trail" ? <TrailPanel sessions={sessions} /> : null}
 
         {tab === "notes" ? (
           <div className="space-y-6 text-left">

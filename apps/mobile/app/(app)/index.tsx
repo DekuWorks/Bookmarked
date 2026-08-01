@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
-import { RefreshControl, ScrollView, Text, View } from "react-native";
+import { RefreshControl, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { parseReadingRoomTab } from "../../../../packages/utils/readingRoomTabs";
 import { BrandTopHeader } from "../../src/components/BrandTopHeader";
@@ -164,9 +164,15 @@ export default function HomeReadingRoom() {
           <Text style={{ color: colors.inkMuted }}>Welcome back, {name}.</Text>
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <SegmentedTabs options={READING_ROOM_TAB_OPTIONS} value={tab} onChange={setTab} />
-        </ScrollView>
+        <SegmentedTabs
+          accessibilityLabel="Reading room sections"
+          className="w-full"
+          compact
+          equalWidth
+          options={READING_ROOM_TAB_OPTIONS}
+          value={tab}
+          onChange={setTab}
+        />
 
         {tab === "overview" && userId ? (
           <OverviewTab

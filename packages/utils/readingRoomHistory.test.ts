@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_HISTORY_VISIBLE_LIMIT,
+  countFinishedHistoryBooks,
   filterFinishedHistoryBooks,
+  selectHistoryBooks,
   selectRecentlyFinishedBooks,
   sortHistoryBooks,
   type HistorySortableBook,
@@ -106,5 +109,61 @@ describe("selectRecentlyFinishedBooks", () => {
       "newest",
       "old",
     ]);
+  });
+});
+
+describe("selectHistoryBooks", () => {
+  const rows = Array.from({ length: 12 }, (_, index) =>
+    book({
+      id: `book-${index + 1}`,
+      finished_at: `2026-07-${String(index + 1).padStart(2, "0")}T00:00:00.000Z`,
+      books: {
+        title: String.fromCharCode(76 - index),
+        author: `Author ${String.fromCharCode(76 - index)}`,
+      },
+    })
+  );
+
+  it("defaults to ten visible books after newest-first sorting", () => {
+    const selected = selectHistoryBooks(rows);
+
+    expect(selected).toHaveLength(DEFAULT_HISTORY_VISIBLE_LIMIT);
+    expect(selected.map((row) => row.id)).toEqual([
+      "book-12",
+      "book-11",
+      "book-10",
+      "book-9",
+      "book-8",
+      "book-7",
+      "book-6",
+      "book-5",
+      "book-4",
+      "book-3",
+    ]);
+  });
+
+  it("sorts by the selected mode before applying the limit", () => {
+    const selected = selectHistoryBooks(rows, "title_asc", 3);
+
+    expect(selected.map((row) => row.books?.title)).toEqual(["A", "B", "C"]);
+  });
+
+  it("filters non-history rows before applying the limit", () => {
+    const selected = selectHistoryBooks(
+      [
+        book({ id: "reading", shelf_status: "currently_reading" }),
+        book({ id: "dnf", dnf: true }),
+        ...rows,
+      ],
+      "added_newest"
+    );
+
+    expect(selected).toHaveLength(DEFAULT_HISTORY_VISIBLE_LIMIT);
+    expect(selected.some((row) => row.id === "reading" || row.id === "dnf")).toBe(false);
+  });
+
+  it("counts all finished history books without changing display limit", () => {
+    expect(countFinishedHistoryBooks(rows)).toBe(12);
+    expect(selectHistoryBooks(rows)).toHaveLength(10);
   });
 });
