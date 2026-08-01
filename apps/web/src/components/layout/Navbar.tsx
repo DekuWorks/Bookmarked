@@ -6,6 +6,7 @@ import { NavbarPublicAuth } from "@/components/layout/NavbarPublicAuth";
 import { NavbarMenu, type NavLinkItem } from "@/components/layout/NavbarMenu";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { layout } from "@/lib/constants/layout";
+import { Z_CLASS } from "@/lib/constants/zIndex";
 import { cn } from "@/lib/utils/cn";
 
 type Props = {
@@ -27,6 +28,17 @@ const APP_LINKS: NavLinkItem[] = [
   { href: "/profile/", label: "Profile" },
 ];
 
+/**
+ * Sections not already reachable from `MobileBottomNav`'s 5 tabs
+ * (Home, Feed, Search, Messages, Profile). Surfaced via a "More" menu on
+ * mobile web instead of overcrowding the bottom tab bar.
+ */
+const APP_MOBILE_MORE_LINKS: NavLinkItem[] = [
+  { href: "/library/", label: "Library" },
+  { href: "/clubs/", label: "Book Clubs" },
+  { href: "/events/", label: "Events" },
+];
+
 const PUBLIC_LINKS: NavLinkItem[] = [
   { href: "/#about", label: "About" },
   { href: "/#features", label: "Features" },
@@ -40,7 +52,8 @@ export function Navbar({ variant = "public" }: Props) {
     <header
       id="app-header"
       className={cn(
-        "sticky top-0 z-[100] border-b backdrop-blur",
+        "sticky top-0 border-b backdrop-blur",
+        Z_CLASS.navigation,
         isApp
           ? "border-border/70 bg-surface/95 shadow-sm backdrop-blur-md"
           : "border-transparent bg-transparent"
@@ -53,9 +66,12 @@ export function Navbar({ variant = "public" }: Props) {
         {isApp ? (
           <AppNavLink
             href="/reading-room/"
+            aria-label="Bookmarked home"
             className="shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2 rounded-sm"
           >
-            <BookmarkedLogo priority />
+            {/* Compact mark on narrow screens leaves room for the "More" nav button next to it. */}
+            <BookmarkedLogo compact priority className="md:hidden" />
+            <BookmarkedLogo priority className="hidden md:block" />
           </AppNavLink>
         ) : (
           <Link
@@ -68,9 +84,10 @@ export function Navbar({ variant = "public" }: Props) {
 
         <NavbarMenu
           links={isApp ? APP_LINKS : PUBLIC_LINKS}
+          mobileLinks={isApp ? APP_MOBILE_MORE_LINKS : undefined}
+          mobileMenuLabel={isApp ? "More" : "Menu"}
           actions={isApp ? <NotificationBell /> : null}
           centerNav={!isApp}
-          hideMobileDrawer={isApp}
           footer={
             isApp ? (
               <LogoutButton />

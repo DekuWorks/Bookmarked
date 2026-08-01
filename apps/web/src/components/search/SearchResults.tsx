@@ -11,7 +11,7 @@ import {
   type CatalogSearchResult,
 } from "@/lib/services/isbndb";
 import { resolveDisplayCoverUrl } from "@/lib/services/covers";
-import { getShelvedCatalogExternalIds } from "@/lib/services/library";
+import { getBookShelfMemberships, type BookShelfMembership } from "@/lib/services/library";
 import { SEARCH_PAGE_SIZE } from "@/lib/constants/searchFilters";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { usePreferredCatalogLanguage } from "@/lib/hooks/usePreferredOpenLibraryLanguage";
@@ -51,21 +51,21 @@ export function SearchResults({ query }: Props) {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [shelvedIds, setShelvedIds] = useState<Set<string>>(new Set());
+  const [memberships, setMemberships] = useState<Map<string, BookShelfMembership>>(new Map());
 
   useEffect(() => {
     if (!user) {
-      setShelvedIds(new Set());
+      setMemberships(new Map());
       return;
     }
 
     let cancelled = false;
-    void getShelvedCatalogExternalIds(user.id)
-      .then((ids) => {
-        if (!cancelled) setShelvedIds(ids);
+    void getBookShelfMemberships(user.id)
+      .then((result) => {
+        if (!cancelled) setMemberships(result);
       })
       .catch((error) => {
-        console.error("[search] failed to load shelved catalog ids:", error);
+        console.error("[search] failed to load shelf memberships:", error);
       });
 
     return () => {
@@ -145,6 +145,8 @@ export function SearchResults({ query }: Props) {
             isbn,
           });
           const author = doc.author_name?.[0] ?? null;
+          const membership =
+            memberships.get(externalId) ?? (isbn ? memberships.get(isbn) : undefined);
 
           return (
             <li key={`${doc.key}-${isbn}`} className="w-full max-w-sm">
@@ -162,9 +164,20 @@ export function SearchResults({ query }: Props) {
                   doc.first_publish_year ? String(doc.first_publish_year) : ""
                 }
                 first_sentence={doc.first_sentence?.[0] ?? ""}
-                bookmarked={shelvedIds.has(externalId)}
-                onBookmarked={() => {
-                  setShelvedIds((prev) => new Set(prev).add(externalId));
+                bookmarked={Boolean(membership)}
+                bookId={membership?.bookId ?? null}
+                shelfStatus={membership?.shelfStatus ?? null}
+                onShelfMembershipChange={({ bookId, shelfStatus }) => {
+                  setMemberships((prev) => {
+                    const next = new Map(prev);
+                    next.set(externalId, {
+                      bookId,
+                      shelfStatus,
+                      isFavorite: next.get(externalId)?.isFavorite ?? false,
+                    });
+                    if (isbn) next.set(isbn, next.get(externalId)!);
+                    return next;
+                  });
                 }}
               />
             </li>

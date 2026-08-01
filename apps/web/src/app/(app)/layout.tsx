@@ -19,7 +19,7 @@ export default function AppShellLayout({
         <Navbar variant="app" />
         <main
           id="main-content"
-          className={cn(layout.appMain, "pb-28 md:pb-10")}
+          className={cn(layout.appMain, "pb-[var(--mobile-nav-clearance)] md:pb-10")}
         >
           <Suspense fallback={<LoadingState message="Loading your library…" />}>
             <ClientAuthGuard>

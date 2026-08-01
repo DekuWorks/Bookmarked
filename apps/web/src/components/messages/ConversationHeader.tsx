@@ -16,6 +16,7 @@ import { readerProfilePath } from "@/lib/routes/reader";
 import { profileDisplayName } from "@/lib/utils/messaging";
 import { useToast } from "@/components/ui/Toast";
 import type { ConversationWithParticipants } from "@/types";
+import { Z_CLASS } from "@/lib/constants/zIndex";
 import { cn } from "@/lib/utils/cn";
 
 type Props = {
@@ -59,7 +60,12 @@ export function ConversationHeader({
   }
 
   return (
-    <header className="sticky top-0 z-10 border-b border-border bg-surface/95 px-4 py-3 backdrop-blur">
+    <header
+      className={cn(
+        "sticky top-0 border-b border-border bg-surface/95 px-4 py-3 backdrop-blur",
+        Z_CLASS.stickyHeader
+      )}
+    >
       <div className="mx-auto flex max-w-3xl items-center gap-3">
         <Link
           href={messagesInboxPath()}

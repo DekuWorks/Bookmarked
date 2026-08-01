@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { AppNavLink } from "@/components/layout/AppNavLink";
 import { MessagesUnreadBadge } from "@/components/messages/MessagesUnreadBadge";
+import { Z_CLASS } from "@/lib/constants/zIndex";
 import { cn } from "@/lib/utils/cn";
 
 type NavItem = {
@@ -149,7 +150,10 @@ export function MobileBottomNav() {
 
   return (
     <div
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden"
+      className={cn(
+        "pointer-events-none fixed inset-x-0 bottom-0 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden",
+        Z_CLASS.navigation
+      )}
       aria-hidden={false}
     >
       <nav

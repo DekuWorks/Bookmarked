@@ -20,6 +20,7 @@ import { profileDisplayName } from "@/lib/utils/messaging";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
+import { Z_CLASS } from "@/lib/constants/zIndex";
 import { cn } from "@/lib/utils/cn";
 import type { ConversationWithParticipants, MessageProfile } from "@/types";
 
@@ -365,7 +366,7 @@ export function GroupSettingsMenu({ conversation, currentUserId, onUpdated }: Pr
       {open ? (
         <>
           <div
-            className="fixed inset-0 z-40 bg-puce-red/30 sm:hidden"
+            className={cn("fixed inset-0 bg-puce-red/30 sm:hidden", Z_CLASS.modalBackdrop)}
             aria-hidden
             onClick={() => setOpen(false)}
           />
@@ -373,7 +374,8 @@ export function GroupSettingsMenu({ conversation, currentUserId, onUpdated }: Pr
             role="menu"
             aria-label="Group settings"
             className={cn(
-              "fixed inset-x-0 bottom-0 z-50 rounded-t-2xl sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-0 sm:top-full sm:mt-1 sm:rounded-xl",
+              // Mobile: full bottom sheet (sheet layer). Desktop: contextual dropdown under the trigger (popover layer).
+              "fixed inset-x-0 bottom-0 z-[90] rounded-t-2xl sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-0 sm:top-full sm:z-[60] sm:mt-1 sm:rounded-xl",
               panelClassName
             )}
           >

@@ -5,6 +5,7 @@ import {
   BRAND_ASSETS,
   type SavedBookBadgeSize,
 } from "@/lib/constants/brandAssets";
+import { Z_LAYERS } from "@/lib/constants/zIndex";
 import { cn } from "@/lib/utils/cn";
 
 const sizeClass: Record<SavedBookBadgeSize, string> = {
@@ -15,8 +16,8 @@ const sizeClass: Record<SavedBookBadgeSize, string> = {
 
 /** Flush to cover top-left — no inset so the ribbon reads as hanging off the edge. */
 export const SAVED_BOOK_BADGE_INSET = "0";
-/** Layer above cover art; below interactive menus. */
-export const SAVED_BOOK_BADGE_Z = 20;
+/** Layer above cover art; below interactive menus (see Z_LAYERS in lib/constants/zIndex). */
+export const SAVED_BOOK_BADGE_Z = Z_LAYERS.raisedContent;
 
 type Props = {
   /** When false, badge is hidden. */

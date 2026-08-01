@@ -80,34 +80,76 @@ export async function clearBuiltInShelf(
 
 const SHELVED_CATALOG_SOURCES = new Set(["isbndb", "open_library"]);
 
-/** Catalog external IDs (ISBNs / legacy work ids) for books on the viewer's shelves. */
-export async function getShelvedCatalogExternalIds(userId: string): Promise<Set<string>> {
+export type BookShelfMembership = {
+  bookId: string;
+  shelfStatus: ShelfStatus | null;
+  isFavorite: boolean;
+};
+
+const CATALOG_MEMBERSHIP_SELECT =
+  "book_id, shelf_status, is_favorite, books(id, external_id, external_source, isbn)";
+
+type CatalogMembershipRow = {
+  book_id: string;
+  shelf_status: ShelfStatus | null;
+  is_favorite: boolean | null;
+  books:
+    | {
+        id: string;
+        external_id: string | null;
+        external_source: string | null;
+        isbn: string | null;
+      }
+    | {
+        id: string;
+        external_id: string | null;
+        external_source: string | null;
+        isbn: string | null;
+      }[]
+    | null;
+};
+
+/**
+ * Built-in shelf membership for the viewer's catalog books, keyed by every
+ * external id / ISBN we recognize for a book (mirrors the id lookup used by
+ * {@link getShelvedCatalogExternalIds}). Lets Search show current shelf
+ * status and offer add/remove/move without a separate Library round-trip.
+ */
+export async function getBookShelfMemberships(
+  userId: string
+): Promise<Map<string, BookShelfMembership>> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("user_books")
-    .select("books(external_id, external_source, isbn)")
+    .select(CATALOG_MEMBERSHIP_SELECT)
     .eq("user_id", userId);
 
   if (error) throw error;
 
-  const workIds = new Set<string>();
-  for (const row of data ?? []) {
+  const memberships = new Map<string, BookShelfMembership>();
+  for (const row of (data ?? []) as unknown as CatalogMembershipRow[]) {
     const rawBook = row.books;
-    const book = (Array.isArray(rawBook) ? rawBook[0] : rawBook) as
-      | {
-          external_id: string | null;
-          external_source: string | null;
-          isbn: string | null;
-        }
-      | null
-      | undefined;
+    const book = Array.isArray(rawBook) ? rawBook[0] : rawBook;
     if (!book?.external_source || !SHELVED_CATALOG_SOURCES.has(book.external_source)) {
       continue;
     }
-    if (book.external_id) workIds.add(book.external_id);
-    if (book.isbn) workIds.add(book.isbn.replace(/[-\s]/g, ""));
+
+    const membership: BookShelfMembership = {
+      bookId: book.id,
+      shelfStatus: row.shelf_status,
+      isFavorite: Boolean(row.is_favorite),
+    };
+
+    if (book.external_id) memberships.set(book.external_id, membership);
+    if (book.isbn) memberships.set(book.isbn.replace(/[-\s]/g, ""), membership);
   }
-  return workIds;
+  return memberships;
+}
+
+/** Catalog external IDs (ISBNs / legacy work ids) for books on the viewer's shelves. */
+export async function getShelvedCatalogExternalIds(userId: string): Promise<Set<string>> {
+  const memberships = await getBookShelfMemberships(userId);
+  return new Set(memberships.keys());
 }
 
 /** @deprecated Use getShelvedCatalogExternalIds */

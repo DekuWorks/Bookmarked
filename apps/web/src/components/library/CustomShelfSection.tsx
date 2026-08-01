@@ -7,6 +7,8 @@ import { EmptyShelfMessage } from "@/components/library/EmptyShelfMessage";
 import { DeleteCustomShelfModal } from "@/components/shelves/DeleteCustomShelfModal";
 import { customShelfPath } from "@/lib/routes/customShelf";
 import { bookDetailsPath } from "@/lib/routes/book";
+import { Z_CLASS } from "@/lib/constants/zIndex";
+import { cn } from "@/lib/utils/cn";
 import type { CustomShelfGroup } from "@/lib/services/customShelves";
 
 type Props = {
@@ -40,7 +42,10 @@ export function CustomShelfSection({ shelf, showHeaderLink = true, onDeleted }: 
 
   return (
     <>
-      <section className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
+      {/* No `overflow-hidden` on the section itself — the header's "⋯" dropdown is
+          absolutely positioned inside it and would otherwise get clipped. Rounded
+          corners + overflow clipping are scoped to the shelf visual below instead. */}
+      <section className="rounded-xl border border-border bg-surface shadow-sm">
         <div className="flex flex-col items-center justify-center gap-2 border-b border-border px-4 py-3 text-center sm:flex-row sm:justify-between">
           <div>
             <h2 className="flex flex-wrap items-center justify-center gap-2 text-lg font-semibold text-puce-red sm:justify-start">
@@ -76,7 +81,10 @@ export function CustomShelfSection({ shelf, showHeaderLink = true, onDeleted }: 
                 {menuOpen ? (
                   <div
                     role="menu"
-                    className="absolute right-0 top-full z-20 mt-1 min-w-[10rem] rounded-lg border border-border bg-surface py-1 shadow-lg"
+                    className={cn(
+                      "absolute right-0 top-full mt-1 min-w-[10rem] rounded-lg border border-border bg-surface py-1 shadow-lg",
+                      Z_CLASS.dropdown
+                    )}
                   >
                     <button
                       type="button"
@@ -93,28 +101,30 @@ export function CustomShelfSection({ shelf, showHeaderLink = true, onDeleted }: 
           </div>
         </div>
 
-        <div className="bookshelf-back px-4 pb-0 pt-5">
-          {shelf.items.length === 0 ? (
-            <EmptyShelfMessage className="pb-6" />
-          ) : (
-            <div className="bookshelf-row scrollbar-thin">
-              {shelf.items.map((item) => {
-                const book = item.books;
-                return (
-                  <BookSpine
-                    key={item.id}
-                    title={book?.title ?? "Untitled"}
-                    author={book?.author}
-                    coverUrl={book?.cover_url}
-                    pageCount={book?.page_count}
-                    href={book?.id ? bookDetailsPath(book.id) : undefined}
-                  />
-                );
-              })}
-            </div>
-          )}
+        <div className="overflow-hidden rounded-b-xl">
+          <div className="bookshelf-back px-4 pb-0 pt-5">
+            {shelf.items.length === 0 ? (
+              <EmptyShelfMessage className="pb-6" />
+            ) : (
+              <div className="bookshelf-row scrollbar-thin">
+                {shelf.items.map((item) => {
+                  const book = item.books;
+                  return (
+                    <BookSpine
+                      key={item.id}
+                      title={book?.title ?? "Untitled"}
+                      author={book?.author}
+                      coverUrl={book?.cover_url}
+                      pageCount={book?.page_count}
+                      href={book?.id ? bookDetailsPath(book.id) : undefined}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          <div className="bookshelf-board h-5 rounded-b-xl" aria-hidden />
         </div>
-        <div className="bookshelf-board h-5 rounded-b-xl" aria-hidden />
       </section>
 
       {onDeleted ? (

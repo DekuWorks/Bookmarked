@@ -14,6 +14,7 @@ import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import { layout } from "@/lib/constants/layout";
+import { Z_CLASS } from "@/lib/constants/zIndex";
 import { cn } from "@/lib/utils/cn";
 import { MessagesUnreadBadge } from "@/components/messages/MessagesUnreadBadge";
 
@@ -34,6 +35,13 @@ type Props = {
   centerNav?: boolean;
   /** Hide hamburger drawer on mobile (e.g. when bottom nav is used). */
   hideMobileDrawer?: boolean;
+  /**
+   * Links shown in the mobile drawer instead of `links` (e.g. only the
+   * sections not already covered by a bottom tab bar). Defaults to `links`.
+   */
+  mobileLinks?: NavLinkItem[];
+  /** Label + accessible name for the mobile trigger; defaults to "Menu". */
+  mobileMenuLabel?: string;
 };
 
 const linkBase =
@@ -86,8 +94,11 @@ export function NavbarMenu({
   useAppNavLinks = false,
   centerNav = false,
   hideMobileDrawer = false,
+  mobileLinks,
+  mobileMenuLabel = "Menu",
 }: Props) {
   const drawerFooter = mobileFooter ?? footer;
+  const drawerLinks = mobileLinks ?? links;
   const [open, setOpen] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(56);
   const [mounted, setMounted] = useState(false);
@@ -139,14 +150,14 @@ export function NavbarMenu({
     open && mounted
       ? createPortal(
           <div
-            className="fixed inset-x-0 bottom-0 z-[90] md:hidden"
+            className={cn("fixed inset-x-0 bottom-0 md:hidden", Z_CLASS.sheet)}
             style={{ top: headerHeight }}
             role="presentation"
           >
             <button
               type="button"
               className="absolute inset-0 bg-puce-red/30"
-              aria-label="Close navigation menu"
+              aria-label={`Close ${mobileMenuLabel.toLowerCase()}`}
               onClick={close}
             />
             <div
@@ -154,12 +165,12 @@ export function NavbarMenu({
               ref={panelRef}
               role="dialog"
               aria-modal="true"
-              aria-label="Navigation menu"
+              aria-label={mobileMenuLabel}
               tabIndex={-1}
               className="relative max-h-full overflow-y-auto border-b border-border bg-surface shadow-lg outline-none"
             >
               <nav className={cn(layout.container, "flex flex-col gap-1 py-4")}>
-                {links.map((link) => {
+                {drawerLinks.map((link) => {
                   const active = useAppNavLinks && isActivePath(pathname ?? "", link.href);
                   return (
                   <NavItem
@@ -234,28 +245,30 @@ export function NavbarMenu({
         ) : null}
       </div>
 
-      {/* Mobile menu toggle + actions (aligned to the right of the header) */}
-      <div className="relative z-[110] ml-auto flex items-center gap-1 md:hidden">
+      {/* Mobile menu toggle + actions (aligned to the right of the header).
+          Already inside the header's own stacking context (Z_CLASS.navigation),
+          so this only needs `relative` to layer above its sibling nav content. */}
+      <div className="relative ml-auto flex items-center gap-1 md:hidden">
         {actions ? <div className="flex items-center">{actions}</div> : null}
         {!hideMobileDrawer ? (
         <button
           type="button"
           className={cn(
-            "inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-border bg-surface text-puce-red md:hidden",
+            "inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg border border-border bg-surface text-puce-red md:hidden",
+            mobileLinks ? "min-w-[44px] px-3" : "min-w-[44px]",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2"
           )}
           aria-expanded={open}
           aria-controls={menuId}
-          aria-label={open ? "Close navigation menu" : "Open navigation menu"}
+          aria-label={open ? `Close ${mobileMenuLabel.toLowerCase()}` : `Open ${mobileMenuLabel.toLowerCase()}`}
           onClick={(event) => {
             event.stopPropagation();
             setOpen((value) => !value);
           }}
         >
-          <span className="sr-only">{open ? "Close menu" : "Open menu"}</span>
           <svg
             aria-hidden
-            className="h-6 w-6"
+            className="h-5 w-5"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -263,10 +276,23 @@ export function NavbarMenu({
           >
             {open ? (
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            ) : mobileLinks ? (
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 6h.01M12 12h.01M12 18h.01"
+              />
             ) : (
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
             )}
           </svg>
+          {mobileLinks ? (
+            <span aria-hidden className="text-sm font-medium">
+              {mobileMenuLabel}
+            </span>
+          ) : (
+            <span className="sr-only">{open ? "Close menu" : "Open menu"}</span>
+          )}
         </button>
         ) : null}
       </div>

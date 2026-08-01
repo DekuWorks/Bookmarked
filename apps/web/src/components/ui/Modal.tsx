@@ -1,8 +1,10 @@
 "use client";
 
 import { cn } from "@/lib/utils/cn";
+import { Z_CLASS } from "@/lib/constants/zIndex";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 type Props = {
   open: boolean;
@@ -15,8 +17,13 @@ type Props = {
 export function Modal({ open, onClose, title, children, className }: Props) {
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useFocusTrap(panelRef, open);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (open) {
@@ -38,11 +45,14 @@ export function Modal({ open, onClose, title, children, className }: Props) {
     };
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-40 flex items-end justify-center p-0 sm:items-center sm:p-4"
+      className={cn(
+        "fixed inset-0 flex items-end justify-center p-0 sm:items-center sm:p-4",
+        Z_CLASS.modalBackdrop
+      )}
       role="presentation"
     >
       <button
@@ -57,8 +67,9 @@ export function Modal({ open, onClose, title, children, className }: Props) {
         aria-modal="true"
         aria-labelledby={title ? "modal-title" : undefined}
         className={cn(
-          "relative z-10 w-full max-w-md rounded-t-2xl bg-surface p-4 shadow-xl sm:rounded-xl sm:p-6",
+          "relative w-full max-w-md rounded-t-2xl bg-surface p-4 shadow-xl sm:rounded-xl sm:p-6",
           "mx-0 max-h-[90vh] overflow-y-auto sm:mx-4",
+          Z_CLASS.modal,
           className
         )}
       >
@@ -81,6 +92,7 @@ export function Modal({ open, onClose, title, children, className }: Props) {
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

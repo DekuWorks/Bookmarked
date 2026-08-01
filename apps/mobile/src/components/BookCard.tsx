@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Pressable, Text, View, type PressableProps } from "react-native";
 import { BookCover } from "./BookCover";
 
@@ -6,12 +7,14 @@ type Props = PressableProps & {
   author?: string | null;
   coverUrl?: string | null;
   subtitle?: string | null;
+  /** Optional trailing accessory, e.g. a current-shelf badge in Search results. */
+  rightAccessory?: ReactNode;
 };
 
-export function BookCard({ title, author, coverUrl, subtitle, ...rest }: Props) {
+export function BookCard({ title, author, coverUrl, subtitle, rightAccessory, ...rest }: Props) {
   return (
     <Pressable
-      className="flex-row gap-3 rounded-2xl border border-brand-border bg-surface p-3 mb-3 active:opacity-80"
+      className="flex-row items-center gap-3 rounded-2xl border border-brand-border bg-surface p-3 mb-3 active:opacity-80"
       {...rest}
     >
       <BookCover url={coverUrl} title={title} sizeClassName="w-14 h-20" />
@@ -30,6 +33,7 @@ export function BookCard({ title, author, coverUrl, subtitle, ...rest }: Props) 
           </Text>
         ) : null}
       </View>
+      {rightAccessory ? <View className="shrink-0">{rightAccessory}</View> : null}
     </Pressable>
   );
 }

@@ -7,6 +7,7 @@ import {
   isValidReactionEmoji,
   normalizeReactionEmoji,
 } from "@/lib/utils/emoji";
+import { Z_CLASS } from "@/lib/constants/zIndex";
 import { cn } from "@/lib/utils/cn";
 
 type Props = {
@@ -71,7 +72,8 @@ export function MessageReactionPicker({ onSelect, onClose, alignEnd }: Props) {
       role="dialog"
       aria-label="Choose a reaction"
       className={cn(
-        "absolute bottom-full z-30 mb-2 flex w-64 max-w-[min(16rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-lg",
+        "absolute bottom-full mb-2 flex w-64 max-w-[min(16rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-lg",
+        Z_CLASS.popover,
         alignEnd ? "right-0" : "left-0"
       )}
     >

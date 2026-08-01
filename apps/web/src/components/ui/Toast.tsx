@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { Z_CLASS } from "@/lib/constants/zIndex";
 import { cn } from "@/lib/utils/cn";
 
 type ToastVariant = "success" | "error";
@@ -55,7 +56,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={value}>
       {children}
       <div
-        className="pointer-events-none fixed bottom-4 right-4 z-[100] flex max-w-sm flex-col gap-2"
+        className={cn(
+          // Clears the floating mobile bottom nav; desktop keeps the tight bottom-4 offset.
+          "pointer-events-none fixed right-4 bottom-[var(--mobile-nav-clearance)] flex max-w-sm flex-col gap-2 md:bottom-4",
+          Z_CLASS.toast
+        )}
         aria-live="polite"
         aria-relevant="additions"
       >

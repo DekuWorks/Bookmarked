@@ -32,6 +32,7 @@ import {
   updateReadingProgress,
 } from "../../../src/services/library";
 import { needsMissingPageCountPrompt } from "../../../src/services/completeReadingSession";
+import { TAB_BAR_SPACE } from "../../../src/navigation/TabBarScroll";
 import { useAuthStore } from "../../../src/store/authStore";
 import type { Review, ReadingSession, ShelfStatus } from "../../../src/types";
 
@@ -370,7 +371,7 @@ export default function BookScreen() {
   return (
     <View className="flex-1 bg-background">
       <ScreenHeader title={book.title} />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 48, gap: 16 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: TAB_BAR_SPACE, gap: 16 }}>
         <BookCoverAmbience>
           <View className="items-center">
             <BookCover

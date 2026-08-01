@@ -14,6 +14,7 @@ import { computeReadingGoal } from "../../src/services/readingGoal";
 import { supabase } from "../../src/services/supabase";
 import { ThemePreferencePanel } from "../../src/components/ThemePreferencePanel";
 import { useAuthStore } from "../../src/store/authStore";
+import { TAB_BAR_SPACE } from "../../src/navigation/TabBarScroll";
 import { useState } from "react";
 
 export default function SettingsRoute() {
@@ -79,7 +80,7 @@ export default function SettingsRoute() {
     <View className="flex-1 bg-background">
       <ScreenHeader title="Account settings" />
       <ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: 48 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: TAB_BAR_SPACE }}
         keyboardShouldPersistTaps="handled"
       >
         <Text className="text-sm text-ink-muted mb-6">

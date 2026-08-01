@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Avatar } from "./Avatar";
 import {
   createDirectConversation,
@@ -55,6 +56,7 @@ export function ShareContentSheet({
 }: Props) {
   const router = useRouter();
   const colors = useThemeColors();
+  const insets = useSafeAreaInsets();
   const [mode, setMode] = useState<"choose" | "message">("choose");
   const [note, setNote] = useState("");
   const [query, setQuery] = useState("");
@@ -191,8 +193,8 @@ export function ShareContentSheet({
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <Pressable className="flex-1 justify-end bg-black/40" onPress={onClose}>
         <Pressable
-          className="max-h-[85%] rounded-t-3xl px-5 pb-8 pt-5"
-          style={{ backgroundColor: colors.surface }}
+          className="max-h-[85%] rounded-t-3xl px-5 pt-5"
+          style={{ backgroundColor: colors.surface, paddingBottom: insets.bottom + 24 }}
           onPress={(event) => event.stopPropagation()}
         >
           <Text className="text-xl" style={{ fontFamily: SANS_FONT_BOLD, color: colors.puceRed }}>

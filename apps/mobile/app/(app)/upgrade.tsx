@@ -13,6 +13,7 @@ import { useSubscription } from "../../src/hooks/useSubscription";
 import { useSubscriptionActivationPoll } from "../../src/hooks/useSubscriptionActivationPoll";
 import { createBillingPortalSession } from "../../src/services/stripePortal";
 import { useAuthStore } from "../../src/store/authStore";
+import { TAB_BAR_SPACE } from "../../src/navigation/TabBarScroll";
 
 const PLUS_PRICE = "$5.99 / month";
 const PLUS_YEARLY_PRICE = "$59.99 / year";
@@ -87,7 +88,7 @@ export default function UpgradeRoute() {
   return (
     <View className="flex-1 bg-background">
       <ScreenHeader title="Bookmarked Membership" />
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 48, gap: 16 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: TAB_BAR_SPACE, gap: 16 }}>
         <Text className="text-center text-ink-muted">
           Free keeps the essentials. Bookmarked Plus unlocks reading intelligence; Bookmarked Home
           adds maps, matches, and concierge support across web and mobile.

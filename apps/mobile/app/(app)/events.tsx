@@ -6,6 +6,7 @@ import { LoadingState } from "../../src/components/LoadingState";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { useUpcomingEvents } from "../../src/hooks/useClubEvents";
 import { formatEventDateTime } from "../../src/services/clubEvents";
+import { TAB_BAR_SPACE } from "../../src/navigation/TabBarScroll";
 
 export default function EventsScreen() {
   const router = useRouter();
@@ -14,7 +15,11 @@ export default function EventsScreen() {
   return (
     <View className="flex-1 bg-background">
       <ScreenHeader title="Events" />
-      <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8 pt-2">
+      <ScrollView
+        className="flex-1 px-4"
+        contentContainerClassName="pt-2"
+        contentContainerStyle={{ paddingBottom: TAB_BAR_SPACE }}
+      >
         <Text className="mb-4 text-center text-sm text-text-muted">
           Upcoming read-alongs and meetups from public clubs and clubs you belong to.
         </Text>

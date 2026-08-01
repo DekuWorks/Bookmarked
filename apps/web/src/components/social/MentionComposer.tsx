@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Textarea } from "@/components/ui/Input";
 import { searchProfilesForMessaging } from "@/lib/services/messages";
 import type { MessageProfile } from "@/types";
+import { Z_CLASS } from "@/lib/constants/zIndex";
 import { cn } from "@/lib/utils/cn";
 import { activeMentionQuery as getActiveMentionQuery } from "@/lib/utils/mentions";
 
@@ -138,7 +139,10 @@ export function MentionComposer({
 
       {suggestions.length > 0 && mentionQuery !== null ? (
         <ul
-          className="absolute z-20 mt-1 max-h-48 w-full overflow-auto rounded-lg border border-border bg-surface py-1 shadow-md"
+          className={cn(
+            "absolute mt-1 max-h-48 w-full overflow-auto rounded-lg border border-border bg-surface py-1 shadow-md",
+            Z_CLASS.dropdown
+          )}
           role="listbox"
         >
           {suggestions.map((profile, index) => {

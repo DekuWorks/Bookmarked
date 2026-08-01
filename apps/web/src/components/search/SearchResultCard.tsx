@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { BookCover } from "@/components/books/BookCover";
 import { ShelfSelectMenu } from "@/components/shelves/ShelfSelectMenu";
+import { ShelfBadge } from "@/components/shelves/ShelfBadge";
 import { AddToCustomShelfMenu } from "@/components/shelves/AddToCustomShelfMenu";
 import {
   EditionPickerModal,
@@ -17,10 +18,13 @@ import {
   addCatalogBookToShelf,
   ensureCatalogBook,
 } from "@/lib/services/books";
+import { removeFromShelf } from "@/lib/actions/book";
+import { listCustomShelfIdsForBook } from "@/lib/services/customShelves";
 import { needsMissingPageCountPrompt } from "@/lib/services/completeReadingSession";
 import { resolveDisplayCoverUrl } from "@/lib/services/covers";
 import { bookDetailsPath } from "@/lib/routes/book";
 import { authorPagePath } from "@/lib/routes/author";
+import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { cn } from "@/lib/utils/cn";
 import type { ShelfStatus } from "@/types";
 
@@ -43,6 +47,12 @@ type Props = {
   first_sentence?: string;
   bookmarked?: boolean;
   onBookmarked?: () => void;
+  /** Catalog book id, when this result is already in the shared `books` table. */
+  bookId?: string | null;
+  /** Current built-in shelf, when this result is already on the viewer's shelves. */
+  shelfStatus?: ShelfStatus | null;
+  /** Called after a successful add/move/remove so the search list can stay in sync. */
+  onShelfMembershipChange?: (membership: { bookId: string; shelfStatus: ShelfStatus | null }) => void;
 };
 
 function ResultActions({
@@ -50,8 +60,11 @@ function ResultActions({
   onAddToShelf,
   onPickEdition,
   onAddToCollection,
+  onRemove,
   viewDetailsLoading,
   addLoading,
+  removing,
+  shelved,
   editionLabel,
   overlay = false,
   className,
@@ -60,13 +73,17 @@ function ResultActions({
   onAddToShelf: () => void;
   onPickEdition: () => void;
   onAddToCollection: () => void;
+  onRemove?: () => void;
   viewDetailsLoading: boolean;
   addLoading: boolean;
+  removing?: boolean;
+  shelved: boolean;
   editionLabel?: string | null;
   overlay?: boolean;
   className?: string;
 }) {
   const outlineButtonClass = overlay ? overlayOutlineButtonClass : undefined;
+  const busy = addLoading || Boolean(removing);
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
@@ -93,22 +110,35 @@ function ResultActions({
         variant="outline"
         size="sm"
         loading={addLoading}
-        disabled={addLoading}
+        disabled={busy}
         onClick={onAddToShelf}
         className={outlineButtonClass}
       >
-        Add to shelf
+        {shelved ? "Move shelf" : "Add to shelf"}
       </Button>
       <Button
         type="button"
         variant="outline"
         size="sm"
-        disabled={addLoading}
+        disabled={busy}
         onClick={onAddToCollection}
         className={outlineButtonClass}
       >
         Add to collection
       </Button>
+      {shelved && onRemove ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          loading={removing}
+          disabled={busy}
+          onClick={onRemove}
+          className={overlay ? "text-surface hover:bg-surface/20 hover:text-surface" : "text-rust"}
+        >
+          Remove from shelves
+        </Button>
+      ) : null}
     </div>
   );
 }
@@ -125,20 +155,46 @@ export function SearchResultCard({
   first_sentence = "",
   bookmarked = false,
   onBookmarked,
+  bookId = null,
+  shelfStatus = null,
+  onShelfMembershipChange,
 }: Props) {
   const router = useRouter();
+  const user = useAuthUser();
   const toast = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
   const [editionOpen, setEditionOpen] = useState(false);
   const [missingPageOpen, setMissingPageOpen] = useState(false);
   const [pendingShelf, setPendingShelf] = useState<ShelfStatus | null>(null);
   const [saving, setSaving] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const [viewDetailsLoading, setViewDetailsLoading] = useState(false);
   const [selectedEdition, setSelectedEdition] = useState<CatalogEditionSummary | null>(
     null
   );
   const [resolvedCoverUrl, setResolvedCoverUrl] = useState<string | null>(coverUrl);
   const [customBookId, setCustomBookId] = useState<string | null>(null);
+  const [resolvedBookId, setResolvedBookId] = useState<string | null>(bookId);
+  const [optimisticShelf, setOptimisticShelf] = useState<ShelfStatus | null>(shelfStatus);
+  const [memberShelfIds, setMemberShelfIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    setResolvedBookId(bookId);
+  }, [bookId]);
+
+  useEffect(() => {
+    setOptimisticShelf(shelfStatus);
+  }, [shelfStatus]);
+
+  useEffect(() => {
+    if (!user || !resolvedBookId) {
+      setMemberShelfIds([]);
+      return;
+    }
+    void listCustomShelfIdsForBook(user.id, resolvedBookId)
+      .then(setMemberShelfIds)
+      .catch((error) => console.error("[custom-shelf] membership load failed:", error));
+  }, [user, resolvedBookId]);
 
   const effectiveIsbn = selectedEdition?.isbn ?? isbn;
   const effectivePageCount = selectedEdition?.pageCount
@@ -195,6 +251,7 @@ export function SearchResultCard({
         toast.error(result.error ?? "Could not prepare this book.");
         return;
       }
+      setResolvedBookId(result.bookId);
       setCustomBookId(result.bookId);
     } finally {
       setSaving(false);
@@ -202,9 +259,11 @@ export function SearchResultCard({
   }
 
   async function submitShelf(
-    shelfStatus: ShelfStatus,
+    shelfStatusToApply: ShelfStatus,
     options?: { manualPageCount?: number }
   ) {
+    const previousShelf = optimisticShelf;
+    setOptimisticShelf(shelfStatusToApply);
     setSaving(true);
     const formData = new FormData();
     formData.set("title", bookPayload.title);
@@ -218,7 +277,7 @@ export function SearchResultCard({
     if (bookPayload.edition_key) {
       formData.set("edition_key", bookPayload.edition_key);
     }
-    formData.set("shelf_status", shelfStatus);
+    formData.set("shelf_status", shelfStatusToApply);
     if (options?.manualPageCount != null) {
       formData.set("manual_page_count", String(options.manualPageCount));
     }
@@ -226,6 +285,7 @@ export function SearchResultCard({
     try {
       const result = await addCatalogBookToShelf({}, formData);
       if (result.error) {
+        setOptimisticShelf(previousShelf);
         toast.error(result.error || "Could not add book. Please try again.");
         return;
       }
@@ -234,36 +294,68 @@ export function SearchResultCard({
         setMenuOpen(false);
         setMissingPageOpen(false);
         setPendingShelf(null);
+        if (result.bookId) {
+          setResolvedBookId(result.bookId);
+          onShelfMembershipChange?.({ bookId: result.bookId, shelfStatus: shelfStatusToApply });
+        }
         onBookmarked?.();
       }
+    } catch (error) {
+      setOptimisticShelf(previousShelf);
+      toast.error(error instanceof Error ? error.message : "Could not update shelf.");
     } finally {
       setSaving(false);
     }
   }
 
-  async function handleSelectShelf(shelfStatus: ShelfStatus) {
+  async function handleSelectShelf(shelfStatusToApply: ShelfStatus) {
     const catalogPageCount = bookPayload.page_count ? Number(bookPayload.page_count) : null;
     const editionSelected = Boolean(bookPayload.edition_key || bookPayload.isbn);
 
     if (
-      shelfStatus === "read" &&
+      shelfStatusToApply === "read" &&
       needsMissingPageCountPrompt({
         editionSelected,
         catalogPageCount,
         previousPage: 0,
       })
     ) {
-      setPendingShelf(shelfStatus);
+      setPendingShelf(shelfStatusToApply);
       setMissingPageOpen(true);
       return;
     }
 
-    await submitShelf(shelfStatus);
+    await submitShelf(shelfStatusToApply);
+  }
+
+  async function handleRemove() {
+    if (!resolvedBookId) return;
+    const previousShelf = optimisticShelf;
+    setOptimisticShelf(null);
+    setRemoving(true);
+    const formData = new FormData();
+    formData.set("book_id", resolvedBookId);
+    try {
+      const result = await removeFromShelf({}, formData);
+      if (result.error) {
+        setOptimisticShelf(previousShelf);
+        toast.error(result.error);
+        return;
+      }
+      toast.success(result.success ?? "Removed from your library.");
+      onShelfMembershipChange?.({ bookId: resolvedBookId, shelfStatus: null });
+    } catch (error) {
+      setOptimisticShelf(previousShelf);
+      toast.error(error instanceof Error ? error.message : "Could not remove this book.");
+    } finally {
+      setRemoving(false);
+    }
   }
 
   const editionLabel = selectedEdition
     ? [selectedEdition.publishDate, selectedEdition.publisher].filter(Boolean).join(" · ")
     : null;
+  const shelved = Boolean(optimisticShelf);
 
   return (
     <>
@@ -278,7 +370,7 @@ export function SearchResultCard({
             coverUrl={resolvedCoverUrl}
             className="rounded-none border-0"
             sizes="(max-width: 768px) 50vw, 200px"
-            bookmarked={bookmarked}
+            bookmarked={bookmarked || shelved}
           />
 
           <div
@@ -287,12 +379,15 @@ export function SearchResultCard({
           >
             <ResultActions
               overlay
+              shelved={shelved}
               onViewDetails={handleViewDetails}
               onAddToShelf={openShelfMenu}
               onAddToCollection={() => void openCustomShelfMenu()}
+              onRemove={() => void handleRemove()}
               onPickEdition={() => setEditionOpen(true)}
               viewDetailsLoading={viewDetailsLoading}
               addLoading={saving}
+              removing={removing}
               editionLabel={editionLabel}
             />
           </div>
@@ -312,16 +407,24 @@ export function SearchResultCard({
           {editionLabel ? (
             <p className="text-xs text-primary">Edition: {editionLabel}</p>
           ) : null}
+          {optimisticShelf ? (
+            <div className="flex justify-center">
+              <ShelfBadge status={optimisticShelf} />
+            </div>
+          ) : null}
         </div>
 
         <div className="flex flex-col gap-2 border-t border-border px-4 pb-4 pt-3 md:hidden">
           <ResultActions
+            shelved={shelved}
             onViewDetails={handleViewDetails}
             onAddToShelf={openShelfMenu}
             onAddToCollection={() => void openCustomShelfMenu()}
+            onRemove={() => void handleRemove()}
             onPickEdition={() => setEditionOpen(true)}
             viewDetailsLoading={viewDetailsLoading}
             addLoading={saving}
+            removing={removing}
             editionLabel={editionLabel}
           />
         </div>
@@ -342,6 +445,8 @@ export function SearchResultCard({
         bookTitle={bookPayload.title}
         open={menuOpen}
         loading={saving}
+        currentShelfStatus={optimisticShelf}
+        mode={optimisticShelf ? "move" : "add"}
         onSelectShelf={handleSelectShelf}
         onClose={() => {
           if (!saving) setMenuOpen(false);
@@ -353,6 +458,8 @@ export function SearchResultCard({
           bookId={customBookId}
           bookTitle={bookPayload.title}
           open
+          memberShelfIds={memberShelfIds}
+          onAdded={(shelfId) => setMemberShelfIds((prev) => [...prev, shelfId])}
           onClose={() => setCustomBookId(null)}
         />
       ) : null}

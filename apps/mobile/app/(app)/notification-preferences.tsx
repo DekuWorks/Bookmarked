@@ -5,6 +5,7 @@ import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { useProfile } from "../../src/hooks/useProfile";
 import { updateNotificationPreferences } from "../../src/services/notifications";
 import { useAuthStore } from "../../src/store/authStore";
+import { TAB_BAR_SPACE } from "../../src/navigation/TabBarScroll";
 
 type PrefKey =
   | "notify_messages"
@@ -103,7 +104,7 @@ export default function NotificationPreferencesScreen() {
   return (
     <View className="flex-1 bg-background">
       <ScreenHeader title="Notifications" />
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 48 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: TAB_BAR_SPACE }}>
         <Text className="text-sm text-ink-muted mb-4">
           Choose what you want to hear about in the app.
         </Text>

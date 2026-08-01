@@ -18,6 +18,7 @@ import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { UpgradePrompt } from "../../src/components/UpgradePrompt";
 import { useSubscription } from "../../src/hooks/useSubscription";
 import { useProfile } from "../../src/hooks/useProfile";
+import { TAB_BAR_SPACE } from "../../src/navigation/TabBarScroll";
 import {
   loadComputedReadingDna,
   persistReadingDnaSnapshot,
@@ -155,7 +156,7 @@ export default function ReadingDnaRoute() {
   return (
     <View className="flex-1 bg-background">
       <ScreenHeader title="Reading DNA" />
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 48 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: TAB_BAR_SPACE }}>
         {loading && !dna ? (
           <ActivityIndicator color={colors.puceRed} />
         ) : dna ? (

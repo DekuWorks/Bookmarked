@@ -9,6 +9,7 @@ import { Input } from "../../../src/components/Input";
 import { useCreateClub } from "../../../src/hooks/useClubs";
 import { ensureCatalogBook } from "../../../src/services/bookClubs";
 import { uploadClubAvatar, type PickedImage } from "../../../src/services/storage";
+import { TAB_BAR_SPACE } from "../../../src/navigation/TabBarScroll";
 import type { CatalogDoc } from "../../../src/services/isbndb";
 import type { BookClubVisibility } from "../../../src/types";
 
@@ -75,7 +76,7 @@ export default function CreateClubRoute() {
     <View className="flex-1 bg-background">
       <Stack.Screen options={{ title: "Start a club" }} />
       <ScrollView
-        contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+        contentContainerStyle={{ padding: 20, paddingBottom: TAB_BAR_SPACE }}
         keyboardShouldPersistTaps="handled"
       >
         <CircleAvatarPicker

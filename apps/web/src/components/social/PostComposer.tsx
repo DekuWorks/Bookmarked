@@ -19,6 +19,7 @@ import type { PostDraft } from "@/types";
 import { GifSearchPicker } from "@/components/social/GifSearchPickerLazy";
 import type { GiphySearchResult } from "@/lib/services/giphy";
 import { isAllowedPostImageUrl, resolveGiphyImageUrl } from "@/lib/utils/giphy";
+import { Z_CLASS } from "@/lib/constants/zIndex";
 import { cn } from "@/lib/utils/cn";
 import { containsProfanity } from "@/lib/utils/profanity";
 import { MAX_POST_BODY_LENGTH } from "@/lib/constants/validation";
@@ -372,7 +373,12 @@ export function PostComposer({ userId, onPostCreated }: Props) {
           </Button>
 
           {draftsOpen ? (
-            <div className="absolute right-0 z-20 mt-1 w-72 rounded-lg border border-border bg-surface py-1 shadow-md">
+            <div
+              className={cn(
+                "absolute right-0 mt-1 w-72 rounded-lg border border-border bg-surface py-1 shadow-md",
+                Z_CLASS.dropdown
+              )}
+            >
               {draftsLoading ? (
                 <p className="px-3 py-2 text-sm text-text-muted">Loading drafts…</p>
               ) : drafts.length === 0 ? (

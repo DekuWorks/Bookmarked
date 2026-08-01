@@ -24,6 +24,7 @@ import { containsProfanity } from "../../src/utils/profanity";
 import { activeMentionQuery } from "../../src/utils/mentions";
 import { useAuthStore } from "../../src/store/authStore";
 import { useQueryClient } from "@tanstack/react-query";
+import { TAB_BAR_SPACE } from "../../src/navigation/TabBarScroll";
 import type { PostDraft, PostWithAuthor } from "../../src/types";
 
 const MAX = 1000;
@@ -184,7 +185,7 @@ export default function ComposeRoute() {
         keyboardVerticalOffset={90}
       >
         <ScrollView
-          contentContainerStyle={{ padding: 16, gap: 16 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: TAB_BAR_SPACE, gap: 16 }}
           keyboardShouldPersistTaps="handled"
         >
           {draftsOpen && drafts.length ? (

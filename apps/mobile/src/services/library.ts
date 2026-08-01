@@ -628,3 +628,89 @@ export async function toggleFavorite(
   if (error) return { error: error.message };
   return {};
 }
+
+/**
+ * Fully removes a book from the viewer's built-in shelves (deletes the
+ * `user_books` row). Custom shelf memberships live in a separate table
+ * (`user_shelf_books`) and are untouched. Mirrors the web
+ * `removeFromShelf` action so Library and Search share identical semantics.
+ */
+export async function removeBookFromShelf(
+  userId: string,
+  bookId: string
+): Promise<{ error?: string }> {
+  const { error } = await supabase
+    .from("user_books")
+    .delete()
+    .eq("user_id", userId)
+    .eq("book_id", bookId);
+  if (error) return { error: error.message };
+  return {};
+}
+
+const SHELVED_CATALOG_SOURCES = new Set(["isbndb", "open_library"]);
+
+export type BookShelfMembership = {
+  bookId: string;
+  shelfStatus: ShelfStatus | null;
+  isFavorite: boolean;
+};
+
+const CATALOG_MEMBERSHIP_SELECT =
+  "book_id, shelf_status, is_favorite, books(id, external_id, external_source, isbn)";
+
+type CatalogMembershipRow = {
+  book_id: string;
+  shelf_status: ShelfStatus | null;
+  is_favorite: boolean | null;
+  books:
+    | {
+        id: string;
+        external_id: string | null;
+        external_source: string | null;
+        isbn: string | null;
+      }
+    | {
+        id: string;
+        external_id: string | null;
+        external_source: string | null;
+        isbn: string | null;
+      }[]
+    | null;
+};
+
+/**
+ * Built-in shelf membership for the viewer's catalog books, keyed by every
+ * external id / ISBN we recognize for a book. Powers the shelf indicator and
+ * add/remove/move actions directly from Search (mirrors the web
+ * `getBookShelfMemberships`).
+ */
+export async function getBookShelfMemberships(
+  userId: string
+): Promise<Map<string, BookShelfMembership>> {
+  const { data, error } = await supabase
+    .from("user_books")
+    .select(CATALOG_MEMBERSHIP_SELECT)
+    .eq("user_id", userId);
+
+  if (error) throw error;
+
+  const memberships = new Map<string, BookShelfMembership>();
+  for (const row of (data ?? []) as unknown as CatalogMembershipRow[]) {
+    const rawBook = row.books;
+    const book = Array.isArray(rawBook) ? rawBook[0] : rawBook;
+    if (!book?.external_source || !SHELVED_CATALOG_SOURCES.has(book.external_source)) {
+      continue;
+    }
+
+    const membership: BookShelfMembership = {
+      bookId: book.id,
+      shelfStatus: row.shelf_status,
+      isFavorite: Boolean(row.is_favorite),
+    };
+
+    if (book.external_id) memberships.set(book.external_id, membership);
+    if (book.isbn) memberships.set(book.isbn.replace(/[-\s]/g, ""), membership);
+  }
+  return memberships;
+}

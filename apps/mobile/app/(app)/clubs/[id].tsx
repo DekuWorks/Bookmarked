@@ -37,6 +37,7 @@ import {
   useUpdateClub,
 } from "../../../src/hooks/useClubs";
 import { ensureCatalogBook } from "../../../src/services/bookClubs";
+import { TAB_BAR_SPACE } from "../../../src/navigation/TabBarScroll";
 import {
   removeClubAvatar,
   uploadClubAvatar,
@@ -240,7 +241,7 @@ export default function ClubDetailRoute() {
     return (
       <>
         <Stack.Screen options={{ title: "Club" }} />
-        <LoadingState message="Loading clubâ€¦" />
+        <LoadingState message="Loading club…" />
       </>
     );
   }
@@ -460,7 +461,7 @@ export default function ClubDetailRoute() {
                     className="rounded-full bg-primary/15 px-3 py-1.5 active:opacity-80"
                   >
                     <Text className="text-xs font-semibold text-puce-red">
-                      {removingUserId === member.user_id ? "Removingâ€¦" : "Remove"}
+                      {removingUserId === member.user_id ? "Removing…" : "Remove"}
                     </Text>
                   </Pressable>
                 ) : null}
@@ -486,7 +487,7 @@ export default function ClubDetailRoute() {
         {isMember ? (
           <View className="rounded-2xl border border-brand-border bg-surface p-3 mb-3">
             <TextInput
-              placeholder="Start a discussionâ€¦"
+              placeholder="Start a discussion…"
               placeholderTextColor="#A99DAE"
               multiline
               value={draft}
@@ -545,7 +546,7 @@ export default function ClubDetailRoute() {
           <Text className="text-lg font-semibold text-puce-red">Club stats</Text>
           <View className="mt-4 flex-row gap-3">
             <View className="flex-1 rounded-xl bg-background p-3"><Text className="text-xs text-ink-muted">Members</Text><Text className="mt-1 text-2xl font-bold text-puce-red">{club.member_count}</Text></View>
-            <View className="flex-1 rounded-xl bg-background p-3"><Text className="text-xs text-ink-muted">Discussions</Text><Text className="mt-1 text-2xl font-bold text-puce-red">{discussions.data?.length ?? "â€”"}</Text></View>
+            <View className="flex-1 rounded-xl bg-background p-3"><Text className="text-xs text-ink-muted">Discussions</Text><Text className="mt-1 text-2xl font-bold text-puce-red">{discussions.data?.length ?? "—"}</Text></View>
             <View className="flex-1 rounded-xl bg-background p-3"><Text className="text-xs text-ink-muted">Books</Text><Text className="mt-1 text-2xl font-bold text-puce-red">{bookshelf.length}</Text></View>
           </View>
         </View>
@@ -559,7 +560,7 @@ export default function ClubDetailRoute() {
         className="flex-1 bg-background"
         data={activeTab === "discussions" ? discussions.data ?? [] : []}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+        contentContainerStyle={{ padding: 20, paddingBottom: TAB_BAR_SPACE }}
         keyboardShouldPersistTaps="handled"
         ListHeaderComponent={header}
         renderItem={({ item }) => (
@@ -572,7 +573,7 @@ export default function ClubDetailRoute() {
         )}
         ListEmptyComponent={activeTab === "discussions" ? (
           discussions.isLoading ? (
-            <LoadingState message="Loading discussionsâ€¦" />
+            <LoadingState message="Loading discussions…" />
           ) : (
             <View className="rounded-2xl border border-dashed border-brand-border bg-surface px-4 py-8">
               <Text className="font-medium text-puce-red text-center">No discussions yet</Text>

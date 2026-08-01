@@ -14,6 +14,7 @@ import {
 import { isEntitlementLimitError } from "../../src/utils/subscription";
 import { SANS_FONT, SANS_FONT_BOLD } from "../../src/constants/theme";
 import { useThemeColors } from "../../src/store/themeStore";
+import { TAB_BAR_SPACE } from "../../src/navigation/TabBarScroll";
 
 export default function ChallengesRoute() {
   const router = useRouter();
@@ -66,7 +67,7 @@ export default function ChallengesRoute() {
         <FlatList
           data={challenges}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: 16, paddingBottom: 48, flexGrow: 1 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: TAB_BAR_SPACE, flexGrow: 1 }}
           ListHeaderComponent={
             <View className="mb-4">
               <Text style={{ fontFamily: SANS_FONT, color: colors.inkMuted }}>

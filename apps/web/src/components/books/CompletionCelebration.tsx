@@ -1,5 +1,8 @@
 "use client";
 
+import { Z_CLASS } from "@/lib/constants/zIndex";
+import { cn } from "@/lib/utils/cn";
+
 type Props = {
   open: boolean;
   bookTitle: string;
@@ -17,7 +20,10 @@ export function CompletionCelebration({ open, bookTitle, onClose }: Props) {
       role="dialog"
       aria-modal="true"
       aria-label="Book completed"
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-puce-red/90 p-6 text-center text-white backdrop-blur-sm"
+      className={cn(
+        "fixed inset-0 flex items-center justify-center bg-puce-red/90 p-6 text-center text-white backdrop-blur-sm",
+        Z_CLASS.sheet
+      )}
       onClick={onClose}
     >
       <div className="max-w-md space-y-5">

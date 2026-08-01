@@ -12,6 +12,10 @@
   --color-text-muted: #6B6B6B;
   --color-border: #E5DFEB;
   color-scheme: light;
+  /* Height reserved for the fixed mobile bottom nav pill + safe-area inset.
+     Used to keep page content, bottom-aligned buttons, and toasts clear of
+     the floating nav on small screens (see MobileBottomNav.tsx). */
+  --mobile-nav-clearance: calc(4.5rem + env(safe-area-inset-bottom));
 }
 
 :root[data-theme="dark"] {

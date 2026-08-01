@@ -15,13 +15,21 @@ import { useBookSearch } from "../../src/hooks/useBookSearch";
 import { addCatalogBookToShelf, ensureCatalogBook } from "../../src/services/books";
 import {
   addBookToCustomShelf,
+  listCustomShelfIdsForBook,
   listUserCustomShelves,
+  removeBookFromCustomShelf,
 } from "../../src/services/customShelves";
+import {
+  getBookShelfMemberships,
+  removeBookFromShelf,
+  type BookShelfMembership,
+} from "../../src/services/library";
 import { needsMissingPageCountPrompt } from "../../src/services/completeReadingSession";
 import { searchClubs } from "../../src/services/bookClubs";
 import { createDirectConversation } from "../../src/services/messages";
 import { searchProfiles } from "../../src/services/profile";
 import { fetchTrendingSections } from "../../src/services/trending";
+import { ShelfBadge } from "../../src/components/ShelfBadge";
 import { ShelfIcon } from "../../src/components/ShelfIcon";
 import { TAB_BAR_SPACE, useTabBarScroll } from "../../src/navigation/TabBarScroll";
 import { useAuthStore } from "../../src/store/authStore";
@@ -44,6 +52,18 @@ const SHELF_CHOICES: { status: ShelfStatus; label: string }[] = [
   { status: "dnf", label: "DNF" },
 ];
 
+const SHELF_LABEL_BY_STATUS: Record<ShelfStatus, string> = {
+  want_to_read: "TBR",
+  currently_reading: "Currently Reading",
+  read: "Finished",
+  dnf: "DNF",
+};
+
+/** Same catalog key used for shelf lookups when adding a book (isbn, falling back to the search key). */
+function membershipKeyFor(doc: Pick<CatalogDoc, "isbn" | "key">): string {
+  return doc.isbn?.[0]?.trim() || doc.key;
+}
+
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -58,7 +78,10 @@ export default function SearchScreen() {
   const [pageCountInput, setPageCountInput] = useState("");
   const [pageCountOpen, setPageCountOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [removingShelf, setRemovingShelf] = useState(false);
   const [customShelves, setCustomShelves] = useState<UserShelf[]>([]);
+  const [customMemberIds, setCustomMemberIds] = useState<string[]>([]);
+  const [memberships, setMemberships] = useState<Map<string, BookShelfMembership>>(new Map());
 
   useEffect(() => {
     if (!target || !userId) return;
@@ -66,6 +89,28 @@ export default function SearchScreen() {
       .then(setCustomShelves)
       .catch(() => setCustomShelves([]));
   }, [target, userId]);
+
+  useEffect(() => {
+    if (!userId) {
+      setMemberships(new Map());
+      return;
+    }
+    void getBookShelfMemberships(userId)
+      .then(setMemberships)
+      .catch((error) => console.error("[search] failed to load shelf memberships:", error));
+  }, [userId]);
+
+  const targetMembership = target ? memberships.get(membershipKeyFor(target)) : undefined;
+
+  useEffect(() => {
+    if (!userId || !targetMembership?.bookId) {
+      setCustomMemberIds([]);
+      return;
+    }
+    void listCustomShelfIdsForBook(userId, targetMembership.bookId)
+      .then(setCustomMemberIds)
+      .catch(() => setCustomMemberIds([]));
+  }, [userId, targetMembership?.bookId]);
 
   const books = useBookSearch(submitted);
   const trending = useQuery({ queryKey: ["trending-sections"], queryFn: fetchTrendingSections });
@@ -82,6 +127,8 @@ export default function SearchScreen() {
 
   async function addToShelf(shelf: ShelfStatus, options?: { manualPageCount?: number }) {
     if (!target) return;
+    const wasShelved = Boolean(targetMembership?.shelfStatus);
+    const key = membershipKeyFor(target);
     setSaving(true);
     const result = await addCatalogBookToShelf(target, shelf, {
       manualPageCount: options?.manualPageCount,
@@ -91,10 +138,36 @@ export default function SearchScreen() {
     setPendingShelf(null);
     setPageCountOpen(false);
     setPageCountInput("");
+    if (!result.error && result.bookId) {
+      setMemberships((prev) => {
+        const next = new Map(prev);
+        next.set(key, { bookId: result.bookId!, shelfStatus: shelf, isFavorite: false });
+        return next;
+      });
+    }
     Alert.alert(
-      result.error ? "Couldn't add book" : "Added",
-      result.error ?? `"${target.title}" was saved to your shelf.`
+      result.error ? "Couldn't add book" : wasShelved ? "Moved" : "Added",
+      result.error ?? `"${target.title}" was saved to ${SHELF_LABEL_BY_STATUS[shelf]}.`
     );
+  }
+
+  async function removeFromShelf() {
+    if (!target || !userId || !targetMembership?.bookId) return;
+    const key = membershipKeyFor(target);
+    setRemovingShelf(true);
+    const result = await removeBookFromShelf(userId, targetMembership.bookId);
+    setRemovingShelf(false);
+    setTarget(null);
+    if (result.error) {
+      Alert.alert("Couldn't remove book", result.error);
+      return;
+    }
+    setMemberships((prev) => {
+      const next = new Map(prev);
+      next.delete(key);
+      return next;
+    });
+    Alert.alert("Removed", `"${target.title}" was removed from your shelves.`);
   }
 
   function chooseShelf(shelf: ShelfStatus) {
@@ -115,6 +188,7 @@ export default function SearchScreen() {
 
   async function addToCustomShelf(shelf: UserShelf) {
     if (!target || !userId) return;
+    const isMember = customMemberIds.includes(shelf.id);
     setSaving(true);
     try {
       const ensured = await ensureCatalogBook(target);
@@ -122,12 +196,24 @@ export default function SearchScreen() {
         Alert.alert("Couldn't add book", ensured.error ?? "Please try again.");
         return;
       }
+
+      if (isMember) {
+        const result = await removeBookFromCustomShelf(shelf.id, ensured.bookId);
+        if (result.error) {
+          Alert.alert("Couldn't remove book", result.error);
+          return;
+        }
+        setCustomMemberIds((prev) => prev.filter((id) => id !== shelf.id));
+        Alert.alert("Removed", `"${target.title}" was removed from ${shelf.name}.`);
+        return;
+      }
+
       const result = await addBookToCustomShelf(shelf.id, userId, ensured.bookId);
       if (result.error) {
         Alert.alert("Couldn't add book", result.error);
         return;
       }
-      setTarget(null);
+      setCustomMemberIds((prev) => [...prev, shelf.id]);
       Alert.alert("Added", `"${target.title}" was added to ${shelf.name}.`);
     } finally {
       setSaving(false);
@@ -181,15 +267,23 @@ export default function SearchScreen() {
             scrollEventThrottle={16}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={listPadding}
-            renderItem={({ item }) => (
-              <BookCard
-                title={item.title}
-                author={item.author_name?.join(", ")}
-                coverUrl={item.cover_url}
-                subtitle={item.first_publish_year ? `${item.first_publish_year}` : "Tap to add to a shelf"}
-                onPress={() => setTarget(item)}
-              />
-            )}
+            renderItem={({ item }) => {
+              const membership = memberships.get(membershipKeyFor(item));
+              return (
+                <BookCard
+                  title={item.title}
+                  author={item.author_name?.join(", ")}
+                  coverUrl={item.cover_url}
+                  subtitle={item.first_publish_year ? `${item.first_publish_year}` : "Tap to add to a shelf"}
+                  onPress={() => setTarget(item)}
+                  rightAccessory={
+                    membership?.shelfStatus ? (
+                      <ShelfBadge label={SHELF_LABEL_BY_STATUS[membership.shelfStatus]} />
+                    ) : undefined
+                  }
+                />
+              );
+            }}
             ListEmptyComponent={
               <EmptyState title="No results" description={`Nothing found for "${submitted}".`} />
             }
@@ -307,34 +401,61 @@ export default function SearchScreen() {
             <Text className="mb-1 text-lg font-bold text-puce-red" numberOfLines={1}>
               {target?.title}
             </Text>
-            <Text className="mb-4 text-sm text-ink-muted">Add to a shelf</Text>
-            {SHELF_CHOICES.map((choice) => (
+            <Text className="mb-4 text-sm text-ink-muted">
+              {targetMembership?.shelfStatus
+                ? `On ${SHELF_LABEL_BY_STATUS[targetMembership.shelfStatus]} · tap a shelf to move`
+                : "Add to a shelf"}
+            </Text>
+            {SHELF_CHOICES.map((choice) => {
+              const isCurrent = targetMembership?.shelfStatus === choice.status;
+              return (
+                <Pressable
+                  key={choice.status}
+                  disabled={saving || isCurrent}
+                  onPress={() => chooseShelf(choice.status)}
+                  className={`mb-2 min-h-[44px] flex-row items-center gap-2 rounded-xl px-4 py-3 active:opacity-80 ${
+                    isCurrent ? "bg-primary/25 border border-primary" : "bg-primary/10"
+                  }`}
+                >
+                  <ShelfIcon id={choice.status} size="medium" />
+                  <Text className="flex-1 font-medium leading-tight text-puce-red">{choice.label}</Text>
+                  {isCurrent ? <Text className="font-bold text-puce-red">✓</Text> : null}
+                </Pressable>
+              );
+            })}
+            {targetMembership?.shelfStatus ? (
               <Pressable
-                key={choice.status}
-                disabled={saving}
-                onPress={() => chooseShelf(choice.status)}
-                className="mb-2 min-h-[44px] flex-row items-center gap-2 rounded-xl bg-primary/10 px-4 py-3 active:opacity-80"
+                disabled={removingShelf}
+                onPress={() => void removeFromShelf()}
+                className="mb-2 min-h-[44px] flex-row items-center justify-center rounded-xl border border-red-300 bg-red-50 px-4 py-3 active:opacity-80"
               >
-                <ShelfIcon id={choice.status} size="medium" />
-                <Text className="font-medium leading-tight text-puce-red">{choice.label}</Text>
+                <Text className="font-semibold text-red-600">
+                  {removingShelf ? "Removing…" : "Remove from shelves"}
+                </Text>
               </Pressable>
-            ))}
+            ) : null}
             {customShelves.length ? (
               <>
                 <Text className="mb-2 mt-3 text-xs font-semibold uppercase tracking-wide text-ink-muted">
                   Collections
                 </Text>
-                {customShelves.map((shelf) => (
-                  <Pressable
-                    key={shelf.id}
-                    disabled={saving}
-                    onPress={() => void addToCustomShelf(shelf)}
-                    className="mb-2 flex-row items-center gap-3 rounded-xl border border-brand-border bg-background px-4 py-3 active:opacity-80"
-                  >
-                    <Text className="text-lg">📚</Text>
-                    <Text className="font-medium text-puce-red">{shelf.name}</Text>
-                  </Pressable>
-                ))}
+                {customShelves.map((shelf) => {
+                  const isMember = customMemberIds.includes(shelf.id);
+                  return (
+                    <Pressable
+                      key={shelf.id}
+                      disabled={saving}
+                      onPress={() => void addToCustomShelf(shelf)}
+                      className={`mb-2 flex-row items-center gap-3 rounded-xl border px-4 py-3 active:opacity-80 ${
+                        isMember ? "border-primary bg-primary/10" : "border-brand-border bg-background"
+                      }`}
+                    >
+                      <Text className="text-lg">📚</Text>
+                      <Text className="flex-1 font-medium text-puce-red">{shelf.name}</Text>
+                      {isMember ? <Text className="font-bold text-puce-red">✓</Text> : null}
+                    </Pressable>
+                  );
+                })}
               </>
             ) : null}
           </View>

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import { bookDetailsPath } from "@/lib/routes/book";
 import type { MatchingBook, SuggestedShelf, SuggestionMatchingBooks } from "@/lib/services/suggestedShelves";
+import { Z_CLASS } from "@/lib/constants/zIndex";
 import { cn } from "@/lib/utils/cn";
 
 type Props = {
@@ -150,7 +151,10 @@ export function SuggestedShelfPreviewBar({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-end sm:p-4"
+      className={cn(
+        "fixed inset-0 flex items-end justify-center p-0 sm:items-end sm:p-4",
+        Z_CLASS.modalBackdrop
+      )}
       role="presentation"
     >
       <button
@@ -165,7 +169,8 @@ export function SuggestedShelfPreviewBar({
         aria-modal="true"
         aria-labelledby="shelf-preview-title"
         className={cn(
-          "relative z-10 w-full border border-border bg-surface shadow-xl",
+          "relative w-full border border-border bg-surface shadow-xl",
+          Z_CLASS.modal,
           "rounded-t-2xl sm:max-w-lg sm:rounded-xl",
           "mx-0 max-h-[85vh] overflow-y-auto sm:mx-4"
         )}

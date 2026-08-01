@@ -8,6 +8,7 @@ import {
   searchGiphy,
   type GiphySearchResult,
 } from "@/lib/services/giphy";
+import { Z_CLASS } from "@/lib/constants/zIndex";
 import { cn } from "@/lib/utils/cn";
 
 type Props = {
@@ -143,7 +144,10 @@ export function GifSearchPicker({
         <div
           role="dialog"
           aria-label="GIF search"
-          className="absolute left-0 z-30 mt-1 w-[min(calc(100vw-2rem),18rem)] rounded-lg border border-border bg-surface p-2 shadow-md"
+          className={cn(
+            "absolute left-0 mt-1 w-[min(calc(100vw-2rem),18rem)] rounded-lg border border-border bg-surface p-2 shadow-md",
+            Z_CLASS.popover
+          )}
         >
           {searchEnabled ? (
             <>

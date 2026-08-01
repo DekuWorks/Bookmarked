@@ -12,6 +12,7 @@ import { useAuthStore } from "../../src/store/authStore";
 import { isEntitlementLimitError } from "../../src/utils/subscription";
 import { SANS_FONT, SANS_FONT_BOLD, SERIF_DISPLAY_FONT } from "../../src/constants/theme";
 import { useThemeColors } from "../../src/store/themeStore";
+import { TAB_BAR_SPACE } from "../../src/navigation/TabBarScroll";
 
 const FEATURE_FLAG_AI_GRAPHICS = false;
 
@@ -81,7 +82,7 @@ export default function QuoteGraphicsRoute() {
         featureLabel="Quote graphics"
         limitMessage="Free members can create 3 quote graphics per month. Upgrade to Bookmarked Plus for unlimited graphics."
       />
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 48 }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: TAB_BAR_SPACE }} keyboardShouldPersistTaps="handled">
         <Text style={{ fontFamily: SANS_FONT, color: colors.inkMuted }}>
           Free members get 3 quote graphics per month.
         </Text>

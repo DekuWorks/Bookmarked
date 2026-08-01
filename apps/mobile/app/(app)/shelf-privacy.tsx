@@ -15,6 +15,7 @@ import { ShelfTitleRow } from "../../src/components/ShelfTitleRow";
 import { getShelvesInOrder } from "../../src/constants/shelves";
 import { SHELF_VISIBILITY_OPTIONS } from "../../src/constants/shelfVisibility";
 import { useProfile } from "../../src/hooks/useProfile";
+import { TAB_BAR_SPACE } from "../../src/navigation/TabBarScroll";
 import {
   createCustomShelf,
   listUserCustomShelves,
@@ -189,7 +190,7 @@ export default function ShelfPrivacyScreen() {
         limitMessage="Free members can create 1 custom shelf. Upgrade to Bookmarked Plus for unlimited shelves."
       />
       <ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: 48 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: TAB_BAR_SPACE }}
         keyboardShouldPersistTaps="handled"
       >
         <Text className="text-sm text-ink-muted mb-4">
