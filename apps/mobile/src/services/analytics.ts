@@ -7,6 +7,7 @@ import {
   type ReadingStreakInsight,
 } from "./readingInsights";
 import { countResolvedPagesRead } from "../utils/readingCompletion";
+import { countsTowardFinishedStats } from "../../../../packages/utils/shelfStatus";
 import { supabase } from "./supabase";
 
 export type ReadingAnalytics = {
@@ -37,7 +38,7 @@ export function computeReadingAnalytics({
 }: AnalyticsInput): ReadingAnalytics {
   const wantToRead = books.filter((b) => b.shelf_status === "want_to_read").length;
   const currentlyReading = books.filter((b) => b.shelf_status === "currently_reading").length;
-  const booksRead = books.filter((b) => b.shelf_status === "read").length;
+  const booksRead = books.filter((b) => countsTowardFinishedStats(b)).length;
   const pagesRead = countResolvedPagesRead(books);
   const favoritesCount = books.filter((b) => b.is_favorite).length;
 

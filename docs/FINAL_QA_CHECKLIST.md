@@ -19,6 +19,16 @@ Use this checklist for every release candidate. Record the build, device/browser
 - [ ] Membership copy: Free, Bookmarked Plus, and Bookmarked Home feature matrices are accurate on web and iOS.
 - [ ] Reading DNA: verify free top three traits; Plus dashboard, AI-insight, and book-match hooks; Home monthly-update, DNA Match %, and Reader Map filter stubs.
 
+## Sprint 2 + 5 feedback (web + iOS)
+
+- [ ] Like sparkles: unliked→liked only; brand lilac particles; reduced-motion uses button glow (no particles); taps/scroll unaffected.
+- [ ] Discovery carousels: equal card heights with/without ratings; covers align; swipe/scroll smooth.
+- [ ] Saved badge: flush top-left on covers (web + iOS); fully visible; save/unsave unchanged.
+- [ ] Notes location: `Page 48 • Chapter 2` (never bare `Page 48 • 2`).
+- [ ] Note tags: all categories (incl. custom) show colored pill backgrounds in light + dark.
+- [ ] Home Notes: exactly 5 newest; **Open Full Notes Page** above the list.
+- [ ] Full Notes: **Return to Home Notes** at bottom opens Reading Room Notes tab (`/reading-room/?tab=notes` / `/?tab=notes`).
+
 ## Reading and community regression
 
 - [ ] Feed stress: load long feeds, discovery cards, likes, comments, reposts, media, empty states, and retry/error states.

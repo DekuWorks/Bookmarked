@@ -100,6 +100,13 @@ export {
 } from "./readingCompletion";
 
 export {
+  buildUserBookShelfPatch,
+  countsTowardFinishedStats,
+  isBuiltInShelfStatus,
+  type UserBookShelfPatch,
+} from "./shelfStatus";
+
+export {
   COMPLETION_TAGS,
   computeCompletionTags,
   mergeCompletionTags,
@@ -171,6 +178,29 @@ export {
   type FeedDiscoveryMarker,
   type FeedDiscoverySectionId,
 } from "./feedDiscovery";
+
+export {
+  formatNoteLocation,
+  HOME_NOTES_PREVIEW_LIMIT,
+  type FormatNoteLocationInput,
+} from "./noteLocation";
+
+export {
+  readingNoteTagTone,
+  type ReadingNoteTagTone,
+} from "./readingNoteTags";
+
+export {
+  resolveNoteTagTone,
+  type NoteTagInput,
+} from "./noteTag";
+
+export {
+  discoveryReviewState,
+  discoveryReviewSummaryLabel,
+  clampDiscoveryTags,
+  type DiscoveryReviewState,
+} from "./discoveryCard";
 
 export {
   MAX_BIO_LENGTH,

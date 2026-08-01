@@ -7,6 +7,7 @@ import { BookCover } from "../../src/components/BookCover";
 import { EmptyState } from "../../src/components/EmptyState";
 import { Input } from "../../src/components/Input";
 import { LoadingState } from "../../src/components/LoadingState";
+import { NoteTag } from "../../src/components/NoteTag";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import {
   READING_NOTE_CATEGORIES,
@@ -15,6 +16,7 @@ import {
 import { TAB_BAR_SPACE, useTabBarScroll } from "../../src/navigation/TabBarScroll";
 import { useAuthStore } from "../../src/store/authStore";
 import type { ReadingNoteCategory } from "../../src/types";
+import { formatNoteLocation } from "../../../../packages/utils/noteLocation";
 
 function categoryMeta(value: ReadingNoteCategory) {
   return READING_NOTE_CATEGORIES.find((c) => c.value === value);
@@ -91,6 +93,10 @@ export default function NotesScreen() {
           contentContainerStyle={{ padding: 16, paddingBottom: TAB_BAR_SPACE, flexGrow: 1 }}
           renderItem={({ item }) => {
             const meta = categoryMeta(item.category);
+            const locationLabel = formatNoteLocation({
+              pageNumber: item.page_number,
+              chapterNumber: item.chapter,
+            });
             return (
               <Pressable
                 onPress={() => item.book && router.push(`/book/${item.book.id}`)}
@@ -99,22 +105,28 @@ export default function NotesScreen() {
                 {item.book ? (
                   <BookCover url={item.book.cover_url} title={item.book.title} sizeClassName="w-12 h-16" />
                 ) : null}
-                <View className="flex-1">
-                  <Text className="text-xs font-semibold text-primary-dark">
-                    {meta ? `${meta.emoji} ${meta.label}` : "Note"}
-                  </Text>
+                <View className="flex-1 gap-1">
+                  <NoteTag
+                    label={meta?.label ?? "Note"}
+                    emoji={meta?.emoji}
+                    category={item.category}
+                    isCustom={item.category.startsWith("custom:")}
+                  />
+                  {locationLabel ? (
+                    <Text className="text-xs text-ink-muted">{locationLabel}</Text>
+                  ) : null}
                   {item.quote ? (
-                    <Text className="mt-1 italic text-ink" numberOfLines={3}>
+                    <Text className="italic text-ink" numberOfLines={3}>
                       “{item.quote}”
                     </Text>
                   ) : null}
                   {item.note ? (
-                    <Text className="mt-1 text-ink" numberOfLines={3}>
+                    <Text className="text-ink" numberOfLines={3}>
                       {item.note}
                     </Text>
                   ) : null}
                   {item.book ? (
-                    <Text className="mt-1 text-xs text-ink-muted" numberOfLines={1}>
+                    <Text className="text-xs text-ink-muted" numberOfLines={1}>
                       {item.book.title}
                     </Text>
                   ) : null}
@@ -127,6 +139,16 @@ export default function NotesScreen() {
               title="No notes yet"
               description="Save favorite quotes and thoughts from a book's page."
             />
+          }
+          ListFooterComponent={
+            <Pressable
+              onPress={() => router.push("/?tab=notes")}
+              className="mt-4 items-center rounded-full border border-brand-border bg-surface px-4 py-3 active:opacity-80"
+              accessibilityRole="button"
+              accessibilityLabel="Return to Home Notes"
+            >
+              <Text className="text-sm font-semibold text-puce-red">Return to Home Notes</Text>
+            </Pressable>
           }
         />
       )}

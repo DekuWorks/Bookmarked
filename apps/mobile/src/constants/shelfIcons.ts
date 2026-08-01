@@ -6,17 +6,21 @@ export type ShelfIconId = ShelfStatus | "dnf";
 
 export type ShelfIconSize = "small" | "medium" | "large";
 
-/** Pixel sizes per spec: small 24–32, medium 48–72, large 96–160 (object-fit contain). */
+/**
+ * Display sizes (~20% larger than prior 28/56/128). Frame matches the glyph —
+ * no bordered tile; optional transparent hit padding comes from parent controls.
+ */
 export const SHELF_ICON_SIZE_PX: Record<ShelfIconSize, number> = {
-  small: 28,
-  medium: 56,
-  large: 128,
+  small: 34,
+  medium: 68,
+  large: 152,
 };
 
+/** Layout box equals glyph size — borderless, no padded square chrome. */
 export const SHELF_ICON_FRAME_PX: Record<ShelfIconSize, number> = {
-  small: 32,
-  medium: 64,
-  large: 144,
+  small: 34,
+  medium: 68,
+  large: 152,
 };
 
 export type ShelfIconConfig = {
@@ -40,7 +44,7 @@ export const SHELF_ICONS: Record<ShelfIconId, ShelfIconConfig> = {
     id: "want_to_read",
     source: require("../../assets/shelves/want-to-read.png"),
     label: "TBR",
-    accessibilityLabel: "TBR shelf",
+    accessibilityLabel: "Want to Read shelf",
     sortOrder: 1,
   },
   currently_reading: {
@@ -60,8 +64,8 @@ export const SHELF_ICONS: Record<ShelfIconId, ShelfIconConfig> = {
   dnf: {
     id: "dnf",
     source: require("../../assets/shelves/did-not-finish.png"),
-    label: "DNF",
-    accessibilityLabel: "DNF shelf",
+    label: "Did Not Finish",
+    accessibilityLabel: "Did Not Finish shelf",
     sortOrder: 4,
   },
 };

@@ -16,7 +16,7 @@ export const SHELF_CONFIG: {
     slug: "want-to-read",
     description: "Books waiting for you on the shelf.",
     sortOrder: 1,
-    accessibilityLabel: "TBR shelf",
+    accessibilityLabel: "Want to Read shelf",
   },
   {
     status: "currently_reading",
@@ -40,7 +40,7 @@ export const SHELF_CONFIG: {
     slug: "dnf",
     description: "Books you chose not to finish.",
     sortOrder: 4,
-    accessibilityLabel: "DNF shelf",
+    accessibilityLabel: "Did Not Finish shelf",
   },
 ];
 

@@ -91,7 +91,7 @@ export function CurrentlyReadingRow({ items, onItemsChange }: Props) {
               bookmarked
             />
 
-            <p className="mt-3 line-clamp-2 w-full px-1 text-sm font-semibold text-text">
+            <p className="mt-3 line-clamp-2 w-full px-1 font-display text-base font-bold leading-snug tracking-tight text-text">
               {book?.title ?? "Untitled"}
             </p>
 

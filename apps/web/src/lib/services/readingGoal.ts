@@ -1,4 +1,5 @@
 import type { LibraryBookRow } from "@/lib/services/library";
+import { countsTowardFinishedStats } from "../../../../../packages/utils/shelfStatus";
 
 export type ReadingGoalStatus = {
   year: number;
@@ -17,7 +18,8 @@ export function countBooksReadInYear(
 }
 
 function isBookCountedForYear(ub: LibraryBookRow, year: number): boolean {
-  if (ub.shelf_status !== "read") return false;
+  // DNF never counts toward reading goals.
+  if (!countsTowardFinishedStats(ub)) return false;
   const dateStr = ub.finished_at ?? ub.updated_at;
   if (!dateStr) return false;
   return new Date(dateStr).getFullYear() === year;

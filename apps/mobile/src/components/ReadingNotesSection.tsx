@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "./Button";
 import { FeatureLimitModal } from "./FeatureLimitModal";
+import { NoteTag } from "./NoteTag";
 import {
   createReadingNote,
   deleteReadingNote,
@@ -25,6 +26,7 @@ import {
 } from "../services/noteCategories";
 import { isEntitlementLimitError } from "../utils/subscription";
 import type { ReadingNote, ReadingNoteCategory, ReadingNoteVisibility } from "../types";
+import { formatNoteLocation } from "../../../../packages/utils/noteLocation";
 
 type Props = {
   userId: string;
@@ -179,13 +181,19 @@ export function ReadingNotesSection({ userId, userBookId, initialNotes, onChange
       ) : (
         notes.map((n) => {
           const meta = getReadingNoteCategoryMeta(n.category as ReadingNoteCategory, categories);
+          const locationLabel = formatNoteLocation({
+            pageNumber: n.page_number,
+            chapterNumber: n.chapter,
+          });
           return (
             <View key={n.id} className="mb-3 rounded-2xl border border-brand-border bg-surface p-3">
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1">
-                  <Text className="text-xs">{meta.emoji}</Text>
-                  <Text className="text-xs font-medium text-puce-red">{meta.label}</Text>
-                </View>
+              <View className="flex-row items-center justify-between gap-2">
+                <NoteTag
+                  label={meta.label}
+                  emoji={meta.emoji}
+                  category={n.category}
+                  isCustom={n.category.startsWith("custom:")}
+                />
                 <View className="flex-row gap-3">
                   <Pressable onPress={() => openEdit(n)}>
                     <Text className="text-xs font-medium text-primary-dark">Edit</Text>
@@ -199,12 +207,8 @@ export function ReadingNotesSection({ userId, userBookId, initialNotes, onChange
                 <Text className="mt-2 italic leading-5 text-ink">“{n.quote}”</Text>
               ) : null}
               {n.note ? <Text className="mt-2 leading-5 text-ink">{n.note}</Text> : null}
-              {n.page_number != null || n.chapter ? (
-                <Text className="mt-2 text-xs text-ink-muted">
-                  {n.chapter ? n.chapter : ""}
-                  {n.chapter && n.page_number != null ? " · " : ""}
-                  {n.page_number != null ? `p. ${n.page_number}` : ""}
-                </Text>
+              {locationLabel ? (
+                <Text className="mt-2 text-xs text-ink-muted">{locationLabel}</Text>
               ) : null}
             </View>
           );

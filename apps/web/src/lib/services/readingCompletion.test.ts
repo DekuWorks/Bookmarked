@@ -136,4 +136,14 @@ describe("countResolvedPagesRead", () => {
       ])
     ).toBe(200);
   });
+
+  it("excludes DNF books from pages read", () => {
+    expect(
+      countResolvedPagesRead([
+        { shelf_status: "read", progress_pages: 300, dnf: false },
+        { shelf_status: "dnf", progress_pages: 120, dnf: true },
+        { shelf_status: "read", progress_pages: 80, dnf: true },
+      ])
+    ).toBe(300);
+  });
 });

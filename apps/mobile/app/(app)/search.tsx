@@ -313,10 +313,10 @@ export default function SearchScreen() {
                 key={choice.status}
                 disabled={saving}
                 onPress={() => chooseShelf(choice.status)}
-                className="mb-2 flex-row items-center gap-3 rounded-xl bg-primary/10 px-4 py-3 active:opacity-80"
+                className="mb-2 min-h-[44px] flex-row items-center gap-2 rounded-xl bg-primary/10 px-4 py-3 active:opacity-80"
               >
                 <ShelfIcon id={choice.status} size="medium" />
-                <Text className="font-medium text-puce-red">{choice.label}</Text>
+                <Text className="font-medium leading-tight text-puce-red">{choice.label}</Text>
               </Pressable>
             ))}
             {customShelves.length ? (

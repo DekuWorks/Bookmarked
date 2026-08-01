@@ -15,7 +15,10 @@ type Props = {
   sizes?: string;
   priority?: boolean;
   /** When true, shows the brand logo shelf badge on the cover. */
+  isSaved?: boolean;
+  /** @deprecated Prefer `isSaved`. */
   bookmarked?: boolean;
+  onToggleSave?: () => void;
   bookmarkBadgeSize?: SavedBookBadgeSize;
 };
 
@@ -53,15 +56,24 @@ export function BookCover({
   className,
   sizes = "(max-width: 768px) 50vw, 220px",
   priority,
+  isSaved,
   bookmarked = false,
+  onToggleSave,
   bookmarkBadgeSize = "medium",
 }: Props) {
   const [imageError, setImageError] = useState(false);
   const showImage = coverUrl && !imageError;
+  const saved = isSaved ?? bookmarked;
 
   return (
-    <div className={cn("relative aspect-[2/3] w-full", className)}>
-      <div className="absolute inset-0 overflow-hidden rounded-xl border border-border bg-background">
+    <div className={cn("relative aspect-[2/3] w-full overflow-visible", className)}>
+      {/* Square top when saved so the ribbon sits flush on a straight edge. */}
+      <div
+        className={cn(
+          "absolute inset-0 overflow-hidden border border-border bg-background",
+          saved ? "rounded-none" : "rounded-xl"
+        )}
+      >
         {showImage ? (
           <Image
             src={coverUrl}
@@ -78,7 +90,11 @@ export function BookCover({
           <CoverPlaceholder title={title} author={author} />
         )}
       </div>
-      {bookmarked ? <SavedBookBadge size={bookmarkBadgeSize} /> : null}
+      <SavedBookBadge
+        isSaved={saved}
+        onToggle={onToggleSave}
+        size={bookmarkBadgeSize}
+      />
     </div>
   );
 }

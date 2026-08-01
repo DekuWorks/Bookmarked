@@ -26,11 +26,11 @@ Always use `ShelfIcon` (or wrappers) instead of inline emoji or raw `<img>` tags
 
 | Token | Pixel size | Frame | Use |
 |-------|------------|-------|-----|
-| `small` | 28px | 32px | Badges, pills, compact lists |
-| `medium` | 56px | 64px | Section headers, library grids |
-| `large` | 128px | 144px | Shelf page heroes |
+| `small` | 34px | 34px | Badges, pills, compact lists |
+| `medium` | 68px | 68px | Section headers, library grids |
+| `large` | 152px | 152px | Shelf page heroes |
 
-Icons use `object-fit: contain` inside a subtle bordered frame for visual consistency. Loading states use a neutral pulse placeholder — never emoji.
+Icons are borderless (transparent, no tile chrome) with `object-fit: contain`. Loading states use a transparent pulse placeholder — never emoji.
 
 ## Accessibility
 

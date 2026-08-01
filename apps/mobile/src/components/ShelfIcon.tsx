@@ -34,10 +34,10 @@ export function ShelfIcon({ id, size = "small", style, labeled = false }: Props)
           height: frame,
           alignItems: "center",
           justifyContent: "center",
-          borderRadius: 6,
-          borderWidth: 1,
-          borderColor: "rgba(100, 47, 55, 0.12)",
-          backgroundColor: "rgba(255, 255, 255, 0.5)",
+          backgroundColor: "transparent",
+          borderWidth: 0,
+          shadowOpacity: 0,
+          elevation: 0,
         },
         style,
       ]}
@@ -45,20 +45,19 @@ export function ShelfIcon({ id, size = "small", style, labeled = false }: Props)
       {!loaded && !error ? (
         <View
           style={{
-            width: px * 0.8,
-            height: px * 0.8,
-            borderRadius: 4,
-            backgroundColor: "rgba(100, 47, 55, 0.1)",
+            width: px,
+            height: px,
+            backgroundColor: "transparent",
+            opacity: 0.35,
           }}
         />
       ) : null}
       {error ? (
         <View
           style={{
-            width: px * 0.8,
-            height: px * 0.8,
-            borderRadius: 4,
-            backgroundColor: "rgba(100, 47, 55, 0.08)",
+            width: px,
+            height: px,
+            backgroundColor: "transparent",
           }}
         />
       ) : (

@@ -26,7 +26,7 @@ export function BookshelfSection({
   return (
     <View className="overflow-hidden rounded-2xl border border-brand-border bg-surface shadow-md">
       <View className="flex-row items-center justify-between border-b border-brand-border px-4 py-3">
-        <View className="flex-row items-center gap-2">
+        <View className="min-w-0 flex-1 flex-row items-center gap-2">
           <ShelfTitleRow id={status} title={title} />
           <Text className="text-sm font-normal text-ink-muted">({items.length})</Text>
         </View>

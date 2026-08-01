@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { BookSpine } from "@/components/library/BookSpine";
 import { EmptyShelfMessage } from "@/components/library/EmptyShelfMessage";
-import { ShelfIcon } from "@/components/shelves/ShelfIcon";
+import { ShelfTitleRow } from "@/components/shelves/ShelfTitleRow";
 import { bookDetailsPath } from "@/lib/routes/book";
 import { readerLibraryShelfPath } from "@/lib/routes/readerLibrary";
 import type { LibraryBookRow } from "@/lib/services/library";
@@ -32,9 +32,8 @@ export function BookshelfSection({
   return (
     <section className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
       <div className="flex flex-col items-center justify-center gap-2 border-b border-border px-4 py-3 text-center sm:flex-row sm:justify-between">
-        <h2 className="flex items-center gap-2 text-lg font-semibold text-puce-red">
-          <ShelfIcon id={status} size="medium" />
-          {title}
+        <h2 className="flex items-center gap-2">
+          <ShelfTitleRow id={status} title={title} />
           <span className="text-sm font-normal text-text-muted">({items.length})</span>
         </h2>
         {showHeaderLink ? (

@@ -89,7 +89,10 @@ export default function HomeReadingRoom() {
 
   const loadNotes = useCallback(async () => {
     if (!userId) return;
-    const rows = await searchNotesWithBooks({ userId, limit: 12 });
+    const rows = await searchNotesWithBooks({
+      userId,
+      limit: 5,
+    });
     setRecentNotes(rows);
   }, [userId]);
 

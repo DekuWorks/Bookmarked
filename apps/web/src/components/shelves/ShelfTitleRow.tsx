@@ -12,20 +12,23 @@ type Props = {
   action?: ReactNode;
 };
 
-/** Inline shelf icon + title for headers and section labels. */
+/**
+ * Borderless shelf icon + title. Icon sits beside the first title line;
+ * the icon+title group is vertically centered as a unit in its parent.
+ */
 export function ShelfTitleRow({
   id,
   title,
   size = "medium",
   className,
-  titleClassName = "text-base font-semibold text-puce-red",
+  titleClassName = "font-display text-xl font-bold tracking-tight text-puce-red sm:text-2xl",
   action,
 }: Props) {
   return (
-    <div className={cn("flex items-center gap-2", className)}>
-      <ShelfIcon id={id} size={size} labeled />
-      <span className={titleClassName}>{title}</span>
+    <span className={cn("inline-flex items-center gap-2", className)}>
+      <ShelfIcon id={id} size={size} labeled className="self-center" />
+      <span className={cn("min-w-0 leading-tight", titleClassName)}>{title}</span>
       {action}
-    </div>
+    </span>
   );
 }

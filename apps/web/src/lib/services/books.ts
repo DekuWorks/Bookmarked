@@ -363,7 +363,9 @@ export async function addCatalogBookToShelf(
         user_id: user.id,
         book_id: bookId,
         shelf_status,
+        dnf: shelf_status === "dnf",
         updated_at: now,
+        ...(shelf_status === "dnf" ? { finished_at: null } : {}),
       },
       { onConflict: "user_id,book_id" }
     )

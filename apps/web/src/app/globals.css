@@ -456,22 +456,54 @@ body {
 @keyframes like-sparkle-rise {
   0% {
     opacity: 0.95;
-    transform: translate3d(var(--sparkle-drift, 0px), 0, 0) scale(1);
+    transform: translate3d(var(--sparkle-drift, 0px), 0, 0) scale(0.8);
+  }
+  35% {
+    opacity: 1;
+    transform: translate3d(calc(var(--sparkle-drift, 0px) * 0.45), -14px, 0)
+      scale(1.28);
   }
   100% {
     opacity: 0;
-    transform: translate3d(var(--sparkle-drift, 0px), -28px, 0) scale(0.4);
+    transform: translate3d(var(--sparkle-drift, 0px), -40px, 0) scale(1.05);
   }
 }
 
 .like-sparkle {
-  animation: like-sparkle-rise 0.65s ease-out forwards;
+  animation: like-sparkle-rise 1s ease-out forwards;
+  will-change: transform, opacity;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .like-sparkle {
     animation: none;
     opacity: 0;
+  }
+}
+
+@keyframes like-button-glow-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(184, 157, 187, 0.55);
+    transform: scale(1);
+  }
+  40% {
+    box-shadow: 0 0 0 6px rgba(184, 157, 187, 0);
+    transform: scale(1.04);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(184, 157, 187, 0);
+    transform: scale(1);
+  }
+}
+
+.like-button-glow {
+  animation: like-button-glow-pulse 0.45s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .like-button-glow {
+    animation: none;
+    box-shadow: 0 0 0 3px rgba(184, 157, 187, 0.45);
   }
 }
 

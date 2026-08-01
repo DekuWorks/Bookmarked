@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { getShelfConfigBySlug } from "@/lib/constants/shelves";
-import { ShelfIcon } from "@/components/shelves/ShelfIcon";
+import { ShelfTitleRow } from "@/components/shelves/ShelfTitleRow";
 import { getProfile } from "@/lib/services/profile";
 import {
   computeShelfStats,
@@ -87,9 +87,13 @@ export default function ShelfPageClient() {
           >
             ← Back to library
           </Link>
-          <h1 className="mt-2 flex items-center justify-center gap-2 text-3xl font-bold text-puce-red sm:text-4xl">
-            <ShelfIcon id={config.status} size="large" labeled />
-            {config.title}
+          <h1 className="mt-2 flex justify-center">
+            <ShelfTitleRow
+              id={config.status}
+              title={config.title}
+              size="large"
+              titleClassName="font-display text-3xl font-bold tracking-tight text-puce-red sm:text-4xl"
+            />
           </h1>
           <p className="mx-auto mt-1 max-w-xl text-pretty text-text-muted">{config.description}</p>
           <p className="mt-2 text-sm font-medium text-text">

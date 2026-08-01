@@ -21,7 +21,7 @@ export function LibraryGridView({ shelves, showHeaderLink = true }: Props) {
           className="rounded-2xl border border-brand-border bg-surface p-4 shadow-md"
         >
           <View className="mb-3 flex-row items-center justify-between">
-            <View className="flex-row items-center gap-2">
+            <View className="min-w-0 flex-1 flex-row items-center gap-2">
               <ShelfTitleRow id={shelf.status} title={shelf.title} />
               <Text className="text-sm font-normal text-ink-muted">({shelf.items.length})</Text>
             </View>

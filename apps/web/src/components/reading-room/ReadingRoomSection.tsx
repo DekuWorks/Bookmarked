@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { ShelfIcon } from "@/components/shelves/ShelfIcon";
+import { ShelfTitleRow } from "@/components/shelves/ShelfTitleRow";
 import type { ShelfIconId } from "@/lib/constants/shelfIcons";
 import { cn } from "@/lib/utils/cn";
 
@@ -27,11 +27,20 @@ export function ReadingRoomSection({
         className
       )}
     >
-      <div className="mb-4 flex flex-col items-center justify-center gap-3 text-center sm:flex-row sm:flex-wrap">
-        <h2 className="flex items-center justify-center gap-2 text-lg font-semibold text-puce-red md:text-xl">
-          {shelfIconId ? <ShelfIcon id={shelfIconId} size="medium" /> : null}
-          {emoji && !shelfIconId ? <span aria-hidden>{emoji}</span> : null}
-          {title}
+      <div className="mb-4 flex flex-col items-center justify-center gap-3 text-center sm:flex-row sm:flex-wrap sm:items-center">
+        <h2 className="text-lg font-semibold text-puce-red md:text-xl">
+          {shelfIconId ? (
+            <ShelfTitleRow
+              id={shelfIconId}
+              title={title}
+              titleClassName="text-lg font-semibold text-puce-red md:text-xl"
+            />
+          ) : (
+            <span className="inline-flex items-center gap-2">
+              {emoji ? <span aria-hidden>{emoji}</span> : null}
+              {title}
+            </span>
+          )}
         </h2>
         {action}
       </div>

@@ -139,8 +139,27 @@ export default function BookScreen() {
 
   async function applyShelf(shelf: ShelfStatus, manualPageCount?: number) {
     if (!userId || !book) return;
+    const queryKey = ["book-details", bookId, userId] as const;
+    const previous = queryClient.getQueryData(queryKey);
+    // Optimistic shelf badge for existing library rows — rolls back on failure.
+    if (details.data?.userBook) {
+      queryClient.setQueryData(queryKey, (current: typeof details.data) => {
+        if (!current?.userBook) return current;
+        return {
+          ...current,
+          userBook: {
+            ...current.userBook,
+            shelf_status: shelf,
+            dnf: shelf === "dnf",
+            finished_at: shelf === "dnf" ? null : current.userBook.finished_at,
+          },
+        };
+      });
+    }
+
     const result = await setShelfStatus(userId, book, shelf, { manualPageCount });
     if (result.error) {
+      queryClient.setQueryData(queryKey, previous);
       Alert.alert("Error", result.error);
       return;
     }
@@ -266,9 +285,27 @@ export default function BookScreen() {
   async function toggleDnf() {
     if (!userId || !book) return;
     const next = !(data?.userBook?.dnf ?? false);
+    const queryKey = ["book-details", bookId, userId] as const;
+    const previous = queryClient.getQueryData(queryKey);
+    queryClient.setQueryData(queryKey, (current: typeof details.data) => {
+      if (!current?.userBook) return current;
+      return {
+        ...current,
+        userBook: {
+          ...current.userBook,
+          dnf: next,
+          shelf_status: next ? "dnf" : "currently_reading",
+          finished_at: next ? null : current.userBook.finished_at,
+        },
+      };
+    });
     const result = await setDnf(userId, book.id, next);
-    if (result.error) Alert.alert("Error", result.error);
-    invalidate();
+    if (result.error) {
+      queryClient.setQueryData(queryKey, previous);
+      Alert.alert("Error", result.error);
+      return;
+    }
+    await invalidate();
   }
 
   function startAnotherRead() {
@@ -407,10 +444,12 @@ export default function BookScreen() {
               <Pressable
                 key={s.status}
                 onPress={() => changeShelf(s.status)}
-                className={`flex-1 items-center gap-1 rounded-xl py-2.5 ${active ? "bg-puce-red" : "bg-primary/15"}`}
+                className={`min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-xl py-2.5 ${active ? "bg-puce-red" : "bg-primary/15"}`}
               >
                 <ShelfIcon id={s.status} size="small" />
-                <Text className={`text-sm font-semibold ${active ? "text-white" : "text-puce-red"}`}>
+                <Text
+                  className={`text-sm font-semibold leading-tight ${active ? "text-white" : "text-puce-red"}`}
+                >
                   {s.label}
                 </Text>
               </Pressable>
@@ -422,12 +461,14 @@ export default function BookScreen() {
           <View className="flex-row gap-2">
             <Pressable
               onPress={toggleDnf}
-              className={`flex-1 flex-row items-center justify-center gap-1.5 rounded-xl py-2.5 ${
+              className={`min-h-[44px] flex-1 flex-row items-center justify-center gap-2 rounded-xl py-2.5 ${
                 userBook.dnf ? "bg-rust" : "bg-primary/15"
               }`}
             >
               <ShelfIcon id="dnf" size="small" />
-              <Text className={`text-sm font-semibold ${userBook.dnf ? "text-white" : "text-puce-red"}`}>
+              <Text
+                className={`text-sm font-semibold leading-tight ${userBook.dnf ? "text-white" : "text-puce-red"}`}
+              >
                 {userBook.dnf ? "Did not finish" : "Mark did not finish"}
               </Text>
             </Pressable>

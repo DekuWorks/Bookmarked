@@ -338,7 +338,7 @@ function ClubDetailContent() {
           <div className="flex items-center gap-4">
             <Link
               href={bookDetailsPath(club.current_book.id)}
-              className="h-28 w-20 shrink-0 overflow-hidden rounded-md shadow-sm"
+              className="h-28 w-20 shrink-0 overflow-visible rounded-md shadow-sm"
             >
               <BookCover
                 title={club.current_book.title}

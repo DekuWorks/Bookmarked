@@ -51,9 +51,14 @@ export function BookShelfActions({
   const [missingPageOpen, setMissingPageOpen] = useState(false);
   const [pendingShelf, setPendingShelf] = useState<ShelfStatus | null>(null);
   const [pending, setPending] = useState(false);
+  const [optimisticShelf, setOptimisticShelf] = useState<ShelfStatus | null>(currentShelf);
   const [memberShelfIds, setMemberShelfIds] = useState<string[]>([]);
   const [removeState, removeAction, removing] = useActionState(removeFromShelf, initial);
   const [favState, favAction, favoriting] = useActionState(toggleFavorite, initial);
+
+  useEffect(() => {
+    setOptimisticShelf(currentShelf);
+  }, [currentShelf]);
 
   useEffect(() => {
     if (!user) return;
@@ -69,6 +74,8 @@ export function BookShelfActions({
     shelfStatus: ShelfStatus,
     options?: { manualPageCount?: number }
   ) {
+    const previousShelf = optimisticShelf;
+    setOptimisticShelf(shelfStatus);
     setPending(true);
     const formData = new FormData();
     formData.set("book_id", bookId);
@@ -84,6 +91,7 @@ export function BookShelfActions({
     try {
       const result = await setBookShelfStatus({}, formData);
       if (result.error) {
+        setOptimisticShelf(previousShelf);
         toast.error(result.error);
         return;
       }
@@ -94,6 +102,9 @@ export function BookShelfActions({
         setPendingShelf(null);
         onShelfChange?.(result);
       }
+    } catch (error) {
+      setOptimisticShelf(previousShelf);
+      toast.error(error instanceof Error ? error.message : "Could not update shelf.");
     } finally {
       setPending(false);
     }
@@ -119,9 +130,9 @@ export function BookShelfActions({
   return (
     <section className="rounded-xl border border-border bg-surface p-5">
       <h2 className="text-lg font-semibold text-puce-red">Your shelf</h2>
-      {currentShelf ? (
+      {optimisticShelf ? (
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <ShelfBadge status={currentShelf} />
+          <ShelfBadge status={optimisticShelf} />
           <Button
             type="button"
             variant="outline"
@@ -165,9 +176,9 @@ export function BookShelfActions({
                 loading={pending}
                 onClick={() => applyShelf(status)}
               >
-                <span className="inline-flex items-center gap-1.5">
+                <span className="inline-flex items-center gap-2">
                   <ShelfIcon id={status} size="small" />
-                  {title}
+                  <span className="leading-tight">{title}</span>
                 </span>
               </Button>
             ))}
@@ -187,8 +198,8 @@ export function BookShelfActions({
         bookTitle={bookTitle}
         open={menuOpen}
         loading={pending}
-        currentShelfStatus={currentShelf}
-        mode={currentShelf ? "move" : "add"}
+        currentShelfStatus={optimisticShelf}
+        mode={optimisticShelf ? "move" : "add"}
         onSelectShelf={applyShelf}
         onClose={() => {
           if (!pending) setMenuOpen(false);

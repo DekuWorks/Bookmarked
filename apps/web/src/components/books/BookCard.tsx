@@ -40,22 +40,26 @@ export function BookCard({
   return (
     <article
       className={cn(
-        "flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-sm transition hover:shadow-md",
+        "flex flex-col overflow-visible rounded-xl border border-border bg-surface shadow-sm transition hover:shadow-md",
         className
       )}
     >
       {href ? <Link href={href}>{cover}</Link> : cover}
-      <div className="flex flex-1 flex-col gap-2 p-4">
+      <div className="flex flex-1 flex-col gap-1.5 p-3 sm:gap-2 sm:p-4">
         {shelfStatus ? <ShelfBadge status={shelfStatus} /> : null}
         {href ? (
           <Link href={href}>
-            <h3 className="line-clamp-2 font-semibold text-text hover:text-primary">{title}</h3>
+            <h3 className="mt-0.5 line-clamp-2 font-display text-base font-bold leading-snug tracking-tight text-text hover:text-primary sm:text-lg">
+              {title}
+            </h3>
           </Link>
         ) : (
-          <h3 className="line-clamp-2 font-semibold text-text">{title}</h3>
+          <h3 className="mt-0.5 line-clamp-2 font-display text-base font-bold leading-snug tracking-tight text-text sm:text-lg">
+            {title}
+          </h3>
         )}
         {author ? (
-          <p className="line-clamp-1 text-sm text-text-muted">
+          <p className="line-clamp-1 text-[13px] leading-snug text-text-muted sm:text-sm">
             <Link href={authorPagePath(author)} className="hover:text-primary hover:underline">
               {author}
             </Link>

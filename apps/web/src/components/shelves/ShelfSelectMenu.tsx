@@ -45,7 +45,7 @@ export function ShelfSelectMenu({
                 disabled={loading || isCurrent}
                 onClick={() => onSelectShelf(status)}
                 className={cn(
-                  "flex min-h-[44px] w-full items-center gap-3 rounded-lg border px-4 py-3 text-left transition disabled:opacity-50",
+                  "flex min-h-[44px] w-full items-center gap-2 rounded-lg border px-4 py-3 text-left transition disabled:opacity-50",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange",
                   isCurrent
                     ? "border-primary bg-primary/10"
@@ -53,7 +53,7 @@ export function ShelfSelectMenu({
                 )}
               >
                 <ShelfIcon id={status} size="medium" />
-                <span className="flex-1 font-medium text-text">{shelfTitle}</span>
+                <span className="flex-1 font-medium leading-tight text-text">{shelfTitle}</span>
                 {isCurrent ? (
                   <span className="text-xs font-medium text-primary">Current</span>
                 ) : null}

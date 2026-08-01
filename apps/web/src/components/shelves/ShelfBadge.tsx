@@ -34,13 +34,13 @@ export function ShelfBadge({ status, className }: Props) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium",
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium leading-none",
         badgeClass,
         className
       )}
     >
       <ShelfIcon id={status} size="small" />
-      {label}
+      <span className="leading-tight">{label}</span>
     </span>
   );
 }

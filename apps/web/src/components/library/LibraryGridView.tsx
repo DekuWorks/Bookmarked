@@ -1,6 +1,6 @@
 import { BookCard } from "@/components/books/BookCard";
 import { EmptyShelfMessage } from "@/components/library/EmptyShelfMessage";
-import { ShelfIcon } from "@/components/shelves/ShelfIcon";
+import { ShelfTitleRow } from "@/components/shelves/ShelfTitleRow";
 import { bookDetailsPath } from "@/lib/routes/book";
 import type { ShelfGroup } from "@/lib/services/library";
 
@@ -13,9 +13,8 @@ export function LibraryGridView({ shelves }: Props) {
     <div className="space-y-10">
       {shelves.map((shelf) => (
         <section key={shelf.status}>
-          <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold text-puce-red">
-            <ShelfIcon id={shelf.status} size="medium" />
-            {shelf.title}
+          <h2 className="mb-4">
+            <ShelfTitleRow id={shelf.status} title={shelf.title} />
           </h2>
           {shelf.items.length === 0 ? (
             <EmptyShelfMessage />

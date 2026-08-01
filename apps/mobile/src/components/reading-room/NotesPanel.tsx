@@ -4,6 +4,8 @@ import { BookCover } from "../BookCover";
 import { LoadingState } from "../LoadingState";
 import { SectionCard } from "../SectionCard";
 import { READING_NOTE_CATEGORIES, type ReadingNoteWithBook } from "../../services/readingNotes";
+import { formatNoteLocation } from "../../../../../packages/utils/noteLocation";
+import { NoteTag } from "../NoteTag";
 
 function categoryMeta(value: ReadingNoteWithBook["category"]) {
   return READING_NOTE_CATEGORIES.find((c) => c.value === value);
@@ -18,17 +20,14 @@ export function NotesPanel({ notes }: Props) {
 
   return (
     <View className="gap-4">
-      <SectionCard title="Search reading notes" emoji="🔍">
-        <Text className="text-sm text-ink-muted">
-          Find quotes and thoughts across your library.
-        </Text>
-        <Pressable
-          onPress={() => router.push("/notes")}
-          className="mt-3 self-start rounded-full bg-puce-red px-4 py-2 active:opacity-80"
-        >
-          <Text className="text-sm font-semibold text-white">Open notes search</Text>
-        </Pressable>
-      </SectionCard>
+      <Pressable
+        onPress={() => router.push("/notes")}
+        className="self-stretch items-center rounded-full bg-puce-red px-4 py-3 active:opacity-80"
+        accessibilityRole="button"
+        accessibilityLabel="Open Full Notes Page"
+      >
+        <Text className="text-sm font-semibold text-white">Open Full Notes Page</Text>
+      </Pressable>
 
       <SectionCard title="Recent notes" emoji="🗒️">
         {notes === null ? (
@@ -39,6 +38,10 @@ export function NotesPanel({ notes }: Props) {
           <View className="gap-3">
             {notes.map((note) => {
               const meta = categoryMeta(note.category);
+              const locationLabel = formatNoteLocation({
+                pageNumber: note.page_number,
+                chapterNumber: note.chapter,
+              });
               return (
                 <Pressable
                   key={note.id}
@@ -46,24 +49,34 @@ export function NotesPanel({ notes }: Props) {
                   className="flex-row gap-3 rounded-xl border border-brand-border bg-background/70 p-3 active:opacity-80"
                 >
                   {note.book ? (
-                    <BookCover url={note.book.cover_url} title={note.book.title} sizeClassName="w-10 h-14" />
+                    <BookCover
+                      url={note.book.cover_url}
+                      title={note.book.title}
+                      sizeClassName="w-10 h-14"
+                    />
                   ) : null}
-                  <View className="min-w-0 flex-1">
-                    <Text className="text-xs font-semibold text-primary-dark">
-                      {meta ? `${meta.emoji} ${meta.label}` : "Note"}
-                    </Text>
+                  <View className="min-w-0 flex-1 gap-1">
+                    <NoteTag
+                      label={meta?.label ?? "Note"}
+                      emoji={meta?.emoji}
+                      category={note.category}
+                      isCustom={note.category.startsWith("custom:")}
+                    />
+                    {locationLabel ? (
+                      <Text className="text-xs text-ink-muted">{locationLabel}</Text>
+                    ) : null}
                     {note.quote ? (
-                      <Text className="mt-1 italic text-sm text-ink" numberOfLines={2}>
+                      <Text className="italic text-sm text-ink" numberOfLines={2}>
                         “{note.quote}”
                       </Text>
                     ) : null}
                     {note.note ? (
-                      <Text className="mt-1 text-sm text-ink" numberOfLines={2}>
+                      <Text className="text-sm text-ink" numberOfLines={2}>
                         {note.note}
                       </Text>
                     ) : null}
                     {note.book ? (
-                      <Text className="mt-1 text-xs text-ink-muted" numberOfLines={1}>
+                      <Text className="text-xs text-ink-muted" numberOfLines={1}>
                         {note.book.title}
                       </Text>
                     ) : null}

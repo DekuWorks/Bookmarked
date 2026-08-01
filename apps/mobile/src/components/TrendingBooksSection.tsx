@@ -17,40 +17,45 @@ function TrendingBookCard({ book }: { book: TrendingBook }) {
     <Pressable
       onPress={() => router.push(`/book/${book.bookId}`)}
       className="mr-3 w-28 active:opacity-80"
+      style={{ height: 300 }}
       accessibilityRole="button"
       accessibilityLabel={`${book.title}, ${book.metric} ${book.metricLabel}`}
     >
       <BookCover url={book.coverUrl} title={book.title} sizeClassName="w-28 h-40" />
       <Text
         className="mt-2 text-xs"
-        style={{ fontFamily: SANS_FONT_BOLD, color: colors.ink }}
+        style={{ fontFamily: SANS_FONT_BOLD, color: colors.ink, minHeight: 32 }}
         numberOfLines={2}
       >
         {book.title}
       </Text>
-      {book.author ? (
-        <Text
-          className="mt-0.5 text-[11px]"
-          style={{ fontFamily: SANS_FONT, color: colors.inkMuted }}
-          numberOfLines={1}
-        >
-          {book.author}
-        </Text>
-      ) : null}
-      {book.communityRating ? (
-        <View className="mt-1 flex-row items-center gap-1">
-          <StarRating value={book.communityRating.averageRating} showNumber size={12} />
-          <Text
-            className="text-[10px]"
-            style={{ fontFamily: SANS_FONT, color: colors.inkMuted }}
-          >
-            ({formatRatingCount(book.communityRating.ratingCount)})
+      <Text
+        className="mt-0.5 text-[11px]"
+        style={{ fontFamily: SANS_FONT, color: colors.inkMuted, minHeight: 14 }}
+        numberOfLines={1}
+      >
+        {book.author?.trim() || " "}
+      </Text>
+      <View style={{ minHeight: 28, marginTop: 4, justifyContent: "center" }}>
+        {book.communityRating ? (
+          <View className="flex-row items-center gap-1">
+            <StarRating value={book.communityRating.averageRating} showNumber size={12} />
+            <Text
+              className="text-[10px]"
+              style={{ fontFamily: SANS_FONT, color: colors.inkMuted }}
+            >
+              ({formatRatingCount(book.communityRating.ratingCount)})
+            </Text>
+          </View>
+        ) : (
+          <Text className="text-[10px]" style={{ fontFamily: SANS_FONT, color: colors.inkMuted }}>
+            No review yet
           </Text>
-        </View>
-      ) : null}
+        )}
+      </View>
       <Text
         className="mt-1 text-[11px]"
-        style={{ fontFamily: SANS_FONT_MEDIUM, color: colors.inkMuted }}
+        style={{ fontFamily: SANS_FONT_MEDIUM, color: colors.inkMuted, marginTop: "auto" }}
       >
         {book.metric} {book.metricLabel}
       </Text>

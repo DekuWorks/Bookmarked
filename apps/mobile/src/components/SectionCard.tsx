@@ -19,9 +19,9 @@ export function SectionCard({ title, emoji, shelfIconId, action, children, class
       className={`rounded-2xl border border-brand-border bg-surface p-4 shadow-md ${className ?? ""}`}
     >
       <View className="mb-3 flex-row items-center justify-between">
-        <View className="flex-row items-center gap-2">
+        <View className="min-w-0 flex-1 flex-row items-center gap-2">
           {shelfIconId ? <ShelfIcon id={shelfIconId} size="small" /> : null}
-          <Text className="text-base font-bold text-puce-red">
+          <Text className="flex-shrink text-base font-bold leading-tight text-puce-red">
             {emoji && !shelfIconId ? `${emoji} ` : ""}
             {title}
           </Text>

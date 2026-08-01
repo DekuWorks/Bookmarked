@@ -62,7 +62,7 @@ export default function LibraryShelfScreen() {
         </Pressable>
 
         <View>
-          <ShelfTitleRow id={config.status} title={config.title} titleClassName="text-2xl font-bold text-puce-red" />
+          <ShelfTitleRow id={config.status} title={config.title} titleClassName="text-2xl text-puce-red" />
           <Text className="mt-1 text-sm text-ink-muted">{config.description}</Text>
           <Text className="mt-2 text-sm font-medium text-ink">
             {shelf.items.length} book{shelf.items.length === 1 ? "" : "s"}

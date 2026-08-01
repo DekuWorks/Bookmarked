@@ -190,10 +190,15 @@ export function buildCompletionSessionPatch(input: {
 }
 
 export function countResolvedPagesRead(
-  books: Array<{ shelf_status: string; progress_pages?: number | null }>
+  books: Array<{
+    shelf_status: string;
+    progress_pages?: number | null;
+    dnf?: boolean | null;
+  }>
 ): number {
   return books.reduce((sum, book) => {
-    if (book.shelf_status !== "read") return sum;
+    // DNF never counts toward Pages Read, even if progress remains on the row.
+    if (book.shelf_status !== "read" || book.dnf) return sum;
     const pages = Number(book.progress_pages) || 0;
     return pages > 0 ? sum + pages : sum;
   }, 0);

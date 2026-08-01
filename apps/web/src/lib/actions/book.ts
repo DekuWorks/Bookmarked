@@ -12,6 +12,7 @@ import { transferUserBookHistory } from "@/lib/services/transferUserBook";
 import { getShelfLabel, isShelfStatus } from "@/lib/constants/shelfLabels";
 import { parseHalfStarRating } from "@/lib/utils/ratings";
 import { sanitizeRatingEmoji } from "@/lib/constants/reviewEmojis";
+import { buildUserBookShelfPatch } from "../../../../../packages/utils/shelfStatus";
 import type { ReviewRatingMode, ShelfStatus } from "@/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -35,39 +36,83 @@ type UserBookRow = {
   rating?: number | null;
 };
 
+type CatalogBook = {
+  id: string;
+  title: string;
+  page_count: number | null;
+  format: "book" | "ebook" | "audiobook";
+  audiobook_duration_seconds: number | null;
+  cover_url: string | null;
+  subjects: string[] | null;
+  isbn: string | null;
+};
+
 type AuthBookContext =
   | { ok: false; error: string }
   | {
       ok: true;
       supabase: SupabaseClient;
       user: { id: string };
-      book: {
-        id: string;
-        title: string;
-        page_count: number | null;
-        format: "book" | "ebook" | "audiobook";
-        audiobook_duration_seconds: number | null;
-        cover_url: string | null;
-        subjects: string[] | null;
-        isbn: string | null;
-      };
+      book: CatalogBook;
       userBook: UserBookRow | null;
     };
 
+async function fetchCatalogBook(
+  supabase: SupabaseClient,
+  bookId: string
+): Promise<CatalogBook | null> {
+  const full = await supabase
+    .from("books")
+    .select("id, title, page_count, format, audiobook_duration_seconds, cover_url, subjects, isbn")
+    .eq("id", bookId)
+    .maybeSingle();
+
+  if (full.data) {
+    const row = full.data;
+    return {
+      id: String(row.id),
+      title: String(row.title),
+      page_count: row.page_count ?? null,
+      format: (row.format as CatalogBook["format"] | null) ?? "book",
+      audiobook_duration_seconds: row.audiobook_duration_seconds ?? null,
+      cover_url: row.cover_url ?? null,
+      subjects: (row.subjects as string[] | null) ?? null,
+      isbn: row.isbn ?? null,
+    };
+  }
+
+  // Older schemas / transient select issues: fall back without audiobook columns.
+  const minimal = await supabase
+    .from("books")
+    .select("id, title, page_count, cover_url, subjects, isbn")
+    .eq("id", bookId)
+    .maybeSingle();
+
+  if (!minimal.data) return null;
+
+  return {
+    id: String(minimal.data.id),
+    title: String(minimal.data.title),
+    page_count: minimal.data.page_count ?? null,
+    format: "book",
+    audiobook_duration_seconds: null,
+    cover_url: minimal.data.cover_url ?? null,
+    subjects: (minimal.data.subjects as string[] | null) ?? null,
+    isbn: minimal.data.isbn ?? null,
+  };
+}
+
+/**
+ * Resolve auth + library membership first. Catalog lookups are best-effort —
+ * a book already on the user's shelves must never surface as "Book not found."
+ */
 async function getAuthUserBook(bookId: string): Promise<AuthBookContext> {
   const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "You must be signed in." };
-
-  const { data: book } = await supabase
-    .from("books")
-    .select("id, title, page_count, format, audiobook_duration_seconds, cover_url, subjects, isbn")
-    .eq("id", bookId)
-    .maybeSingle();
-
-  if (!book) return { ok: false, error: "Book not found." };
+  if (!bookId.trim()) return { ok: false, error: "Book not found." };
 
   const { data: userBook } = await supabase
     .from("user_books")
@@ -75,6 +120,23 @@ async function getAuthUserBook(bookId: string): Promise<AuthBookContext> {
     .eq("user_id", user.id)
     .eq("book_id", bookId)
     .maybeSingle();
+
+  const catalogBook = await fetchCatalogBook(supabase, bookId);
+
+  if (!catalogBook && !userBook) {
+    return { ok: false, error: "Book not found." };
+  }
+
+  const book: CatalogBook = catalogBook ?? {
+    id: bookId,
+    title: "Untitled",
+    page_count: null,
+    format: "book",
+    audiobook_duration_seconds: null,
+    cover_url: null,
+    subjects: null,
+    isbn: null,
+  };
 
   return { ok: true, supabase, user, book, userBook: userBook as UserBookRow | null };
 }
@@ -222,32 +284,50 @@ export async function setBookShelfStatus(
     };
   }
 
-  const payload: Record<string, unknown> = {
-    user_id: user.id,
-    book_id: bookId,
-    shelf_status,
-    dnf: shelf_status === "dnf",
-    updated_at: now,
-  };
+  const shelfPatch = buildUserBookShelfPatch({
+    shelfStatus: shelf_status,
+    existingStartedAt: userBook?.started_at,
+    now,
+  });
 
-  if (shelf_status === "currently_reading" && !userBook?.started_at) {
-    payload.started_at = now;
+  let savedId: string;
+
+  if (userBook?.id) {
+    // Update the existing library row — never duplicate; preserve progress/history.
+    const { data: saved, error } = await supabase
+      .from("user_books")
+      .update(shelfPatch)
+      .eq("id", userBook.id)
+      .eq("user_id", user.id)
+      .select("id")
+      .single();
+
+    if (error) return { error: error.message };
+    savedId = saved.id;
+  } else {
+    const { data: saved, error } = await supabase
+      .from("user_books")
+      .upsert(
+        {
+          user_id: user.id,
+          book_id: bookId,
+          ...shelfPatch,
+        },
+        { onConflict: "user_id,book_id" }
+      )
+      .select("id")
+      .single();
+
+    if (error) return { error: error.message };
+    savedId = saved.id;
   }
-
-  const { data: saved, error } = await supabase
-    .from("user_books")
-    .upsert(payload, { onConflict: "user_id,book_id" })
-    .select("id")
-    .single();
-
-  if (error) return { error: error.message };
 
   const event_type = userBook ? "shelf_updated" : "book_added";
   await recordActivity(supabase, {
     user_id: user.id,
     event_type,
     entity_type: "user_book",
-    entity_id: saved.id,
+    entity_id: savedId,
     metadata_json: activityMetadata(book.title, {
       ...bookActivityContext(book),
       shelf_status,

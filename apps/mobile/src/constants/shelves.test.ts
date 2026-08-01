@@ -15,6 +15,7 @@ describe("mobile shelf constants", () => {
       "want_to_read",
       "currently_reading",
       "read",
+      "dnf",
     ]);
   });
 
@@ -32,7 +33,7 @@ describe("mobile shelf constants", () => {
     expect(EXPECTED_ICON_ORDER.at(-1)).toBe("dnf");
   });
 
-  it("assigns sortOrder 1–3 for status shelves", () => {
-    expect(getShelvesInOrder().map((s) => s.sortOrder)).toEqual([1, 2, 3]);
+  it("assigns sortOrder 1–4 for status shelves including DNF", () => {
+    expect(getShelvesInOrder().map((s) => s.sortOrder)).toEqual([1, 2, 3, 4]);
   });
 });

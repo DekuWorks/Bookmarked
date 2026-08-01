@@ -6,7 +6,7 @@ import { Avatar } from "./Avatar";
 import { AttachmentImage } from "./AttachmentImage";
 import { BookCover } from "./BookCover";
 import { FeelingChip } from "./FeelingChip";
-import { LikeSparkles } from "./LikeSparkles";
+import { BookmarkedLikeSparkles } from "./BookmarkedLikeSparkles";
 import { MentionText } from "./MentionText";
 import { PostCommentsSheet } from "./PostCommentsSheet";
 import { ProfanityBlur } from "./ProfanityBlur";
@@ -75,7 +75,7 @@ function AuthorRow({
 function ActionRow({
   likeCount,
   liked,
-  sparkle,
+  showAnimation,
   onLike,
   onComment,
   onSave,
@@ -83,7 +83,7 @@ function ActionRow({
 }: {
   likeCount: number;
   liked: boolean;
-  sparkle?: boolean;
+  showAnimation?: boolean;
   onLike?: () => void;
   onComment?: () => void;
   onSave?: () => void;
@@ -91,8 +91,12 @@ function ActionRow({
 }) {
   return (
     <View className="mt-3 flex-row items-center gap-6 border-t border-brand-border pt-3">
-      <Pressable className="relative flex-row items-center gap-1.5 active:opacity-70" onPress={onLike}>
-        <LikeSparkles active={Boolean(sparkle)} />
+      <Pressable
+        className="relative flex-row items-center gap-1.5 active:opacity-70"
+        style={{ overflow: "visible" }}
+        onPress={onLike}
+      >
+        <BookmarkedLikeSparkles active={Boolean(showAnimation)} />
         <Text className="text-base">{liked ? "❤️" : "🤍"}</Text>
         <Text className="text-sm text-ink-muted">{likeCount}</Text>
       </Pressable>
@@ -116,7 +120,7 @@ function ReviewCard({ entry, viewerId }: { entry: ReviewEntry; viewerId?: string
   const router = useRouter();
   const queryClient = useQueryClient();
   const [revealed, setRevealed] = useState(false);
-  const [sparkle, setSparkle] = useState(false);
+  const [showAnimation, setShowAnimation] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const like = useToggleReviewLike();
   const hidden = entry.hasSpoilers && !revealed;
@@ -212,11 +216,11 @@ function ReviewCard({ entry, viewerId }: { entry: ReviewEntry; viewerId?: string
       <ActionRow
         likeCount={entry.likeCount}
         liked={entry.viewerLiked}
-        sparkle={sparkle}
+        showAnimation={showAnimation}
         onLike={() => {
           if (!entry.viewerLiked) {
-            setSparkle(true);
-            setTimeout(() => setSparkle(false), 700);
+            setShowAnimation(true);
+            setTimeout(() => setShowAnimation(false), 1200);
           }
           like.mutate(entry.id);
         }}
@@ -242,7 +246,7 @@ function PostActions({
   liked,
   commentCount,
   reposted,
-  sparkle,
+  showAnimation,
   onLike,
   onComment,
   onRepost,
@@ -252,7 +256,7 @@ function PostActions({
   liked: boolean;
   commentCount: number;
   reposted: boolean;
-  sparkle?: boolean;
+  showAnimation?: boolean;
   onLike: () => void;
   onComment: () => void;
   onRepost: () => void;
@@ -260,8 +264,12 @@ function PostActions({
 }) {
   return (
     <View className="mt-3 flex-row items-center gap-6 border-t border-brand-border pt-3">
-      <Pressable className="relative flex-row items-center gap-1.5 active:opacity-70" onPress={onLike}>
-        <LikeSparkles active={Boolean(sparkle)} />
+      <Pressable
+        className="relative flex-row items-center gap-1.5 active:opacity-70"
+        style={{ overflow: "visible" }}
+        onPress={onLike}
+      >
+        <BookmarkedLikeSparkles active={Boolean(showAnimation)} />
         <Text className="text-base">{liked ? "❤️" : "🤍"}</Text>
         <Text className="text-sm text-ink-muted">{likeCount}</Text>
       </Pressable>
@@ -290,7 +298,7 @@ function PostCard({ entry, viewerId }: { entry: PostEntry; viewerId?: string }) 
   const like = useTogglePostLike();
   const repost = useRepostPost();
   const [commentsOpen, setCommentsOpen] = useState(false);
-  const [sparkle, setSparkle] = useState(false);
+  const [showAnimation, setShowAnimation] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const isRepost = Boolean(post.repost_of_post_id);
   const mine = post.user_id === viewerId;
@@ -391,7 +399,7 @@ function PostCard({ entry, viewerId }: { entry: PostEntry; viewerId?: string }) 
 
       {post.book && !isRepost ? (
         <Pressable
-          className="mt-3 overflow-hidden rounded-xl border border-primary/30 bg-primary/15 active:opacity-80"
+          className="mt-3 overflow-visible rounded-xl border border-primary/30 bg-primary/15 active:opacity-80"
           onPress={() => post.book && router.push(`/book/${post.book.id}`)}
         >
           <View className="flex-row items-stretch gap-3 p-3">
@@ -424,11 +432,11 @@ function PostCard({ entry, viewerId }: { entry: PostEntry; viewerId?: string }) 
         liked={post.viewer_has_liked}
         commentCount={post.comment_count}
         reposted={post.viewer_has_reposted}
-        sparkle={sparkle}
+        showAnimation={showAnimation}
         onLike={() => {
           if (!post.viewer_has_liked) {
-            setSparkle(true);
-            setTimeout(() => setSparkle(false), 700);
+            setShowAnimation(true);
+            setTimeout(() => setShowAnimation(false), 1200);
           }
           like.mutate({ postId: post.id, liked: post.viewer_has_liked });
         }}

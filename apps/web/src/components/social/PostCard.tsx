@@ -20,7 +20,7 @@ import { PostEditPanel } from "@/components/social/PostEditPanel";
 import { QuoteRepostModal } from "@/components/social/QuoteRepostModal";
 import { RepostPreview } from "@/components/social/RepostPreview";
 import { MentionText } from "@/components/social/MentionText";
-import { LikeSparkles } from "@/components/social/LikeSparkles";
+import { BookmarkedLikeSparkles } from "@/components/social/BookmarkedLikeSparkles";
 import {
   ShareContentModal,
   type SharePayload,
@@ -48,7 +48,7 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
   const [expanded, setExpanded] = useState(false);
   const [localPost, setLocalPost] = useState(post);
   const [liking, setLiking] = useState(false);
-  const [sparkleToken, setSparkleToken] = useState(0);
+  const [showAnimation, setShowAnimation] = useState(false);
   const [repostModalOpen, setRepostModalOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -100,7 +100,12 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
       return;
     }
 
-    if (!wasLiked) setSparkleToken((token) => token + 1);
+    if (!wasLiked) {
+      setShowAnimation(false);
+      // Retrigger CSS burst on successive likes.
+      requestAnimationFrame(() => setShowAnimation(true));
+      window.setTimeout(() => setShowAnimation(false), 1200);
+    }
 
     setLocalPost((current) => ({
       ...current,
@@ -298,8 +303,8 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
           )}
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className="relative inline-flex">
-              <LikeSparkles key={sparkleToken} active={sparkleToken > 0} />
+            <span className="relative inline-flex overflow-visible">
+              <BookmarkedLikeSparkles active={showAnimation} />
               <Button
                 type="button"
                 variant={localPost.viewer_has_liked ? "secondary" : "outline"}
@@ -307,6 +312,7 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
                 loading={liking}
                 onClick={() => void handleLikeToggle()}
                 aria-pressed={localPost.viewer_has_liked}
+                className={cn(showAnimation && "like-button-glow")}
               >
                 {localPost.viewer_has_liked ? "Liked" : "Like"}
                 {localPost.like_count > 0 ? ` · ${localPost.like_count}` : ""}

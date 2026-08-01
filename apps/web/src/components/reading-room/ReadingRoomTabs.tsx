@@ -8,7 +8,6 @@ import { AnalyticsGrid } from "@/components/analytics/AnalyticsGrid";
 import { ReadingActivityPanel } from "@/components/analytics/ReadingActivityPanel";
 import { AiInsightsPanel } from "@/components/premium/AiInsightsPanel";
 import { PremiumFeatureLock } from "@/components/premium/PremiumFeatureLock";
-import { NotesSearchForm } from "@/components/notes/NotesSearchForm";
 import { NotesSearchResultCard } from "@/components/notes/NotesSearchResultCard";
 import { OverviewTab } from "@/components/reading-room/OverviewTab";
 import { ReadingGoalPanel } from "@/components/reading-goal/ReadingGoalPanel";
@@ -74,7 +73,7 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
   }, [userId]);
 
   const loadNotes = useCallback(async () => {
-    const { notes } = await searchNotesWithBooks({ userId, limit: 12 });
+    const { notes } = await searchNotesWithBooks({ userId, limit: 5 });
     setRecentNotes(notes);
   }, [userId]);
 
@@ -220,24 +219,22 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
 
         {tab === "notes" ? (
           <div className="space-y-6 text-left">
-            <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
-              <h2 className="text-center text-lg font-semibold text-puce-red">
-                Search reading notes
-              </h2>
-              <div className="mt-4">
-                <NotesSearchForm />
-              </div>
-              <p className="mt-4 text-center text-sm text-text-muted">
-                Or open the full{" "}
-                <Link href="/notes/" className="font-medium text-primary hover:underline">
-                  notes search page
-                </Link>
-                .
-              </p>
-            </section>
+            <div className="flex justify-center">
+              <Link
+                href="/notes/"
+                className="inline-flex min-h-[44px] items-center justify-center rounded-full bg-puce-red px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
+              >
+                Open Full Notes Page
+              </Link>
+            </div>
 
             <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
-              <h3 className="text-center text-base font-semibold text-puce-red">Recent notes</h3>
+              <h3 className="text-center text-base font-semibold text-puce-red">
+                Recent notes
+              </h3>
+              <p className="mt-1 text-center text-sm text-text-muted">
+                Your five most recent notes.
+              </p>
               {recentNotes === null ? (
                 <LoadingState message="Loading notes…" />
               ) : recentNotes.length === 0 ? (

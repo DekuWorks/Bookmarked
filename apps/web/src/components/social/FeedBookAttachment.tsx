@@ -25,14 +25,14 @@ export function FeedBookAttachment({ book, className, variant = "default" }: Pro
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-xl border border-primary/30 bg-gradient-to-br from-primary/20 via-primary/10 to-surface transition hover:border-primary/45 hover:shadow-sm",
+        "overflow-visible rounded-xl border border-primary/30 bg-gradient-to-br from-primary/20 via-primary/10 to-surface transition hover:border-primary/45 hover:shadow-sm",
         className
       )}
     >
       <div className={cn("flex items-stretch gap-4", compact ? "p-2.5" : "p-3.5")}>
         <Link
           href={bookDetailsPath(book.id)}
-          className={cn("relative shrink-0 overflow-hidden rounded-lg shadow-sm", coverClass)}
+          className={cn("relative shrink-0 overflow-visible rounded-lg shadow-sm", coverClass)}
         >
           <BookCover
             title={book.title}

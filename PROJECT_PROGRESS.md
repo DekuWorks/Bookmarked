@@ -135,7 +135,13 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 |------|--------|-------------------|
 | Full-width feed | ✅ | Web sidebar removed; discovery cards interleaved in-stream |
 | Inline discovery cards | ✅ | Trending / Most Shelved / Most Reviewed via `FeedDiscoveryCard` + `interleaveFeedWithDiscovery` |
-| Like sparkles | ✅ | Web `LikeSparkles` + mobile Reanimated particles; like-only |
+| Like sparkles | ✅ | `BookmarkedLikeSparkles` (web CSS + iOS Reanimated); brand lilac/lavender; like-only; reduced-motion glow; compat `LikeSparkles` re-export |
+| Discovery equal-height cards | ✅ | `DiscoveryBookCard` + reserved rating/preview/tag rows on web + iOS carousels |
+| Saved badge flush top-left | ✅ | Shared `SavedBookBadge` / `BookCover` — top/left 0, z-20 above cover |
+| Note location formatter | ✅ | `formatNoteLocation` → `Page X • Chapter Y`; wired all note UIs |
+| NoteTag colored pills | ✅ | Shared `NoteTag` + `resolveNoteTagTone` (custom color column not in schema yet) |
+| Home Notes: 5 + Open Full top | ✅ | DB `limit: 5`; Open Full Notes Page CTA above list |
+| Full Notes → Home Notes | ✅ | Bottom “Return to Home Notes” → `/reading-room/?tab=notes` / `/?tab=notes` |
 | Delete own activity | ✅ | `deleteOwnActivity` + confirmation on web FeedCard; activity row only |
 | Share → Feed / Message | ✅ | `ShareContentModal` / `ShareContentSheet` with search, followers, recent, optional note, delivery toast |
 | Left-aligned text | ✅ | Feed posts/activity + Reading Room activity rows |
@@ -151,6 +157,19 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Built-in shelf labels | ✅ | User-facing labels are TBR, Currently Reading, Finished, and DNF; stable status keys remain unchanged |
 | Library layout polish | ✅ | Centered Sort by label, denser responsive grid view, and more readable bookshelf spines on web + iOS |
 | Clear Shelf | ✅ | Web confirmation modal and native iOS confirmation remove only that shelf's associations and confirm success |
+
+### Sprint 6 — Final polish & bug fixes ✅
+
+| Item | Status | Notes / references |
+|------|--------|-------------------|
+| DNF “Book not found” | ✅ | Library-first shelf moves (`user_books` before catalog); web `setBookShelfStatus` + iOS `setShelfStatus` |
+| Shared DNF patch | ✅ | `packages/utils/shelfStatus.ts` — `dnf` flag, clear `finished_at`, preserve progress/history |
+| DNF excluded from stats | ✅ | Books Finished / Pages Read / yearly goals via `countsTowardFinishedStats` |
+| Shelf + book card typography | ✅ | Bookmarked serif display on shelf titles; stronger book card title/subtitle hierarchy (web + iOS) |
+| Optimistic DNF UI | ✅ | Web `BookShelfActions`; iOS book detail query cache |
+| Transparent shelf icons | ✅ | Web + iOS `ShelfIcon`; order TBR → Currently Reading → Finished → DNF |
+| Borderless shelf icon system | ✅ | No rounded tile chrome; ~20% larger glyphs (34/68/152); `ShelfTitleRow` gap/alignment polish web + iOS |
+| QA checklist | ✅ | `docs/SPRINT_6_POLISH.md` |
 
 ---
 
@@ -394,8 +413,9 @@ Tracking against the Free/Plus/Reading DNA master spec (Phases 1–42). Distinct
 | Feature gating matrix | `docs/FEATURE_GATING_MATRIX.md` |
 | Subscription architecture | `docs/SUBSCRIPTION_ARCHITECTURE.md` |
 | Reading DNA algorithm | `docs/READING_DNA_ALGORITHM.md` |
+| Sprint 6 polish / DNF QA | `docs/SPRINT_6_POLISH.md` |
 
-**Last updated:** August 1, 2026 (DNA persist on finish + seeded challenges)
+**Last updated:** August 1, 2026 (Sprint 6 DNF polish + library-first shelf moves)
 
 ---
 

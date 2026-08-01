@@ -2,12 +2,21 @@ import { describe, expect, it } from "vitest";
 import {
   getShelfIconConfig,
   getShelfIconsInOrder,
+  SHELF_ICON_FRAME_PX,
   SHELF_ICON_ORDER,
+  SHELF_ICON_SIZE_PX,
   SHELF_ICONS,
   sortShelfIconIds,
 } from "./shelfIcons";
 import { getShelvesInOrder, SHELF_CONFIG } from "./shelves";
 import { SHELF_LABELS } from "./shelfLabels";
+
+describe("SHELF_ICON_SIZE_PX", () => {
+  it("uses borderless frames matching glyph size (~20% larger than prior)", () => {
+    expect(SHELF_ICON_SIZE_PX).toEqual({ small: 34, medium: 68, large: 152 });
+    expect(SHELF_ICON_FRAME_PX).toEqual(SHELF_ICON_SIZE_PX);
+  });
+});
 
 describe("SHELF_ICON_ORDER", () => {
   it("lists built-in shelves in product order", () => {
@@ -59,12 +68,19 @@ describe("SHELF_CONFIG", () => {
     expect(SHELF_LABELS.read).toBe("Finished");
   });
 
-  it("orders shelves Want to Read → Currently Reading → Finished", () => {
-    expect(getShelvesInOrder().map((s) => s.sortOrder)).toEqual([1, 2, 3]);
+  it("orders shelves TBR → Currently Reading → Finished → DNF", () => {
+    expect(getShelvesInOrder().map((s) => s.sortOrder)).toEqual([1, 2, 3, 4]);
     expect(getShelvesInOrder().map((s) => s.title)).toEqual([
-      "Want to Read",
+      "TBR",
       "Currently Reading",
       "Finished",
+      "DNF",
+    ]);
+    expect(getShelvesInOrder().map((s) => s.status)).toEqual([
+      "want_to_read",
+      "currently_reading",
+      "read",
+      "dnf",
     ]);
   });
 });

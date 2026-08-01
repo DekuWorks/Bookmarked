@@ -6,12 +6,13 @@ import { getReadingNoteCategoryMeta } from "@/lib/readingNotes/categories";
 import { useReadingNoteCategories } from "@/lib/hooks/useReadingNoteCategories";
 import {
   readingNoteBookLink,
-  readingNoteCategoryPill,
   readingNoteQuote,
 } from "@/lib/readingNotes/styles";
+import { NoteTag } from "@/components/notes/NoteTag";
 import { bookDetailsNotesPath } from "@/lib/routes/book";
 import type { ReadingNoteWithBook } from "@/lib/services/readingNotes";
-import { cn } from "@/lib/utils/cn";
+import { formatNoteLocation } from "@bookmarked/utils/noteLocation";
+import { isCustomReadingNoteCategory } from "@/lib/readingNotes/categories";
 
 function formatNoteDate(iso: string): string {
   const date = new Date(iso);
@@ -38,12 +39,16 @@ export function NotesSearchResultCard({ note }: Props) {
   const { customLookup } = useReadingNoteCategories(note.user_id);
   const categoryMeta = getReadingNoteCategoryMeta(note.category, customLookup);
   const bookHref = note.book ? bookDetailsNotesPath(note.book.id) : null;
+  const locationLabel = formatNoteLocation({
+    pageNumber: note.page_number,
+    chapterNumber: note.chapter,
+  });
 
   return (
     <li className="rounded-xl border border-border bg-surface p-4 text-left shadow-sm transition-shadow hover:shadow-md sm:p-5">
       {note.book ? (
         <Link href={bookHref ?? "#"} className={readingNoteBookLink}>
-          <div className="h-14 w-10 shrink-0 overflow-hidden rounded shadow-sm">
+          <div className="h-14 w-10 shrink-0 overflow-visible rounded shadow-sm">
             <BookCover
               title={note.book.title}
               coverUrl={note.book.cover_url}
@@ -62,24 +67,16 @@ export function NotesSearchResultCard({ note }: Props) {
           <p className="text-sm font-semibold text-text" suppressHydrationWarning>
             {formatNoteDate(note.created_at)}
           </p>
-          {(note.page_number != null || note.chapter) && (
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-text-muted">
-              {note.page_number != null ? <span>Page {note.page_number}</span> : null}
-              {note.page_number != null && note.chapter ? (
-                <span aria-hidden className="text-border">
-                  ·
-                </span>
-              ) : null}
-              {note.chapter ? <span>{note.chapter}</span> : null}
-            </div>
-          )}
+          {locationLabel ? (
+            <p className="text-xs text-text-muted">{locationLabel}</p>
+          ) : null}
         </div>
-        <span
-          className={cn(readingNoteCategoryPill, "shrink-0", categoryMeta.tagClassName)}
-        >
-          <span aria-hidden>{categoryMeta.emoji}</span>
-          {categoryMeta.label}
-        </span>
+        <NoteTag
+          label={categoryMeta.label}
+          emoji={categoryMeta.emoji}
+          category={note.category}
+          isCustom={isCustomReadingNoteCategory(note.category)}
+        />
       </div>
 
       {note.title ? (

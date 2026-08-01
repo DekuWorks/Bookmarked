@@ -7,14 +7,16 @@ import { deleteReadingNote } from "@/lib/services/readingNotes";
 import { getReadingNoteCategoryMeta } from "@/lib/readingNotes/categories";
 import { useReadingNoteCategories } from "@/lib/hooks/useReadingNoteCategories";
 import {
-  readingNoteCategoryPill,
   readingNoteQuote,
   readingNoteTimelineDot,
   readingNoteTimelineItem,
 } from "@/lib/readingNotes/styles";
 import { ReadingNoteForm } from "@/components/books/ReadingNoteForm";
+import { NoteTag } from "@/components/notes/NoteTag";
 import type { ReadingNote } from "@/types";
 import { cn } from "@/lib/utils/cn";
+import { formatNoteLocation } from "@bookmarked/utils/noteLocation";
+import { isCustomReadingNoteCategory } from "@/lib/readingNotes/categories";
 
 function formatNoteDate(iso: string): string {
   const date = new Date(iso);
@@ -45,6 +47,10 @@ export function ReadingNoteCard({ note, userBookId, onChange }: Props) {
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const categoryMeta = getReadingNoteCategoryMeta(note.category, customLookup);
+  const locationLabel = formatNoteLocation({
+    pageNumber: note.page_number,
+    chapterNumber: note.chapter,
+  });
 
   async function handleDelete() {
     if (!window.confirm("Delete this note?")) return;
@@ -84,24 +90,16 @@ export function ReadingNoteCard({ note, userBookId, onChange }: Props) {
           <p className="text-sm font-semibold text-text" suppressHydrationWarning>
             {formatNoteDate(note.created_at)}
           </p>
-          {(note.page_number != null || note.chapter) && (
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-text-muted">
-              {note.page_number != null ? <span>Page {note.page_number}</span> : null}
-              {note.page_number != null && note.chapter ? (
-                <span aria-hidden className="text-border">
-                  ·
-                </span>
-              ) : null}
-              {note.chapter ? <span>{note.chapter}</span> : null}
-            </div>
-          )}
+          {locationLabel ? (
+            <p className="text-xs text-text-muted">{locationLabel}</p>
+          ) : null}
         </div>
-        <span
-          className={cn(readingNoteCategoryPill, "shrink-0", categoryMeta.tagClassName)}
-        >
-          <span aria-hidden>{categoryMeta.emoji}</span>
-          {categoryMeta.label}
-        </span>
+        <NoteTag
+          label={categoryMeta.label}
+          emoji={categoryMeta.emoji}
+          category={note.category}
+          isCustom={isCustomReadingNoteCategory(note.category)}
+        />
       </div>
 
       {note.title ? (

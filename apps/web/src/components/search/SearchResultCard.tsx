@@ -269,7 +269,7 @@ export function SearchResultCard({
     <>
       <article
         tabIndex={0}
-        className="group flex h-full flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-within:ring-2 focus-within:ring-primary/40 focus:outline-none"
+        className="group flex h-full flex-col overflow-visible rounded-xl border border-border bg-surface shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-within:ring-2 focus-within:ring-primary/40 focus:outline-none"
       >
         <div className="relative aspect-[2/3] w-full">
           <BookCover

@@ -37,7 +37,7 @@ export function ShelfIcon({
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-md border border-border/40 bg-surface/60",
+        "inline-flex shrink-0 items-center justify-center border-0 bg-transparent p-0 shadow-none",
         animate &&
           "motion-safe:opacity-0 motion-safe:animate-[shelf-icon-in_200ms_ease-out_forwards]",
         className
@@ -49,17 +49,13 @@ export function ShelfIcon({
     >
       {!loaded && !error ? (
         <span
-          className="block animate-pulse rounded bg-border/50"
-          style={{ width: px * 0.8, height: px * 0.8 }}
+          className="block animate-pulse bg-transparent opacity-40"
+          style={{ width: px, height: px }}
           aria-hidden
         />
       ) : null}
       {error ? (
-        <span
-          className="block rounded bg-border/30"
-          style={{ width: px * 0.8, height: px * 0.8 }}
-          aria-hidden
-        />
+        <span className="block bg-transparent" style={{ width: px, height: px }} aria-hidden />
       ) : (
         <Image
           src={config.src}

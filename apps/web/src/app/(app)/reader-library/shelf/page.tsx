@@ -7,7 +7,7 @@ import { ShelfSearchFilter } from "@/components/library/ShelfSearchFilter";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { getShelfConfigBySlug } from "@/lib/constants/shelves";
-import { ShelfIcon } from "@/components/shelves/ShelfIcon";
+import { ShelfTitleRow } from "@/components/shelves/ShelfTitleRow";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { readerLibraryPath } from "@/lib/routes/readerLibrary";
 import { readerProfilePath } from "@/lib/routes/reader";
@@ -111,9 +111,13 @@ function ReaderShelfContent() {
               Library
             </Link>
           </p>
-          <h1 className="mt-2 flex items-center justify-center gap-2 text-3xl font-bold text-puce-red sm:text-4xl">
-            <ShelfIcon id={config.status} size="large" labeled />
-            {config.title}
+          <h1 className="mt-2 flex justify-center">
+            <ShelfTitleRow
+              id={config.status}
+              title={config.title}
+              size="large"
+              titleClassName="font-display text-3xl font-bold tracking-tight text-puce-red sm:text-4xl"
+            />
           </h1>
           <p className="mx-auto mt-1 max-w-xl text-pretty text-text-muted">
             {displayName}&apos;s {config.title.toLowerCase()} shelf

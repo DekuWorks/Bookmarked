@@ -8,6 +8,7 @@ import {
   recordActivity,
   type ActivityEventType,
 } from "./activity";
+import { buildUserBookShelfPatch } from "../../../../packages/utils/shelfStatus";
 import type { ShelfStatus, UserBook } from "../types";
 
 export type LibraryBookRow = {
@@ -173,7 +174,11 @@ async function recordBookActivity(
   });
 }
 
-/** Add a shared `books` row to a shelf (or move it), recording activity. */
+/**
+ * Add a catalog book to a shelf, or move an existing library row.
+ * Prefer the authenticated user's `user_books` record — never fail with
+ * "Book not found" for a book already in the library, and never duplicate rows.
+ */
 export async function setShelfStatus(
   userId: string,
   book: {
@@ -187,22 +192,33 @@ export async function setShelfStatus(
   shelfStatus: ShelfStatus,
   options?: { manualPageCount?: number | null }
 ): Promise<{ error?: string }> {
+  if (!book.id) {
+    return { error: "Book not found." };
+  }
+
   const { data: existing } = await supabase
     .from("user_books")
     .select(
-      "id, shelf_status, progress_pages, read_count, started_at, finished_at, is_favorite, rating, completion_tags"
+      "id, shelf_status, progress_pages, read_count, started_at, finished_at, is_favorite, rating, completion_tags, dnf"
     )
     .eq("user_id", userId)
     .eq("book_id", book.id)
     .maybeSingle();
 
-  if (existing?.shelf_status === shelfStatus) return {};
+  if (existing?.shelf_status === shelfStatus && Boolean(existing.dnf) === (shelfStatus === "dnf")) {
+    return {};
+  }
 
+  // Catalog metadata is optional when the library row already exists.
   const { data: bookRow } = await supabase
     .from("books")
-    .select("page_count, cover_url, subjects, isbn")
+    .select("id, page_count, cover_url, subjects, isbn")
     .eq("id", book.id)
     .maybeSingle();
+
+  if (!existing && !bookRow && !book.title) {
+    return { error: "Book not found." };
+  }
 
   const pageCount = bookRow?.page_count ?? book.page_count ?? null;
   const previousPage = Number(existing?.progress_pages) || 0;
@@ -234,6 +250,7 @@ export async function setShelfStatus(
             user_id: userId,
             book_id: book.id,
             shelf_status: "want_to_read",
+            dnf: false,
             updated_at: now,
             started_at: now,
           },
@@ -266,9 +283,9 @@ export async function setShelfStatus(
         page_count: pageCount,
         cover_url: book.cover_url ?? bookRow?.cover_url ?? null,
         subjects: book.subjects ?? bookRow?.subjects ?? null,
-        isbn: bookRow?.isbn ?? null,
+        isbn: bookRow?.isbn ?? book.isbn ?? null,
       },
-      editionSelected: Boolean(bookRow?.isbn),
+      editionSelected: Boolean(bookRow?.isbn ?? book.isbn),
       previousPage,
       readNumber: Number(readCount) || 1,
       finishedAt: now,
@@ -291,24 +308,45 @@ export async function setShelfStatus(
     return {};
   }
 
-  const patch: Record<string, unknown> = {
-    user_id: userId,
-    book_id: book.id,
-    shelf_status: shelfStatus,
-    updated_at: now,
-  };
-  if (shelfStatus === "currently_reading") patch.started_at = existing?.started_at ?? now;
+  const shelfPatch = buildUserBookShelfPatch({
+    shelfStatus,
+    existingStartedAt: existing?.started_at,
+    now,
+  });
 
-  const { data: userBook, error } = await supabase
-    .from("user_books")
-    .upsert(patch, { onConflict: "user_id,book_id" })
-    .select("id")
-    .single();
+  let userBookId: string | null = existing?.id ?? null;
 
-  if (error) return { error: error.message };
+  if (existing?.id) {
+    const { data: userBook, error } = await supabase
+      .from("user_books")
+      .update(shelfPatch)
+      .eq("id", existing.id)
+      .eq("user_id", userId)
+      .select("id")
+      .single();
+
+    if (error) return { error: error.message };
+    userBookId = userBook.id;
+  } else {
+    const { data: userBook, error } = await supabase
+      .from("user_books")
+      .upsert(
+        {
+          user_id: userId,
+          book_id: book.id,
+          ...shelfPatch,
+        },
+        { onConflict: "user_id,book_id" }
+      )
+      .select("id")
+      .single();
+
+    if (error) return { error: error.message };
+    userBookId = userBook.id;
+  }
 
   const eventType: ActivityEventType = existing ? "shelf_updated" : "book_added";
-  await recordBookActivity(userId, eventType, userBook?.id ?? null, book, {
+  await recordBookActivity(userId, eventType, userBookId, book, {
     shelf_status: shelfStatus,
     previous_shelf_status: previousShelf,
   });
@@ -499,24 +537,27 @@ export async function addAnotherRead(
 }
 
 /**
- * Mark / unmark a book as did-not-finish. DNF is a real column on user_books
- * (see migration 20260713170538); it is orthogonal to shelf_status so a reader
- * can DNF a book that's still on their "reading" shelf.
+ * Mark / unmark Did Not Finish. DNF is a permanent built-in shelf (`shelf_status = dnf`)
+ * plus the `dnf` flag. Progress, sessions, notes, and custom-shelf memberships are preserved.
  */
 export async function setDnf(
   userId: string,
   bookId: string,
   dnf: boolean
 ): Promise<{ error?: string }> {
+  const now = new Date().toISOString();
   const { error } = await supabase
     .from("user_books")
-    .update({
-      dnf,
-      // DNF is a built-in shelf. Moving a book here must clear the reading
-      // state, even when the book is also saved to one or more custom shelves.
-      ...(dnf ? { shelf_status: "dnf", progress_percent: 0 } : {}),
-      updated_at: new Date().toISOString(),
-    })
+    .update(
+      dnf
+        ? buildUserBookShelfPatch({ shelfStatus: "dnf", now })
+        : {
+            dnf: false,
+            // Leaving DNF returns the book to Currently Reading without wiping history.
+            shelf_status: "currently_reading",
+            updated_at: now,
+          }
+    )
     .eq("user_id", userId)
     .eq("book_id", bookId);
   if (error) return { error: error.message };

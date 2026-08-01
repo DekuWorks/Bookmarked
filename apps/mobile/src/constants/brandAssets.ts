@@ -10,9 +10,9 @@ export const BRAND_LOGO_SIZE_PX: Record<BrandLogoSize, number> = {
 
 /** Saved-book badge ribbon width (px). Height derived from aspect ratio. */
 export const SAVED_BOOK_BADGE_SIZE_PX: Record<SavedBookBadgeSize, number> = {
-  small: 14,
-  medium: 20,
-  large: 28,
+  small: 16,
+  medium: 28,
+  large: 36,
 };
 
 export const BRAND_ASSET_META = {

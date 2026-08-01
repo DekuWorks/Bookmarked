@@ -115,7 +115,7 @@ function ProfileLink({
   return (
     <Pressable
       onPress={onPress}
-      className="flex-row items-center gap-3 rounded-2xl border border-brand-border bg-surface px-4 py-3 active:opacity-80"
+      className="min-h-[44px] flex-row items-center gap-2 rounded-2xl border border-brand-border bg-surface px-4 py-3 active:opacity-80"
     >
       {shelfIconId ? (
         <ShelfIcon id={shelfIconId} size="small" />
