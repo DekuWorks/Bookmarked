@@ -52,7 +52,7 @@ function subscriptionIsActive(row: {
   subscription_status: string;
   subscription_expires_at: string | null;
 }): boolean {
-  if (row.subscription_tier !== "premium") return false;
+  if (!["plus", "home"].includes(row.subscription_tier)) return false;
   if (!["active", "trialing"].includes(row.subscription_status)) return false;
   if (!row.subscription_expires_at) return true;
   const expiresAt = new Date(row.subscription_expires_at).getTime();

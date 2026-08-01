@@ -6,10 +6,12 @@ import { Avatar } from "./Avatar";
 import { AttachmentImage } from "./AttachmentImage";
 import { BookCover } from "./BookCover";
 import { FeelingChip } from "./FeelingChip";
+import { LikeSparkles } from "./LikeSparkles";
 import { MentionText } from "./MentionText";
 import { PostCommentsSheet } from "./PostCommentsSheet";
 import { ProfanityBlur } from "./ProfanityBlur";
 import { RepostPreview } from "./RepostPreview";
+import { ShareContentSheet, type MobileSharePayload } from "./ShareContentSheet";
 import { StarRating } from "./StarRating";
 import { showContentActions } from "./ContentActions";
 import { timeAgo } from "../utils";
@@ -73,25 +75,35 @@ function AuthorRow({
 function ActionRow({
   likeCount,
   liked,
+  sparkle,
   onLike,
   onComment,
   onSave,
+  onShare,
 }: {
   likeCount: number;
   liked: boolean;
+  sparkle?: boolean;
   onLike?: () => void;
   onComment?: () => void;
   onSave?: () => void;
+  onShare?: () => void;
 }) {
   return (
     <View className="mt-3 flex-row items-center gap-6 border-t border-brand-border pt-3">
-      <Pressable className="flex-row items-center gap-1.5 active:opacity-70" onPress={onLike}>
+      <Pressable className="relative flex-row items-center gap-1.5 active:opacity-70" onPress={onLike}>
+        <LikeSparkles active={Boolean(sparkle)} />
         <Text className="text-base">{liked ? "❤️" : "🤍"}</Text>
         <Text className="text-sm text-ink-muted">{likeCount}</Text>
       </Pressable>
       <Pressable className="flex-row items-center gap-1.5 active:opacity-70" onPress={onComment}>
         <Text className="text-base">💬</Text>
       </Pressable>
+      {onShare ? (
+        <Pressable className="active:opacity-70" onPress={onShare}>
+          <Text className="text-base">↗</Text>
+        </Pressable>
+      ) : null}
       <View className="flex-1" />
       <Pressable className="active:opacity-70" onPress={onSave}>
         <Text className="text-base">🔖</Text>
@@ -104,9 +116,18 @@ function ReviewCard({ entry, viewerId }: { entry: ReviewEntry; viewerId?: string
   const router = useRouter();
   const queryClient = useQueryClient();
   const [revealed, setRevealed] = useState(false);
+  const [sparkle, setSparkle] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const like = useToggleReviewLike();
   const hidden = entry.hasSpoilers && !revealed;
   const isSelf = entry.author.id === viewerId;
+  const sharePayload: MobileSharePayload = {
+    kind: "review",
+    title: `Review by ${entry.author.name}`,
+    previewPath: entry.book ? `/book/${entry.book.id}` : "/feed",
+    body: entry.reviewBody?.trim() || `${entry.author.name} shared a review`,
+    bookId: entry.book?.id ?? null,
+  };
 
   function onMore() {
     if (isSelf) return;
@@ -191,10 +212,27 @@ function ReviewCard({ entry, viewerId }: { entry: ReviewEntry; viewerId?: string
       <ActionRow
         likeCount={entry.likeCount}
         liked={entry.viewerLiked}
-        onLike={() => like.mutate(entry.id)}
+        sparkle={sparkle}
+        onLike={() => {
+          if (!entry.viewerLiked) {
+            setSparkle(true);
+            setTimeout(() => setSparkle(false), 700);
+          }
+          like.mutate(entry.id);
+        }}
         onComment={() => entry.book && router.push(`/book/${entry.book.id}`)}
         onSave={save}
+        onShare={() => setShareOpen(true)}
       />
+      {viewerId ? (
+        <ShareContentSheet
+          visible={shareOpen}
+          currentUserId={viewerId}
+          payload={sharePayload}
+          onClose={() => setShareOpen(false)}
+          onSharedToFeed={() => queryClient.invalidateQueries({ queryKey: ["home-feed"] })}
+        />
+      ) : null}
     </CardShell>
   );
 }
@@ -204,21 +242,26 @@ function PostActions({
   liked,
   commentCount,
   reposted,
+  sparkle,
   onLike,
   onComment,
   onRepost,
+  onShare,
 }: {
   likeCount: number;
   liked: boolean;
   commentCount: number;
   reposted: boolean;
+  sparkle?: boolean;
   onLike: () => void;
   onComment: () => void;
   onRepost: () => void;
+  onShare?: () => void;
 }) {
   return (
     <View className="mt-3 flex-row items-center gap-6 border-t border-brand-border pt-3">
-      <Pressable className="flex-row items-center gap-1.5 active:opacity-70" onPress={onLike}>
+      <Pressable className="relative flex-row items-center gap-1.5 active:opacity-70" onPress={onLike}>
+        <LikeSparkles active={Boolean(sparkle)} />
         <Text className="text-base">{liked ? "❤️" : "🤍"}</Text>
         <Text className="text-sm text-ink-muted">{likeCount}</Text>
       </Pressable>
@@ -231,6 +274,11 @@ function PostActions({
           🔁
         </Text>
       </Pressable>
+      {onShare ? (
+        <Pressable className="active:opacity-70" onPress={onShare}>
+          <Text className="text-base">↗</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -242,8 +290,18 @@ function PostCard({ entry, viewerId }: { entry: PostEntry; viewerId?: string }) 
   const like = useTogglePostLike();
   const repost = useRepostPost();
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const [sparkle, setSparkle] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const isRepost = Boolean(post.repost_of_post_id);
   const mine = post.user_id === viewerId;
+  const sharePayload: MobileSharePayload = {
+    kind: "post",
+    title: `Post by ${entry.author.name}`,
+    previewPath: `/feed?post=${post.id}`,
+    body: post.body?.trim() || `${entry.author.name} shared a post`,
+    bookId: post.book?.id ?? null,
+    imageUrl: post.image_url,
+  };
 
   function onMore() {
     if (mine) {
@@ -313,7 +371,9 @@ function PostCard({ entry, viewerId }: { entry: PostEntry; viewerId?: string }) 
         </Pressable>
       </View>
 
-      {post.body ? <MentionText body={post.body} className="mt-3 leading-5 text-ink" /> : null}
+      {post.body ? (
+        <MentionText body={post.body} className="mt-3 text-left leading-5 text-ink" />
+      ) : null}
 
       {post.image_url ? (
         <View className="mt-3">
@@ -364,9 +424,17 @@ function PostCard({ entry, viewerId }: { entry: PostEntry; viewerId?: string }) 
         liked={post.viewer_has_liked}
         commentCount={post.comment_count}
         reposted={post.viewer_has_reposted}
-        onLike={() => like.mutate({ postId: post.id, liked: post.viewer_has_liked })}
+        sparkle={sparkle}
+        onLike={() => {
+          if (!post.viewer_has_liked) {
+            setSparkle(true);
+            setTimeout(() => setSparkle(false), 700);
+          }
+          like.mutate({ postId: post.id, liked: post.viewer_has_liked });
+        }}
         onComment={() => setCommentsOpen(true)}
         onRepost={onRepost}
+        onShare={() => setShareOpen(true)}
       />
 
       <PostCommentsSheet
@@ -374,6 +442,15 @@ function PostCard({ entry, viewerId }: { entry: PostEntry; viewerId?: string }) 
         visible={commentsOpen}
         onClose={() => setCommentsOpen(false)}
       />
+      {viewerId ? (
+        <ShareContentSheet
+          visible={shareOpen}
+          currentUserId={viewerId}
+          payload={sharePayload}
+          onClose={() => setShareOpen(false)}
+          onSharedToFeed={() => queryClient.invalidateQueries({ queryKey: ["home-feed"] })}
+        />
+      ) : null}
     </CardShell>
   );
 }

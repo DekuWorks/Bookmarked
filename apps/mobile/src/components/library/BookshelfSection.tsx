@@ -45,7 +45,7 @@ export function BookshelfSection({
           <Text className="pb-4 text-center text-sm text-ink-muted">No books on this shelf yet.</Text>
         ) : (
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View className="flex-row items-end gap-2 pb-2">
+            <View className="flex-row items-end gap-3 pb-2">
               {items.map((item) => (
                 <BookSpine
                   key={item.id}

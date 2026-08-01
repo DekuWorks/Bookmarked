@@ -28,6 +28,11 @@ function formatSessionDay(iso: string): string {
 function sessionLabel(session: ReadingSession, isOldest: boolean): string {
   const { page_start, page_end, pages_read, percent_complete } = session;
 
+  if (session.session_format === "audiobook") {
+    const minutes = Math.round(Math.max(0, Number(session.listening_seconds) || 0) / 60);
+    return `Listened ${minutes} min (${Math.round(percent_complete)}%)`;
+  }
+
   if (isOldest && page_start === 0 && page_end > 0) {
     return `Started reading — page ${page_end} (${Math.round(percent_complete)}%)`;
   }

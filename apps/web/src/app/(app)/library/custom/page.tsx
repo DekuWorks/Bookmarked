@@ -7,6 +7,7 @@ import { BookSpine } from "@/components/library/BookSpine";
 import { EmptyShelfMessage } from "@/components/library/EmptyShelfMessage";
 import { ShelfSortSelect } from "@/components/library/ShelfSortSelect";
 import { DeleteCustomShelfModal } from "@/components/shelves/DeleteCustomShelfModal";
+import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
@@ -18,6 +19,7 @@ import { bookDetailsPath } from "@/lib/routes/book";
 import { customShelfPath } from "@/lib/routes/customShelf";
 import {
   getCustomShelfBySlug,
+  clearCustomShelf,
   removeBookFromCustomShelf,
   type CustomShelfGroup,
 } from "@/lib/services/customShelves";
@@ -34,6 +36,8 @@ function CustomShelfContent() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [clearOpen, setClearOpen] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const { sort, setSort } = useShelfSort(`custom:${slug}`);
 
   const displayItems = useMemo(
@@ -81,6 +85,20 @@ function CustomShelfContent() {
           : current
       );
     }
+  }
+
+  async function handleClear() {
+    if (!shelf) return;
+    setClearing(true);
+    const result = await clearCustomShelf(shelf.id);
+    setClearing(false);
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+    setShelf((current) => (current ? { ...current, items: [] } : current));
+    setClearOpen(false);
+    toast.success(`Cleared ${shelf.name}. Books remain in your library and other shelves.`);
   }
 
   if (!slug) {
@@ -146,6 +164,11 @@ function CustomShelfContent() {
         >
           Delete shelf
         </Button>
+        {shelf.items.length > 0 ? (
+          <Button type="button" variant="outline" onClick={() => setClearOpen(true)}>
+            Clear shelf
+          </Button>
+        ) : null}
       </header>
 
       <DeleteCustomShelfModal
@@ -158,6 +181,20 @@ function CustomShelfContent() {
           router.push("/library");
         }}
       />
+      <Modal open={clearOpen} onClose={() => !clearing && setClearOpen(false)} title={`Clear ${shelf.name}?`}>
+        <p className="mb-4 text-sm text-text-muted">
+          This removes every book from this shelf only. Your books and any other shelf associations
+          stay intact.
+        </p>
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="ghost" disabled={clearing} onClick={() => setClearOpen(false)}>
+            Cancel
+          </Button>
+          <Button type="button" loading={clearing} onClick={() => void handleClear()}>
+            Clear shelf
+          </Button>
+        </div>
+      </Modal>
 
       <div className="mx-auto w-full max-w-4xl rounded-xl border border-border bg-surface p-4 shadow-sm">
         <p className="mb-3 text-center text-sm font-medium text-puce-red">Organize shelf</p>

@@ -60,12 +60,12 @@ export function ActivityFeed({ userId }: { userId: string }) {
         {events.map((event, i) => (
           <li
             key={`${event.created_at}-${i}`}
-            className="rounded-xl border border-border bg-background px-4 py-3 text-center text-sm"
+            className="rounded-xl border border-border bg-background px-4 py-3 text-left text-sm"
           >
-            <p className="text-text">
+            <p className="text-left text-text">
               {formatActivityMessage(event.event_type, event.metadata_json)}
             </p>
-            <p className="mt-0.5 text-xs text-text-muted">
+            <p className="mt-0.5 text-left text-xs text-text-muted">
               <time suppressHydrationWarning dateTime={event.created_at}>
                 {new Date(event.created_at).toLocaleString(undefined, {
                   month: "short",

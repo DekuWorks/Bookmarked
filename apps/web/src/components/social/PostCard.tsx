@@ -5,7 +5,6 @@ import Link from "next/link";
 import { FeedBookAttachment } from "@/components/social/FeedBookAttachment";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { Button } from "@/components/ui/Button";
-import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import { useToast } from "@/components/ui/Toast";
 import { postFeedPath } from "@/lib/routes/posts";
 import { readerProfilePath } from "@/lib/routes/reader";
@@ -21,6 +20,11 @@ import { PostEditPanel } from "@/components/social/PostEditPanel";
 import { QuoteRepostModal } from "@/components/social/QuoteRepostModal";
 import { RepostPreview } from "@/components/social/RepostPreview";
 import { MentionText } from "@/components/social/MentionText";
+import { LikeSparkles } from "@/components/social/LikeSparkles";
+import {
+  ShareContentModal,
+  type SharePayload,
+} from "@/components/social/ShareContentModal";
 import { ContentActionsMenu } from "@/components/moderation/ContentActionsMenu";
 import { usePreferredLocale } from "@/lib/hooks/usePreferredLocale";
 import { isGiphyImageUrl } from "@/lib/utils/giphy";
@@ -44,7 +48,9 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
   const [expanded, setExpanded] = useState(false);
   const [localPost, setLocalPost] = useState(post);
   const [liking, setLiking] = useState(false);
+  const [sparkleToken, setSparkleToken] = useState(0);
   const [repostModalOpen, setRepostModalOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [loadingComments, setLoadingComments] = useState(false);
@@ -84,16 +90,17 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
   }
 
   async function handleLikeToggle() {
+    const wasLiked = localPost.viewer_has_liked;
     setLiking(true);
-    const result = localPost.viewer_has_liked
-      ? await unlikePost(localPost.id)
-      : await likePost(localPost.id);
+    const result = wasLiked ? await unlikePost(localPost.id) : await likePost(localPost.id);
     setLiking(false);
 
     if (result.error) {
       toast.error(result.error);
       return;
     }
+
+    if (!wasLiked) setSparkleToken((token) => token + 1);
 
     setLocalPost((current) => ({
       ...current,
@@ -103,6 +110,15 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
         : current.like_count + 1,
     }));
   }
+
+  const sharePayload: SharePayload = {
+    kind: "post",
+    title: `Post by ${authorLabel(localPost.author)}`,
+    previewPath: postFeedPath(localPost.id),
+    body: localPost.body.trim() || "Shared a post on Bookmarked",
+    bookId: localPost.book?.id ?? null,
+    imageUrl: localPost.image_url,
+  };
 
   function handleRepostClick() {
     if (localPost.viewer_has_reposted) {
@@ -241,7 +257,7 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
               ) : null}
 
               {localPost.body.trim() ? (
-                <div className="mt-2 text-sm leading-relaxed text-text">
+                <div className="mt-2 text-left text-sm leading-relaxed text-text">
                   <MentionText body={localPost.body} />
                 </div>
               ) : null}
@@ -282,17 +298,20 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
           )}
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              variant={localPost.viewer_has_liked ? "secondary" : "outline"}
-              size="sm"
-              loading={liking}
-              onClick={() => void handleLikeToggle()}
-              aria-pressed={localPost.viewer_has_liked}
-            >
-              {localPost.viewer_has_liked ? "Liked" : "Like"}
-              {localPost.like_count > 0 ? ` · ${localPost.like_count}` : ""}
-            </Button>
+            <span className="relative inline-flex">
+              <LikeSparkles key={sparkleToken} active={sparkleToken > 0} />
+              <Button
+                type="button"
+                variant={localPost.viewer_has_liked ? "secondary" : "outline"}
+                size="sm"
+                loading={liking}
+                onClick={() => void handleLikeToggle()}
+                aria-pressed={localPost.viewer_has_liked}
+              >
+                {localPost.viewer_has_liked ? "Liked" : "Like"}
+                {localPost.like_count > 0 ? ` · ${localPost.like_count}` : ""}
+              </Button>
+            </span>
 
             <Button
               type="button"
@@ -317,7 +336,9 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
               </Button>
             ) : null}
 
-            <CopyLinkButton path={postFeedPath(localPost.id)} label="Share" variant="ghost" size="sm" />
+            <Button type="button" variant="ghost" size="sm" onClick={() => setShareOpen(true)}>
+              Share
+            </Button>
           </div>
 
           {expanded ? (
@@ -344,6 +365,14 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
           onReposted={handleReposted}
         />
       ) : null}
+
+      <ShareContentModal
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        currentUserId={viewerId}
+        payload={sharePayload}
+        onSharedToFeed={onPostChange}
+      />
     </article>
   );
 }

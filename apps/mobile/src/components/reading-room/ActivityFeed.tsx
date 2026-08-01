@@ -54,10 +54,10 @@ export function ActivityFeed({ userId, onViewAll }: Props) {
               key={`${event.created_at}-${index}`}
               className="rounded-xl border border-brand-border bg-background/70 px-4 py-3"
             >
-              <Text className="text-center text-sm text-ink">
+              <Text className="text-left text-sm text-ink">
                 {formatActivityMessage(event.event_type, event.metadata_json)}
               </Text>
-              <Text className="mt-1 text-center text-xs text-ink-muted">
+              <Text className="mt-1 text-left text-xs text-ink-muted">
                 {new Date(event.created_at).toLocaleString(undefined, {
                   month: "short",
                   day: "numeric",

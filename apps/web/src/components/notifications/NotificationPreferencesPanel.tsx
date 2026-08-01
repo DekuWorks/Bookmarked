@@ -22,7 +22,6 @@ type NotificationValues = {
   notify_feed: boolean;
   notify_likes: boolean;
   notify_comments: boolean;
-  notify_mentions: boolean;
   notify_browser: boolean;
 };
 
@@ -36,8 +35,7 @@ type PrefKey =
   | "notify_follows"
   | "notify_feed"
   | "notify_likes"
-  | "notify_comments"
-  | "notify_mentions";
+  | "notify_comments";
 
 const PREF_OPTIONS: { key: PrefKey; label: string; description: string }[] = [
   {
@@ -52,8 +50,8 @@ const PREF_OPTIONS: { key: PrefKey; label: string; description: string }[] = [
   },
   {
     key: "notify_feed",
-    label: "Feed activity",
-    description: "Reading updates from people you follow — reviews, finished books, and shelf changes.",
+    label: "Post notifications",
+    description: "When a reader whose posts you follow publishes a new post.",
   },
   {
     key: "notify_likes",
@@ -64,11 +62,6 @@ const PREF_OPTIONS: { key: PrefKey; label: string; description: string }[] = [
     key: "notify_comments",
     label: "Comments and replies",
     description: "When someone comments on your post or replies to your review or comment.",
-  },
-  {
-    key: "notify_mentions",
-    label: "@Mentions",
-    description: "When someone mentions you in a post or comment.",
   },
 ];
 
@@ -93,7 +86,6 @@ export function NotificationPreferencesPanel({ profile, embedded = false }: Prop
     notify_feed: profile.notify_feed ?? true,
     notify_likes: profile.notify_likes ?? true,
     notify_comments: profile.notify_comments ?? true,
-    notify_mentions: profile.notify_mentions ?? true,
     notify_browser: profile.notify_browser ?? false,
   });
   const [saving, setSaving] = useState(false);

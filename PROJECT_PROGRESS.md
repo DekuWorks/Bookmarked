@@ -129,6 +129,65 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 
 ---
 
+## Sprint 5 — Feed ✅
+
+| Item | Status | Notes / references |
+|------|--------|-------------------|
+| Full-width feed | ✅ | Web sidebar removed; discovery cards interleaved in-stream |
+| Inline discovery cards | ✅ | Trending / Most Shelved / Most Reviewed via `FeedDiscoveryCard` + `interleaveFeedWithDiscovery` |
+| Like sparkles | ✅ | Web `LikeSparkles` + mobile Reanimated particles; like-only |
+| Delete own activity | ✅ | `deleteOwnActivity` + confirmation on web FeedCard; activity row only |
+| Share → Feed / Message | ✅ | `ShareContentModal` / `ShareContentSheet` with search, followers, recent, optional note, delivery toast |
+| Left-aligned text | ✅ | Feed posts/activity + Reading Room activity rows |
+
+---
+
+## Sprint 6 — Library ✅
+
+| Item | Status | Notes / references |
+|------|--------|-------------------|
+| Search → custom shelves | ✅ | Web `SearchResultCard` and native iOS Search add catalog results directly to collections |
+| Permanent DNF shelf | ✅ | Built-in `dnf` status, migration of legacy DNF collections, and database guardrails prevent custom DNF shelves |
+| Built-in shelf labels | ✅ | User-facing labels are TBR, Currently Reading, Finished, and DNF; stable status keys remain unchanged |
+| Library layout polish | ✅ | Centered Sort by label, denser responsive grid view, and more readable bookshelf spines on web + iOS |
+| Clear Shelf | ✅ | Web confirmation modal and native iOS confirmation remove only that shelf's associations and confirm success |
+
+---
+
+## Sprint 7 — Book Clubs expansion ✅
+
+| Item | Status | Notes / references |
+|------|--------|-------------------|
+| Club community tabs | ✅ | Overview, Discussions, Schedule, Bookshelf, Members, and Stats on web + native iOS |
+| Current Read + bookshelf | ✅ | Current book remains owner-managed; bookshelf surfaces current and discussion-linked books without duplicating book records |
+| Reading schedule + calendar events | ✅ | Existing `book_club_events` powers Schedule; event forms support Zoom, Google Meet, and other HTTPS meeting links |
+| Membership and public sharing | ✅ | Existing member management, public/private RLS, and web share-link flow retained |
+| Club statistics | ✅ | Member, discussion, and surfaced-book totals in each client |
+
+---
+
+## Sprint 8 — Audiobooks ✅
+
+| Item | Status | Notes / references |
+|------|--------|-------------------|
+| Audiobook data model | ✅ | `20260801164028_sprint_8_audiobooks.sql` adds format, duration, listening progress, and session fields |
+| Listening progress | ✅ | Web `ReadingProgressPanel` and native iOS book detail use listening time for audiobook metadata |
+| Listening history and activity | ✅ | Audiobook saves create `reading_sessions` rows and activity events with listening metadata |
+| Provider research | ✅ | `docs/AUDIOBOOK_RESEARCH.md` documents safe Audible, Spotify, and timer follow-up paths |
+
+---
+
+## Sprint 9 — Goodreads CSV import improvements ✅
+
+| Item | Status | Notes / references |
+|------|--------|-------------------|
+| Import preview and validation | ✅ | Web + native iOS show parsed row counts and a sample before import |
+| Missing completion dates | ✅ | Finished rows with no `Date Read` require confirmation and are skipped; import time is never used as a completion date |
+| Validation summary | ✅ | Existing post-import summaries retain imported, updated, skipped, error, and row-level details |
+| Undo import | ✅ | Web + native iOS retain a local import-batch snapshot and remove only newly created shelf entries on undo |
+
+---
+
 ## Phase 4 — Premium 🔄
 
 | Item | Status | Notes / references |
@@ -145,6 +204,37 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Mobile web upgrade UX | ✅ | `/upgrade/` responsive layout; Stripe checkout works in mobile Safari |
 | Webhook signature verification | 🔄 | Stripe HMAC; Apple ASN decodes JWS (full cert verification deferred) |
 | Admin grant UI | ⬜ | Manual SQL / service role |
+
+---
+
+## Membership tiers ✅
+
+| Item | Status | Notes / references |
+|------|--------|-------------------|
+| Free / Plus / Home access matrix | ✅ | `packages/utils/subscription.ts` formalizes feature access; legacy Premium subscribers migrate to Plus |
+| Tier persistence | ✅ | `20260801164113_membership_tiers.sql` upgrades `user_subscriptions` constraints and rows |
+| Stripe + IAP compatibility | ✅ | Existing paid product/webhook activates Plus; Home is supported by the tier model for catalog/manual provider rollout |
+| Tier-aware upgrade copy | ✅ | Web + native iOS membership screens show Free, Bookmarked Plus, and Bookmarked Home benefits |
+
+---
+
+## Reading DNA ✅
+
+| Item | Status | Notes / references |
+|------|--------|-------------------|
+| Shared DNA computation | ✅ | `packages/utils/readingDna.ts` derives genre, vibe, emotion, trope, and habit traits from reader data |
+| Free top three traits | ✅ | Profile Reading DNA section on web + iOS |
+| Plus DNA dashboard hooks | ✅ | Full dashboard state, AI insight, and book-match gates surfaced in profile UI |
+| Home DNA foundations | ✅ | Monthly DNA update, DNA Match %, and Reader Map filter copy/stubs gated for Home |
+
+---
+
+## Final QA ✅
+
+| Item | Status | Notes / references |
+|------|--------|-------------------|
+| Release checklist | ✅ | `docs/FINAL_QA_CHECKLIST.md` covers browser, iPhone, a11y, performance, subscriptions, data, regression, and deploy verification |
+| Release candidate execution | ⬜ | Run and record checklist results before production release |
 
 ---
 
@@ -246,6 +336,34 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 
 ---
 
+## Sprint 10 — Platform polish ✅
+
+| Item | Status | Notes / references |
+|------|--------|--------------------|
+| Completion celebration | ✅ | Full-screen sparkle acknowledgement after completing a book on web + native iOS |
+| Reading streak integrity | ✅ | Streaks now derive only from meaningful `reading_sessions` (pages or a note), not shelf/import/metadata activity |
+| Notification preferences | ✅ | Messages, follows, likes, comments, and post-notification controls on web + native iOS |
+| Remember Me persistence | ✅ | Web storage selection and native AsyncStorage Supabase session persistence |
+| Community content tags | ✅ | Finished readers can vote for content signals; aggregate view and RLS migration added |
+| Public profile reviews | ✅ | Public-only review sections on web + native iOS reader and own-profile screens include All / Rated / Written filters and spoiler reveal controls |
+| Tag search / dark-mode audit / messaging polish | ⚠️ | Foundations shipped; continued visual QA can iterate in follow-up PRs |
+
+## Sprint 11 — Book Series ✅
+
+| Item | Status | Notes / references |
+|------|--------|--------------------|
+| Public series reading order | ✅ | Existing web + native iOS series pages use catalog `series_name` / `series_position` and viewer shelf status |
+| Entry types, verification, spreadsheet import, duplicate review, admin tooling | ✅ | Curated series schema validates entry types; web + native iOS profile settings preview CSV imports, match title + author, skip duplicate entries, and create contributor-owned series shells |
+
+## Sprint 12 — Native iOS shelf fixes ✅
+
+| Item | Status | Notes / references |
+|------|--------|--------------------|
+| DNF movement preserves custom shelves | ✅ | Moving to DNF changes the built-in shelf without deleting custom-shelf memberships |
+| Direct Total Pages editing | ✅ | Native book detail can correct the shared catalog page count |
+
+---
+
 ## Related documentation
 
 | Doc | Path |
@@ -256,7 +374,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Database schema | `docs/DATABASE_SCHEMA.md` |
 | Master task list (MVP) | `docs/project/MASTER_TASK_LIST.md` |
 
-**Last updated:** August 1, 2026 (Fourth Sprint Home tab: tab distribution, Trail terminology/layout, History 10-book cap; web + native iOS scope)
+**Last updated:** August 1, 2026 (Sprints 10–12 platform polish, series foundation, and native shelf fixes)
 
 ---
 

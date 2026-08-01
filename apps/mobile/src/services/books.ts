@@ -197,6 +197,7 @@ export async function addCatalogBookToShelf(
     user_id: user.id,
     book_id: bookId,
     shelf_status: shelf,
+    dnf: shelf === "dnf",
     updated_at: now,
   };
   if (shelf === "currently_reading") patch.started_at = existingUserBook?.started_at ?? now;

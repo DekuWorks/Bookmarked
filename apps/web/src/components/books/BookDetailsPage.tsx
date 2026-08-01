@@ -14,6 +14,7 @@ import { ReadingJournalSection } from "@/components/books/ReadingJournalSection"
 import { ReadingNotesSection } from "@/components/books/ReadingNotesSection";
 import { ReadingDatesEditor } from "@/components/books/ReadingDatesEditor";
 import { BookReviewSection } from "@/components/books/BookReviewSection";
+import { CommunityContentTags } from "@/components/books/CommunityContentTags";
 import { BookTrendBadge } from "@/components/books/BookTrendBadge";
 import { CommunityRatingDisplay } from "@/components/books/CommunityRatingDisplay";
 import { AddAnotherReadButton } from "@/components/books/AddAnotherReadButton";
@@ -310,6 +311,9 @@ function BookDetailsContent() {
           currentPage={Number(userBook?.progress_pages) || 0}
           totalPages={book.page_count ?? 0}
           progressPercent={Number(userBook?.progress_percent) || 0}
+          format={book.format}
+          currentListeningSeconds={Number(userBook?.listening_progress_seconds) || 0}
+          totalListeningSeconds={book.audiobook_duration_seconds ?? 0}
           startedAt={userBook?.started_at}
           finishedAt={userBook?.finished_at}
           hasReviewForCurrentRead={hasReviewForCurrentRead}
@@ -336,6 +340,8 @@ function BookDetailsContent() {
           <ReadingNotesSection userBookId={userBook.id} />
         </div>
       ) : null}
+
+      <CommunityContentTags bookId={book.id} canVote={userBook?.shelf_status === "read"} />
 
       <div id="book-reviews">
         {userBook?.shelf_status === "read" ? (

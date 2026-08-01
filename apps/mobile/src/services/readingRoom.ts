@@ -24,3 +24,25 @@ export async function listUserReviews(
 
   return (data ?? []) as UserReviewWithBook[];
 }
+
+/** Public-only reviews for reader profiles. Explicitly filter visibility even
+ * though RLS also protects private rows. */
+export async function listPublicUserReviews(
+  userId: string,
+  limit = 50
+): Promise<UserReviewWithBook[]> {
+  const { data, error } = await supabase
+    .from("reviews")
+    .select("*, books(id, title, author, cover_url)")
+    .eq("user_id", userId)
+    .eq("visibility", "public")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("[readingRoom] list public user reviews failed:", error);
+    return [];
+  }
+
+  return (data ?? []) as UserReviewWithBook[];
+}

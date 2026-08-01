@@ -1,6 +1,6 @@
 import type { ShelfStatus } from "@/types";
 
-export type ShelfSlug = "want-to-read" | "reading" | "read";
+export type ShelfSlug = "want-to-read" | "reading" | "read" | "dnf";
 
 export const SHELF_CONFIG: {
   status: ShelfStatus;
@@ -12,11 +12,11 @@ export const SHELF_CONFIG: {
 }[] = [
   {
     status: "want_to_read",
-    title: "Want to Read",
+    title: "TBR",
     slug: "want-to-read",
     description: "Books waiting for you on the shelf.",
     sortOrder: 1,
-    accessibilityLabel: "Want to Read shelf",
+    accessibilityLabel: "TBR shelf",
   },
   {
     status: "currently_reading",
@@ -33,6 +33,14 @@ export const SHELF_CONFIG: {
     description: "Books you've finished and shelved.",
     sortOrder: 3,
     accessibilityLabel: "Finished shelf",
+  },
+  {
+    status: "dnf",
+    title: "DNF",
+    slug: "dnf",
+    description: "Books you chose not to finish.",
+    sortOrder: 4,
+    accessibilityLabel: "DNF shelf",
   },
 ];
 
@@ -52,7 +60,7 @@ export function getShelfConfigBySlug(slug: string) {
   return SHELF_CONFIG.find((s) => s.slug === slug) ?? null;
 }
 
-/** Built-in shelves in product order (Want to Read → Currently Reading → Finished). */
+/** Built-in shelves in product order (TBR → Currently Reading → Finished → DNF). */
 export function getShelvesInOrder() {
   return [...SHELF_CONFIG].sort((a, b) => a.sortOrder - b.sortOrder);
 }

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { MarkFinishedDialog } from "@/components/books/MarkFinishedDialog";
 import { RateBookPrompt } from "@/components/books/RateBookPrompt";
+import { CompletionCelebration } from "@/components/books/CompletionCelebration";
 import { TransferReadingStatsModal } from "@/components/books/TransferReadingStatsModal";
 import { cn } from "@/lib/utils/cn";
 import { updateReadingProgress, type BookActionState } from "@/lib/actions/book";
@@ -44,7 +45,16 @@ type Props = {
   hasReviewForCurrentRead?: boolean;
   onProgressChange?: () => void;
   onReviewNow?: () => void;
+  format?: "book" | "ebook" | "audiobook";
+  currentListeningSeconds?: number;
+  totalListeningSeconds?: number;
 };
+
+function formatDuration(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  return hours ? `${hours}h ${minutes}m` : `${minutes}m`;
+}
 
 export function ReadingProgressPanel({
   bookId,
@@ -58,9 +68,15 @@ export function ReadingProgressPanel({
   hasReviewForCurrentRead = false,
   onProgressChange,
   onReviewNow,
+  format = "book",
+  currentListeningSeconds = 0,
+  totalListeningSeconds = 0,
 }: Props) {
-  const [page, setPage] = useState(String(currentPage || ""));
-  const [total, setTotal] = useState(String(totalPages || ""));
+  const isAudiobook = format === "audiobook";
+  const [page, setPage] = useState(String((isAudiobook ? currentListeningSeconds : currentPage) || ""));
+  const [total, setTotal] = useState(
+    String((isAudiobook ? totalListeningSeconds : totalPages) || "")
+  );
   const [displayPercent, setDisplayPercent] = useState(progressPercent);
   // While focused in either field, hold the last committed percent so
   // intermediate values (476 → 47) never flash 100% or lock the form.
@@ -69,6 +85,7 @@ export function ReadingProgressPanel({
   const [transferOpen, setTransferOpen] = useState(false);
   const [finishOpen, setFinishOpen] = useState(false);
   const [ratePromptOpen, setRatePromptOpen] = useState(false);
+  const [celebrationOpen, setCelebrationOpen] = useState(false);
   const [progressAction, submitProgress, saving] = useActionState(
     updateReadingProgress,
     initial
@@ -97,8 +114,8 @@ export function ReadingProgressPanel({
     // while the user is actively editing (a realtime tick must not clobber
     // an in-progress edit).
     if (!propsChanged || editing) return;
-    setPage(String(currentPage || ""));
-    setTotal(String(totalPages || ""));
+    setPage(String((isAudiobook ? currentListeningSeconds : currentPage) || ""));
+    setTotal(String((isAudiobook ? totalListeningSeconds : totalPages) || ""));
     setDisplayPercent(progressPercent);
   }, [currentPage, totalPages, progressPercent, editing]);
 
@@ -108,6 +125,7 @@ export function ReadingProgressPanel({
 
   function handleFinished() {
     onProgressChange?.();
+    setCelebrationOpen(true);
   }
 
   function handleReviewNow() {
@@ -141,7 +159,7 @@ export function ReadingProgressPanel({
 
   const cur = Number(page) || 0;
   const tot = Number(total) || totalPages || 0;
-  const pageCountUnavailable = !totalPages && !total;
+  const pageCountUnavailable = !(isAudiobook ? totalListeningSeconds : totalPages) && !total;
   const atFullProgress = !editing && tot > 0 && cur >= tot && !isFinished;
   const progressAboveTotal = !editing && cur > 0 && tot > 0 && cur > tot;
 
@@ -156,9 +174,11 @@ export function ReadingProgressPanel({
         </div>
         {tot > 0 ? (
           <div>
-            <dt className="text-text-muted">Pages</dt>
+            <dt className="text-text-muted">{isAudiobook ? "Listening time" : "Pages"}</dt>
             <dd className="font-medium text-text">
-              {cur || currentPage} / {tot}
+              {isAudiobook
+                ? `${formatDuration(cur || currentListeningSeconds)} / ${formatDuration(tot)}`
+                : `${cur || currentPage} / ${tot}`}
             </dd>
           </div>
         ) : null}
@@ -182,7 +202,9 @@ export function ReadingProgressPanel({
 
       {pageCountUnavailable ? (
         <p className="mt-2 text-sm text-text-muted">
-          Page count unavailable — enter total pages below to track percent complete.
+          {isAudiobook
+            ? "Listening time unavailable — enter the total duration below to track percent complete."
+            : "Page count unavailable — enter total pages below to track percent complete."}
         </p>
       ) : null}
 
@@ -195,10 +217,11 @@ export function ReadingProgressPanel({
         }}
       >
         <input type="hidden" name="book_id" value={bookId} />
+        <input type="hidden" name="format" value={isAudiobook ? "audiobook" : "book"} />
         <div className="grid gap-4 sm:grid-cols-2">
           <Input
-            label="Current page"
-            name="current_page"
+            label={isAudiobook ? "Current listening time (seconds)" : "Current page"}
+            name={isAudiobook ? "current_listening_seconds" : "current_page"}
             type="number"
             min={0}
             value={page}
@@ -212,11 +235,11 @@ export function ReadingProgressPanel({
             error={clientError ?? undefined}
           />
           <Input
-            label="Total pages"
-            name="total_pages"
+            label={isAudiobook ? "Total listening time (seconds)" : "Total pages"}
+            name={isAudiobook ? "total_listening_seconds" : "total_pages"}
             type="number"
             min={0}
-            placeholder={totalPages ? String(totalPages) : "Enter total"}
+            placeholder={isAudiobook ? "Enter total seconds" : totalPages ? String(totalPages) : "Enter total"}
             value={total}
             onFocus={() => setEditing(true)}
             onChange={(e) => {
@@ -289,6 +312,12 @@ export function ReadingProgressPanel({
         bookTitle={bookTitle}
         onSkip={() => setRatePromptOpen(false)}
         onReviewNow={handleReviewNow}
+      />
+
+      <CompletionCelebration
+        open={celebrationOpen}
+        bookTitle={bookTitle}
+        onClose={() => setCelebrationOpen(false)}
       />
 
       <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-4">

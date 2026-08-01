@@ -29,7 +29,7 @@ export function ShelfSortSelect({
   const options = getShelfSortOptions(shelfStatus);
 
   return (
-    <label className={cn("block text-left", className)}>
+    <label className={cn("block text-center", className)}>
       <span className="mb-1 block text-xs font-medium text-text-muted">Sort by</span>
       <select
         id={id}

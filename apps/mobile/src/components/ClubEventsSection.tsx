@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, Pressable, Text, TextInput, View } from "react-native";
+import { Alert, Linking, Pressable, Text, TextInput, View } from "react-native";
 import { Button } from "./Button";
 import { Input } from "./Input";
 import { LoadingState } from "./LoadingState";
@@ -31,6 +31,7 @@ export function ClubEventsSection({ clubId, isMember, viewerId, clubOwnerId }: P
   const [title, setTitle] = useState("");
   const [startsAt, setStartsAt] = useState(defaultEventDatetimeInput);
   const [location, setLocation] = useState("");
+  const [meetingUrl, setMeetingUrl] = useState("");
   const [description, setDescription] = useState("");
 
   function canDelete(event: BookClubEvent): boolean {
@@ -60,6 +61,7 @@ export function ClubEventsSection({ clubId, isMember, viewerId, clubOwnerId }: P
         {
           title,
           location: location || null,
+          meetingUrl: meetingUrl || null,
           description: description || null,
           startsAt: parseEventDatetime(startsAt),
         },
@@ -67,6 +69,7 @@ export function ClubEventsSection({ clubId, isMember, viewerId, clubOwnerId }: P
           onSuccess: () => {
             setTitle("");
             setLocation("");
+            setMeetingUrl("");
             setDescription("");
             setStartsAt(defaultEventDatetimeInput());
             setShowForm(false);
@@ -114,6 +117,15 @@ export function ClubEventsSection({ clubId, isMember, viewerId, clubOwnerId }: P
             onChangeText={setLocation}
             placeholder="Zoom, bookstore, etc."
           />
+          <Input
+            label="Video call link (optional)"
+            value={meetingUrl}
+            onChangeText={setMeetingUrl}
+            placeholder="https://zoom.us/j/... or Meet link"
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+          />
           <View>
             <Text className="mb-1 text-sm font-medium text-puce-red">Description (optional)</Text>
             <TextInput
@@ -153,6 +165,15 @@ export function ClubEventsSection({ clubId, isMember, viewerId, clubOwnerId }: P
                   </Text>
                   {event.location ? (
                     <Text className="mt-1 text-sm text-text-muted">{event.location}</Text>
+                  ) : null}
+                  {event.meeting_url ? (
+                    <Pressable
+                      onPress={() => void Linking.openURL(event.meeting_url!)}
+                      accessibilityRole="link"
+                      className="mt-2 self-start"
+                    >
+                      <Text className="text-sm font-semibold text-primary">Join video call ↗</Text>
+                    </Pressable>
                   ) : null}
                   {event.description ? (
                     <Text className="mt-2 text-sm text-text">{event.description}</Text>

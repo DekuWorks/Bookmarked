@@ -1,17 +1,25 @@
+import { useMemo } from "react";
 import { Pressable, RefreshControl, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import { Avatar } from "./Avatar";
 import { EmptyState } from "./EmptyState";
+import { FeedDiscoveryCard } from "./FeedDiscoveryCard";
 import { FeedPostCard } from "./FeedPostCard";
 import { LoadingState } from "./LoadingState";
-import { TrendingBooksSection } from "./TrendingBooksSection";
 import { useHomeFeed, type FeedTab } from "../hooks/useFeed";
 import { useProfile } from "../hooks/useProfile";
 import { TAB_BAR_SPACE } from "../navigation/TabBarScroll";
 import { SANS_FONT } from "../constants/theme";
 import { useThemeColors } from "../store/themeStore";
+import { interleaveFeedWithDiscovery } from "../../../../packages/utils";
 import type { ScrollHandlerProcessed } from "react-native-reanimated";
+import type { FeedEntry } from "../services/socialFeed";
+import type { FeedDiscoverySectionId } from "../../../../packages/utils";
+
+type FeedListRow =
+  | { kind: "item"; item: FeedEntry; key: string }
+  | { kind: "discovery"; id: FeedDiscoverySectionId; key: string };
 
 type Props = {
   tab: FeedTab;
@@ -50,26 +58,41 @@ export function FeedTabPanel({ tab, width, onScroll }: Props) {
   const colors = useThemeColors();
   const { data: feed, isLoading, isError, error, refetch, isRefetching } = useHomeFeed(tab);
 
+  const rows = useMemo<FeedListRow[]>(() => {
+    const items = feed ?? [];
+    if (tab === "clubs") {
+      return items.map((item) => ({
+        kind: "item" as const,
+        item,
+        key: `${item.kind}:${item.id}`,
+      }));
+    }
+    return interleaveFeedWithDiscovery(items).map((row, index) =>
+      row.kind === "discovery"
+        ? { kind: "discovery" as const, id: row.id, key: `discovery:${row.id}:${index}` }
+        : { kind: "item" as const, item: row.item, key: `${row.item.kind}:${row.item.id}` }
+    );
+  }, [feed, tab]);
+
   return (
     <Animated.FlatList
       style={{ width }}
-      data={feed ?? []}
-      keyExtractor={(item) => `${item.kind}:${item.id}`}
+      data={rows}
+      keyExtractor={(item) => item.key}
       onScroll={onScroll}
       scrollEventThrottle={16}
       contentContainerStyle={{ padding: 16, paddingBottom: TAB_BAR_SPACE, flexGrow: 1 }}
-      renderItem={({ item }) => <FeedPostCard entry={item} />}
+      renderItem={({ item }) =>
+        item.kind === "discovery" ? (
+          <FeedDiscoveryCard sectionId={item.id} />
+        ) : (
+          <FeedPostCard entry={item.item} />
+        )
+      }
       refreshControl={
         <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.puceRed} />
       }
-      ListHeaderComponent={
-        tab === "clubs" ? null : (
-          <View>
-            {tab === "for-you" ? <TrendingBooksSection /> : null}
-            <Composer />
-          </View>
-        )
-      }
+      ListHeaderComponent={tab === "clubs" ? null : <Composer />}
       ListEmptyComponent={
         isLoading ? (
           <LoadingState message="Loading your feed…" />

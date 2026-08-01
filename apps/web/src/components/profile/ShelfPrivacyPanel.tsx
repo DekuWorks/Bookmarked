@@ -31,6 +31,8 @@ function visibilityForProfile(profile: Profile, status: ShelfStatus): ShelfVisib
       return profile.shelf_visibility_currently_reading ?? "public";
     case "read":
       return profile.shelf_visibility_read ?? "public";
+    case "dnf":
+      return profile.shelf_visibility_dnf ?? "private";
   }
 }
 
@@ -40,6 +42,7 @@ export function ShelfPrivacyPanel({ profile }: Props) {
     want_to_read: visibilityForProfile(profile, "want_to_read"),
     currently_reading: visibilityForProfile(profile, "currently_reading"),
     read: visibilityForProfile(profile, "read"),
+    dnf: visibilityForProfile(profile, "dnf"),
   }));
   const [customShelves, setCustomShelves] = useState<UserShelf[]>([]);
   const [customValues, setCustomValues] = useState<Record<string, ShelfVisibility>>({});
@@ -90,6 +93,7 @@ export function ShelfPrivacyPanel({ profile }: Props) {
         shelf_visibility_want_to_read: values.want_to_read,
         shelf_visibility_currently_reading: values.currently_reading,
         shelf_visibility_read: values.read,
+        shelf_visibility_dnf: values.dnf,
         updated_at: new Date().toISOString(),
       })
       .eq("id", profile.id);

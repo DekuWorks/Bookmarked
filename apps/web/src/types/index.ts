@@ -68,6 +68,7 @@ export interface UserBook {
   shelf_status: import("../../../../packages/types").ShelfStatus;
   progress_pages: number;
   progress_percent: number;
+  listening_progress_seconds?: number;
   started_at: string | null;
   finished_at: string | null;
   rating: number | null;

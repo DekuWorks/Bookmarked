@@ -18,6 +18,7 @@ export type CreateClubEventInput = {
   title: string;
   description?: string | null;
   location?: string | null;
+  meetingUrl?: string | null;
   startsAt: string;
   endsAt?: string | null;
 };
@@ -26,11 +27,13 @@ export type UpdateClubEventInput = {
   title?: string;
   description?: string | null;
   location?: string | null;
+  meetingUrl?: string | null;
   startsAt?: string;
   endsAt?: string | null;
 };
 
-const EVENT_SELECT = "id, club_id, created_by, title, description, location, starts_at, ends_at, created_at, updated_at";
+const EVENT_SELECT =
+  "id, club_id, created_by, title, description, location, meeting_url, starts_at, ends_at, created_at, updated_at";
 
 function mapEvent(row: BookClubEvent): BookClubEvent {
   return row;
@@ -94,6 +97,7 @@ export async function createClubEvent(input: CreateClubEventInput): Promise<Book
       title,
       description: input.description?.trim() || null,
       location: input.location?.trim() || null,
+      meeting_url: input.meetingUrl?.trim() || null,
       starts_at: input.startsAt,
       ends_at: input.endsAt ?? null,
     })
@@ -119,6 +123,7 @@ export async function updateClubEvent(
   }
   if (input.description !== undefined) patch.description = input.description?.trim() || null;
   if (input.location !== undefined) patch.location = input.location?.trim() || null;
+  if (input.meetingUrl !== undefined) patch.meeting_url = input.meetingUrl?.trim() || null;
   if (input.startsAt !== undefined) patch.starts_at = input.startsAt;
   if (input.endsAt !== undefined) patch.ends_at = input.endsAt;
 

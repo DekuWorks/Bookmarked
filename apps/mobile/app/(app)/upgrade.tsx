@@ -13,7 +13,7 @@ import { useSubscriptionActivationPoll } from "../../src/hooks/useSubscriptionAc
 import { createBillingPortalSession } from "../../src/services/stripePortal";
 import { useAuthStore } from "../../src/store/authStore";
 
-const PREMIUM_PRICE = "$4.99 / month";
+const PLUS_PRICE = "$4.99 / month";
 const APPLE_SUBSCRIPTIONS_URL = "https://apps.apple.com/account/subscriptions";
 
 export default function UpgradeRoute() {
@@ -71,7 +71,7 @@ export default function UpgradeRoute() {
   if (loading && !awaitingActivation) {
     return (
       <View className="flex-1 bg-background">
-        <ScreenHeader title="Bookmarked Premium" />
+        <ScreenHeader title="Bookmarked Membership" />
         <LoadingState message="Loading plans…" />
       </View>
     );
@@ -84,16 +84,16 @@ export default function UpgradeRoute() {
 
   return (
     <View className="flex-1 bg-background">
-      <ScreenHeader title="Bookmarked Premium" />
+      <ScreenHeader title="Bookmarked Membership" />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 48, gap: 16 }}>
         <Text className="text-center text-ink-muted">
-          Go deeper with your reading life — analytics, insights, and early access to what&apos;s
-          next. One subscription works across web and mobile.
+          Free keeps the essentials. Bookmarked Plus unlocks reading intelligence; Bookmarked Home
+          adds maps, matches, and concierge support across web and mobile.
         </Text>
 
         {awaitingActivation && activating ? (
           <View className="rounded-2xl border border-primary/30 bg-primary/10 p-4">
-            <Text className="text-center font-medium text-puce-red">Activating Premium…</Text>
+            <Text className="text-center font-medium text-puce-red">Activating Bookmarked Plus…</Text>
             <Text className="mt-1 text-center text-sm text-ink-muted">
               Thanks for subscribing! We&apos;re unlocking your benefits now — this usually takes just
               a few seconds.
@@ -147,9 +147,9 @@ export default function UpgradeRoute() {
         ) : showPricing ? (
           <View className="rounded-2xl border border-brand-border bg-surface p-6">
             <Text className="text-center text-sm font-medium uppercase tracking-wide text-primary">
-              Bookmarked Premium
+              Bookmarked Plus
             </Text>
-            <Text className="mt-2 text-center text-3xl font-bold text-puce-red">{PREMIUM_PRICE}</Text>
+            <Text className="mt-2 text-center text-3xl font-bold text-puce-red">{PLUS_PRICE}</Text>
             <Text className="mt-1 text-center text-sm text-ink-muted">
               Billed monthly. Cancel anytime.
             </Text>
@@ -169,8 +169,8 @@ export default function UpgradeRoute() {
         {!showSubscribedUI && !awaitingActivation ? (
           <PremiumFeatureLock
             compact
-            title="Preview what Premium unlocks"
-            description="Advanced analytics and AI insights are already wired behind Premium gates in your Reading Room."
+            title="Preview membership benefits"
+            description="Plus unlocks reading intelligence and a full Reading DNA dashboard; Home adds maps and reader matching."
           />
         ) : null}
       </ScrollView>

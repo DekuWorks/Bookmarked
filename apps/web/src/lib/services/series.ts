@@ -7,6 +7,7 @@ export type SeriesBook = {
   author: string | null;
   cover_url: string | null;
   series_position: number | null;
+  entry_type: string | null;
   /** The viewer's shelf status for this book, if it's on a shelf. */
   shelf_status: ShelfStatus | null;
 };
@@ -50,7 +51,28 @@ export async function getBooksInSeries(
 
   const supabase = createClient();
 
-  const { data: catalogRows, error } = await supabase
+  const { data: curatedSeries, error: curatedError } = await supabase
+    .from("book_series")
+    .select("id, name")
+    .ilike("name", escapeIlike(trimmed))
+    .maybeSingle();
+  if (curatedError) throw curatedError;
+
+  const { data: curatedEntries, error: entriesError } = curatedSeries
+    ? await supabase
+        .from("book_series_entries")
+        .select("book_id, position, entry_type")
+        .eq("series_id", curatedSeries.id)
+        .order("position", { ascending: true, nullsFirst: false })
+    : { data: null, error: null };
+  if (entriesError) throw entriesError;
+
+  const { data: catalogRows, error } = curatedEntries?.length
+    ? await supabase
+        .from("books")
+        .select("id, title, author, cover_url, series_name, series_position")
+        .in("id", curatedEntries.map((entry) => entry.book_id))
+    : await supabase
     .from("books")
     .select("id, title, author, cover_url, series_name, series_position")
     .ilike("series_name", escapeIlike(trimmed))
@@ -60,7 +82,13 @@ export async function getBooksInSeries(
 
   if (error) throw error;
 
-  const rows = (catalogRows ?? []) as CatalogSeriesRow[];
+  let rows = (catalogRows ?? []) as CatalogSeriesRow[];
+  if (curatedEntries?.length) {
+    const entryByBook = new Map(curatedEntries.map((entry) => [entry.book_id, entry]));
+    rows = [...rows].sort(
+      (a, b) => Number(entryByBook.get(a.id)?.position ?? Infinity) - Number(entryByBook.get(b.id)?.position ?? Infinity)
+    );
+  }
   if (rows.length === 0) {
     return { name: trimmed, books: [], inLibraryCount: 0, readCount: 0 };
   }
@@ -90,7 +118,10 @@ export async function getBooksInSeries(
     title: row.title,
     author: row.author,
     cover_url: row.cover_url,
-    series_position: row.series_position,
+    series_position: curatedEntries
+      ? Number(curatedEntries.find((entry) => entry.book_id === row.id)?.position ?? row.series_position)
+      : row.series_position,
+    entry_type: curatedEntries?.find((entry) => entry.book_id === row.id)?.entry_type ?? null,
     shelf_status: shelfByBook.get(row.id) ?? null,
   }));
 
@@ -98,7 +129,7 @@ export async function getBooksInSeries(
   const readCount = books.filter((b) => b.shelf_status === "read").length;
 
   // Prefer the canonical casing that appears most often in the catalog.
-  const name = rows[0].series_name?.trim() || trimmed;
+  const name = curatedSeries?.name?.trim() || rows[0].series_name?.trim() || trimmed;
 
   return { name, books, inLibraryCount, readCount };
 }

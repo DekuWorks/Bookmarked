@@ -16,6 +16,8 @@ export function getShelfVisibility(
       return profile.shelf_visibility_currently_reading ?? DEFAULT_VISIBILITY;
     case "read":
       return profile.shelf_visibility_read ?? DEFAULT_VISIBILITY;
+    case "dnf":
+      return profile.shelf_visibility_dnf ?? "private";
     default:
       return DEFAULT_VISIBILITY;
   }
@@ -43,10 +45,12 @@ export function profileShelfVisibilityDefaults(): Pick<
   | "shelf_visibility_want_to_read"
   | "shelf_visibility_currently_reading"
   | "shelf_visibility_read"
+  | "shelf_visibility_dnf"
 > {
   return {
     shelf_visibility_want_to_read: "public",
     shelf_visibility_currently_reading: "public",
     shelf_visibility_read: "public",
+    shelf_visibility_dnf: "private",
   };
 }

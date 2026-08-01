@@ -14,7 +14,7 @@ type Props = {
 export function PremiumFeatureLock({
   title,
   description,
-  featureLabel = "Premium",
+  featureLabel = "Bookmarked Plus",
   className,
   compact,
 }: Props) {
@@ -37,7 +37,7 @@ export function PremiumFeatureLock({
           {description}
         </p>
         <ButtonLink href="/upgrade/" variant="primary" size="sm" className="mt-4 w-full max-w-xs sm:w-auto">
-          Upgrade to Premium
+          Explore membership
         </ButtonLink>
       </div>
     </div>

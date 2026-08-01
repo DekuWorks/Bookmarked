@@ -29,6 +29,7 @@ function visibilityForProfile(
     shelf_visibility_want_to_read?: ShelfVisibility | null;
     shelf_visibility_currently_reading?: ShelfVisibility | null;
     shelf_visibility_read?: ShelfVisibility | null;
+    shelf_visibility_dnf?: ShelfVisibility | null;
   },
   status: ShelfStatus
 ): ShelfVisibility {
@@ -39,6 +40,8 @@ function visibilityForProfile(
       return profile.shelf_visibility_currently_reading ?? "public";
     case "read":
       return profile.shelf_visibility_read ?? "public";
+    case "dnf":
+      return profile.shelf_visibility_dnf ?? "private";
   }
 }
 
@@ -69,6 +72,7 @@ export default function ShelfPrivacyScreen() {
       want_to_read: visibilityForProfile(profile, "want_to_read"),
       currently_reading: visibilityForProfile(profile, "currently_reading"),
       read: visibilityForProfile(profile, "read"),
+      dnf: visibilityForProfile(profile, "dnf"),
     });
   }, [profile]);
 
@@ -106,6 +110,7 @@ export default function ShelfPrivacyScreen() {
         shelf_visibility_want_to_read: values.want_to_read,
         shelf_visibility_currently_reading: values.currently_reading,
         shelf_visibility_read: values.read,
+        shelf_visibility_dnf: values.dnf,
         updated_at: new Date().toISOString(),
       })
       .eq("id", userId);

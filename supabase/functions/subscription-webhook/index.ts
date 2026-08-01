@@ -21,7 +21,7 @@ const CORS_HEADERS: Record<string, string> = {
 };
 
 type SubscriptionProvider = "stripe" | "apple" | "google" | "manual";
-type SubscriptionTier = "free" | "premium";
+type SubscriptionTier = "free" | "plus" | "home";
 type SubscriptionStatus = "inactive" | "active" | "trialing" | "past_due" | "canceled";
 
 type WebhookPayload = {
@@ -159,7 +159,7 @@ function subscriptionFromStripeEvent(event: StripeEvent): SubscriptionUpdate | n
       const userId = userIdFromStripeObject(object);
       if (!userId) return null;
       return {
-        subscription_tier: "premium",
+        subscription_tier: "plus",
         subscription_status: "active",
         subscription_provider: "stripe",
         subscription_expires_at: null,
@@ -175,10 +175,10 @@ function subscriptionFromStripeEvent(event: StripeEvent): SubscriptionUpdate | n
       const status = stripeStatusFromSubscription(
         typeof object.status === "string" ? object.status : undefined
       );
-      const isPremium = status === "active" || status === "trialing";
+      const isPaid = status === "active" || status === "trialing";
 
       return {
-        subscription_tier: isPremium ? "premium" : "free",
+        subscription_tier: isPaid ? "plus" : "free",
         subscription_status: status,
         subscription_provider: "stripe",
         subscription_expires_at:
@@ -188,7 +188,7 @@ function subscriptionFromStripeEvent(event: StripeEvent): SubscriptionUpdate | n
     }
     case "invoice.payment_failed": {
       return {
-        subscription_tier: "premium",
+        subscription_tier: "plus",
         subscription_status: "past_due",
         subscription_provider: "stripe",
         subscription_expires_at: unixToIso(object.period_end),
@@ -200,7 +200,7 @@ function subscriptionFromStripeEvent(event: StripeEvent): SubscriptionUpdate | n
       const billingReason = object.billing_reason;
       if (billingReason === "subscription_create" || billingReason === "subscription_cycle") {
         return {
-          subscription_tier: "premium",
+          subscription_tier: "plus",
           subscription_status: "active",
           subscription_provider: "stripe",
           subscription_expires_at: unixToIso(object.period_end),
@@ -367,7 +367,7 @@ Deno.serve(async (req) => {
   }
 
   const update: SubscriptionUpdate = {
-    subscription_tier: payload.subscription_tier ?? "premium",
+    subscription_tier: payload.subscription_tier ?? "plus",
     subscription_status: payload.subscription_status ?? "active",
     subscription_provider: payload.subscription_provider ?? providerParam ?? "manual",
     subscription_expires_at: payload.subscription_expires_at ?? null,
@@ -436,7 +436,7 @@ function subscriptionFromAppleNotification(
 
   if (activeTypes.has(notificationType)) {
     return {
-      subscription_tier: "premium",
+      subscription_tier: "plus",
       subscription_status: "active",
       subscription_provider: "apple",
       subscription_expires_at: expiresAt,

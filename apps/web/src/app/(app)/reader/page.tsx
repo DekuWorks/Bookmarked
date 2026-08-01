@@ -22,6 +22,7 @@ import {
 import { ReadingStreakCard } from "@/components/profile/ReadingStreakCard";
 import { readerLibraryPath } from "@/lib/routes/readerLibrary";
 import { ShareHead } from "@/components/seo/ShareHead";
+import { PublicReviewsSection } from "@/components/profile/PublicReviewsSection";
 
 type ReaderData = {
   profile: Profile;
@@ -176,6 +177,8 @@ function ReaderProfileContent() {
           previewLimit={3}
         />
       </section>
+
+      <PublicReviewsSection userId={profile.id} readerName={displayName} />
 
       <p className="text-center text-sm text-text-muted">
         <Link href="/feed" className="text-primary hover:underline">

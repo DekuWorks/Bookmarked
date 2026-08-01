@@ -1,15 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import type { LibraryBookRow } from "@/lib/services/library";
 
-const STREAK_EVENT_TYPES = [
-  "progress_updated",
-  "book_finished",
-  "reading_finished",
-  "reading_started",
-  "review_created",
-  "review_updated",
-] as const;
-
 export type FavoriteGenreInsight = {
   genre: string | null;
   bookCount: number;
@@ -138,10 +129,10 @@ export function computeReadingStreak(timestamps: string[]): ReadingStreakInsight
 export async function fetchReadingStreakTimestamps(userId: string): Promise<string[]> {
   const supabase = createClient();
   const { data, error } = await supabase
-    .from("activity_events")
+    .from("reading_sessions")
     .select("created_at")
     .eq("user_id", userId)
-    .in("event_type", [...STREAK_EVENT_TYPES])
+    .or("pages_read.gt.0,note.not.is.null")
     .order("created_at", { ascending: false })
     .limit(500);
 

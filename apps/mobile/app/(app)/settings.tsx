@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Button } from "../../src/components/Button";
 import { LibraryImportPanel } from "../../src/components/LibraryImportPanel";
+import { SeriesImportPanel } from "../../src/components/SeriesImportPanel";
 import { LoadingState } from "../../src/components/LoadingState";
 import { ReadingGoalPanel } from "../../src/components/ReadingGoalPanel";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
@@ -120,6 +121,7 @@ export default function SettingsRoute() {
         </View>
 
         {userId ? <LibraryImportPanel userId={userId} /> : null}
+        {userId ? <SeriesImportPanel userId={userId} /> : null}
 
         <View className="rounded-2xl border border-rust/30 bg-surface p-4 mb-6">
           <Text className="text-base font-semibold text-rust">Delete account</Text>

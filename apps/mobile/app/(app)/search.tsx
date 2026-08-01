@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { ActivityIndicator, Alert, Modal, Pressable, Text, TextInput, View } from "react-native";
@@ -12,7 +12,11 @@ import { Input } from "../../src/components/Input";
 import { ScreenGradientWash } from "../../src/components/ScreenGradientWash";
 import { SegmentedTabs } from "../../src/components/SegmentedTabs";
 import { useBookSearch } from "../../src/hooks/useBookSearch";
-import { addCatalogBookToShelf } from "../../src/services/books";
+import { addCatalogBookToShelf, ensureCatalogBook } from "../../src/services/books";
+import {
+  addBookToCustomShelf,
+  listUserCustomShelves,
+} from "../../src/services/customShelves";
 import { needsMissingPageCountPrompt } from "../../src/services/completeReadingSession";
 import { searchClubs } from "../../src/services/bookClubs";
 import { createDirectConversation } from "../../src/services/messages";
@@ -23,6 +27,7 @@ import { TAB_BAR_SPACE, useTabBarScroll } from "../../src/navigation/TabBarScrol
 import { useAuthStore } from "../../src/store/authStore";
 import type { CatalogDoc } from "../../src/services/isbndb";
 import type { ShelfStatus } from "../../src/types";
+import type { UserShelf } from "../../src/types";
 
 type Mode = "books" | "people" | "clubs";
 
@@ -33,9 +38,10 @@ const MODE_TABS: { id: Mode; label: string }[] = [
 ];
 
 const SHELF_CHOICES: { status: ShelfStatus; label: string }[] = [
-  { status: "want_to_read", label: "Want to read (TBR)" },
-  { status: "currently_reading", label: "Currently reading" },
+  { status: "want_to_read", label: "TBR" },
+  { status: "currently_reading", label: "Currently Reading" },
   { status: "read", label: "Finished" },
+  { status: "dnf", label: "DNF" },
 ];
 
 export default function SearchScreen() {
@@ -52,6 +58,14 @@ export default function SearchScreen() {
   const [pageCountInput, setPageCountInput] = useState("");
   const [pageCountOpen, setPageCountOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [customShelves, setCustomShelves] = useState<UserShelf[]>([]);
+
+  useEffect(() => {
+    if (!target || !userId) return;
+    void listUserCustomShelves(userId)
+      .then(setCustomShelves)
+      .catch(() => setCustomShelves([]));
+  }, [target, userId]);
 
   const books = useBookSearch(submitted);
   const trending = useQuery({ queryKey: ["trending-sections"], queryFn: fetchTrendingSections });
@@ -97,6 +111,27 @@ export default function SearchScreen() {
       return;
     }
     void addToShelf(shelf);
+  }
+
+  async function addToCustomShelf(shelf: UserShelf) {
+    if (!target || !userId) return;
+    setSaving(true);
+    try {
+      const ensured = await ensureCatalogBook(target);
+      if (ensured.error || !ensured.bookId) {
+        Alert.alert("Couldn't add book", ensured.error ?? "Please try again.");
+        return;
+      }
+      const result = await addBookToCustomShelf(shelf.id, userId, ensured.bookId);
+      if (result.error) {
+        Alert.alert("Couldn't add book", result.error);
+        return;
+      }
+      setTarget(null);
+      Alert.alert("Added", `"${target.title}" was added to ${shelf.name}.`);
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function openDm(personId: string) {
@@ -284,6 +319,24 @@ export default function SearchScreen() {
                 <Text className="font-medium text-puce-red">{choice.label}</Text>
               </Pressable>
             ))}
+            {customShelves.length ? (
+              <>
+                <Text className="mb-2 mt-3 text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                  Collections
+                </Text>
+                {customShelves.map((shelf) => (
+                  <Pressable
+                    key={shelf.id}
+                    disabled={saving}
+                    onPress={() => void addToCustomShelf(shelf)}
+                    className="mb-2 flex-row items-center gap-3 rounded-xl border border-brand-border bg-background px-4 py-3 active:opacity-80"
+                  >
+                    <Text className="text-lg">📚</Text>
+                    <Text className="font-medium text-puce-red">{shelf.name}</Text>
+                  </Pressable>
+                ))}
+              </>
+            ) : null}
           </View>
         </Pressable>
       </Modal>

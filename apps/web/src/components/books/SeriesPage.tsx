@@ -78,6 +78,11 @@ function SeriesRow({ book, index }: { book: SeriesBook; index: number }) {
             </Link>
           </p>
         ) : null}
+        {book.entry_type && book.entry_type !== "main" ? (
+          <span className="mt-1 inline-block rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium capitalize text-puce-red">
+            {book.entry_type.replaceAll("_", " ")}
+          </span>
+        ) : null}
       </div>
       <span
         className={cn(

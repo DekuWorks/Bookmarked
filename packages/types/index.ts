@@ -1,4 +1,5 @@
-export type ShelfStatus = "want_to_read" | "currently_reading" | "read";
+/** Stable database keys for the four built-in library shelves. */
+export type ShelfStatus = "want_to_read" | "currently_reading" | "read" | "dnf";
 
 export type LibraryViewMode = "bookshelf" | "grid" | "reading_room";
 
@@ -32,6 +33,7 @@ export interface Profile {
   shelf_visibility_want_to_read: ShelfVisibility;
   shelf_visibility_currently_reading: ShelfVisibility;
   shelf_visibility_read: ShelfVisibility;
+  shelf_visibility_dnf: ShelfVisibility;
   notify_messages: boolean;
   notify_follows: boolean;
   notify_feed: boolean;
@@ -44,7 +46,8 @@ export interface Profile {
   updated_at: string;
 }
 
-export type SubscriptionTier = "free" | "premium";
+/** Paid memberships are tiered; Plus supersedes the former Premium plan. */
+export type SubscriptionTier = "free" | "plus" | "home";
 
 export type SubscriptionStatus =
   | "inactive"
@@ -55,7 +58,38 @@ export type SubscriptionStatus =
 
 export type SubscriptionProvider = "stripe" | "apple" | "google" | "manual";
 
-export type PremiumFeature = "advanced_analytics" | "ai_insights";
+export type PremiumFeature =
+  | "tracker"
+  | "library"
+  | "goals"
+  | "feed"
+  | "reviews"
+  | "custom_shelf"
+  | "basic_ai"
+  | "stats"
+  | "reading_dna_traits"
+  | "reading_insights"
+  | "reading_speed"
+  | "mood_analytics"
+  | "heatmaps"
+  | "ai_companion"
+  | "quote_vault"
+  | "unlimited_quotes"
+  | "unlimited_clubs"
+  | "unlimited_challenges"
+  | "reading_dna_dashboard"
+  | "reading_dna_ai_insights"
+  | "book_matches"
+  | "book_map"
+  | "reader_map"
+  | "reading_dna_match"
+  | "premium_events"
+  | "concierge"
+  | "priority_support"
+  /** @deprecated Use the explicit Plus capabilities above. */
+  | "advanced_analytics"
+  /** @deprecated Use `reading_dna_ai_insights` or `basic_ai`. */
+  | "ai_insights";
 
 export interface UserSubscription {
   user_id: string;
@@ -73,6 +107,9 @@ export interface Book {
   id: string;
   external_source: string | null;
   external_id: string | null;
+  /** `audiobook` tracks progress by listening time instead of pages. */
+  format?: "book" | "ebook" | "audiobook";
+  audiobook_duration_seconds?: number | null;
   title: string;
   author: string | null;
   description: string | null;
@@ -330,6 +367,7 @@ export interface BookClubEvent {
   title: string;
   description: string | null;
   location: string | null;
+  meeting_url: string | null;
   starts_at: string;
   ends_at: string | null;
   created_at: string;
@@ -347,6 +385,7 @@ export interface UserBook {
   shelf_status: ShelfStatus;
   progress_pages: number;
   progress_percent: number;
+  listening_progress_seconds?: number;
   started_at: string | null;
   finished_at: string | null;
   rating: number | null;
@@ -447,6 +486,10 @@ export interface ReadingSession {
   page_count_source: PageCountSource | null;
   edition_id: string | null;
   completed_at: string | null;
+  session_format?: "book" | "audiobook";
+  listening_start_seconds?: number | null;
+  listening_end_seconds?: number | null;
+  listening_seconds?: number | null;
   created_at: string;
 }
 

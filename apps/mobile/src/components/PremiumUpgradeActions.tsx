@@ -126,7 +126,7 @@ export function PremiumUpgradeActions({ userId, onSubscriptionUpdated }: Props) 
       {iapEnabled ? (
         <>
           <Button
-            title={`Subscribe with App Store — ${localizedPrice}`}
+            title={`Subscribe to Plus with App Store — ${localizedPrice}`}
             onPress={() => void handleSubscribe()}
             disabled={!connected}
           />
@@ -150,12 +150,12 @@ export function PremiumUpgradeActions({ userId, onSubscriptionUpdated }: Props) 
       )}
 
       <Button
-        title="Subscribe on web (Stripe)"
+        title="Subscribe to Plus on web (Stripe)"
         variant="secondary"
         onPress={handleSubscribeOnWeb}
       />
       <Text className="text-center text-xs leading-5 text-ink-muted">
-        One Premium account works across {env.siteUrl.replace(/^https?:\/\//, "")} and the mobile
+        One Bookmarked Plus membership works across {env.siteUrl.replace(/^https?:\/\//, "")} and the mobile
         app.
       </Text>
 

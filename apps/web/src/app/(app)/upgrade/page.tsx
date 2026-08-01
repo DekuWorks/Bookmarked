@@ -17,7 +17,7 @@ import { staticRedirect } from "@/lib/navigation/staticRedirect";
 import { createBillingPortalSession } from "@/lib/services/stripePortal";
 import { createPremiumCheckoutSession, getPremiumCheckoutAvailability } from "@/lib/services/stripeCheckout";
 
-const PREMIUM_PRICE = "$4.99 / month";
+const PLUS_PRICE = "$4.99 / month";
 
 function clearCheckoutQueryParam(): void {
   if (typeof window === "undefined") return;
@@ -47,7 +47,7 @@ export default function UpgradePage() {
     isPremium,
     refresh,
     onActivated: () => {
-      toast.success("Premium is active — enjoy your new features!");
+      toast.success("Bookmarked Plus is active — enjoy your new features!");
       clearCheckoutQueryParam();
     },
   });
@@ -159,10 +159,10 @@ export default function UpgradePage() {
   return (
     <div className={layout.pageStack}>
       <header className={layout.pageHeader}>
-        <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Bookmarked Premium</h1>
+        <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Bookmarked Membership</h1>
         <p className="mx-auto mt-2 max-w-xl text-pretty text-text-muted">
-          Go deeper with your reading life — richer analytics, AI-powered insights, and early access
-          to what we ship next. One subscription works across web and mobile.
+          Free keeps the essentials. Bookmarked Plus unlocks deeper reading intelligence, while
+          Bookmarked Home adds maps, matches, and concierge support. Membership syncs across web and mobile.
         </p>
       </header>
 
@@ -174,7 +174,7 @@ export default function UpgradePage() {
 
       {awaitingActivation && activating ? (
         <section className="surface-card border-primary/30 bg-primary/10 p-4 text-center text-sm text-text-muted">
-          <p className="font-medium text-puce-red">Activating Premium…</p>
+          <p className="font-medium text-puce-red">Activating Bookmarked Plus…</p>
           <p className="mt-1">
             Thanks for subscribing! We&apos;re unlocking your benefits now — this usually takes just
             a few seconds.
@@ -187,7 +187,7 @@ export default function UpgradePage() {
           <div className="text-center">
             <div className="flex flex-wrap items-center justify-center gap-2">
               <p className="text-sm font-medium uppercase tracking-wide text-primary">
-                Bookmarked Premium
+                Bookmarked Plus
               </p>
               <PremiumBadge compact />
             </div>
@@ -195,7 +195,7 @@ export default function UpgradePage() {
             <p className="mt-2 text-sm text-text-muted">
               {optimisticSubscribed
                 ? "Payment received — your Premium benefits are unlocking and will sync across web and mobile shortly."
-                : "Thanks for supporting Bookmarked. Premium features are unlocked on web and mobile."}
+                : "Thanks for supporting Bookmarked. Your paid membership features are unlocked on web and mobile."}
             </p>
           </div>
 
@@ -227,9 +227,9 @@ export default function UpgradePage() {
         <section className="surface-card overflow-hidden p-4 sm:p-6">
           <div className="text-center">
             <p className="text-sm font-medium uppercase tracking-wide text-primary">
-              Bookmarked Premium
+              Bookmarked Plus
             </p>
-            <p className="mt-2 text-3xl font-bold text-puce-red">{PREMIUM_PRICE}</p>
+            <p className="mt-2 text-3xl font-bold text-puce-red">{PLUS_PRICE}</p>
             <p className="mt-1 text-sm text-text-muted">Billed monthly. Cancel anytime.</p>
           </div>
 
@@ -239,7 +239,7 @@ export default function UpgradePage() {
             <div className="mt-6 rounded-xl border border-dashed border-primary/30 bg-primary/5 px-4 py-3 text-center text-sm leading-relaxed text-text-muted">
               <p className="font-medium text-puce-red">Web checkout is unavailable</p>
               <p className="mt-1">
-                Subscribe in the iOS app with your Apple ID, or try again later. Premium gates are
+                Subscribe in the iOS app with your Apple ID, or try again later. Membership gates are
                 already wired — your subscription unlocks on web and mobile.
               </p>
             </div>
@@ -251,7 +251,7 @@ export default function UpgradePage() {
                 loading={checkoutLoading}
                 onClick={() => void handleSubscribe()}
               >
-                Subscribe with Stripe
+                Subscribe to Plus with Stripe
               </Button>
               {checkoutError ? (
                 <p className="text-center text-sm text-red-600">{checkoutError}</p>
@@ -269,8 +269,8 @@ export default function UpgradePage() {
 
       {!showSubscribedUI && !awaitingActivation ? (
         <PremiumFeatureLock
-          title="Preview what Premium unlocks"
-          description="Advanced analytics and AI insights are already wired behind Premium gates in your Reading Room."
+          title="Preview membership benefits"
+          description="Plus unlocks reading intelligence and a full Reading DNA dashboard; Home adds maps and reader matching."
           compact
         />
       ) : null}

@@ -1,4 +1,5 @@
 import { completeReadingSession } from "./completeReadingSession";
+import { createReadingSession } from "./readingSessions";
 import { supabase } from "./supabase";
 import { getShelvesInOrder } from "../constants/shelves";
 import {
@@ -318,13 +319,34 @@ export async function setShelfStatus(
 export async function updateReadingProgress(
   userId: string,
   book: { id: string; title: string; cover_url?: string | null; subjects?: string[] | null; page_count?: number | null },
-  input: { progressPages?: number | null; progressPercent: number }
+  input: {
+    progressPages?: number | null;
+    progressPercent: number;
+    format?: "book" | "audiobook";
+    listeningProgressSeconds?: number;
+    totalListeningSeconds?: number;
+  }
 ): Promise<{ error?: string }> {
+  const isAudiobook = input.format === "audiobook";
+  const { data: existing } = await supabase
+    .from("user_books")
+    .select("id, listening_progress_seconds, read_count")
+    .eq("user_id", userId)
+    .eq("book_id", book.id)
+    .maybeSingle();
+  const effectiveTotal = input.totalListeningSeconds ?? 0;
+  const listeningProgressSeconds = Math.max(0, input.listeningProgressSeconds ?? 0);
+  const progressPercent =
+    isAudiobook && effectiveTotal > 0
+      ? Math.min(100, Math.round((listeningProgressSeconds / effectiveTotal) * 1000) / 10)
+      : input.progressPercent;
   const { data: userBook, error } = await supabase
     .from("user_books")
     .update({
-      progress_percent: input.progressPercent,
-      progress_pages: input.progressPages ?? 0,
+      progress_percent: progressPercent,
+      ...(isAudiobook
+        ? { listening_progress_seconds: listeningProgressSeconds }
+        : { progress_pages: input.progressPages ?? 0 }),
       updated_at: new Date().toISOString(),
     })
     .eq("user_id", userId)
@@ -334,8 +356,31 @@ export async function updateReadingProgress(
 
   if (error) return { error: error.message };
 
+  if (isAudiobook && effectiveTotal > 0) {
+    await supabase
+      .from("books")
+      .update({ format: "audiobook", audiobook_duration_seconds: effectiveTotal })
+      .eq("id", book.id);
+  }
+
+  if (isAudiobook && userBook?.id) {
+    const session = await createReadingSession({
+      userId,
+      userBookId: userBook.id,
+      pageStart: 0,
+      pageEnd: 0,
+      percentComplete: progressPercent,
+      readNumber: Number(existing?.read_count) || 1,
+      sessionFormat: "audiobook",
+      listeningStartSeconds: Number(existing?.listening_progress_seconds) || 0,
+      listeningEndSeconds: listeningProgressSeconds,
+    });
+    if (session.error) return { error: session.error };
+  }
+
   await recordBookActivity(userId, "progress_updated", userBook?.id ?? null, book, {
-    progress_percent: input.progressPercent,
+    progress_percent: progressPercent,
+    ...(isAudiobook ? { format: "audiobook", listening_seconds: listeningProgressSeconds } : {}),
   });
   return {};
 }
@@ -465,9 +510,33 @@ export async function setDnf(
 ): Promise<{ error?: string }> {
   const { error } = await supabase
     .from("user_books")
-    .update({ dnf, updated_at: new Date().toISOString() })
+    .update({
+      dnf,
+      // DNF is a built-in shelf. Moving a book here must clear the reading
+      // state, even when the book is also saved to one or more custom shelves.
+      ...(dnf ? { shelf_status: "dnf", progress_percent: 0 } : {}),
+      updated_at: new Date().toISOString(),
+    })
     .eq("user_id", userId)
     .eq("book_id", bookId);
+  if (error) return { error: error.message };
+  return {};
+}
+
+/** Enrich the shared catalog page count from the native book-detail flow. */
+export async function updateBookTotalPages(
+  bookId: string,
+  totalPages: number
+): Promise<{ error?: string }> {
+  if (!Number.isInteger(totalPages) || totalPages <= 0) {
+    return { error: "Enter a whole number greater than zero." };
+  }
+
+  const { error } = await supabase
+    .from("books")
+    .update({ page_count: totalPages, updated_at: new Date().toISOString() })
+    .eq("id", bookId);
+
   if (error) return { error: error.message };
   return {};
 }

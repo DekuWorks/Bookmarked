@@ -7,8 +7,18 @@ export {
 export {
   canAccessFeature,
   isPremiumSubscriber,
+  MEMBERSHIP_FEATURES,
   type SubscriptionAccess,
 } from "./subscription";
+
+export {
+  computeReadingDna,
+  readingDnaMatchPercent,
+  type ReadingDna,
+  type ReadingDnaInput,
+  type ReadingDnaTrait,
+  type ReadingDnaTraitCategory,
+} from "./readingDna";
 
 export {
   PREMIUM_FEATURE_LINKS,
@@ -113,6 +123,13 @@ export {
   READING_ROOM_TAB_OPTIONS,
   type ReadingRoomTab,
 } from "./readingRoomTabs";
+
+export {
+  buildFeedDiscoveryMarkers,
+  interleaveFeedWithDiscovery,
+  type FeedDiscoveryMarker,
+  type FeedDiscoverySectionId,
+} from "./feedDiscovery";
 
 export {
   MAX_BIO_LENGTH,

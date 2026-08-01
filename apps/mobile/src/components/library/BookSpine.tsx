@@ -1,6 +1,5 @@
 import { useRouter } from "expo-router";
 import { Image, Pressable, Text, View } from "react-native";
-import { SavedBookBadge } from "../SavedBookBadge";
 
 const SPINE_COLORS = ["bg-puce-red", "bg-primary", "bg-primary/80", "bg-puce-red/80"];
 
@@ -13,10 +12,10 @@ function hashTitle(title: string): number {
 }
 
 function spineWidth(pageCount?: number | null): number {
-  if (!pageCount || pageCount < 180) return 36;
-  if (pageCount < 320) return 40;
-  if (pageCount < 480) return 44;
-  return 48;
+  if (!pageCount || pageCount < 180) return 44;
+  if (pageCount < 320) return 50;
+  if (pageCount < 480) return 58;
+  return 66;
 }
 
 type Props = {
@@ -42,23 +41,22 @@ export function BookSpine({ bookId, title, author, coverUrl, pageCount }: Props)
     >
       <View
         className="relative overflow-hidden rounded-t-sm border border-brand-border/40"
-        style={{ width, height: 168 }}
+        style={{ width, height: 184 }}
       >
         {coverUrl ? (
           <Image source={{ uri: coverUrl }} className="absolute inset-0" resizeMode="cover" />
         ) : (
-          <View className={`absolute inset-0 items-center justify-center px-1 ${spineColor}`}>
-            <Text
-              numberOfLines={6}
-              className="text-center text-[8px] font-semibold text-white"
-              style={{ transform: [{ rotate: "-90deg" }], width: 140 }}
-            >
-              {label}
-            </Text>
-          </View>
+          <View className={`absolute inset-0 ${spineColor}`} />
         )}
-        <View className="absolute -top-0.5 right-0.5">
-          <SavedBookBadge size="small" />
+        <View className="absolute inset-0 bg-black/65" />
+        <View className="absolute inset-0 items-center justify-center px-1.5 py-3">
+          <Text
+            numberOfLines={7}
+            className="text-center text-[10px] font-extrabold leading-3 text-white"
+            style={{ transform: [{ rotate: "-90deg" }], width: 156 }}
+          >
+            {label}
+          </Text>
         </View>
       </View>
       {author ? (

@@ -38,7 +38,7 @@ export function LibraryGridView({ shelves, showHeaderLink = true }: Props) {
           {shelf.items.length === 0 ? (
             <Text className="text-sm text-ink-muted">No books on this shelf yet.</Text>
           ) : (
-            <View className="flex-row flex-wrap gap-3">
+            <View className="flex-row flex-wrap gap-2">
               {shelf.items.map((item) => (
                 <CoverTile
                   key={item.id}
@@ -46,7 +46,7 @@ export function LibraryGridView({ shelves, showHeaderLink = true }: Props) {
                   title={item.books?.title}
                   author={item.books?.author}
                   coverUrl={item.books?.cover_url}
-                  widthClassName="w-[30%]"
+                  widthClassName="w-[23%]"
                   coverSizeClassName="w-full aspect-[2/3]"
                 />
               ))}

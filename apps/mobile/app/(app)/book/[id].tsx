@@ -5,6 +5,8 @@ import { Alert, Modal, Pressable, ScrollView, Text, TextInput, View } from "reac
 import { BookCoverAmbience } from "../../../src/components/BookCoverAmbience";
 import { BookCover } from "../../../src/components/BookCover";
 import { Button } from "../../../src/components/Button";
+import { CompletionCelebration } from "../../../src/components/CompletionCelebration";
+import { CommunityContentTags } from "../../../src/components/CommunityContentTags";
 import { EmptyState } from "../../../src/components/EmptyState";
 import { FeelingChip } from "../../../src/components/FeelingChip";
 import { LoadingState } from "../../../src/components/LoadingState";
@@ -26,6 +28,7 @@ import {
   setDnf,
   setExpectedReadDate,
   setShelfStatus,
+  updateBookTotalPages,
   updateReadingProgress,
 } from "../../../src/services/library";
 import { needsMissingPageCountPrompt } from "../../../src/services/completeReadingSession";
@@ -100,9 +103,13 @@ export default function BookScreen() {
   const [rateOpen, setRateOpen] = useState(false);
   const [finishOpen, setFinishOpen] = useState(false);
   const [ratePromptOpen, setRatePromptOpen] = useState(false);
+  const [celebrationOpen, setCelebrationOpen] = useState(false);
   const [finishLoading, setFinishLoading] = useState(false);
   const [progressOpen, setProgressOpen] = useState(false);
   const [progressValue, setProgressValue] = useState("");
+  const [totalListeningValue, setTotalListeningValue] = useState("");
+  const [totalPagesOpen, setTotalPagesOpen] = useState(false);
+  const [totalPagesValue, setTotalPagesValue] = useState("");
   const [dateOpen, setDateOpen] = useState(false);
   const [dateValue, setDateValue] = useState("");
   const [sessionOverrides, setSessionOverrides] = useState<Record<string, ReadingSession>>({});
@@ -211,6 +218,7 @@ export default function BookScreen() {
     }
     setFinishOpen(false);
     invalidate();
+    setCelebrationOpen(true);
     if (result.promptReview) {
       setRatePromptOpen(true);
     }
@@ -218,12 +226,41 @@ export default function BookScreen() {
 
   async function saveProgress() {
     if (!userId || !book) return;
+    const isAudiobook = book.format === "audiobook";
     const percent = Math.max(0, Math.min(100, Number(progressValue) || 0));
-    const result = await updateReadingProgress(userId, book, { progressPercent: percent });
+    const result = await updateReadingProgress(
+      userId,
+      book,
+      isAudiobook
+        ? {
+            progressPercent: 0,
+            format: "audiobook",
+            listeningProgressSeconds: Math.max(0, Number(progressValue) || 0),
+            totalListeningSeconds: Math.max(
+              0,
+              Number(totalListeningValue) || book.audiobook_duration_seconds || 0
+            ),
+          }
+        : { progressPercent: percent }
+    );
     setProgressOpen(false);
     setProgressValue("");
+    setTotalListeningValue("");
     if (result.error) Alert.alert("Error", result.error);
     invalidate();
+  }
+
+  async function saveTotalPages() {
+    if (!book) return;
+    const totalPages = Number.parseInt(totalPagesValue.trim(), 10);
+    const result = await updateBookTotalPages(book.id, totalPages);
+    if (result.error) {
+      Alert.alert("Couldn't update total pages", result.error);
+      return;
+    }
+    setTotalPagesOpen(false);
+    setTotalPagesValue("");
+    await invalidate();
   }
 
   async function toggleDnf() {
@@ -344,6 +381,18 @@ export default function BookScreen() {
           {userBook ? <SavedPill shelf={userBook.shelf_status} /> : null}
         </View>
 
+        <Pressable
+          onPress={() => {
+            setTotalPagesValue(book.page_count ? String(book.page_count) : "");
+            setTotalPagesOpen(true);
+          }}
+          className="self-center rounded-full border border-brand-border bg-surface px-3 py-1.5 active:opacity-70"
+        >
+          <Text className="text-xs font-semibold text-primary-dark">
+            {book.page_count ? `${book.page_count} pages · Edit` : "Add total pages"}
+          </Text>
+        </Pressable>
+
         {userBook?.finished_at ? (
           <Text className="text-center text-xs text-ink-muted">
             Finished on {new Date(userBook.finished_at).toLocaleDateString()}
@@ -400,7 +449,9 @@ export default function BookScreen() {
 
         {userBook?.shelf_status === "currently_reading" ? (
           <View className="rounded-2xl border border-brand-border bg-surface p-4">
-            <Text className="mb-2 font-semibold text-ink">Reading progress</Text>
+            <Text className="mb-2 font-semibold text-ink">
+              {book.format === "audiobook" ? "Listening progress" : "Reading progress"}
+            </Text>
             <ProgressBar percent={userBook.progress_percent ?? 0} />
             <Text className="mt-1 text-xs text-ink-muted">{userBook.progress_percent ?? 0}%</Text>
             <View className="mt-3 flex-row gap-2">
@@ -409,7 +460,14 @@ export default function BookScreen() {
                   title="Update progress"
                   variant="ghost"
                   onPress={() => {
-                    setProgressValue(String(userBook.progress_percent ?? 0));
+                    setProgressValue(
+                      String(
+                        book.format === "audiobook"
+                          ? userBook.listening_progress_seconds ?? 0
+                          : userBook.progress_percent ?? 0
+                      )
+                    );
+                    setTotalListeningValue(String(book.audiobook_duration_seconds ?? ""));
                     setProgressOpen(true);
                   }}
                 />
@@ -470,6 +528,8 @@ export default function BookScreen() {
           </View>
         ) : null}
 
+        <CommunityContentTags bookId={book.id} canVote={userBook?.shelf_status === "read"} />
+
         <View>
           <Text className="mb-2 text-base font-bold text-puce-red">
             Community reviews {otherReviews.length ? `(${otherReviews.length})` : ""}
@@ -512,6 +572,12 @@ export default function BookScreen() {
         }}
       />
 
+      <CompletionCelebration
+        visible={celebrationOpen}
+        bookTitle={book.title}
+        onClose={() => setCelebrationOpen(false)}
+      />
+
       {/* Progress modal */}
       <Modal transparent visible={progressOpen} animationType="fade" onRequestClose={() => setProgressOpen(false)}>
         <Pressable className="flex-1 items-center justify-center bg-black/30" onPress={() => setProgressOpen(false)}>
@@ -521,10 +587,20 @@ export default function BookScreen() {
               value={progressValue}
               onChangeText={setProgressValue}
               keyboardType="number-pad"
-              placeholder="Percent (0–100)"
+              placeholder={book.format === "audiobook" ? "Current listening time (seconds)" : "Percent (0–100)"}
               placeholderTextColor="#A99DAE"
               className="rounded-xl border border-brand-border bg-background px-3 py-3 text-base text-ink"
             />
+            {book.format === "audiobook" ? (
+              <TextInput
+                value={totalListeningValue}
+                onChangeText={setTotalListeningValue}
+                keyboardType="number-pad"
+                placeholder="Total listening time (seconds)"
+                placeholderTextColor="#A99DAE"
+                className="mt-3 rounded-xl border border-brand-border bg-background px-3 py-3 text-base text-ink"
+              />
+            ) : null}
             <View className="mt-4">
               <Button title="Save" onPress={saveProgress} />
             </View>
@@ -550,6 +626,28 @@ export default function BookScreen() {
             />
             <View className="mt-4">
               <Button title="Save" onPress={saveExpectedDate} />
+            </View>
+          </View>
+        </Pressable>
+      </Modal>
+
+      <Modal transparent visible={totalPagesOpen} animationType="fade" onRequestClose={() => setTotalPagesOpen(false)}>
+        <Pressable className="flex-1 items-center justify-center bg-black/30" onPress={() => setTotalPagesOpen(false)}>
+          <View className="w-72 rounded-2xl bg-surface p-5">
+            <Text className="mb-1 text-lg font-bold text-puce-red">Total pages</Text>
+            <Text className="mb-3 text-xs text-ink-muted">
+              Correct the catalog total so reading progress and stats stay accurate.
+            </Text>
+            <TextInput
+              value={totalPagesValue}
+              onChangeText={setTotalPagesValue}
+              keyboardType="number-pad"
+              placeholder="e.g. 384"
+              placeholderTextColor="#A99DAE"
+              className="rounded-xl border border-brand-border bg-background px-3 py-3 text-base text-ink"
+            />
+            <View className="mt-4">
+              <Button title="Save total pages" onPress={saveTotalPages} />
             </View>
           </View>
         </Pressable>

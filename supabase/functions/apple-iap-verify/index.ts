@@ -161,7 +161,7 @@ Deno.serve(async (req) => {
     .upsert(
       {
         user_id: userData.user.id,
-        subscription_tier: "premium",
+        subscription_tier: "plus",
         subscription_status: "active",
         subscription_provider: "apple",
         subscription_expires_at: expiresAt,

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { BookCover } from "@/components/books/BookCover";
 import { ShelfSelectMenu } from "@/components/shelves/ShelfSelectMenu";
+import { AddToCustomShelfMenu } from "@/components/shelves/AddToCustomShelfMenu";
 import {
   EditionPickerModal,
   type CatalogEditionSummary,
@@ -48,6 +49,7 @@ function ResultActions({
   onViewDetails,
   onAddToShelf,
   onPickEdition,
+  onAddToCollection,
   viewDetailsLoading,
   addLoading,
   editionLabel,
@@ -57,6 +59,7 @@ function ResultActions({
   onViewDetails: () => void;
   onAddToShelf: () => void;
   onPickEdition: () => void;
+  onAddToCollection: () => void;
   viewDetailsLoading: boolean;
   addLoading: boolean;
   editionLabel?: string | null;
@@ -96,6 +99,16 @@ function ResultActions({
       >
         Add to shelf
       </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={addLoading}
+        onClick={onAddToCollection}
+        className={outlineButtonClass}
+      >
+        Add to collection
+      </Button>
     </div>
   );
 }
@@ -125,6 +138,7 @@ export function SearchResultCard({
     null
   );
   const [resolvedCoverUrl, setResolvedCoverUrl] = useState<string | null>(coverUrl);
+  const [customBookId, setCustomBookId] = useState<string | null>(null);
 
   const effectiveIsbn = selectedEdition?.isbn ?? isbn;
   const effectivePageCount = selectedEdition?.pageCount
@@ -171,6 +185,20 @@ export function SearchResultCard({
 
   function openShelfMenu() {
     setMenuOpen(true);
+  }
+
+  async function openCustomShelfMenu() {
+    setSaving(true);
+    try {
+      const result = await ensureCatalogBook(bookPayload);
+      if (result.error || !result.bookId) {
+        toast.error(result.error ?? "Could not prepare this book.");
+        return;
+      }
+      setCustomBookId(result.bookId);
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function submitShelf(
@@ -261,6 +289,7 @@ export function SearchResultCard({
               overlay
               onViewDetails={handleViewDetails}
               onAddToShelf={openShelfMenu}
+              onAddToCollection={() => void openCustomShelfMenu()}
               onPickEdition={() => setEditionOpen(true)}
               viewDetailsLoading={viewDetailsLoading}
               addLoading={saving}
@@ -289,6 +318,7 @@ export function SearchResultCard({
           <ResultActions
             onViewDetails={handleViewDetails}
             onAddToShelf={openShelfMenu}
+            onAddToCollection={() => void openCustomShelfMenu()}
             onPickEdition={() => setEditionOpen(true)}
             viewDetailsLoading={viewDetailsLoading}
             addLoading={saving}
@@ -317,6 +347,15 @@ export function SearchResultCard({
           if (!saving) setMenuOpen(false);
         }}
       />
+
+      {customBookId ? (
+        <AddToCustomShelfMenu
+          bookId={customBookId}
+          bookTitle={bookPayload.title}
+          open
+          onClose={() => setCustomBookId(null)}
+        />
+      ) : null}
 
       <MissingPageCountDialog
         bookTitle={bookPayload.title}

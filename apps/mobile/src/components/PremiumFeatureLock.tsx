@@ -12,7 +12,7 @@ type Props = {
 export function PremiumFeatureLock({
   title,
   description,
-  featureLabel = "Premium",
+  featureLabel = "Bookmarked Plus",
   compact,
 }: Props) {
   const router = useRouter();
@@ -39,7 +39,7 @@ export function PremiumFeatureLock({
         </Text>
         <View className="mt-4 w-full">
           <Button
-            title="Upgrade to Premium"
+            title="Explore membership"
             variant="primary"
             onPress={() => router.push("/upgrade")}
           />

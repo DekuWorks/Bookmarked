@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { SavedBookBadge } from "@/components/books/SavedBookBadge";
 import { cn } from "@/lib/utils/cn";
 import { authorPagePath } from "@/lib/routes/author";
 
@@ -32,10 +31,10 @@ function hashTitle(title: string): number {
 }
 
 function spineWidthClass(pageCount?: number | null): string {
-  if (!pageCount || pageCount < 180) return "w-9";
-  if (pageCount < 320) return "w-10";
-  if (pageCount < 480) return "w-11";
-  return "w-12";
+  if (!pageCount || pageCount < 180) return "w-11 sm:w-12";
+  if (pageCount < 320) return "w-12 sm:w-14";
+  if (pageCount < 480) return "w-14 sm:w-16";
+  return "w-16 sm:w-20";
 }
 
 export function BookSpine({
@@ -45,7 +44,6 @@ export function BookSpine({
   pageCount,
   href,
   className,
-  bookmarked = true,
 }: Props) {
   const hash = hashTitle(title);
   const spineColor = SPINE_COLORS[hash % SPINE_COLORS.length];
@@ -58,7 +56,7 @@ export function BookSpine({
     >
       <div
         className={cn(
-          "book-spine group relative h-52 rounded-t-[3px] transition-transform duration-200 hover:-translate-y-1.5",
+          "book-spine group relative h-56 rounded-t-[3px] transition-transform duration-200 hover:-translate-y-1.5 sm:h-60",
           "book-spine-shadow",
           widthClass
         )}
@@ -78,13 +76,13 @@ export function BookSpine({
             <div className={cn("absolute inset-0", spineColor)} aria-hidden />
           )}
 
-          <div className="absolute inset-0 flex items-center justify-center px-0.5 py-3">
+          <div className="book-spine-overlay absolute inset-0" aria-hidden />
+          <div className="absolute inset-0 flex items-center justify-center px-1 py-3">
             <span className="book-spine-title" aria-label={title}>
               {title}
             </span>
           </div>
         </div>
-        {bookmarked ? <SavedBookBadge size="small" /> : null}
       </div>
     </div>
   );

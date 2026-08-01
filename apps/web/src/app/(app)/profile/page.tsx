@@ -22,6 +22,8 @@ import type { Profile } from "@/types";
 import { cn } from "@/lib/utils/cn";
 import { PremiumBadge } from "@/components/premium/PremiumBadge";
 import { useSubscription } from "@/lib/hooks/useSubscription";
+import { ReadingDnaSection } from "@/components/profile/ReadingDnaSection";
+import { PublicReviewsSection } from "@/components/profile/PublicReviewsSection";
 
 import { layout } from "@/lib/constants/layout";
 
@@ -34,7 +36,7 @@ type ProfileData = {
 
 export default function ProfilePage() {
   const user = useAuthUser();
-  const { isPremium } = useSubscription(user?.id);
+  const { isPremium, canAccess } = useSubscription(user?.id);
   const [data, setData] = useState<ProfileData | null>(null);
 
   const loadProfile = useCallback(async () => {
@@ -113,6 +115,10 @@ export default function ProfilePage() {
           </div>
         </div>
         <ReadingStreakCard streak={readingStreak} className="mt-6" />
+        <ReadingDnaSection
+          favoriteGenres={profile?.favorite_genres ?? []}
+          canAccess={canAccess}
+        />
         {profile?.bio ? (
           <ProfanityBlur text={profile.bio} className="mt-4">
             <p className="leading-relaxed text-text">{profile.bio}</p>
@@ -156,11 +162,15 @@ export default function ProfilePage() {
             Account settings
           </ButtonLink>
           <ButtonLink href="/upgrade/" variant="secondary" size="sm">
-            {isPremium ? "Premium" : "Upgrade"}
+            {isPremium ? "Membership" : "Explore membership"}
           </ButtonLink>
           <LogoutButton />
         </div>
       </section>
+      <PublicReviewsSection
+        userId={user.id}
+        readerName={profile?.display_name || profile?.username || "you"}
+      />
     </div>
   );
 }

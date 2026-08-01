@@ -17,12 +17,13 @@ export type CreateClubEventInput = {
   title: string;
   description?: string | null;
   location?: string | null;
+  meetingUrl?: string | null;
   startsAt: string;
   endsAt?: string | null;
 };
 
 const EVENT_SELECT =
-  "id, club_id, created_by, title, description, location, starts_at, ends_at, created_at, updated_at";
+  "id, club_id, created_by, title, description, location, meeting_url, starts_at, ends_at, created_at, updated_at";
 
 /** Upcoming events for a single club, soonest first. */
 export async function listClubEvents(clubId: string, limit = 20): Promise<BookClubEvent[]> {
@@ -77,6 +78,7 @@ export async function createClubEvent(input: CreateClubEventInput): Promise<Book
       title,
       description: input.description?.trim() || null,
       location: input.location?.trim() || null,
+      meeting_url: input.meetingUrl?.trim() || null,
       starts_at: input.startsAt,
       ends_at: input.endsAt ?? null,
     })

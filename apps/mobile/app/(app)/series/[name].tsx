@@ -65,6 +65,11 @@ export default function SeriesScreen() {
                     {book.author}
                   </Text>
                 ) : null}
+                {book.entry_type && book.entry_type !== "main" ? (
+                  <Text className="mt-1 self-start rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium capitalize text-puce-red">
+                    {book.entry_type.replaceAll("_", " ")}
+                  </Text>
+                ) : null}
                 {book.shelf_status ? (
                   <View className="mt-1 flex-row">
                     <SavedPill shelf={book.shelf_status} />

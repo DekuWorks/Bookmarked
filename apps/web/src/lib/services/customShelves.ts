@@ -315,6 +315,15 @@ export async function removeBookFromCustomShelf(
   return {};
 }
 
+/** Removes this shelf's associations only; books and other shelf memberships remain. */
+export async function clearCustomShelf(shelfId: string): Promise<{ error?: string }> {
+  const supabase = createClient();
+  const { error } = await supabase.from("user_shelf_books").delete().eq("shelf_id", shelfId);
+
+  if (error) return { error: error.message };
+  return {};
+}
+
 export async function deleteCustomShelf(
   shelfId: string
 ): Promise<{ error?: string }> {

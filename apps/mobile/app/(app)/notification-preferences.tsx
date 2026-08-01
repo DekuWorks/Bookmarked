@@ -11,8 +11,7 @@ type PrefKey =
   | "notify_follows"
   | "notify_feed"
   | "notify_likes"
-  | "notify_comments"
-  | "notify_mentions";
+  | "notify_comments";
 
 const PREF_OPTIONS: { key: PrefKey; label: string; description: string }[] = [
   {
@@ -27,8 +26,8 @@ const PREF_OPTIONS: { key: PrefKey; label: string; description: string }[] = [
   },
   {
     key: "notify_feed",
-    label: "Feed activity",
-    description: "Reading updates from people you follow.",
+    label: "Post notifications",
+    description: "When a reader whose posts you follow publishes a new post.",
   },
   {
     key: "notify_likes",
@@ -39,11 +38,6 @@ const PREF_OPTIONS: { key: PrefKey; label: string; description: string }[] = [
     key: "notify_comments",
     label: "Comments and replies",
     description: "When someone comments on your post or replies to you.",
-  },
-  {
-    key: "notify_mentions",
-    label: "@Mentions",
-    description: "When someone mentions you in a post or comment.",
   },
 ];
 
@@ -63,7 +57,6 @@ export default function NotificationPreferencesScreen() {
       notify_feed: profile.notify_feed ?? true,
       notify_likes: profile.notify_likes ?? true,
       notify_comments: profile.notify_comments ?? true,
-      notify_mentions: profile.notify_mentions ?? true,
     });
   }, [profile]);
 

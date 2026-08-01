@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { BookSpine } from "../../../src/components/library/BookSpine";
 import { LibraryViewToggle } from "../../../src/components/library/LibraryViewToggle";
@@ -8,7 +8,7 @@ import { EmptyState } from "../../../src/components/EmptyState";
 import { LoadingState } from "../../../src/components/LoadingState";
 import { ScreenHeader } from "../../../src/components/ScreenHeader";
 import { useLibraryViewMode } from "../../../src/hooks/useLibraryViewMode";
-import { getCustomShelfBySlug } from "../../../src/services/customShelves";
+import { clearCustomShelf, getCustomShelfBySlug } from "../../../src/services/customShelves";
 import { useAuthStore } from "../../../src/store/authStore";
 
 export default function CustomShelfScreen() {
@@ -52,6 +52,33 @@ export default function CustomShelfScreen() {
     );
   }
 
+  function confirmClearShelf() {
+    const currentShelf = shelfQuery.data;
+    if (!currentShelf) return;
+    const shelfId = currentShelf.id;
+    const shelfName = currentShelf.name;
+    Alert.alert(
+      `Clear ${shelfName}?`,
+      "This removes every book from this shelf only. Your books and other shelf associations stay intact.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Clear shelf",
+          style: "destructive",
+          onPress: async () => {
+            const result = await clearCustomShelf(shelfId);
+            if (result.error) {
+              Alert.alert("Couldn't clear shelf", result.error);
+              return;
+            }
+            await shelfQuery.refetch();
+            Alert.alert("Shelf cleared", `Books were removed from ${shelfName} only.`);
+          },
+        },
+      ]
+    );
+  }
+
   return (
     <View className="flex-1 bg-background">
       <ScreenHeader title={shelf.name} />
@@ -68,6 +95,11 @@ export default function CustomShelfScreen() {
           <Text className="mt-2 text-sm font-medium text-ink">
             {shelf.items.length} book{shelf.items.length === 1 ? "" : "s"}
           </Text>
+          {shelf.items.length > 0 ? (
+            <Pressable onPress={confirmClearShelf} className="mt-3 self-start active:opacity-70">
+              <Text className="text-sm font-semibold text-rust">Clear shelf</Text>
+            </Pressable>
+          ) : null}
         </View>
 
         <LibraryViewToggle view={view} onChange={setView} disabled={isPending} />
@@ -78,7 +110,7 @@ export default function CustomShelfScreen() {
           </Text>
         ) : view === "bookshelf" ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View className="flex-row items-end gap-2 rounded-2xl border border-brand-border bg-surface p-4">
+            <View className="flex-row items-end gap-3 rounded-2xl border border-brand-border bg-surface p-4">
               {shelf.items.map((item) => (
                 <BookSpine
                   key={item.id}
@@ -92,7 +124,7 @@ export default function CustomShelfScreen() {
             </View>
           </ScrollView>
         ) : (
-          <View className="flex-row flex-wrap gap-3">
+          <View className="flex-row flex-wrap gap-2">
             {shelf.items.map((item) => (
               <CoverTile
                 key={item.id}
@@ -100,7 +132,7 @@ export default function CustomShelfScreen() {
                 title={item.books?.title}
                 author={item.books?.author}
                 coverUrl={item.books?.cover_url}
-                widthClassName="w-[30%]"
+                widthClassName="w-[23%]"
                 coverSizeClassName="w-full aspect-[2/3]"
               />
             ))}

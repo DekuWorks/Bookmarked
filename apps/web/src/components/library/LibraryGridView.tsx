@@ -20,7 +20,7 @@ export function LibraryGridView({ shelves }: Props) {
           {shelf.items.length === 0 ? (
             <EmptyShelfMessage />
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {shelf.items.map((ub) => {
                 const book = ub.books;
                 return (

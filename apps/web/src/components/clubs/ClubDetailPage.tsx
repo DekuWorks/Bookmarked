@@ -45,6 +45,9 @@ function ClubDetailContent() {
   const [discussions, setDiscussions] = useState<BookClubPostWithAuthor[] | null>(null);
   const [actionPending, setActionPending] = useState(false);
   const [bookPickerOpen, setBookPickerOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "discussions" | "schedule" | "bookshelf" | "members" | "stats"
+  >("overview");
 
   const loadClub = useCallback(async () => {
     if (!clubId || !user) return;
@@ -171,6 +174,21 @@ function ClubDetailContent() {
   const isOwner = club.viewer_role === "owner";
   const isMember = club.viewer_is_member;
   const memberLabel = `${club.member_count} member${club.member_count === 1 ? "" : "s"}`;
+  const bookshelf = Array.from(
+    new Map(
+      [club.current_book, ...(discussions ?? []).map((post) => post.book ?? null)]
+        .filter((book): book is NonNullable<typeof book> => Boolean(book))
+        .map((book) => [book.id, book])
+    ).values()
+  );
+  const tabs = [
+    ["overview", "Overview"],
+    ["discussions", "Discussions"],
+    ["schedule", "Schedule"],
+    ["bookshelf", "Bookshelf"],
+    ["members", "Members"],
+    ["stats", "Stats"],
+  ] as const;
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
@@ -277,9 +295,25 @@ function ClubDetailContent() {
         ) : null}
       </header>
 
+      <nav aria-label="Club sections" className="flex gap-2 overflow-x-auto border-b border-border pb-3">
+        {tabs.map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setActiveTab(id)}
+            className={`shrink-0 rounded-full px-3 py-2 text-sm font-medium ${
+              activeTab === id ? "bg-puce-red text-white" : "bg-surface text-text-muted hover:text-primary"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+
+      {activeTab === "overview" ? (
       <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold text-puce-red">Current book</h2>
+          <h2 className="text-lg font-semibold text-puce-red">Current Read</h2>
           {isOwner ? (
             <Button type="button" variant="ghost" size="sm" onClick={() => setBookPickerOpen(true)}>
               {club.current_book ? "Change" : "Set book"}
@@ -335,7 +369,9 @@ function ClubDetailContent() {
           </p>
         )}
       </section>
+      ) : null}
 
+      {activeTab === "members" ? (
       <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
         <h2 className="mb-4 text-lg font-semibold text-puce-red">Members</h2>
         <ClubMembersPanel
@@ -346,14 +382,18 @@ function ClubDetailContent() {
           onChanged={() => void loadClub()}
         />
       </section>
+      ) : null}
 
-      <ClubEventsPanel
-        clubId={club.id}
-        isMember={isMember}
-        viewerId={user.id}
-        clubOwnerId={club.owner_id}
-      />
+      {activeTab === "schedule" ? (
+        <ClubEventsPanel
+          clubId={club.id}
+          isMember={isMember}
+          viewerId={user.id}
+          clubOwnerId={club.owner_id}
+        />
+      ) : null}
 
+      {activeTab === "discussions" ? (
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-puce-red">Discussions</h2>
 
@@ -394,6 +434,40 @@ function ClubDetailContent() {
           </ul>
         )}
       </section>
+      ) : null}
+
+      {activeTab === "bookshelf" ? (
+        <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-puce-red">Club bookshelf</h2>
+          <p className="mt-1 text-sm text-text-muted">Current and discussion-linked reads from the club.</p>
+          {bookshelf.length ? (
+            <ul className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
+              {bookshelf.map((book) => (
+                <li key={book.id}>
+                  <Link href={bookDetailsPath(book.id)} className="block rounded-lg p-2 hover:bg-background">
+                    <BookCover title={book.title} author={book.author} coverUrl={book.cover_url} className="h-36 w-full" bookmarked />
+                    <p className="mt-2 truncate text-sm font-medium text-puce-red">{book.title}</p>
+                    {book.author ? <p className="truncate text-xs text-text-muted">{book.author}</p> : null}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-4 text-sm text-text-muted">Set a current read or attach a book to a discussion to build the bookshelf.</p>
+          )}
+        </section>
+      ) : null}
+
+      {activeTab === "stats" ? (
+        <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-puce-red">Club stats</h2>
+          <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="rounded-lg bg-background p-4"><dt className="text-xs text-text-muted">Members</dt><dd className="mt-1 text-2xl font-bold text-puce-red">{club.member_count}</dd></div>
+            <div className="rounded-lg bg-background p-4"><dt className="text-xs text-text-muted">Discussions</dt><dd className="mt-1 text-2xl font-bold text-puce-red">{discussions?.length ?? "—"}</dd></div>
+            <div className="rounded-lg bg-background p-4"><dt className="text-xs text-text-muted">Books surfaced</dt><dd className="mt-1 text-2xl font-bold text-puce-red">{bookshelf.length}</dd></div>
+          </dl>
+        </section>
+      ) : null}
 
       <BookPickerModal
         open={bookPickerOpen}

@@ -6,6 +6,7 @@ const SHELF_SHORT: Record<ShelfStatus, string> = {
   want_to_read: "TBR",
   currently_reading: "Reading",
   read: "Finished",
+  dnf: "DNF",
 };
 
 /** "saved to {shelf}" pill shown on saved books (IMG_5362 / IMG_5361). */

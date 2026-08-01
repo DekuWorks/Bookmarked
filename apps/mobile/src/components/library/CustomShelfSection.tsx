@@ -33,7 +33,7 @@ export function CustomShelfSection({ shelf, view }: Props) {
       ) : view === "bookshelf" ? (
         <View className="bg-primary/5 px-4 pb-1 pt-4">
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View className="flex-row items-end gap-2 pb-2">
+            <View className="flex-row items-end gap-3 pb-2">
               {shelf.items.map((item) => (
                 <BookSpine
                   key={item.id}
@@ -49,7 +49,7 @@ export function CustomShelfSection({ shelf, view }: Props) {
           <View className="h-3 rounded-b-2xl bg-puce-red/20" />
         </View>
       ) : (
-        <View className="flex-row flex-wrap gap-3 p-4">
+        <View className="flex-row flex-wrap gap-2 p-4">
           {shelf.items.map((item) => (
             <CoverTile
               key={item.id}
@@ -57,7 +57,7 @@ export function CustomShelfSection({ shelf, view }: Props) {
               title={item.books?.title}
               author={item.books?.author}
               coverUrl={item.books?.cover_url}
-              widthClassName="w-[30%]"
+              widthClassName="w-[23%]"
               coverSizeClassName="w-full aspect-[2/3]"
             />
           ))}

@@ -7,6 +7,7 @@ import { FollowStats } from "../../../../src/components/FollowStats";
 import { LoadingState } from "../../../../src/components/LoadingState";
 import { ProfanityBlur } from "../../../../src/components/ProfanityBlur";
 import { ProfileShelfPreview } from "../../../../src/components/ProfileShelfPreview";
+import { PublicReviewsSection } from "../../../../src/components/PublicReviewsSection";
 import { ReadingStreakCard } from "../../../../src/components/ReadingStreakCard";
 import { ScreenHeader } from "../../../../src/components/ScreenHeader";
 import { showProfileActions } from "../../../../src/components/ContentActions";
@@ -213,6 +214,7 @@ export default function ReaderScreen() {
             previewLimit={3}
           />
         </View>
+        <PublicReviewsSection userId={reader.id} readerName={name} />
       </ScrollView>
     </View>
   );

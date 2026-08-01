@@ -1,5 +1,6 @@
 export type PremiumFeatureLink = {
   id: string;
+  tier: "free" | "plus" | "home";
   title: string;
   description: string;
   /** Web path (Reading Room Progress tab sections where applicable). */
@@ -10,31 +11,33 @@ export type PremiumFeatureLink = {
 
 export const PREMIUM_FEATURE_LINKS: PremiumFeatureLink[] = [
   {
-    id: "advanced_analytics",
-    title: "Advanced analytics",
+    id: "free-foundation",
+    tier: "free",
+    title: "Free",
     description:
-      "Reading heatmaps, pace trends, monthly breakdowns, and deeper stats on your Progress tab.",
+      "Tracker, library, goals, feed, reviews, one custom shelf, basic AI, stats, and your top 3 Reading DNA traits.",
+  },
+  {
+    id: "reading-insights",
+    tier: "plus",
+    title: "Bookmarked Plus",
+    description:
+      "Reading Insights, Reading Speed, Mood Analytics, Heatmaps, AI Companion, Quote Vault, and unlimited quotes, clubs, and challenges.",
     webHref: "/reading-room/?tab=progress#reading-activity",
     mobileHref: "/?tab=progress",
   },
   {
-    id: "ai_insights",
-    title: "AI reading insights",
+    id: "reading-dna",
+    tier: "plus",
+    title: "Full Reading DNA",
     description:
-      "Personalized highlights, reading patterns, and reflection prompts powered by OpenAI from your trail.",
-    webHref: "/reading-room/?tab=progress#ai-insights",
-    mobileHref: "/?tab=progress",
+      "Explore your full DNA dashboard, AI insights, and personalized book-match hooks.",
   },
   {
-    id: "early_access",
-    title: "Early access",
-    description: "Try new community, library, and mobile features before they roll out to everyone.",
-    webHref: "/feed/",
-    mobileHref: "/feed",
-  },
-  {
-    id: "support",
-    title: "Support Bookmarked",
-    description: "Help us build a reader-first platform without ads or data selling.",
+    id: "bookmarked-home",
+    tier: "home",
+    title: "Bookmarked Home",
+    description:
+      "Book Map, Reader Map, Reading DNA Match, Premium Events, concierge help, and priority support.",
   },
 ];

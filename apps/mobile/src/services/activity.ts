@@ -220,3 +220,18 @@ export function canViewerSeeActivity(
   if (visibility === "followers") return isFollowingAuthor;
   return true;
 }
+
+/** Deletes the activity_events row only — never the underlying book/post/review. */
+export async function deleteOwnActivity(
+  activityId: string,
+  userId: string
+): Promise<{ error?: string }> {
+  const { error } = await supabase
+    .from("activity_events")
+    .delete()
+    .eq("id", activityId)
+    .eq("user_id", userId);
+
+  if (error) return { error: error.message };
+  return {};
+}

@@ -13,6 +13,9 @@ export type CreateReadingSessionInput = {
   mood?: string | null;
   readNumber?: number;
   createdAt?: string;
+  sessionFormat?: "book" | "audiobook";
+  listeningStartSeconds?: number;
+  listeningEndSeconds?: number;
 };
 
 export async function listReadingSessions(userBookId: string): Promise<ReadingSession[]> {
@@ -87,6 +90,17 @@ export async function createReadingSession(
       note: input.note ?? null,
       mood: input.mood ?? null,
       read_number: input.readNumber ?? 1,
+      session_format: input.sessionFormat ?? "book",
+      ...(input.sessionFormat === "audiobook"
+        ? {
+            listening_start_seconds: input.listeningStartSeconds ?? 0,
+            listening_end_seconds: input.listeningEndSeconds ?? 0,
+            listening_seconds: Math.max(
+              0,
+              (input.listeningEndSeconds ?? 0) - (input.listeningStartSeconds ?? 0)
+            ),
+          }
+        : {}),
       ...(input.createdAt ? { created_at: input.createdAt } : {}),
     })
     .select("*")

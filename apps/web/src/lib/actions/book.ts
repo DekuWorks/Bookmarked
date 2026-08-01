@@ -45,6 +45,8 @@ type AuthBookContext =
         id: string;
         title: string;
         page_count: number | null;
+        format: "book" | "ebook" | "audiobook";
+        audiobook_duration_seconds: number | null;
         cover_url: string | null;
         subjects: string[] | null;
         isbn: string | null;
@@ -61,7 +63,7 @@ async function getAuthUserBook(bookId: string): Promise<AuthBookContext> {
 
   const { data: book } = await supabase
     .from("books")
-    .select("id, title, page_count, cover_url, subjects, isbn")
+    .select("id, title, page_count, format, audiobook_duration_seconds, cover_url, subjects, isbn")
     .eq("id", bookId)
     .maybeSingle();
 
@@ -224,6 +226,7 @@ export async function setBookShelfStatus(
     user_id: user.id,
     book_id: bookId,
     shelf_status,
+    dnf: shelf_status === "dnf",
     updated_at: now,
   };
 
@@ -263,6 +266,15 @@ export async function updateReadingProgress(
   const bookId = String(formData.get("book_id") ?? "");
   const currentPage = Math.max(0, Number(formData.get("current_page") ?? 0));
   const totalPages = Math.max(0, Number(formData.get("total_pages") ?? 0));
+  const isAudiobook = String(formData.get("format") ?? "") === "audiobook";
+  const currentListeningSeconds = Math.max(
+    0,
+    Number(formData.get("current_listening_seconds") ?? 0)
+  );
+  const totalListeningSeconds = Math.max(
+    0,
+    Number(formData.get("total_listening_seconds") ?? 0)
+  );
 
   const ctx = await getAuthUserBook(bookId);
   if (!ctx.ok) return { error: ctx.error };
@@ -272,13 +284,19 @@ export async function updateReadingProgress(
     return { error: "Add this book to a shelf before tracking progress." };
   }
 
-  const effectiveTotal = totalPages || book.page_count || 0;
+  const effectiveTotal = isAudiobook
+    ? totalListeningSeconds || book.audiobook_duration_seconds || 0
+    : totalPages || book.page_count || 0;
 
   // Cap display percent only — never auto-finish from page edits.
   // Keep progress_pages as entered even when total is corrected downward.
   const progress_percent =
     effectiveTotal > 0
-      ? Math.min(100, Math.round((currentPage / effectiveTotal) * 1000) / 10)
+      ? Math.min(
+          100,
+          Math.round(((isAudiobook ? currentListeningSeconds : currentPage) / effectiveTotal) * 1000) /
+            10
+        )
       : 0;
 
   const now = new Date().toISOString();
@@ -287,7 +305,9 @@ export async function updateReadingProgress(
   const finalPercent = progress_percent;
 
   const updates: Record<string, unknown> = {
-    progress_pages: finalPage,
+    ...(isAudiobook
+      ? { listening_progress_seconds: currentListeningSeconds }
+      : { progress_pages: finalPage }),
     progress_percent: finalPercent,
     started_at: userBook.started_at ?? now,
     updated_at: now,
@@ -299,7 +319,10 @@ export async function updateReadingProgress(
   if (userBook.finished_at || userBook.shelf_status === "read") {
     updates.finished_at = null;
     updates.shelf_status = finalPage > 0 ? "currently_reading" : "want_to_read";
-  } else if (userBook.shelf_status !== "currently_reading" && currentPage > 0) {
+  } else if (
+    userBook.shelf_status !== "currently_reading" &&
+    (isAudiobook ? currentListeningSeconds : currentPage) > 0
+  ) {
     updates.shelf_status = "currently_reading";
   }
 
@@ -310,17 +333,33 @@ export async function updateReadingProgress(
 
   if (error) return { error: error.message };
 
-  if (effectiveTotal > 0 && book.page_count !== effectiveTotal) {
-    await supabase.from("books").update({ page_count: effectiveTotal }).eq("id", bookId);
+  if (effectiveTotal > 0) {
+    await supabase
+      .from("books")
+      .update(
+        isAudiobook
+          ? { format: "audiobook", audiobook_duration_seconds: effectiveTotal }
+          : { page_count: effectiveTotal }
+      )
+      .eq("id", bookId);
   }
 
   const sessionResult = await createReadingSessionWithClient(supabase, {
     userId: user.id,
     userBookId: userBook.id,
-    pageStart: previousPage,
-    pageEnd: finalPage,
+    pageStart: isAudiobook ? 0 : previousPage,
+    pageEnd: isAudiobook ? 0 : finalPage,
     percentComplete: finalPercent,
     readNumber: Number(userBook.read_count) || 1,
+    ...(isAudiobook
+      ? {
+          sessionFormat: "audiobook" as const,
+          listeningStartSeconds: Number(
+            (userBook as UserBookRow & { listening_progress_seconds?: number }).listening_progress_seconds
+          ) || 0,
+          listeningEndSeconds: currentListeningSeconds,
+        }
+      : {}),
   });
 
   if (sessionResult.error) return { error: sessionResult.error };
@@ -333,6 +372,7 @@ export async function updateReadingProgress(
     metadata_json: activityMetadata(book.title, {
       ...bookActivityContext(book),
       progress_percent: finalPercent,
+      ...(isAudiobook ? { listening_seconds: currentListeningSeconds, format: "audiobook" } : {}),
     }),
   });
 

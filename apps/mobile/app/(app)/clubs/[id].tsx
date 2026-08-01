@@ -86,6 +86,9 @@ export default function ClubDetailRoute() {
   const [editDescription, setEditDescription] = useState("");
   const [editVisibility, setEditVisibility] = useState<BookClubVisibility>("public");
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "discussions" | "schedule" | "bookshelf" | "members" | "stats"
+  >("overview");
 
   useEffect(() => {
     if (editOpen && club) {
@@ -253,6 +256,21 @@ export default function ClubDetailRoute() {
   const isMember = club.viewer_is_member;
   const memberLabel = `${club.member_count} member${club.member_count === 1 ? "" : "s"}`;
   const actionPending = joinMutation.isPending || leaveMutation.isPending;
+  const bookshelf = Array.from(
+    new Map(
+      [club.current_book, ...(discussions.data ?? []).map((post) => post.book ?? null)]
+        .filter((book): book is NonNullable<typeof book> => Boolean(book))
+        .map((book) => [book.id, book])
+    ).values()
+  );
+  const tabs = [
+    ["overview", "Overview"],
+    ["discussions", "Discuss"],
+    ["schedule", "Schedule"],
+    ["bookshelf", "Bookshelf"],
+    ["members", "Members"],
+    ["stats", "Stats"],
+  ] as const;
 
   const header = (
     <View className="gap-5 pb-4">
@@ -317,9 +335,27 @@ export default function ClubDetailRoute() {
         </View>
       </View>
 
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-1">
+        <View className="flex-row gap-2 px-1">
+          {tabs.map(([id, label]) => (
+            <Pressable
+              key={id}
+              onPress={() => setActiveTab(id)}
+              accessibilityRole="button"
+              className={`rounded-full px-3 py-2 ${activeTab === id ? "bg-puce-red" : "bg-primary/15"}`}
+            >
+              <Text className={`text-xs font-semibold ${activeTab === id ? "text-white" : "text-puce-red"}`}>
+                {label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </ScrollView>
+
+      {activeTab === "overview" ? (
       <View className="rounded-2xl border border-brand-border bg-surface p-4">
         <View className="flex-row items-center justify-between mb-3">
-          <Text className="text-lg font-semibold text-puce-red">Current book</Text>
+          <Text className="text-lg font-semibold text-puce-red">Current Read</Text>
           {isOwner ? (
             <Pressable
               accessibilityRole="button"
@@ -367,7 +403,9 @@ export default function ClubDetailRoute() {
           </Text>
         )}
       </View>
+      ) : null}
 
+      {activeTab === "members" ? (
       <View className="rounded-2xl border border-brand-border bg-surface p-4">
         <Text className="text-lg font-semibold text-puce-red mb-3">
           Members ({club.members.length})
@@ -416,14 +454,18 @@ export default function ClubDetailRoute() {
           })}
         </View>
       </View>
+      ) : null}
 
+      {activeTab === "schedule" ? (
       <ClubEventsSection
         clubId={club.id}
         isMember={isMember}
         viewerId={userId ?? ""}
         clubOwnerId={club.owner_id}
       />
+      ) : null}
 
+      {activeTab === "discussions" ? (
       <View>
         <Text className="text-lg font-semibold text-puce-red mb-3">Discussions</Text>
         {isMember ? (
@@ -455,6 +497,44 @@ export default function ClubDetailRoute() {
           </View>
         )}
       </View>
+      ) : null}
+
+      {activeTab === "bookshelf" ? (
+        <View className="rounded-2xl border border-brand-border bg-surface p-4">
+          <Text className="text-lg font-semibold text-puce-red">Club bookshelf</Text>
+          <Text className="mt-1 text-sm text-ink-muted">Current and discussion-linked reads.</Text>
+          {bookshelf.length ? (
+            <View className="mt-4 gap-3">
+              {bookshelf.map((book) => (
+                <Pressable
+                  key={book.id}
+                  onPress={() => router.push(`/book/${book.id}`)}
+                  className="flex-row items-center gap-3 rounded-xl bg-background p-2 active:opacity-80"
+                >
+                  <BookCover url={book.cover_url} title={book.title} sizeClassName="h-20 w-14" />
+                  <View className="flex-1">
+                    <Text className="font-semibold text-ink" numberOfLines={1}>{book.title}</Text>
+                    {book.author ? <Text className="mt-1 text-sm text-ink-muted" numberOfLines={1}>{book.author}</Text> : null}
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+          ) : (
+            <Text className="mt-4 text-sm text-ink-muted">Set a current read or attach a book to a discussion to build the bookshelf.</Text>
+          )}
+        </View>
+      ) : null}
+
+      {activeTab === "stats" ? (
+        <View className="rounded-2xl border border-brand-border bg-surface p-4">
+          <Text className="text-lg font-semibold text-puce-red">Club stats</Text>
+          <View className="mt-4 flex-row gap-3">
+            <View className="flex-1 rounded-xl bg-background p-3"><Text className="text-xs text-ink-muted">Members</Text><Text className="mt-1 text-2xl font-bold text-puce-red">{club.member_count}</Text></View>
+            <View className="flex-1 rounded-xl bg-background p-3"><Text className="text-xs text-ink-muted">Discussions</Text><Text className="mt-1 text-2xl font-bold text-puce-red">{discussions.data?.length ?? "—"}</Text></View>
+            <View className="flex-1 rounded-xl bg-background p-3"><Text className="text-xs text-ink-muted">Books</Text><Text className="mt-1 text-2xl font-bold text-puce-red">{bookshelf.length}</Text></View>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 
@@ -462,7 +542,7 @@ export default function ClubDetailRoute() {
     <>
       <FlatList
         className="flex-1 bg-background"
-        data={discussions.data ?? []}
+        data={activeTab === "discussions" ? discussions.data ?? [] : []}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"
@@ -475,7 +555,7 @@ export default function ClubDetailRoute() {
             onDelete={() => confirmDeletePost(item.id)}
           />
         )}
-        ListEmptyComponent={
+        ListEmptyComponent={activeTab === "discussions" ? (
           discussions.isLoading ? (
             <LoadingState message="Loading discussions…" />
           ) : (
@@ -488,7 +568,7 @@ export default function ClubDetailRoute() {
               </Text>
             </View>
           )
-        }
+        ) : null}
       />
 
       <BookPicker

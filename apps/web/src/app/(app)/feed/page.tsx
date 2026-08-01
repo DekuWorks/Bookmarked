@@ -1,14 +1,14 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { FeedCard } from "@/components/social/FeedCard";
+import { FeedDiscoveryCard } from "@/components/social/FeedDiscoveryCard";
 import { FeedSearchBar } from "@/components/social/FeedSearchBar";
 import { FeedSearchResults } from "@/components/social/FeedSearchResults";
 import { PostCard } from "@/components/social/PostCard";
 import { PostComposer } from "@/components/social/PostComposer";
-import { TrendingNewsletterPanel } from "@/components/trending/TrendingNewsletterPanel";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { FeedCardSkeleton, PostCardSkeleton } from "@/components/ui/Skeleton";
@@ -21,11 +21,18 @@ import { fetchFollowingFeed, fetchForYouFeed } from "@/lib/services/socialFeed";
 import type { FeedItem } from "@/lib/services/socialFeed";
 import { getPostById, listFeedPosts } from "@/lib/services/posts";
 import type { PostWithAuthor } from "@/types";
+import { interleaveFeedWithDiscovery } from "@bookmarked/utils/feedDiscovery";
+import { layout } from "@/lib/constants/layout";
+
+type PostFeedRow =
+  | { kind: "item"; item: PostWithAuthor }
+  | { kind: "discovery"; id: "trending" | "shelved" | "reviewed"; afterIndex: number };
+type ActivityFeedRow =
+  | { kind: "item"; item: FeedItem }
+  | { kind: "discovery"; id: "trending" | "shelved" | "reviewed"; afterIndex: number };
 
 type FeedView = "posts" | "activity";
 type FeedTab = "for-you" | "following";
-
-import { layout } from "@/lib/constants/layout";
 
 function parseFeedView(value: string | null): FeedView {
   return value === "activity" ? "activity" : "posts";
@@ -169,6 +176,15 @@ function FeedContent() {
       .finally(() => setSearchLoading(false));
   }, [user, debouncedQuery, isSearching]);
 
+  const interleavedPosts = useMemo<PostFeedRow[] | null>(
+    () => (posts ? interleaveFeedWithDiscovery(posts) : null),
+    [posts]
+  );
+  const interleavedActivity = useMemo<ActivityFeedRow[] | null>(
+    () => (activityItems ? interleaveFeedWithDiscovery(activityItems) : null),
+    [activityItems]
+  );
+
   if (user === undefined) {
     return <LoadingState message="Loading feed…" />;
   }
@@ -201,16 +217,16 @@ function FeedContent() {
   }
 
   return (
-    <div className={layout.pageStack}>
+    <div className={`${layout.pageStackWide} text-left`}>
       <div className="-mx-4 feed-header-gradient px-4 pb-6 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-        <header className={layout.pageHeader}>
+        <header className="text-left">
           <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Feed</h1>
-          <p className="mx-auto mt-1 max-w-xl text-pretty text-text-muted">
+          <p className="mt-1 max-w-2xl text-pretty text-text-muted">
             Discover readers, follow posts, and see what people you follow are reading.
           </p>
         </header>
 
-        <div className="mt-6">
+        <div className="mt-6 max-w-3xl">
           <FeedSearchBar value={searchQuery} onChange={setSearchQuery} />
         </div>
       </div>
@@ -223,8 +239,7 @@ function FeedContent() {
           error={searchError}
         />
       ) : (
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] lg:items-start">
-          <div className="space-y-6">
+        <div className="mx-auto w-full max-w-3xl space-y-6">
           <div className="pill-tabs overflow-x-auto" role="tablist" aria-label="Feed content">
             {viewOptions.map((option) => (
               <Link
@@ -256,7 +271,7 @@ function FeedContent() {
           </div>
 
           {error ? (
-            <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-left text-sm text-red-700">
               {error}
             </p>
           ) : null}
@@ -266,13 +281,13 @@ function FeedContent() {
               <PostComposer
                 userId={user.id}
                 onPostCreated={() => {
-                  void loadPosts().catch((error) => {
-                    console.warn("[feed] posts reload failed:", error);
+                  void loadPosts().catch((reloadError) => {
+                    console.warn("[feed] posts reload failed:", reloadError);
                   });
                 }}
               />
 
-              {!posts ? (
+              {!interleavedPosts ? (
                 <ul className="space-y-6" aria-busy="true" aria-label="Loading posts">
                   {Array.from({ length: 3 }).map((_, index) => (
                     <li key={index}>
@@ -280,15 +295,15 @@ function FeedContent() {
                     </li>
                   ))}
                 </ul>
-              ) : posts.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-border bg-background px-6 py-12 text-center">
+              ) : posts && posts.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-border bg-background px-6 py-12 text-left">
                   {tab === "following" ? (
                     <>
                       <p className="font-medium text-puce-red">No posts from people you follow</p>
                       <p className="mt-2 text-sm text-text-muted">
                         Follow readers to see their posts here, or share your first post above.
                       </p>
-                      <div className="mt-6 flex flex-wrap justify-center gap-3">
+                      <div className="mt-6 flex flex-wrap gap-3">
                         <ButtonLink href="/feed/?view=posts" variant="primary" size="sm">
                           Browse For You
                         </ButtonLink>
@@ -306,24 +321,30 @@ function FeedContent() {
                 </div>
               ) : (
                 <ul className="space-y-6">
-                  {posts.map((post) => (
-                    <li key={post.id}>
-                      <PostCard
-                        post={post}
-                        viewerId={user.id}
-                        highlighted={post.id === highlightedPostId}
-                        onPostChange={() => {
-                          void loadPosts().catch((error) => {
-                            console.warn("[feed] posts reload failed:", error);
-                          });
-                        }}
-                      />
-                    </li>
-                  ))}
+                  {interleavedPosts.map((row, index) =>
+                    row.kind === "discovery" ? (
+                      <li key={`discovery-${row.id}-${index}`}>
+                        <FeedDiscoveryCard sectionId={row.id} />
+                      </li>
+                    ) : (
+                      <li key={row.item.id}>
+                        <PostCard
+                          post={row.item}
+                          viewerId={user.id}
+                          highlighted={row.item.id === highlightedPostId}
+                          onPostChange={() => {
+                            void loadPosts().catch((reloadError) => {
+                              console.warn("[feed] posts reload failed:", reloadError);
+                            });
+                          }}
+                        />
+                      </li>
+                    )
+                  )}
                 </ul>
               )}
             </>
-          ) : !activityItems ? (
+          ) : !interleavedActivity ? (
             <ul className="space-y-6" aria-busy="true" aria-label="Loading activity">
               {Array.from({ length: 3 }).map((_, index) => (
                 <li key={index}>
@@ -331,8 +352,8 @@ function FeedContent() {
                 </li>
               ))}
             </ul>
-          ) : activityItems.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border bg-background px-6 py-12 text-center">
+          ) : activityItems && activityItems.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border bg-background px-6 py-12 text-left">
               {tab === "following" ? (
                 <>
                   <p className="font-medium text-puce-red">Your following feed is empty</p>
@@ -340,7 +361,7 @@ function FeedContent() {
                     Follow readers to see when they add books, finish reads, and publish reviews.
                     Use the search bar above to find people to follow.
                   </p>
-                  <div className="mt-6 flex flex-wrap justify-center gap-3">
+                  <div className="mt-6 flex flex-wrap gap-3">
                     <ButtonLink href="/feed/?view=activity" variant="primary" size="sm">
                       Browse For You
                     </ButtonLink>
@@ -366,16 +387,30 @@ function FeedContent() {
             </div>
           ) : (
             <ul className="space-y-6">
-              {activityItems.map((item) => (
-                <li key={item.id}>
-                  <FeedCard item={item} />
-                </li>
-              ))}
+              {interleavedActivity.map((row, index) =>
+                row.kind === "discovery" ? (
+                  <li key={`discovery-${row.id}-${index}`}>
+                    <FeedDiscoveryCard sectionId={row.id} />
+                  </li>
+                ) : (
+                  <li key={row.item.id}>
+                    <FeedCard
+                      item={row.item}
+                      viewerId={user.id}
+                      onDeleted={(activityId) => {
+                        setActivityItems((current) =>
+                          (current ?? []).filter((entry) => entry.id !== activityId)
+                        );
+                      }}
+                    />
+                  </li>
+                )
+              )}
             </ul>
           )}
 
           {feedView === "activity" && tab === "for-you" && activityItems && activityItems.length > 0 ? (
-            <p className="text-center text-xs text-text-muted">
+            <p className="text-left text-xs text-text-muted">
               Activity is sorted by most recent.{" "}
               <Link href="/profile/setup" className="text-primary hover:underline">
                 Update your genres
@@ -383,19 +418,6 @@ function FeedContent() {
               to improve book recommendations elsewhere.
             </p>
           ) : null}
-          </div>
-
-          <aside className="hidden lg:block">
-            <section className="sticky top-24 surface-card p-5">
-              <h2 className="text-lg font-semibold text-puce-red">Trending</h2>
-              <p className="mt-1 text-sm text-text-muted">
-                What readers are shelving and reviewing this week.
-              </p>
-              <div className="mt-4">
-                <TrendingNewsletterPanel />
-              </div>
-            </section>
-          </aside>
         </div>
       )}
     </div>

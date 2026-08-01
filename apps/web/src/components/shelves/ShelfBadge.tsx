@@ -7,7 +7,7 @@ const config: Record<
   { label: string; className: string }
 > = {
   want_to_read: {
-    label: "Want to Read",
+    label: "TBR",
     className: "bg-orange-yellow/30 text-puce-red",
   },
   currently_reading: {
@@ -17,6 +17,10 @@ const config: Record<
   read: {
     label: "Finished",
     className: "bg-primary/30 text-puce-red",
+  },
+  dnf: {
+    label: "DNF",
+    className: "bg-rust/20 text-puce-red",
   },
 };
 

@@ -1,21 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { memo } from "react";
+import { memo, useState } from "react";
 import { FeedBookAttachment } from "@/components/social/FeedBookAttachment";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { StarDisplay } from "@/components/reviews/StarDisplay";
-import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
+import { Button } from "@/components/ui/Button";
+import { useToast } from "@/components/ui/Toast";
+import {
+  ShareContentModal,
+  type SharePayload,
+} from "@/components/social/ShareContentModal";
 import { feedItemHref } from "@/lib/routes/activity";
 import { readerProfilePath } from "@/lib/routes/reader";
 import { bookDetailsPath } from "@/lib/routes/book";
-import { isFeedEligibleEvent } from "@/lib/services/activity";
+import { deleteOwnActivity, isFeedEligibleEvent } from "@/lib/services/activity";
 import type { FeedItem } from "@/lib/services/socialFeed";
 import { usePreferredLocale } from "@/lib/hooks/usePreferredLocale";
 import { formatFeedTimestamp } from "@/lib/utils/locale";
 
 type Props = {
   item: FeedItem;
+  viewerId?: string;
+  onDeleted?: (activityId: string) => void;
 };
 
 function readerLabel(item: FeedItem): string {
@@ -27,8 +34,11 @@ function readerHref(item: FeedItem): string | null {
   return username ? readerProfilePath(username) : null;
 }
 
-export const FeedCard = memo(function FeedCard({ item }: Props) {
+export const FeedCard = memo(function FeedCard({ item, viewerId, onDeleted }: Props) {
   const locale = usePreferredLocale();
+  const toast = useToast();
+  const [shareOpen, setShareOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const profileHref = readerHref(item);
   const activityHref = feedItemHref(item);
   const showBookCover =
@@ -39,9 +49,36 @@ export const FeedCard = memo(function FeedCard({ item }: Props) {
     isReviewEvent && typeof item.metadata_json?.rating === "number"
       ? Number(item.metadata_json.rating)
       : null;
+  const isOwn = Boolean(viewerId && item.user_id === viewerId);
+
+  const sharePayload: SharePayload = {
+    kind: "activity",
+    title: `${readerLabel(item)} · activity`,
+    previewPath: activityHref,
+    body: `${readerLabel(item)} ${item.actionMessage}`,
+    bookId: item.bookId ?? null,
+  };
+
+  async function handleDelete() {
+    if (!viewerId) return;
+    const confirmed = window.confirm(
+      "Delete this activity from your feed? The original book, review, or post will not be deleted."
+    );
+    if (!confirmed) return;
+
+    setDeleting(true);
+    const result = await deleteOwnActivity(item.id, viewerId);
+    setDeleting(false);
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+    toast.success("Activity removed.");
+    onDeleted?.(item.id);
+  }
 
   return (
-    <article className="surface-card p-5 sm:p-6">
+    <article className="surface-card p-5 text-left sm:p-6">
       <div className="flex gap-3">
         {item.profiles ? (
           profileHref ? (
@@ -55,8 +92,8 @@ export const FeedCard = memo(function FeedCard({ item }: Props) {
             <ProfileAvatar profile={item.profiles} size="sm" className="shrink-0" />
           )
         ) : null}
-        <div className="min-w-0 flex-1">
-          <p className="text-base leading-relaxed text-text">
+        <div className="min-w-0 flex-1 text-left">
+          <p className="text-left text-base leading-relaxed text-text">
             {profileHref ? (
               <Link
                 href={profileHref}
@@ -71,7 +108,7 @@ export const FeedCard = memo(function FeedCard({ item }: Props) {
               {item.actionMessage}
             </Link>
           </p>
-          <p className="mt-1 text-xs text-text-muted">
+          <p className="mt-1 text-left text-xs text-text-muted">
             <time suppressHydrationWarning dateTime={item.created_at}>
               {formatFeedTimestamp(item.created_at, locale)}
             </time>
@@ -112,15 +149,40 @@ export const FeedCard = memo(function FeedCard({ item }: Props) {
         >
           View activity
         </Link>
+        {viewerId ? (
+          <Button type="button" variant="ghost" size="sm" onClick={() => setShareOpen(true)}>
+            Share
+          </Button>
+        ) : null}
         {item.bookId ? (
-          <CopyLinkButton
-            path={bookDetailsPath(item.bookId)}
-            label="Copy link"
+          <Link
+            href={bookDetailsPath(item.bookId)}
+            className="text-sm font-medium text-text-muted hover:text-primary hover:underline"
+          >
+            Open book
+          </Link>
+        ) : null}
+        {isOwn ? (
+          <Button
+            type="button"
             variant="ghost"
             size="sm"
-          />
+            loading={deleting}
+            onClick={() => void handleDelete()}
+          >
+            Delete Activity
+          </Button>
         ) : null}
       </div>
+
+      {viewerId ? (
+        <ShareContentModal
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          currentUserId={viewerId}
+          payload={sharePayload}
+        />
+      ) : null}
     </article>
   );
 });

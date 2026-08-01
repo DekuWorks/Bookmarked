@@ -31,6 +31,10 @@ export type ImportRowResult = {
   title: string;
   status: "imported" | "updated" | "skipped" | "error";
   message?: string;
+  /** Present for successful rows, used to safely undo newly-created shelves. */
+  userBookId?: string;
+  bookId?: string;
+  createdUserBook?: boolean;
 };
 
 export type ImportSummary = {
@@ -239,7 +243,17 @@ async function upsertImportedBook(
     bookRow?.page_count ?? row.numberOfPages ?? doc.number_of_pages_median ?? null;
 
   if (shelfStatus === "read" && previousShelf !== "read") {
-    const finishedAt = row.dateRead ?? row.dateAdded ?? now;
+    // Goodreads exports often omit Date Read. Never invent a completion date
+    // from the import time (or Date Added), because that corrupts goals and
+    // reading statistics. The preview asks the reader to resolve these rows.
+    if (!row.dateRead) {
+      return {
+        title: row.title,
+        status: "skipped",
+        message: "Missing completion date — choose a date before importing this finished book",
+      };
+    }
+    const finishedAt = row.dateRead;
     const startedAt = row.dateAdded ?? existingUserBook?.started_at ?? finishedAt;
 
     const { data: userBook, error: shelfError } = await supabase
@@ -301,6 +315,9 @@ async function upsertImportedBook(
     return {
       title: row.title,
       status: existingUserBook ? "updated" : "imported",
+      userBookId: userBook.id,
+      bookId,
+      createdUserBook: !existingUserBook,
     };
   }
 
@@ -321,9 +338,11 @@ async function upsertImportedBook(
     payload.rating = row.myRating;
   }
 
-  const { error: shelfError } = await supabase
+  const { data: savedUserBook, error: shelfError } = await supabase
     .from("user_books")
-    .upsert(payload, { onConflict: "user_id,book_id" });
+    .upsert(payload, { onConflict: "user_id,book_id" })
+    .select("id")
+    .single();
 
   if (shelfError) {
     return { title: row.title, status: "error", message: shelfError.message };
@@ -332,7 +351,35 @@ async function upsertImportedBook(
   return {
     title: row.title,
     status: existingUserBook ? "updated" : "imported",
+    userBookId: savedUserBook?.id,
+    bookId,
+    createdUserBook: !existingUserBook,
   };
+}
+
+export type GoodreadsImportUndoSnapshot = {
+  userId: string;
+  createdAt: string;
+  /** Only user_books created by the import are safe to delete. */
+  createdUserBookIds: string[];
+  bookIds: string[];
+};
+
+export async function undoGoodreadsImport(
+  userId: string,
+  snapshot: GoodreadsImportUndoSnapshot
+): Promise<{ deleted: number; error?: string }> {
+  if (snapshot.userId !== userId || snapshot.createdUserBookIds.length === 0) {
+    return { deleted: 0 };
+  }
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("user_books")
+    .delete()
+    .eq("user_id", userId)
+    .in("id", snapshot.createdUserBookIds)
+    .select("id");
+  return error ? { deleted: 0, error: error.message } : { deleted: data?.length ?? 0 };
 }
 
 export async function importGoodreadsCsv(

@@ -27,7 +27,7 @@ export type ShelfIconConfig = {
   sortOrder: number;
 };
 
-/** Product order: Want to Read → Currently Reading → Finished → Did Not Finish */
+/** Product order: TBR → Currently Reading → Finished → DNF */
 export const SHELF_ICON_ORDER: ShelfIconId[] = [
   "want_to_read",
   "currently_reading",
@@ -39,8 +39,8 @@ export const SHELF_ICONS: Record<ShelfIconId, ShelfIconConfig> = {
   want_to_read: {
     id: "want_to_read",
     source: require("../../assets/shelves/want-to-read.png"),
-    label: "Want to Read",
-    accessibilityLabel: "Want to Read shelf",
+    label: "TBR",
+    accessibilityLabel: "TBR shelf",
     sortOrder: 1,
   },
   currently_reading: {
@@ -60,8 +60,8 @@ export const SHELF_ICONS: Record<ShelfIconId, ShelfIconConfig> = {
   dnf: {
     id: "dnf",
     source: require("../../assets/shelves/did-not-finish.png"),
-    label: "Did Not Finish",
-    accessibilityLabel: "Did Not Finish shelf",
+    label: "DNF",
+    accessibilityLabel: "DNF shelf",
     sortOrder: 4,
   },
 };

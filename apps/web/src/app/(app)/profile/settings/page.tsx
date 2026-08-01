@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from "react";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { LanguagePreferencePanel } from "@/components/profile/LanguagePreferencePanel";
 import { LibraryImportPanel } from "@/components/profile/LibraryImportPanel";
+import { SeriesImportPanel } from "@/components/profile/SeriesImportPanel";
 import { ShelfPrivacyPanel } from "@/components/profile/ShelfPrivacyPanel";
 import { ThemePreferencePanel } from "@/components/theme/ThemePreferencePanel";
 import { NotificationPreferencesPanel } from "@/components/notifications/NotificationPreferencesPanel";
@@ -128,6 +129,10 @@ export default function ProfileSettingsPage() {
 
         <section className="surface-card p-6">
           <LibraryImportPanel userId={user.id} embedded />
+        </section>
+
+        <section className="surface-card p-6">
+          <SeriesImportPanel userId={user.id} />
         </section>
 
         <section className="surface-card p-6">

@@ -11,11 +11,13 @@ import { useFollowCounts } from "../../src/hooks/useFollows";
 import { useProfile } from "../../src/hooks/useProfile";
 import { ShelfIcon } from "../../src/components/ShelfIcon";
 import type { ShelfIconId } from "../../src/constants/shelfIcons";
+import { ReadingDnaSection } from "../../src/components/ReadingDnaSection";
+import { PublicReviewsSection } from "../../src/components/PublicReviewsSection";
 
 export default function ProfileRoute() {
   const router = useRouter();
   const { data: profile } = useProfile();
-  const { isPremium } = useSubscription();
+  const { isPremium, canAccess } = useSubscription();
   const countsQuery = useFollowCounts(profile?.id);
 
   const name = profile?.display_name || profile?.username || "Profile";
@@ -72,9 +74,16 @@ export default function ProfileRoute() {
         </View>
       ) : null}
 
+      <ReadingDnaSection
+        favoriteGenres={profile?.favorite_genres ?? []}
+        canAccess={canAccess}
+        onUpgrade={() => router.push("/upgrade")}
+      />
+      {profile?.id ? <PublicReviewsSection userId={profile.id} readerName={name} /> : null}
+
       <View className="mt-8 gap-2">
         {!isPremium ? (
-          <ProfileLink icon="✨" label="Upgrade to Premium" onPress={() => router.push("/upgrade")} />
+          <ProfileLink icon="✨" label="Explore membership" onPress={() => router.push("/upgrade")} />
         ) : null}
         <ProfileLink shelfIconId="want_to_read" label="Library" onPress={() => router.push("/library")} />
         <ProfileLink icon="📝" label="Reading Notes" onPress={() => router.push("/notes")} />

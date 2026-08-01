@@ -28,6 +28,7 @@ export function ClubEventsPanel({ clubId, isMember, viewerId, clubOwnerId }: Pro
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
+  const [meetingUrl, setMeetingUrl] = useState("");
   const [startsAt, setStartsAt] = useState(defaultEventDatetimeLocal);
   const [description, setDescription] = useState("");
   const [pending, setPending] = useState(false);
@@ -52,12 +53,14 @@ export function ClubEventsPanel({ clubId, isMember, viewerId, clubOwnerId }: Pro
         clubId,
         title,
         location: location || null,
+        meetingUrl: meetingUrl || null,
         description: description || null,
         startsAt: datetimeLocalToIso(startsAt),
       });
       toast.success("Event scheduled.");
       setTitle("");
       setLocation("");
+      setMeetingUrl("");
       setDescription("");
       setStartsAt(defaultEventDatetimeLocal());
       setShowForm(false);
@@ -120,6 +123,13 @@ export function ClubEventsPanel({ clubId, isMember, viewerId, clubOwnerId }: Pro
             onChange={(e) => setLocation(e.target.value)}
             placeholder="Zoom, bookstore, etc."
           />
+          <Input
+            label="Video call link (optional)"
+            type="url"
+            value={meetingUrl}
+            onChange={(e) => setMeetingUrl(e.target.value)}
+            placeholder="https://zoom.us/j/... or Google Meet link"
+          />
           <label className="block text-sm font-medium text-puce-red">
             Description (optional)
             <textarea
@@ -159,6 +169,16 @@ export function ClubEventsPanel({ clubId, isMember, viewerId, clubOwnerId }: Pro
                   </p>
                   {event.location ? (
                     <p className="mt-1 text-sm text-text-muted">{event.location}</p>
+                  ) : null}
+                  {event.meeting_url ? (
+                    <a
+                      href={event.meeting_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-2 inline-block text-sm font-medium text-primary hover:underline"
+                    >
+                      Join video call ↗
+                    </a>
                   ) : null}
                   {event.description ? (
                     <p className="mt-2 text-sm text-text">{event.description}</p>
