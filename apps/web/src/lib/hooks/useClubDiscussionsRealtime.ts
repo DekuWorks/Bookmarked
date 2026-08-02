@@ -5,17 +5,17 @@ import { createClient } from "@/lib/supabase/client";
 
 /**
  * Subscribe to new discussions for a single club and invoke `onInsert` with the
- * new post id so the caller can hydrate + prepend it.
+ * new discussion id so the caller can hydrate + prepend it.
  *
  * Follows the hardened Realtime pattern used elsewhere (NotificationBell,
  * useUserBooksRealtime): register the handler BEFORE `.subscribe()`, tear down
  * any stale channel for this topic before creating a new one, and remove the
- * channel on unmount. RLS on `book_club_posts` gates which inserts are actually
- * delivered (members always; public-club posts to everyone).
+ * channel on unmount. RLS on `book_club_discussions` gates which inserts are
+ * actually delivered (members always; public-club discussions to everyone).
  */
 export function useClubDiscussionsRealtime(
   clubId: string | undefined,
-  onInsert: (postId: string) => void
+  onInsert: (discussionId: string) => void
 ): void {
   const onInsertRef = useRef(onInsert);
 
@@ -28,7 +28,7 @@ export function useClubDiscussionsRealtime(
 
     const supabase = createClient();
     let cancelled = false;
-    const topic = `club_posts:${clubId}`;
+    const topic = `club_discussions:${clubId}`;
 
     for (const existing of supabase.getChannels()) {
       if (existing.topic === `realtime:${topic}`) {
@@ -43,7 +43,7 @@ export function useClubDiscussionsRealtime(
         {
           event: "INSERT",
           schema: "public",
-          table: "book_club_posts",
+          table: "book_club_discussions",
           filter: `club_id=eq.${clubId}`,
         },
         (payload) => {

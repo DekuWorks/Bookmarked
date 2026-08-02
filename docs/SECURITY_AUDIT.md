@@ -136,9 +136,31 @@ Also added owner UPDATE/DELETE policies.
 
 ---
 
+## Book Club Community Hub (August 2026)
+
+Migrations: `20260802150000_book_club_community_hub.sql`, `20260802160000_book_club_notifications_discovery.sql`.
+
+| Control | Status | Notes |
+|---------|--------|-------|
+| Active membership helper | ✅ | `user_is_active_club_member` excludes banned/removed/left |
+| Role helper | ✅ | `user_has_club_role(club, roles[])` + owner_id bypass |
+| Invitation / join RPCs | ✅ | SECURITY DEFINER accept/decline/approve |
+| Ownership transfer | ✅ | Owner-only RPC; cannot self-assign owner on insert |
+| Event writes | ✅ | Owner/host (creator may edit) |
+| RSVP | ✅ | Self-only insert/update |
+| Private meeting links | ✅ | Event SELECT still public for public clubs; private clubs member-only |
+| Club chat link | ✅ | `book_club_group_conversations` + participant sync |
+| Feed share | ✅ | App + metadata; only `visibility=public` |
+| Notifications | ✅ | `type=club` + `notify_clubs` + per-club prefs |
+
+Full matrix: `docs/BOOK_CLUB_PERMISSIONS.md`.
+
+---
+
 ## Related docs
 
 - `docs/DATABASE_SCHEMA.md` — tables, indexes, constraints
+- `docs/BOOK_CLUB_DATABASE.md` / `docs/BOOK_CLUB_PERMISSIONS.md`
 - `docs/TECHNICAL_DEBT.md` — static export, implicit auth, billing stubs
 
-**Last updated:** July 2026
+**Last updated:** August 2026

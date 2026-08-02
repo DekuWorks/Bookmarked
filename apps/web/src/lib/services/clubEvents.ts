@@ -1,5 +1,17 @@
 import { createClient } from "@/lib/supabase/client";
-import type { BookClubEvent, BookClubEventWithClub } from "@/types";
+import {
+  detectMeetingPlatform,
+  isSafeHttpsUrl,
+} from "@bookmarked/utils/clubPermissions";
+import type {
+  BookClubEvent,
+  BookClubEventAttendee,
+  BookClubEventType,
+  BookClubEventWithClub,
+  BookClubMeetingPlatform,
+  BookClubRsvpStatus,
+  MessageProfile,
+} from "@/types";
 
 async function requireUser() {
   const supabase = createClient();
@@ -19,8 +31,13 @@ export type CreateClubEventInput = {
   description?: string | null;
   location?: string | null;
   meetingUrl?: string | null;
+  meetingPlatform?: BookClubMeetingPlatform | null;
+  eventType?: BookClubEventType;
+  timezone?: string;
+  readingAssignment?: string | null;
   startsAt: string;
   endsAt?: string | null;
+  reminderConfig?: Record<string, unknown>;
 };
 
 export type UpdateClubEventInput = {
@@ -28,29 +45,88 @@ export type UpdateClubEventInput = {
   description?: string | null;
   location?: string | null;
   meetingUrl?: string | null;
+  meetingPlatform?: BookClubMeetingPlatform | null;
+  eventType?: BookClubEventType;
+  timezone?: string;
+  readingAssignment?: string | null;
   startsAt?: string;
   endsAt?: string | null;
+  reminderConfig?: Record<string, unknown>;
 };
 
 const EVENT_SELECT =
-  "id, club_id, created_by, title, description, location, meeting_url, starts_at, ends_at, created_at, updated_at";
+  "id, club_id, created_by, title, description, location, meeting_url, event_type, timezone, reading_assignment, meeting_platform, reminder_config, starts_at, ends_at, created_at, updated_at";
+
+const PROFILE_SELECT = "id, username, display_name, avatar_url";
 
 function mapEvent(row: BookClubEvent): BookClubEvent {
-  return row;
+  return {
+    ...row,
+    reminder_config:
+      row.reminder_config && typeof row.reminder_config === "object"
+        ? row.reminder_config
+        : {},
+  };
 }
 
-/** Upcoming events for a single club, soonest first. */
-export async function listClubEvents(clubId: string, limit = 20): Promise<BookClubEvent[]> {
+function validateMeetingUrl(url: string | null | undefined): string | null {
+  if (url === undefined || url === null) return null;
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+  if (!isSafeHttpsUrl(trimmed)) {
+    throw new Error("Meeting URL must be a valid https link.");
+  }
+  return trimmed;
+}
+
+function resolveMeetingPlatform(
+  meetingUrl: string | null,
+  explicit?: BookClubMeetingPlatform | null
+): BookClubMeetingPlatform | null {
+  if (explicit !== undefined) return explicit;
+  return detectMeetingPlatform(meetingUrl);
+}
+
+/** Upcoming (or all) events for a single club, soonest first. */
+export async function listClubEvents(
+  clubId: string,
+  options: { limit?: number; includePast?: boolean } = {}
+): Promise<BookClubEvent[]> {
   const supabase = createClient();
+  const limit = options.limit ?? 20;
   const now = new Date().toISOString();
+
+  let query = supabase
+    .from("book_club_events")
+    .select(EVENT_SELECT)
+    .eq("club_id", clubId)
+    .order("starts_at", { ascending: true })
+    .limit(limit);
+
+  if (!options.includePast) {
+    query = query.gte("starts_at", now);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []).map((row) => mapEvent(row as BookClubEvent));
+}
+
+/** Events for a club whose start time falls in [startIso, endIso). */
+export async function listClubEventsInRange(
+  clubId: string,
+  startIso: string,
+  endIso: string
+): Promise<BookClubEvent[]> {
+  const supabase = createClient();
 
   const { data, error } = await supabase
     .from("book_club_events")
     .select(EVENT_SELECT)
     .eq("club_id", clubId)
-    .gte("starts_at", now)
-    .order("starts_at", { ascending: true })
-    .limit(limit);
+    .gte("starts_at", startIso)
+    .lt("starts_at", endIso)
+    .order("starts_at", { ascending: true });
 
   if (error) throw error;
   return (data ?? []).map((row) => mapEvent(row as BookClubEvent));
@@ -78,7 +154,7 @@ export async function listUpcomingEvents(limit = 50): Promise<BookClubEventWithC
     const club = Array.isArray(raw.club) ? raw.club[0] : raw.club;
     const { club: _club, ...event } = raw;
     return {
-      ...(event as BookClubEvent),
+      ...mapEvent(event as BookClubEvent),
       club,
     };
   });
@@ -89,6 +165,9 @@ export async function createClubEvent(input: CreateClubEventInput): Promise<Book
   const title = input.title.trim();
   if (!title) throw new Error("Event title is required.");
 
+  const meetingUrl = validateMeetingUrl(input.meetingUrl);
+  const meetingPlatform = resolveMeetingPlatform(meetingUrl, input.meetingPlatform);
+
   const { data, error } = await supabase
     .from("book_club_events")
     .insert({
@@ -97,7 +176,12 @@ export async function createClubEvent(input: CreateClubEventInput): Promise<Book
       title,
       description: input.description?.trim() || null,
       location: input.location?.trim() || null,
-      meeting_url: input.meetingUrl?.trim() || null,
+      meeting_url: meetingUrl,
+      meeting_platform: meetingPlatform,
+      event_type: input.eventType ?? "meeting",
+      timezone: input.timezone?.trim() || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+      reading_assignment: input.readingAssignment?.trim() || null,
+      reminder_config: input.reminderConfig ?? {},
       starts_at: input.startsAt,
       ends_at: input.endsAt ?? null,
     })
@@ -115,7 +199,10 @@ export async function updateClubEvent(
   await requireUser();
   const supabase = createClient();
 
-  const patch: Record<string, string | null> = {};
+  const patch: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+
   if (input.title !== undefined) {
     const title = input.title.trim();
     if (!title) throw new Error("Event title is required.");
@@ -123,9 +210,22 @@ export async function updateClubEvent(
   }
   if (input.description !== undefined) patch.description = input.description?.trim() || null;
   if (input.location !== undefined) patch.location = input.location?.trim() || null;
-  if (input.meetingUrl !== undefined) patch.meeting_url = input.meetingUrl?.trim() || null;
+  if (input.meetingUrl !== undefined) {
+    const meetingUrl = validateMeetingUrl(input.meetingUrl);
+    patch.meeting_url = meetingUrl;
+    if (input.meetingPlatform === undefined) {
+      patch.meeting_platform = resolveMeetingPlatform(meetingUrl);
+    }
+  }
+  if (input.meetingPlatform !== undefined) patch.meeting_platform = input.meetingPlatform;
+  if (input.eventType !== undefined) patch.event_type = input.eventType;
+  if (input.timezone !== undefined) patch.timezone = input.timezone.trim() || "UTC";
+  if (input.readingAssignment !== undefined) {
+    patch.reading_assignment = input.readingAssignment?.trim() || null;
+  }
   if (input.startsAt !== undefined) patch.starts_at = input.startsAt;
   if (input.endsAt !== undefined) patch.ends_at = input.endsAt;
+  if (input.reminderConfig !== undefined) patch.reminder_config = input.reminderConfig;
 
   const { data, error } = await supabase
     .from("book_club_events")
@@ -143,6 +243,124 @@ export async function deleteClubEvent(eventId: string): Promise<void> {
   const supabase = createClient();
   const { error } = await supabase.from("book_club_events").delete().eq("id", eventId);
   if (error) throw error;
+}
+
+export async function setEventRsvp(
+  eventId: string,
+  rsvpStatus: BookClubRsvpStatus
+): Promise<BookClubEventAttendee> {
+  const { supabase, user } = await requireUser();
+
+  const { data: event, error: eventError } = await supabase
+    .from("book_club_events")
+    .select("id, club_id")
+    .eq("id", eventId)
+    .maybeSingle();
+
+  if (eventError) throw eventError;
+  if (!event) throw new Error("Event not found.");
+
+  const { data, error } = await supabase
+    .from("book_club_event_attendees")
+    .upsert(
+      {
+        event_id: eventId,
+        club_id: event.club_id,
+        user_id: user.id,
+        rsvp_status: rsvpStatus,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "event_id,user_id" }
+    )
+    .select(
+      "id, event_id, club_id, user_id, rsvp_status, reminder_at, reminder_canceled, created_at, updated_at"
+    )
+    .single();
+
+  if (error) throw error;
+  return data as BookClubEventAttendee;
+}
+
+export type EventRsvpWithProfile = BookClubEventAttendee & {
+  profile: MessageProfile;
+};
+
+export async function getEventRsvps(eventId: string): Promise<EventRsvpWithProfile[]> {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("book_club_event_attendees")
+    .select(
+      `id, event_id, club_id, user_id, rsvp_status, reminder_at, reminder_canceled, created_at, updated_at,
+       profiles!book_club_event_attendees_user_profiles_fkey (${PROFILE_SELECT})`
+    )
+    .eq("event_id", eventId)
+    .order("updated_at", { ascending: false });
+
+  if (error) throw error;
+
+  type Row = BookClubEventAttendee & {
+    profiles: MessageProfile | MessageProfile[] | null;
+  };
+
+  return ((data ?? []) as unknown as Row[]).map((row) => {
+    const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
+    const { profiles: _profiles, ...attendee } = row;
+    return {
+      ...attendee,
+      profile: profile ?? {
+        id: row.user_id,
+        username: null,
+        display_name: null,
+        avatar_url: null,
+      },
+    };
+  });
+}
+
+export async function setEventReminder(
+  eventId: string,
+  reminderAt: string | null
+): Promise<BookClubEventAttendee> {
+  const { supabase, user } = await requireUser();
+
+  const { data: event, error: eventError } = await supabase
+    .from("book_club_events")
+    .select("id, club_id")
+    .eq("id", eventId)
+    .maybeSingle();
+
+  if (eventError) throw eventError;
+  if (!event) throw new Error("Event not found.");
+
+  const { data: existing } = await supabase
+    .from("book_club_event_attendees")
+    .select("id, rsvp_status")
+    .eq("event_id", eventId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const { data, error } = await supabase
+    .from("book_club_event_attendees")
+    .upsert(
+      {
+        event_id: eventId,
+        club_id: event.club_id,
+        user_id: user.id,
+        rsvp_status: existing?.rsvp_status ?? "going",
+        reminder_at: reminderAt,
+        reminder_canceled: reminderAt === null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "event_id,user_id" }
+    )
+    .select(
+      "id, event_id, club_id, user_id, rsvp_status, reminder_at, reminder_canceled, created_at, updated_at"
+    )
+    .single();
+
+  if (error) throw error;
+  return data as BookClubEventAttendee;
 }
 
 /** Format an event timestamp for display in lists. */
@@ -173,3 +391,5 @@ export function defaultEventDatetimeLocal(): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
+
+export { detectMeetingPlatform };

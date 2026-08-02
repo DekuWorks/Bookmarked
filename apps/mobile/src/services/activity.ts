@@ -17,7 +17,8 @@ export type ActivityEventType =
   | "reading_started"
   | "reading_finished"
   | "review_added"
-  | "club_discussion_created";
+  | "club_discussion_created"
+  | "club_shared";
 
 export type ActivityVisibility = "public" | "followers" | "private";
 
@@ -40,6 +41,7 @@ const FEED_EVENT_TYPES = new Set<string>([
   "review_added",
   "review_updated",
   "club_discussion_created",
+  "club_shared",
 ]);
 
 export function isFeedEligibleEvent(eventType: string): boolean {
@@ -156,6 +158,13 @@ function formatWithSubject(
           : "a book club";
       return `${subject} started a discussion in ${clubName}`;
     }
+    case "club_shared": {
+      const clubName =
+        typeof metadata?.club_name === "string" && metadata.club_name.trim()
+          ? metadata.club_name.trim()
+          : "a book club";
+      return `${subject} shared ${clubName}`;
+    }
     default:
       return `${subject} updated their library`;
   }
@@ -194,6 +203,55 @@ export function activityMetadata(
     ...(cover_url ? { cover_url } : {}),
     ...(subjects?.length ? { subjects } : {}),
     ...rest,
+  };
+}
+
+/**
+ * Self-describing metadata for a club discussion activity event. Kept flat so
+ * both the web and mobile feeds can render it without extra lookups. Only emit
+ * these events for public clubs (see `createDiscussion`) so private-club
+ * discussions never leak into the feed.
+ */
+export function clubDiscussionMetadata(input: {
+  clubId: string;
+  clubName: string;
+  bodySnippet: string;
+  book?: { id: string; title: string; author?: string | null; cover_url?: string | null } | null;
+}): Record<string, unknown> {
+  const book = input.book;
+  return {
+    club_id: input.clubId,
+    club_name: input.clubName,
+    body_snippet: input.bodySnippet,
+    ...(book
+      ? {
+          book_id: book.id,
+          title: book.title,
+          book_title: book.title,
+          ...(book.author ? { author: book.author } : {}),
+          ...(book.cover_url ? { cover_url: book.cover_url } : {}),
+        }
+      : {}),
+  };
+}
+
+/**
+ * Self-describing metadata for a club share activity event. Only emit for
+ * public clubs so private/invite-only clubs never leak into the social feed.
+ */
+export function clubSharedMetadata(input: {
+  clubId: string;
+  clubName: string;
+  description?: string | null;
+  imageUrl?: string | null;
+  memberCount?: number | null;
+}): Record<string, unknown> {
+  return {
+    club_id: input.clubId,
+    club_name: input.clubName,
+    ...(input.description?.trim() ? { description: input.description.trim() } : {}),
+    ...(input.imageUrl ? { image_url: input.imageUrl, cover_url: input.imageUrl } : {}),
+    ...(typeof input.memberCount === "number" ? { member_count: input.memberCount } : {}),
   };
 }
 

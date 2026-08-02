@@ -1,136 +1,70 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { BookCover } from "@/components/books/BookCover";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
-import { Button } from "@/components/ui/Button";
-import { useToast } from "@/components/ui/Toast";
-import { ProfanityBlur } from "@/components/social/ProfanityBlur";
-import { deleteDiscussion } from "@/lib/services/bookClubs";
-import { bookDetailsPath } from "@/lib/routes/book";
-import { authorPagePath } from "@/lib/routes/author";
-import { readerProfilePath } from "@/lib/routes/reader";
 import { usePreferredLocale } from "@/lib/hooks/usePreferredLocale";
 import { formatFeedTimestamp } from "@/lib/utils/locale";
-import type { BookClubPostWithAuthor } from "@/types";
+import type { BookClubDiscussionWithAuthor } from "@/types";
 
 type Props = {
-  post: BookClubPostWithAuthor;
-  viewerId: string;
-  onDeleted?: () => void;
+  discussion: BookClubDiscussionWithAuthor;
+  onOpen?: () => void;
 };
 
-function authorLabel(author: BookClubPostWithAuthor["author"]): string {
+function authorLabel(author: BookClubDiscussionWithAuthor["author"]): string {
   return author.display_name?.trim() || author.username?.trim() || "Reader";
 }
 
-export function ClubDiscussionCard({ post, viewerId, onDeleted }: Props) {
-  const toast = useToast();
+export function ClubDiscussionCard({ discussion, onOpen }: Props) {
   const locale = usePreferredLocale();
-  const [deleting, setDeleting] = useState(false);
-
-  const isOwn = post.user_id === viewerId;
-  const profileHref = post.author.username ? readerProfilePath(post.author.username) : null;
-
-  async function handleDelete() {
-    setDeleting(true);
-    const result = await deleteDiscussion(post.id);
-    setDeleting(false);
-
-    if (result.error) {
-      toast.error(result.error);
-      return;
-    }
-
-    toast.success("Discussion deleted.");
-    onDeleted?.();
-  }
+  const label = authorLabel(discussion.author);
 
   return (
-    <article className="rounded-xl border border-border bg-surface p-4 shadow-sm">
-      <div className="flex gap-3">
-        {profileHref ? (
-          <Link href={profileHref} className="shrink-0">
-            <ProfileAvatar profile={post.author} size="md" />
-          </Link>
-        ) : (
-          <ProfileAvatar profile={post.author} size="md" className="shrink-0" />
-        )}
-
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-start gap-x-2 gap-y-1">
-            <div className="min-w-0">
-              <p className="text-sm">
-                {profileHref ? (
-                  <Link href={profileHref} className="font-semibold text-puce-red hover:underline">
-                    {authorLabel(post.author)}
-                  </Link>
-                ) : (
-                  <span className="font-semibold text-puce-red">{authorLabel(post.author)}</span>
-                )}
-                <span className="text-text-muted"> started a discussion</span>
-              </p>
-              <p className="text-xs text-text-muted">
-                <time suppressHydrationWarning dateTime={post.created_at}>
-                  {formatFeedTimestamp(post.created_at, locale)}
-                </time>
-              </p>
+    <article className="rounded-xl border border-border bg-surface p-4 shadow-sm transition-colors hover:border-primary/40">
+      <button
+        type="button"
+        onClick={onOpen}
+        className="w-full text-left"
+        aria-label={`Open discussion: ${discussion.title}`}
+      >
+        <div className="flex flex-wrap items-start gap-3">
+          <ProfileAvatar profile={discussion.author} size="sm" className="shrink-0" />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-semibold text-puce-red">{discussion.title}</h3>
+              {discussion.is_pinned ? (
+                <span className="rounded-full bg-royal-orange/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-royal-orange">
+                  Pinned
+                </span>
+              ) : null}
+              {discussion.is_locked ? (
+                <span className="rounded-full bg-border/70 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-text-muted">
+                  Locked
+                </span>
+              ) : null}
+              {discussion.contains_spoilers ? (
+                <span className="rounded-full bg-rust/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rust">
+                  Spoilers
+                </span>
+              ) : null}
             </div>
-
-            {isOwn ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                loading={deleting}
-                onClick={() => void handleDelete()}
-                className="ml-auto"
-              >
-                Delete
-              </Button>
+            <p className="mt-1 text-sm text-text-muted">
+              {label}
+              <span aria-hidden> · </span>
+              {discussion.reply_count} {discussion.reply_count === 1 ? "reply" : "replies"}
+              <span aria-hidden> · </span>
+              <time suppressHydrationWarning dateTime={discussion.latest_activity_at}>
+                {formatFeedTimestamp(discussion.latest_activity_at, locale)}
+              </time>
+            </p>
+            <p className="mt-2 line-clamp-2 text-sm text-text">{discussion.body}</p>
+            {discussion.book ? (
+              <p className="mt-2 text-xs text-text-muted">
+                Re: <span className="font-medium text-primary">{discussion.book.title}</span>
+              </p>
             ) : null}
           </div>
-
-          <ProfanityBlur text={post.body} className="mt-2">
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-text">{post.body}</p>
-          </ProfanityBlur>
-
-          {post.book ? (
-            <div className="mt-3 flex items-center gap-3 rounded-lg border border-border p-3 hover:border-primary/40">
-              <Link
-                href={bookDetailsPath(post.book.id)}
-                className="h-20 w-14 shrink-0 overflow-hidden rounded-md shadow-sm"
-              >
-                <BookCover
-                  title={post.book.title}
-                  author={post.book.author}
-                  coverUrl={post.book.cover_url}
-                  className="h-full w-full"
-                  bookmarked
-                  bookmarkBadgeSize="medium"
-                />
-              </Link>
-              <div className="min-w-0">
-                <Link
-                  href={bookDetailsPath(post.book.id)}
-                  className="block font-medium text-puce-red hover:underline"
-                >
-                  {post.book.title}
-                </Link>
-                {post.book.author ? (
-                  <Link
-                    href={authorPagePath(post.book.author)}
-                    className="text-sm text-text-muted hover:text-primary hover:underline"
-                  >
-                    {post.book.author}
-                  </Link>
-                ) : null}
-              </div>
-            </div>
-          ) : null}
         </div>
-      </div>
+      </button>
     </article>
   );
 }

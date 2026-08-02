@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { Textarea } from "@/components/ui/Input";
+import { Input, Textarea } from "@/components/ui/Input";
 import { BookCover } from "@/components/books/BookCover";
 import { BookPickerModal } from "@/components/clubs/BookPickerModal";
 import { useToast } from "@/components/ui/Toast";
@@ -17,20 +17,32 @@ type Props = {
 
 export function ClubDiscussionComposer({ clubId, viewerId, onPosted }: Props) {
   const toast = useToast();
+  const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [containsSpoilers, setContainsSpoilers] = useState(false);
   const [book, setBook] = useState<BookSearchResult | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit() {
-    const trimmed = body.trim();
-    if (!trimmed) {
+    const trimmedTitle = title.trim();
+    const trimmedBody = body.trim();
+    if (!trimmedTitle) {
+      toast.error("Add a discussion title.");
+      return;
+    }
+    if (!trimmedBody) {
       toast.error("Write something to start a discussion.");
       return;
     }
 
     setSubmitting(true);
-    const result = await createDiscussion(clubId, trimmed, book?.id ?? null);
+    const result = await createDiscussion(clubId, {
+      title: trimmedTitle,
+      body: trimmedBody,
+      bookId: book?.id ?? null,
+      containsSpoilers,
+    });
     setSubmitting(false);
 
     if (result.error) {
@@ -38,7 +50,9 @@ export function ClubDiscussionComposer({ clubId, viewerId, onPosted }: Props) {
       return;
     }
 
+    setTitle("");
     setBody("");
+    setContainsSpoilers(false);
     setBook(null);
     toast.success("Discussion posted.");
     onPosted?.();
@@ -48,13 +62,32 @@ export function ClubDiscussionComposer({ clubId, viewerId, onPosted }: Props) {
     <section className="rounded-xl border border-border bg-surface p-4 shadow-sm">
       <h2 className="mb-3 text-sm font-semibold text-puce-red">Start a discussion</h2>
 
+      <Input
+        label="Title"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="What do you want to talk about?"
+        maxLength={120}
+      />
+
       <Textarea
         name="club-discussion-body"
+        label="Body"
         value={body}
         onChange={(e) => setBody(e.target.value)}
         placeholder="Share a thought, question, or reaction with the club…"
-        className="mb-3 min-h-[90px]"
+        className="min-h-[90px]"
       />
+
+      <label className="mb-3 flex items-center gap-2 text-sm text-text">
+        <input
+          type="checkbox"
+          checked={containsSpoilers}
+          onChange={(e) => setContainsSpoilers(e.target.checked)}
+          className="rounded border-border"
+        />
+        Contains spoilers
+      </label>
 
       {book ? (
         <div className="mb-3 flex items-center gap-3 rounded-lg border border-border p-3">
@@ -85,7 +118,7 @@ export function ClubDiscussionComposer({ clubId, viewerId, onPosted }: Props) {
           variant="primary"
           size="sm"
           loading={submitting}
-          disabled={!body.trim()}
+          disabled={!title.trim() || !body.trim()}
           onClick={() => void handleSubmit()}
         >
           Post discussion

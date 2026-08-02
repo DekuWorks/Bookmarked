@@ -167,6 +167,30 @@ export {
 } from "./readingRoomHistory";
 
 export {
+  CLUB_GENRE_OPTIONS,
+  CLUB_MANAGE_ROLES,
+  CLUB_MODERATE_ROLES,
+  MEETING_PLATFORM_LABELS,
+  canCreateAnnouncements,
+  canEditClub,
+  canManageBookshelf,
+  canManageEvents,
+  canManageMembers,
+  canModerateDiscussions,
+  canPinDiscussions,
+  canSelfJoin,
+  canShareClubToFeed,
+  canViewDetailedStats,
+  detectMeetingPlatform,
+  hasClubRole,
+  isInviteOnlyClub,
+  isSafeHttpsUrl,
+  requiresJoinRequest,
+  roleLabel,
+  visibilityLabel,
+} from "./clubPermissions";
+
+export {
   parseReadingRoomTab,
   READING_ROOM_TAB_OPTIONS,
   type ReadingRoomTab,

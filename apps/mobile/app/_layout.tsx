@@ -67,15 +67,17 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, fontError]);
 
-  if (!fontsLoaded && !fontError) {
-    return <View style={{ flex: 1, backgroundColor: BACKGROUND_TINT }} />;
-  }
-
+  // Always mount QueryClientProvider before any route that may call useQuery
+  // (e.g. app/index.tsx → useProfile). Do not early-return outside the provider.
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
-          <RootLayoutNav />
+          {!fontsLoaded && !fontError ? (
+            <View style={{ flex: 1, backgroundColor: BACKGROUND_TINT }} />
+          ) : (
+            <RootLayoutNav />
+          )}
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

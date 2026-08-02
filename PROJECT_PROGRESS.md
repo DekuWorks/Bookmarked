@@ -185,6 +185,25 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 
 ---
 
+## Sprint — Book Club Community Hub ✅
+
+Full hub sprint (Phases 1–30). Docs: `docs/BOOK_CLUB_CURRENT_STATE.md`, `BOOK_CLUB_DATABASE.md`, `BOOK_CLUB_PERMISSIONS.md`, `BOOK_CLUB_ROUTES.md`, `BOOK_CLUB_QA.md`, `WEB_UI_GUIDE.md`, `IOS_UI_GUIDE.md`, `RLS_AUDIT.md`, `RELEASE_CHECKLIST.md`.
+
+| Wave | Scope | Status | Notes |
+|------|-------|--------|-------|
+| 0 | Phase 1 audit docs | ✅ | Requirement matrix + schema/permissions/routes/QA |
+| 1 | Phases 2–3 schema + RLS | ✅ | `20260802150000_book_club_community_hub.sql` + notifications/discovery migration |
+| 2 | Phases 4–7 landing/create/invite/share | ✅ | Web + iOS; public feed share |
+| 3 | Phases 8–11, 17–21 club hub tabs | ✅ | Overview, forum discussions, chat, bookshelf, members, stats |
+| 4 | Phases 12–16 schedule | ✅ | List + calendar sparkles, edit, meeting links, RSVP |
+| 5 | Phases 22–23 notifications + discovery | ✅ | `type=club`, per-club prefs; Trending / Reading Your Books |
+| 6 | Phases 24–28 polish | ✅ | Nav discoverability, calendar a11y, security docs |
+| 7 | Phases 29–30 QA + cleanup | ✅ | Dead `ClubEventsPanel` removed; checklists ready |
+
+**Apply migrations before prod use.** Manual QA: `docs/BOOK_CLUB_QA.md`. **No Android.** Deferred: nested replies >1, native video, iOS banner upload UI, native event datetime picker.
+
+---
+
 ## Sprint 8 — Audiobooks ✅
 
 | Item | Status | Notes / references |

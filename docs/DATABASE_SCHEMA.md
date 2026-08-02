@@ -14,7 +14,7 @@
 | Reading | `reading_sessions`, `reading_notes`, `user_reading_note_categories` |
 | Reviews | `reviews`, `review_reactions`, `review_replies` |
 | Social | `activity_events`, `posts`, `post_likes`, `post_comments`, `post_comment_reactions`, `post_comment_replies`, `post_drafts` |
-| Clubs | `book_clubs`, `book_club_members`, `book_club_posts` |
+| Clubs | `book_clubs`, `book_club_members`, `book_club_discussions` (migrated from `book_club_posts`), `book_club_discussion_replies`, `book_club_discussion_reactions`, `book_club_events`, `book_club_event_attendees`, `book_club_invitations`, `book_club_join_requests`, `book_club_announcements`, `book_club_books`, `book_club_current_reads`, `book_club_activity`, `book_club_group_conversations`, `book_club_settings`, `book_club_member_notification_prefs` — see `docs/BOOK_CLUB_DATABASE.md` |
 | Messaging | `conversations`, `conversation_participants`, `messages` |
 | Notifications | `notifications` |
 

@@ -22,6 +22,7 @@ export const NOTIFICATION_PREF_KEYS = [
   "notify_likes",
   "notify_comments",
   "notify_mentions",
+  "notify_clubs",
   "notify_browser",
 ] as const;
 

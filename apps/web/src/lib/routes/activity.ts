@@ -11,7 +11,7 @@ const REVIEW_ACTIVITY_EVENTS = new Set([
   "review_updated",
 ]);
 
-const CLUB_ACTIVITY_EVENTS = new Set(["club_discussion_created"]);
+const CLUB_ACTIVITY_EVENTS = new Set(["club_discussion_created", "club_shared"]);
 
 export function isReviewActivityEvent(eventType: string): boolean {
   return REVIEW_ACTIVITY_EVENTS.has(eventType);
@@ -74,6 +74,14 @@ export function notificationHref(notification: NotificationWithActor): string {
     const username = notification.actor?.username?.trim();
     if (username) return readerProfilePath(username);
     return "/feed/";
+  }
+
+  if (notification.type === "club") {
+    const clubId = notification.metadata_json?.club_id;
+    if (typeof clubId === "string") {
+      return clubDetailPath(clubId);
+    }
+    return "/clubs/";
   }
 
   return "/notifications/";

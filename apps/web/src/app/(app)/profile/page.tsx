@@ -24,6 +24,7 @@ import { PremiumBadge } from "@/components/premium/PremiumBadge";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { ReadingDnaSection } from "@/components/profile/ReadingDnaSection";
 import { PublicReviewsSection } from "@/components/profile/PublicReviewsSection";
+import { ProfileClubsSection } from "@/components/profile/ProfileClubsSection";
 
 import { layout } from "@/lib/constants/layout";
 
@@ -175,6 +176,17 @@ export default function ProfilePage() {
             {isPremium ? "Membership" : "Explore membership"}
           </ButtonLink>
           <LogoutButton />
+        </div>
+      </section>
+      <section className="rounded-xl border border-border bg-surface p-6 text-left shadow-sm">
+        <h2 className="text-lg font-semibold text-puce-red">Book clubs</h2>
+        <p className="mt-1 text-sm text-text-muted">Clubs you belong to.</p>
+        <div className="mt-4">
+          <ProfileClubsSection
+            profileUserId={user.id}
+            viewerId={user.id}
+            isOwnProfile
+          />
         </div>
       </section>
       <PublicReviewsSection

@@ -23,6 +23,7 @@ import { ReadingStreakCard } from "@/components/profile/ReadingStreakCard";
 import { readerLibraryPath } from "@/lib/routes/readerLibrary";
 import { ShareHead } from "@/components/seo/ShareHead";
 import { PublicReviewsSection } from "@/components/profile/PublicReviewsSection";
+import { ProfileClubsSection } from "@/components/profile/ProfileClubsSection";
 
 type ReaderData = {
   profile: Profile;
@@ -176,6 +177,18 @@ function ReaderProfileContent() {
           isOwnProfile={isSelf}
           previewLimit={3}
         />
+      </section>
+
+      <section className="rounded-xl border border-border bg-surface p-6 text-left shadow-sm">
+        <h2 className="text-lg font-semibold text-puce-red">Book clubs</h2>
+        <p className="mt-1 text-sm text-text-muted">Clubs {displayName} belongs to.</p>
+        <div className="mt-4">
+          <ProfileClubsSection
+            profileUserId={profile.id}
+            viewerId={user.id}
+            isOwnProfile={isSelf}
+          />
+        </div>
       </section>
 
       <PublicReviewsSection userId={profile.id} readerName={displayName} />

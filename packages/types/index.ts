@@ -249,7 +249,7 @@ export type ConversationPreview = Conversation & {
   pinnedAt: string | null;
 };
 
-export type NotificationType = "message" | "follow" | "feed";
+export type NotificationType = "message" | "follow" | "feed" | "club";
 
 export interface Notification {
   id: string;
@@ -275,6 +275,7 @@ export type NotificationPreferences = {
   notify_likes: boolean;
   notify_comments: boolean;
   notify_mentions: boolean;
+  notify_clubs: boolean;
   notify_browser: boolean;
 };
 
@@ -331,9 +332,60 @@ export type PostWithAuthor = Post & {
   comments?: PostCommentWithAuthor[];
 };
 
-export type BookClubVisibility = "public" | "private";
+export type BookClubVisibility = "public" | "private" | "invite_only";
 
-export type BookClubMemberRole = "owner" | "member";
+export type BookClubJoinPolicy = "open" | "request_approval" | "invitation_only";
+
+export type BookClubStatus = "active" | "archived";
+
+export type BookClubMemberRole = "owner" | "host" | "moderator" | "member";
+
+export type BookClubMembershipStatus =
+  | "active"
+  | "invited"
+  | "requested"
+  | "declined"
+  | "removed"
+  | "left"
+  | "banned";
+
+export type BookClubInvitationStatus =
+  | "pending"
+  | "accepted"
+  | "declined"
+  | "expired"
+  | "canceled";
+
+export type BookClubJoinRequestStatus =
+  | "pending"
+  | "approved"
+  | "declined"
+  | "canceled";
+
+export type BookClubEventType =
+  | "reading_deadline"
+  | "discussion"
+  | "meeting"
+  | "readathon"
+  | "announcement"
+  | "other";
+
+export type BookClubMeetingPlatform =
+  | "zoom"
+  | "google_meet"
+  | "microsoft_teams"
+  | "other";
+
+export type BookClubRsvpStatus = "going" | "maybe" | "not_going";
+
+export type BookClubBookCategory =
+  | "current_read"
+  | "upcoming"
+  | "previous"
+  | "suggested"
+  | "optional";
+
+export type BookClubNotificationLevel = "all" | "important" | "mentions" | "off";
 
 /** Lightweight book summary used across club UI (current book, discussion attach). */
 export type BookClubBook = {
@@ -349,8 +401,14 @@ export interface BookClub {
   name: string;
   description: string | null;
   image_url: string | null;
+  banner_url: string | null;
   current_book_id: string | null;
   visibility: BookClubVisibility;
+  join_policy: BookClubJoinPolicy;
+  status: BookClubStatus;
+  genre_tags: string[];
+  meeting_frequency: string | null;
+  member_count: number;
   created_at: string;
   updated_at: string;
 }
@@ -360,13 +418,17 @@ export interface BookClubMember {
   club_id: string;
   user_id: string;
   role: BookClubMemberRole;
+  membership_status: BookClubMembershipStatus;
+  invited_by: string | null;
   joined_at: string;
+  updated_at: string;
 }
 
 export type BookClubMemberWithProfile = BookClubMember & {
   profile: MessageProfile;
 };
 
+/** @deprecated Use BookClubDiscussion — kept for feed moderation content_type compat naming. */
 export interface BookClubPost {
   id: string;
   club_id: string;
@@ -377,17 +439,92 @@ export interface BookClubPost {
   updated_at: string;
 }
 
+export interface BookClubDiscussion {
+  id: string;
+  club_id: string;
+  user_id: string;
+  created_by: string;
+  title: string;
+  body: string;
+  book_id: string | null;
+  related_book_id: string | null;
+  chapter_reference: string | null;
+  page_reference: string | null;
+  contains_spoilers: boolean;
+  is_pinned: boolean;
+  is_locked: boolean;
+  reply_count: number;
+  latest_activity_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type BookClubDiscussionWithAuthor = BookClubDiscussion & {
+  author: PostAuthor;
+  book?: BookClubBook | null;
+};
+
 export type BookClubPostWithAuthor = BookClubPost & {
   author: PostAuthor;
   book?: BookClubBook | null;
 };
 
+export interface BookClubDiscussionReply {
+  id: string;
+  discussion_id: string;
+  club_id: string;
+  user_id: string;
+  body: string;
+  contains_spoilers: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type BookClubDiscussionReplyWithAuthor = BookClubDiscussionReply & {
+  author: PostAuthor;
+};
+
+export interface BookClubInvitation {
+  id: string;
+  club_id: string;
+  inviter_id: string;
+  invitee_id: string;
+  message: string | null;
+  status: BookClubInvitationStatus;
+  created_at: string;
+  updated_at: string;
+  responded_at: string | null;
+}
+
+export type BookClubInvitationWithDetails = BookClubInvitation & {
+  club: Pick<BookClub, "id" | "name" | "image_url" | "visibility" | "description">;
+  inviter: MessageProfile;
+};
+
+export interface BookClubJoinRequest {
+  id: string;
+  club_id: string;
+  user_id: string;
+  message: string | null;
+  status: BookClubJoinRequestStatus;
+  reviewed_by: string | null;
+  created_at: string;
+  updated_at: string;
+  reviewed_at: string | null;
+}
+
+export type BookClubJoinRequestWithDetails = BookClubJoinRequest & {
+  club?: Pick<BookClub, "id" | "name" | "image_url">;
+  requester: MessageProfile;
+};
+
 /** A club annotated with membership/count info for the viewer (discover + lists). */
 export type BookClubSummary = BookClub & {
-  member_count: number;
   viewer_is_member: boolean;
   viewer_role: BookClubMemberRole | null;
   current_book?: BookClubBook | null;
+  latest_activity_at?: string | null;
+  next_event_at?: string | null;
 };
 
 export type BookClubWithDetails = BookClubSummary & {
@@ -402,6 +539,11 @@ export interface BookClubEvent {
   description: string | null;
   location: string | null;
   meeting_url: string | null;
+  event_type: BookClubEventType;
+  timezone: string;
+  reading_assignment: string | null;
+  meeting_platform: BookClubMeetingPlatform | null;
+  reminder_config: Record<string, unknown>;
   starts_at: string;
   ends_at: string | null;
   created_at: string;
@@ -410,7 +552,87 @@ export interface BookClubEvent {
 
 export type BookClubEventWithClub = BookClubEvent & {
   club: Pick<BookClub, "id" | "name" | "visibility">;
+  viewer_rsvp?: BookClubRsvpStatus | null;
+  rsvp_counts?: Partial<Record<BookClubRsvpStatus, number>>;
 };
+
+export interface BookClubEventAttendee {
+  id: string;
+  event_id: string;
+  club_id: string;
+  user_id: string;
+  rsvp_status: BookClubRsvpStatus;
+  reminder_at: string | null;
+  reminder_canceled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BookClubAnnouncement {
+  id: string;
+  club_id: string;
+  created_by: string;
+  title: string;
+  body: string;
+  linked_event_id: string | null;
+  related_book_id: string | null;
+  is_pinned: boolean;
+  published_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type BookClubAnnouncementWithAuthor = BookClubAnnouncement & {
+  author: MessageProfile;
+};
+
+export interface BookClubShelfBook {
+  id: string;
+  club_id: string;
+  book_id: string;
+  category: BookClubBookCategory;
+  added_by: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+  book?: BookClubBook | null;
+}
+
+export interface BookClubCurrentRead {
+  id: string;
+  club_id: string;
+  book_id: string;
+  started_at: string | null;
+  target_finish_at: string | null;
+  chapters_assigned: string | null;
+  pages_assigned: string | null;
+  is_current: boolean;
+  archived_at: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  book?: BookClubBook | null;
+}
+
+export interface BookClubSettings {
+  club_id: string;
+  allow_member_suggestions: boolean;
+  hosts_can_approve_requests: boolean;
+  default_notification_level: BookClubNotificationLevel;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BookClubStats {
+  total_members: number;
+  active_members: number;
+  discussions_created: number;
+  replies_posted: number;
+  events_created: number;
+  rsvp_participation: number;
+  books_completed: number;
+  member_growth_30d: number;
+}
 
 export interface UserBook {
   id: string;

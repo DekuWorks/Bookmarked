@@ -1,65 +1,95 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { BookCover } from "@/components/books/BookCover";
 import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
-import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useToast } from "@/components/ui/Toast";
-import { ClubDiscussionCard } from "@/components/clubs/ClubDiscussionCard";
-import { ClubDiscussionComposer } from "@/components/clubs/ClubDiscussionComposer";
-import { ClubEventsPanel } from "@/components/clubs/ClubEventsPanel";
-import { ClubMembersPanel } from "@/components/clubs/ClubMembersPanel";
-import { BookPickerModal } from "@/components/clubs/BookPickerModal";
-import { FeatureLimitModal } from "@/components/premium/FeatureLimitModal";
 import { CircleAvatarUpload } from "@/components/ui/CircleAvatarUpload";
+import { FeatureLimitModal } from "@/components/premium/FeatureLimitModal";
+import { ClubOverviewPanel } from "@/components/clubs/ClubOverviewPanel";
+import { ClubDiscussionsPanel } from "@/components/clubs/ClubDiscussionsPanel";
+import { ClubSchedulePanel } from "@/components/clubs/ClubSchedulePanel";
+import { ClubBookshelfPanel } from "@/components/clubs/ClubBookshelfPanel";
+import { ClubMembersPanel } from "@/components/clubs/ClubMembersPanel";
+import { ClubStatsPanel } from "@/components/clubs/ClubStatsPanel";
+import { ClubInviteModal } from "@/components/clubs/ClubInviteModal";
+import { ClubSettingsModal } from "@/components/clubs/ClubSettingsModal";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { isEntitlementLimitError } from "@/lib/utils/subscription";
-import { useClubDiscussionsRealtime } from "@/lib/hooks/useClubDiscussionsRealtime";
 import {
   deleteClub,
+  ensureClubGroupConversation,
   getClub,
-  getDiscussion,
   joinClub,
   leaveClub,
-  listDiscussions,
-  setCurrentBook,
+  requestToJoin,
+  shareClubToFeed,
 } from "@/lib/services/bookClubs";
 import { removeClubAvatar, uploadClubAvatar } from "@/lib/services/entityAvatar";
-import { bookDetailsPath } from "@/lib/routes/book";
-import { authorPagePath } from "@/lib/routes/author";
 import { clubDetailPath, clubsPath } from "@/lib/routes/clubs";
-import type { BookClubPostWithAuthor, BookClubWithDetails } from "@/types";
-import type { BookSearchResult } from "@/lib/services/feedSearch";
+import { messageThreadPath } from "@/lib/routes/messages";
+import { absoluteAppUrl, copyTextToClipboard } from "@/lib/utils/copyLink";
+import {
+  canEditClub,
+  canManageMembers,
+  canSelfJoin,
+  canShareClubToFeed,
+  requiresJoinRequest,
+  roleLabel,
+  visibilityLabel,
+} from "@bookmarked/utils/clubPermissions";
+import type { BookClubWithDetails } from "@/types";
+import { cn } from "@/lib/utils/cn";
+
+const TABS = [
+  ["overview", "Overview"],
+  ["discussions", "Discussions"],
+  ["schedule", "Schedule"],
+  ["bookshelf", "Bookshelf"],
+  ["members", "Members"],
+  ["stats", "Stats"],
+] as const;
+
+type ClubTab = (typeof TABS)[number][0];
+
+function parseTab(value: string | null): ClubTab {
+  if (
+    value === "overview" ||
+    value === "discussions" ||
+    value === "schedule" ||
+    value === "bookshelf" ||
+    value === "members" ||
+    value === "stats"
+  ) {
+    return value;
+  }
+  return "overview";
+}
 
 function ClubDetailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const toast = useToast();
   const clubId = searchParams.get("id")?.trim() ?? "";
+  const discussionParam = searchParams.get("discussion")?.trim() ?? null;
   const user = useAuthUser();
 
   const [club, setClub] = useState<BookClubWithDetails | null | undefined>(undefined);
-  const [discussions, setDiscussions] = useState<BookClubPostWithAuthor[] | null>(null);
   const [actionPending, setActionPending] = useState(false);
-  const [bookPickerOpen, setBookPickerOpen] = useState(false);
   const [limitOpen, setLimitOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<
-    "overview" | "discussions" | "schedule" | "bookshelf" | "members" | "stats"
-  >("overview");
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [overflowOpen, setOverflowOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<ClubTab>(() => parseTab(searchParams.get("tab")));
 
   const loadClub = useCallback(async () => {
     if (!clubId || !user) return;
     const detail = await getClub(clubId, user.id);
     setClub(detail);
-    if (detail) {
-      const posts = await listDiscussions(clubId).catch(() => []);
-      setDiscussions(posts);
-    }
   }, [clubId, user]);
 
   useEffect(() => {
@@ -74,27 +104,18 @@ function ClubDetailContent() {
     });
   }, [clubId, user, loadClub]);
 
-  // Live-prepend new discussions arriving over Realtime (deduped so the
-  // poster's own optimistic reload doesn't create duplicates).
-  const handleRealtimeInsert = useCallback(
-    async (postId: string) => {
-      if (!clubId) return;
-      const post = await getDiscussion(clubId, postId);
-      if (!post) return;
-      setDiscussions((current) => {
-        if (!current) return current;
-        if (current.some((existing) => existing.id === post.id)) return current;
-        return [post, ...current];
-      });
-    },
-    [clubId]
-  );
+  useEffect(() => {
+    setActiveTab(parseTab(searchParams.get("tab")));
+  }, [searchParams]);
 
-  useClubDiscussionsRealtime(club ? clubId : undefined, (postId) => {
-    void handleRealtimeInsert(postId).catch((err) => {
-      console.warn("[club] realtime hydrate failed:", err);
-    });
-  });
+  function setTab(tab: ClubTab) {
+    setActiveTab(tab);
+    setOverflowOpen(false);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", tab);
+    if (tab !== "discussions") params.delete("discussion");
+    router.replace(`/clubs/club/?${params.toString()}`, { scroll: false });
+  }
 
   async function handleJoin() {
     setActionPending(true);
@@ -112,7 +133,24 @@ function ClubDetailContent() {
     void loadClub();
   }
 
+  async function handleRequestJoin() {
+    setActionPending(true);
+    const result = await requestToJoin(clubId);
+    setActionPending(false);
+    if (result.error) {
+      if (isEntitlementLimitError(result.error)) {
+        setLimitOpen(true);
+        return;
+      }
+      toast.error(result.error);
+      return;
+    }
+    toast.success("Join request sent.");
+    void loadClub();
+  }
+
   async function handleLeave() {
+    if (!window.confirm("Leave this club?")) return;
     setActionPending(true);
     const result = await leaveClub(clubId);
     setActionPending(false);
@@ -121,16 +159,6 @@ function ClubDetailContent() {
       return;
     }
     toast.success("You left the club.");
-    void loadClub();
-  }
-
-  async function handleSetBook(book: BookSearchResult | null) {
-    const result = await setCurrentBook(clubId, book?.id ?? null);
-    if (result.error) {
-      toast.error(result.error);
-      return;
-    }
-    toast.success(book ? "Current book updated." : "Current book cleared.");
     void loadClub();
   }
 
@@ -146,6 +174,40 @@ function ClubDetailContent() {
     toast.success("Club deleted.");
     router.push(clubsPath());
   }
+
+  async function handleMessageClub() {
+    setActionPending(true);
+    const result = await ensureClubGroupConversation(clubId);
+    setActionPending(false);
+    if (result.error || !result.conversationId) {
+      toast.error(result.error ?? "Could not open club messages.");
+      return;
+    }
+    router.push(messageThreadPath(result.conversationId));
+  }
+
+  async function handleShare() {
+    if (!club) return;
+    const path = clubDetailPath(club.id);
+    const url = absoluteAppUrl(path);
+    const copied = await copyTextToClipboard(url);
+    if (copied) toast.success("Link copied.");
+    else toast.error("Could not copy link.");
+
+    if (canShareClubToFeed(club.visibility) && club.viewer_is_member) {
+      const result = await shareClubToFeed(club.id);
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success("Shared to your feed.");
+    }
+  }
+
+  const memberIds = useMemo(
+    () => (club?.members ?? []).map((member) => member.user_id),
+    [club?.members]
+  );
 
   if (!clubId) {
     return (
@@ -168,9 +230,7 @@ function ClubDetailContent() {
     return (
       <div className="mx-auto max-w-2xl space-y-4 text-center">
         <h1 className="text-2xl font-bold text-puce-red">Club not found</h1>
-        <p className="text-text-muted">
-          This club may be private or no longer exists.
-        </p>
+        <p className="text-text-muted">This club may be private or no longer exists.</p>
         <ButtonLink href={clubsPath()} variant="primary">
           Browse book clubs
         </ButtonLink>
@@ -180,315 +240,347 @@ function ClubDetailContent() {
 
   const isOwner = club.viewer_role === "owner";
   const isMember = club.viewer_is_member;
+  const canEdit = canEditClub(club.viewer_role);
+  const canInvite = canManageMembers(club.viewer_role);
   const memberLabel = `${club.member_count} member${club.member_count === 1 ? "" : "s"}`;
-  const bookshelf = Array.from(
-    new Map(
-      [club.current_book, ...(discussions ?? []).map((post) => post.book ?? null)]
-        .filter((book): book is NonNullable<typeof book> => Boolean(book))
-        .map((book) => [book.id, book])
-    ).values()
-  );
-  const tabs = [
-    ["overview", "Overview"],
-    ["discussions", "Discussions"],
-    ["schedule", "Schedule"],
-    ["bookshelf", "Bookshelf"],
-    ["members", "Members"],
-    ["stats", "Stats"],
-  ] as const;
+  const selfJoin = canSelfJoin({
+    visibility: club.visibility,
+    joinPolicy: club.join_policy,
+  });
+  const needsRequest = requiresJoinRequest({ joinPolicy: club.join_policy });
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
+    <div className="mx-auto max-w-3xl space-y-6">
       <FeatureLimitModal
         open={limitOpen}
         onClose={() => setLimitOpen(false)}
         featureLabel="Book clubs"
         limitMessage="Free members can join 3 book clubs. Upgrade to Bookmarked Plus for unlimited clubs."
       />
+
+      <ClubInviteModal
+        open={inviteOpen}
+        onClose={() => setInviteOpen(false)}
+        clubId={club.id}
+        viewerId={user.id}
+        existingMemberIds={memberIds}
+        onInvited={() => void loadClub()}
+      />
+
+      {club.viewer_is_member ? (
+        <ClubSettingsModal
+          open={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+          club={club}
+          canEditClub={isOwner}
+          onSaved={() => void loadClub()}
+        />
+      ) : null}
+
       <p>
         <Link href={clubsPath()} className="text-sm font-medium text-primary hover:underline">
           ← Back to book clubs
         </Link>
       </p>
 
-      <header className="rounded-xl border border-border bg-surface p-6 shadow-sm">
-        <div className="flex flex-wrap items-start gap-4">
-          {club.image_url ? (
+      <header className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
+        {club.banner_url ? (
+          <div className="relative h-36 w-full bg-background sm:h-44">
             <Image
-              src={club.image_url}
+              src={club.banner_url}
               alt=""
-              width={80}
-              height={80}
-              className="h-20 w-20 shrink-0 rounded-full object-cover"
+              fill
+              className="object-cover"
               unoptimized
+              sizes="(max-width: 768px) 100vw, 768px"
             />
-          ) : (
-            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-royal-orange/20 text-xl font-bold text-puce-red">
-              {club.name.slice(0, 2).toUpperCase()}
-            </div>
-          )}
+          </div>
+        ) : (
+          <div
+            className="h-24 w-full bg-gradient-to-r from-primary/25 via-royal-orange/20 to-puce-red/20 sm:h-28"
+            aria-hidden
+          />
+        )}
 
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-2xl font-bold text-puce-red sm:text-3xl">{club.name}</h1>
-                  {club.visibility === "private" ? (
-                    <span className="rounded-full bg-border/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-text-muted">
-                      Private
-                    </span>
+        <div className="px-5 pb-5 pt-0 sm:px-6">
+          <div className="-mt-10 flex flex-wrap items-end gap-4 sm:-mt-12">
+            {club.image_url ? (
+              <Image
+                src={club.image_url}
+                alt=""
+                width={96}
+                height={96}
+                className="h-20 w-20 shrink-0 rounded-full border-4 border-surface object-cover sm:h-24 sm:w-24"
+                unoptimized
+              />
+            ) : (
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-4 border-surface bg-royal-orange/20 text-xl font-bold text-puce-red sm:h-24 sm:w-24">
+                {club.name.slice(0, 2).toUpperCase()}
+              </div>
+            )}
+
+            <div className="min-w-0 flex-1 pb-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-2xl font-bold text-puce-red sm:text-3xl">{club.name}</h1>
+                <span className="rounded-full bg-border/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-text-muted">
+                  {visibilityLabel(club.visibility)}
+                </span>
+                {club.viewer_role ? (
+                  <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-puce-red">
+                    {roleLabel(club.viewer_role)}
+                  </span>
+                ) : null}
+              </div>
+              <p className="mt-1 text-sm text-text-muted">{memberLabel}</p>
+            </div>
+          </div>
+
+          {club.description ? (
+            <p className="mt-4 leading-relaxed text-text">{club.description}</p>
+          ) : null}
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {!isMember ? (
+              selfJoin ? (
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  loading={actionPending}
+                  onClick={() => void handleJoin()}
+                >
+                  Join club
+                </Button>
+              ) : needsRequest ? (
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  loading={actionPending}
+                  onClick={() => void handleRequestJoin()}
+                >
+                  Request to join
+                </Button>
+              ) : (
+                <span className="text-sm text-text-muted">Invite only</span>
+              )
+            ) : !isOwner ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                loading={actionPending}
+                onClick={() => void handleLeave()}
+              >
+                Leave
+              </Button>
+            ) : null}
+
+            {canInvite ? (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setInviteOpen(true)}
+              >
+                Invite Members
+              </Button>
+            ) : null}
+
+            {isMember ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setSettingsOpen(true)}
+              >
+                Settings
+              </Button>
+            ) : null}
+
+            {isMember ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                loading={actionPending}
+                onClick={() => void handleMessageClub()}
+              >
+                Message the Club
+              </Button>
+            ) : null}
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => void handleShare()}
+            >
+              Share
+            </Button>
+
+            <div className="relative">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-haspopup="menu"
+                aria-expanded={overflowOpen}
+                onClick={() => setOverflowOpen((open) => !open)}
+              >
+                More
+              </Button>
+              {overflowOpen ? (
+                <div
+                  role="menu"
+                  className="absolute right-0 z-20 mt-1 min-w-[10rem] rounded-lg border border-border bg-surface py-1 shadow-lg"
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="block w-full px-3 py-2 text-left text-sm text-text hover:bg-background"
+                    onClick={() => {
+                      setOverflowOpen(false);
+                      void handleShare();
+                    }}
+                  >
+                    Copy link
+                  </button>
+                  {isOwner ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="block w-full px-3 py-2 text-left text-sm text-rust hover:bg-background"
+                      onClick={() => {
+                        setOverflowOpen(false);
+                        void handleDeleteClub();
+                      }}
+                    >
+                      Delete club
+                    </button>
                   ) : null}
                 </div>
-                <p className="mt-1 text-sm text-text-muted">{memberLabel}</p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <CopyLinkButton path={clubDetailPath(club.id)} label="Share" variant="outline" size="sm" />
-                {isOwner ? (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    loading={actionPending}
-                    onClick={() => void handleDeleteClub()}
-                  >
-                    Delete
-                  </Button>
-                ) : isMember ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    loading={actionPending}
-                    onClick={() => void handleLeave()}
-                  >
-                    Leave
-                  </Button>
-                ) : (
-                  <Button
-                    type="button"
-                    variant="primary"
-                    size="sm"
-                    loading={actionPending}
-                    onClick={() => void handleJoin()}
-                  >
-                    Join club
-                  </Button>
-                )}
-              </div>
+              ) : null}
             </div>
-
-            {club.description ? (
-              <p className="mt-4 leading-relaxed text-text">{club.description}</p>
-            ) : null}
           </div>
+
+          {canEdit ? (
+            <div className="mt-5 border-t border-border pt-5">
+              <CircleAvatarUpload
+                imageUrl={club.image_url}
+                fallbackLabel={club.name}
+                disabled={actionPending}
+                size="md"
+                onFileSelect={async (file) => {
+                  const result = await uploadClubAvatar(clubId, file);
+                  if (result.error) throw new Error(result.error);
+                  toast.success("Club photo updated.");
+                  void loadClub();
+                }}
+                onRemove={async () => {
+                  const result = await removeClubAvatar(clubId);
+                  if (result.error) throw new Error(result.error);
+                  toast.success("Club photo removed.");
+                  void loadClub();
+                }}
+              />
+            </div>
+          ) : null}
         </div>
-
-        {isOwner ? (
-          <div className="mt-6 border-t border-border pt-6">
-            <CircleAvatarUpload
-              imageUrl={club.image_url}
-              fallbackLabel={club.name}
-              disabled={actionPending}
-              size="md"
-              onFileSelect={async (file) => {
-                const result = await uploadClubAvatar(clubId, file);
-                if (result.error) throw new Error(result.error);
-                toast.success("Club photo updated.");
-                void loadClub();
-              }}
-              onRemove={async () => {
-                const result = await removeClubAvatar(clubId);
-                if (result.error) throw new Error(result.error);
-                toast.success("Club photo removed.");
-                void loadClub();
-              }}
-            />
-          </div>
-        ) : null}
       </header>
 
-      <nav aria-label="Club sections" className="flex gap-2 overflow-x-auto border-b border-border pb-3">
-        {tabs.map(([id, label]) => (
+      <nav
+        aria-label="Club sections"
+        className="flex gap-2 overflow-x-auto border-b border-border pb-3"
+        role="tablist"
+      >
+        {TABS.map(([id, label]) => (
           <button
             key={id}
             type="button"
-            onClick={() => setActiveTab(id)}
-            className={`shrink-0 rounded-full px-3 py-2 text-sm font-medium ${
-              activeTab === id ? "bg-puce-red text-white" : "bg-surface text-text-muted hover:text-primary"
-            }`}
+            role="tab"
+            aria-selected={activeTab === id}
+            aria-controls={`club-panel-${id}`}
+            id={`club-tab-${id}`}
+            onClick={() => setTab(id)}
+            className={cn(
+              "shrink-0 rounded-full px-3 py-2 text-sm font-medium",
+              activeTab === id
+                ? "bg-puce-red text-white"
+                : "bg-surface text-text-muted hover:text-primary"
+            )}
           >
             {label}
           </button>
         ))}
       </nav>
 
-      {activeTab === "overview" ? (
-      <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
-        <div className="mb-4 flex items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold text-puce-red">Current Read</h2>
-          {isOwner ? (
-            <Button type="button" variant="ghost" size="sm" onClick={() => setBookPickerOpen(true)}>
-              {club.current_book ? "Change" : "Set book"}
-            </Button>
-          ) : null}
-        </div>
+      <div
+        id={`club-panel-${activeTab}`}
+        role="tabpanel"
+        aria-labelledby={`club-tab-${activeTab}`}
+      >
+        {activeTab === "overview" ? (
+          <ClubOverviewPanel
+            club={club}
+            viewerId={user.id}
+            onInvite={() => setInviteOpen(true)}
+            onOpenDiscussions={() => setTab("discussions")}
+            onOpenSchedule={() => setTab("schedule")}
+            onOpenBookshelf={() => setTab("bookshelf")}
+            onChanged={() => void loadClub()}
+          />
+        ) : null}
 
-        {club.current_book ? (
-          <div className="flex items-center gap-4">
-            <Link
-              href={bookDetailsPath(club.current_book.id)}
-              className="h-28 w-20 shrink-0 overflow-visible rounded-md shadow-sm"
-            >
-              <BookCover
-                title={club.current_book.title}
-                author={club.current_book.author}
-                coverUrl={club.current_book.cover_url}
-                className="h-full w-full"
-                bookmarked
-              />
-            </Link>
-            <div className="min-w-0">
-              <Link
-                href={bookDetailsPath(club.current_book.id)}
-                className="block font-semibold text-puce-red hover:underline"
-              >
-                {club.current_book.title}
-              </Link>
-              {club.current_book.author ? (
-                <Link
-                  href={authorPagePath(club.current_book.author)}
-                  className="text-sm text-text-muted hover:text-primary hover:underline"
-                >
-                  {club.current_book.author}
-                </Link>
-              ) : null}
-              {isOwner ? (
-                <button
-                  type="button"
-                  onClick={() => void handleSetBook(null)}
-                  className="mt-2 block text-xs text-text-muted hover:text-rust"
-                >
-                  Clear current book
-                </button>
-              ) : null}
-            </div>
-          </div>
-        ) : (
-          <p className="text-sm text-text-muted">
-            {isOwner
-              ? "No current book yet. Set one to give the club something to read together."
-              : "This club hasn't picked a current book yet."}
-          </p>
-        )}
-      </section>
-      ) : null}
-
-      {activeTab === "members" ? (
-      <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
-        <h2 className="mb-4 text-lg font-semibold text-puce-red">Members</h2>
-        <ClubMembersPanel
-          clubId={club.id}
-          members={club.members}
-          viewerId={user.id}
-          viewerIsOwner={isOwner}
-          onChanged={() => void loadClub()}
-        />
-      </section>
-      ) : null}
-
-      {activeTab === "schedule" ? (
-        <ClubEventsPanel
-          clubId={club.id}
-          isMember={isMember}
-          viewerId={user.id}
-          clubOwnerId={club.owner_id}
-        />
-      ) : null}
-
-      {activeTab === "discussions" ? (
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-puce-red">Discussions</h2>
-
-        {isMember ? (
-          <ClubDiscussionComposer
+        {activeTab === "discussions" ? (
+          <ClubDiscussionsPanel
             clubId={club.id}
             viewerId={user.id}
-            onPosted={() => void loadClub()}
+            isMember={isMember}
+            viewerRole={club.viewer_role}
+            initialDiscussionId={discussionParam}
           />
-        ) : (
-          <div className="rounded-xl border border-dashed border-border bg-background px-6 py-8 text-center">
-            <p className="text-sm text-text-muted">Join this club to start and reply to discussions.</p>
-          </div>
-        )}
+        ) : null}
 
-        {!discussions ? (
-          <LoadingState message="Loading discussions…" />
-        ) : discussions.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border bg-background px-6 py-10 text-center">
-            <p className="font-medium text-puce-red">No discussions yet</p>
-            <p className="mt-2 text-sm text-text-muted">
-              {isMember
-                ? "Be the first to start a discussion above."
-                : "This club hasn't started any discussions yet."}
-            </p>
-          </div>
-        ) : (
-          <ul className="space-y-4">
-            {discussions.map((post) => (
-              <li key={post.id}>
-                <ClubDiscussionCard
-                  post={post}
-                  viewerId={user.id}
-                  onDeleted={() => void loadClub()}
-                />
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-      ) : null}
+        {activeTab === "schedule" ? (
+          <ClubSchedulePanel
+            clubId={club.id}
+            isMember={isMember}
+            viewerId={user.id}
+            viewerRole={club.viewer_role}
+          />
+        ) : null}
 
-      {activeTab === "bookshelf" ? (
-        <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-puce-red">Club bookshelf</h2>
-          <p className="mt-1 text-sm text-text-muted">Current and discussion-linked reads from the club.</p>
-          {bookshelf.length ? (
-            <ul className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
-              {bookshelf.map((book) => (
-                <li key={book.id}>
-                  <Link href={bookDetailsPath(book.id)} className="block rounded-lg p-2 hover:bg-background">
-                    <BookCover title={book.title} author={book.author} coverUrl={book.cover_url} className="h-36 w-full" bookmarked />
-                    <p className="mt-2 truncate text-sm font-medium text-puce-red">{book.title}</p>
-                    {book.author ? <p className="truncate text-xs text-text-muted">{book.author}</p> : null}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-4 text-sm text-text-muted">Set a current read or attach a book to a discussion to build the bookshelf.</p>
-          )}
-        </section>
-      ) : null}
+        {activeTab === "bookshelf" ? (
+          <ClubBookshelfPanel
+            clubId={club.id}
+            viewerId={user.id}
+            viewerRole={club.viewer_role}
+            onChanged={() => void loadClub()}
+          />
+        ) : null}
 
-      {activeTab === "stats" ? (
-        <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-puce-red">Club stats</h2>
-          <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <div className="rounded-lg bg-background p-4"><dt className="text-xs text-text-muted">Members</dt><dd className="mt-1 text-2xl font-bold text-puce-red">{club.member_count}</dd></div>
-            <div className="rounded-lg bg-background p-4"><dt className="text-xs text-text-muted">Discussions</dt><dd className="mt-1 text-2xl font-bold text-puce-red">{discussions?.length ?? "—"}</dd></div>
-            <div className="rounded-lg bg-background p-4"><dt className="text-xs text-text-muted">Books surfaced</dt><dd className="mt-1 text-2xl font-bold text-puce-red">{bookshelf.length}</dd></div>
-          </dl>
-        </section>
-      ) : null}
+        {activeTab === "members" ? (
+          <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
+            <ClubMembersPanel
+              clubId={club.id}
+              members={club.members}
+              viewerId={user.id}
+              viewerRole={club.viewer_role}
+              onInvite={() => setInviteOpen(true)}
+              onChanged={() => void loadClub()}
+            />
+          </section>
+        ) : null}
 
-      <BookPickerModal
-        open={bookPickerOpen}
-        onClose={() => setBookPickerOpen(false)}
-        viewerId={user.id}
-        title="Set the current book"
-        onSelect={(book) => void handleSetBook(book)}
-      />
+        {activeTab === "stats" ? (
+          <ClubStatsPanel
+            clubId={club.id}
+            viewerRole={club.viewer_role}
+            memberCount={club.member_count}
+          />
+        ) : null}
+      </div>
     </div>
   );
 }
