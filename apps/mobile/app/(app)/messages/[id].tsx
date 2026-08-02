@@ -456,7 +456,7 @@ export default function ThreadScreen() {
                 disabled={Boolean(attachment)}
                 className="h-10 items-center justify-center rounded-full bg-primary/15 px-3 active:opacity-70"
               >
-                <Text className="text-xs font-bold text-puce-red">GIF</Text>
+                <Text className="text-xs font-bold text-on-primary">GIF</Text>
               </Pressable>
               <TextInput
                 value={draft}
@@ -469,11 +469,13 @@ export default function ThreadScreen() {
               <Pressable
                 onPress={submit}
                 disabled={!canSend}
-                className={`h-10 items-center justify-center rounded-full px-4 ${
-                  canSend ? "bg-puce-red" : "bg-primary/40"
+                className={`h-10 min-w-[4.5rem] items-center justify-center rounded-full px-4 ${
+                  canSend ? "bg-on-primary" : "bg-primary/40"
                 }`}
               >
-                <Text className="font-semibold text-white">{uploading ? "…" : "Send"}</Text>
+                <Text className={`font-semibold ${canSend ? "text-white" : "text-on-primary"}`}>
+                  {uploading ? "…" : "Send"}
+                </Text>
               </Pressable>
             </View>
           </View>

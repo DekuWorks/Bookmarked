@@ -86,7 +86,7 @@ export default function MessagesScreen() {
             <Pressable
               onPress={() => setNewMessageOpen(true)}
               accessibilityLabel="New message"
-              className="h-10 w-10 items-center justify-center rounded-full bg-puce-red active:opacity-80"
+              className="h-10 w-10 items-center justify-center rounded-full bg-on-primary active:opacity-80"
             >
               <Text className="text-xl font-bold text-white">+</Text>
             </Pressable>

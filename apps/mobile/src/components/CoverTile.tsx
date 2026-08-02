@@ -10,6 +10,7 @@ type Props = {
   author?: string | null;
   coverUrl?: string | null;
   progressPercent?: number | null;
+  format?: "book" | "ebook" | "audiobook" | null;
   widthClassName?: string;
   coverSizeClassName?: string;
 };
@@ -21,6 +22,7 @@ export function CoverTile({
   author,
   coverUrl,
   progressPercent,
+  format,
   widthClassName = "w-24",
   coverSizeClassName = "w-24 h-36",
 }: Props) {
@@ -31,7 +33,14 @@ export function CoverTile({
       onPress={() => bookId && router.push(`/book/${bookId}`)}
       className={`${widthClassName} active:opacity-80`}
     >
-      <BookCover url={coverUrl} title={title} sizeClassName={coverSizeClassName} />
+      <View className="relative">
+        <BookCover url={coverUrl} title={title} sizeClassName={coverSizeClassName} />
+        {format === "audiobook" ? (
+          <View className="absolute bottom-1 right-1 rounded-full bg-puce-red/90 px-1.5 py-0.5">
+            <Text className="text-[10px] font-semibold text-white">🎧</Text>
+          </View>
+        ) : null}
+      </View>
       {progressPercent != null && progressPercent > 0 ? (
         <View className="mt-1.5">
           <ProgressBar percent={progressPercent} />

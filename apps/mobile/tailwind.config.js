@@ -15,6 +15,7 @@ module.exports = {
           dark: "#94789A",
         },
         "puce-red": "var(--color-puce-red)",
+        "on-primary": "var(--color-on-primary)",
         rust: "#C0350F",
         "royal-orange": "#F3904B",
         "orange-yellow": "#F7C767",

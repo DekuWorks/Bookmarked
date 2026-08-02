@@ -79,7 +79,7 @@ export function OverviewTab({ userId, books, currentlyReading, onSelectTab }: Pr
                 accessibilityRole="button"
                 className="min-h-[44px] flex-1 items-center justify-center rounded-xl bg-primary px-3 py-2 active:opacity-80"
               >
-                <Text className="text-sm font-semibold text-puce-red">Start reading</Text>
+                <Text className="text-sm font-semibold text-on-primary">Start reading</Text>
               </Pressable>
             </View>
           </View>
@@ -130,18 +130,22 @@ export function OverviewTab({ userId, books, currentlyReading, onSelectTab }: Pr
       )}
 
       <SectionCard title="Quick actions" emoji="⚡">
-        <View className="flex-row flex-wrap gap-3">
-          <QuickLink icon="🔍" label="Search" onPress={() => router.push("/search")} />
-          <QuickLink
-            label="Continue"
-            onPress={() =>
-              continueReadingBook?.books?.id
-                ? router.push(`/book/${continueReadingBook.books.id}`)
-                : router.push("/search")
-            }
-          />
-          <QuickLink label="Library" onPress={() => router.push("/library")} />
-          <QuickLink label="Trail" onPress={() => onSelectTab("trail")} />
+        <View className="gap-3">
+          <View className="flex-row gap-3">
+            <QuickLink icon="🔍" label="Search" onPress={() => router.push("/search")} />
+            <QuickLink
+              label="Continue"
+              onPress={() =>
+                continueReadingBook?.books?.id
+                  ? router.push(`/book/${continueReadingBook.books.id}`)
+                  : router.push("/search")
+              }
+            />
+          </View>
+          <View className="flex-row gap-3">
+            <QuickLink label="Library" onPress={() => router.push("/library")} />
+            <QuickLink label="Trail" onPress={() => onSelectTab("trail")} />
+          </View>
         </View>
       </SectionCard>
 

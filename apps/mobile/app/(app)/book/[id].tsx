@@ -28,6 +28,7 @@ import {
   setDnf,
   setExpectedReadDate,
   setShelfStatus,
+  updateBookFormat,
   updateBookTotalPages,
   updateReadingProgress,
 } from "../../../src/services/library";
@@ -111,6 +112,7 @@ export default function BookScreen() {
   const [totalListeningValue, setTotalListeningValue] = useState("");
   const [totalPagesOpen, setTotalPagesOpen] = useState(false);
   const [totalPagesValue, setTotalPagesValue] = useState("");
+  const [formatPending, setFormatPending] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
   const [dateValue, setDateValue] = useState("");
   const [sessionOverrides, setSessionOverrides] = useState<Record<string, ReadingSession>>({});
@@ -270,6 +272,18 @@ export default function BookScreen() {
     invalidate();
   }
 
+  async function selectFormat(next: "book" | "audiobook") {
+    if (!book || book.format === next || formatPending) return;
+    setFormatPending(true);
+    const result = await updateBookFormat(book.id, next);
+    setFormatPending(false);
+    if (result.error) {
+      Alert.alert("Error", result.error);
+      return;
+    }
+    await invalidate();
+  }
+
   async function saveTotalPages() {
     if (!book) return;
     const totalPages = Number.parseInt(totalPagesValue.trim(), 10);
@@ -419,17 +433,49 @@ export default function BookScreen() {
           {userBook ? <SavedPill shelf={userBook.shelf_status} /> : null}
         </View>
 
-        <Pressable
-          onPress={() => {
-            setTotalPagesValue(book.page_count ? String(book.page_count) : "");
-            setTotalPagesOpen(true);
-          }}
-          className="self-center rounded-full border border-brand-border bg-surface px-3 py-1.5 active:opacity-70"
-        >
-          <Text className="text-xs font-semibold text-primary-dark">
-            {book.page_count ? `${book.page_count} pages · Edit` : "Add total pages"}
+        <View className="items-center gap-1.5">
+          <Text className="text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
+            Track as
           </Text>
-        </Pressable>
+          <View className="flex-row rounded-full border border-brand-border bg-surface p-1">
+            <Pressable
+              disabled={formatPending}
+              onPress={() => selectFormat("book")}
+              className={`rounded-full px-3.5 py-1.5 ${book.format === "audiobook" ? "" : "bg-puce-red"}`}
+            >
+              <Text
+                className={`text-xs font-semibold ${book.format === "audiobook" ? "text-primary-dark" : "text-white"}`}
+              >
+                📖 Book
+              </Text>
+            </Pressable>
+            <Pressable
+              disabled={formatPending}
+              onPress={() => selectFormat("audiobook")}
+              className={`rounded-full px-3.5 py-1.5 ${book.format === "audiobook" ? "bg-puce-red" : ""}`}
+            >
+              <Text
+                className={`text-xs font-semibold ${book.format === "audiobook" ? "text-white" : "text-primary-dark"}`}
+              >
+                🎧 Audiobook
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {book.format !== "audiobook" ? (
+          <Pressable
+            onPress={() => {
+              setTotalPagesValue(book.page_count ? String(book.page_count) : "");
+              setTotalPagesOpen(true);
+            }}
+            className="self-center rounded-full border border-brand-border bg-surface px-3 py-1.5 active:opacity-70"
+          >
+            <Text className="text-xs font-semibold text-primary-dark">
+              {book.page_count ? `${book.page_count} pages · Edit` : "Add total pages"}
+            </Text>
+          </Pressable>
+        ) : null}
 
         {userBook?.finished_at ? (
           <Text className="text-center text-xs text-ink-muted">

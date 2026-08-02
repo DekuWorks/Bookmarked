@@ -339,6 +339,36 @@ export async function setBookShelfStatus(
   return { success: `${verb} ${getShelfLabel(shelf_status)}` };
 }
 
+/**
+ * Explicitly sets a catalog book's format (book vs. audiobook). This is the
+ * only place a book becomes trackable as an audiobook — without it, the
+ * listening-time UI in `updateReadingProgress` has no way to activate since
+ * it only reads the format that's already stored.
+ */
+export async function updateBookFormat(
+  _prev: BookActionState,
+  formData: FormData
+): Promise<BookActionState> {
+  const bookId = String(formData.get("book_id") ?? "");
+  const format = String(formData.get("format") ?? "");
+
+  if (!bookId) return { error: "Book not found." };
+  if (format !== "book" && format !== "audiobook") {
+    return { error: "Invalid format." };
+  }
+
+  const ctx = await getAuthUserBook(bookId);
+  if (!ctx.ok) return { error: ctx.error };
+  const { supabase } = ctx;
+
+  const { error } = await supabase.from("books").update({ format }).eq("id", bookId);
+  if (error) return { error: error.message };
+
+  return {
+    success: format === "audiobook" ? "Now tracking as an audiobook." : "Now tracking as a book.",
+  };
+}
+
 export async function updateReadingProgress(
   _prev: BookActionState,
   formData: FormData

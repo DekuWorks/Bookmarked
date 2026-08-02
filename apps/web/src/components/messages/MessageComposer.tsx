@@ -141,16 +141,30 @@ export function MessageComposer({
           </div>
         ) : null}
 
-        <div className="flex items-end gap-2">
-          <input
-            ref={attachment.fileInputRef}
-            id={attachment.inputId}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            className="sr-only"
-            onChange={attachment.handleFileChange}
-            disabled={isDisabled}
-          />
+        <input
+          ref={attachment.fileInputRef}
+          id={attachment.inputId}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          className="sr-only"
+          onChange={attachment.handleFileChange}
+          disabled={isDisabled}
+        />
+
+        <Textarea
+          label="Message"
+          name="message-body"
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Write a message…"
+          rows={2}
+          maxLength={MAX_MESSAGE_BODY_LENGTH}
+          disabled={isDisabled}
+          className="min-h-[72px] w-full resize-none"
+        />
+
+        <div className="flex items-center gap-2">
           <Button
             type="button"
             variant="ghost"
@@ -158,44 +172,36 @@ export function MessageComposer({
             onClick={() => attachment.fileInputRef.current?.click()}
             disabled={isDisabled || Boolean(attachment.gifUrl)}
             aria-label="Attach image"
+            className="shrink-0"
           >
             Attach
           </Button>
-          <Textarea
-            label="Message"
-            name="message-body"
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Write a message…"
-            rows={2}
-            maxLength={MAX_MESSAGE_BODY_LENGTH}
+          <GifSearchPicker
+            gifInput={attachment.gifInput}
+            onGifInputChange={attachment.setGifInput}
+            onGifInputBlur={() => attachment.applyGifUrl(attachment.gifInput)}
+            onSelect={attachment.selectGif}
+            hasGif={Boolean(attachment.gifUrl)}
             disabled={isDisabled}
-            className="min-h-[72px] flex-1 resize-none"
+            className="shrink-0"
           />
-        </div>
-
-        <GifSearchPicker
-          gifInput={attachment.gifInput}
-          onGifInputChange={attachment.setGifInput}
-          onGifInputBlur={() => attachment.applyGifUrl(attachment.gifInput)}
-          onSelect={attachment.selectGif}
-          hasGif={Boolean(attachment.gifUrl)}
-          disabled={isDisabled}
-        />
-
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-xs text-text-muted">Enter to send · Shift+Enter for new line</p>
+          <p className="min-w-0 flex-1 truncate text-center text-xs text-text-muted max-sm:hidden">
+            Enter to send · Shift+Enter for new line
+          </p>
           <Button
             type="button"
             onClick={() => void handleSend()}
             loading={sending}
             disabled={disabled || !canSend}
             size="sm"
+            className="ml-auto min-w-[4.75rem] shrink-0"
           >
             Send
           </Button>
         </div>
+        <p className="text-center text-xs text-text-muted sm:hidden">
+          Enter to send · Shift+Enter for new line
+        </p>
         {error ? <p className="text-sm text-rust">{error}</p> : null}
       </div>
     </div>

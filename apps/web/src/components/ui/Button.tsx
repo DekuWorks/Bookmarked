@@ -11,7 +11,7 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 const variants: Record<Variant, string> = {
-  primary: "bg-primary text-puce-red hover:opacity-90",
+  primary: "bg-primary text-on-primary hover:opacity-90",
   secondary: "bg-royal-orange text-white hover:opacity-90",
   outline:
     "border-2 border-primary text-puce-red bg-transparent hover:bg-primary/10",
@@ -19,9 +19,9 @@ const variants: Record<Variant, string> = {
 };
 
 const sizes: Record<Size, string> = {
-  sm: "px-3 py-2 text-sm min-h-[44px]",
-  md: "px-4 py-2.5 text-base min-h-[44px]",
-  lg: "px-6 py-3 text-lg min-h-[52px]",
+  sm: "px-3 py-2 text-sm min-h-[44px] text-center",
+  md: "px-4 py-2.5 text-base min-h-[44px] text-center",
+  lg: "px-6 py-3 text-lg min-h-[52px] text-center",
 };
 
 export function Button({

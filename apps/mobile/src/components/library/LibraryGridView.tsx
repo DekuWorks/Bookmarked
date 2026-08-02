@@ -46,6 +46,7 @@ export function LibraryGridView({ shelves, showHeaderLink = true }: Props) {
                   title={item.books?.title}
                   author={item.books?.author}
                   coverUrl={item.books?.cover_url}
+                  format={item.books?.format}
                   widthClassName="w-[23%]"
                   coverSizeClassName="w-full aspect-[2/3]"
                 />

@@ -100,17 +100,17 @@ export function OverviewTab({ userId, data, onRefresh }: Props) {
       </div>
 
       <ReadingRoomSection title="Quick actions">
-        <div className="flex flex-wrap justify-center gap-3">
-          <ButtonLink href="/search/" variant="secondary" size="sm">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <ButtonLink href="/search/" variant="secondary" size="sm" className="w-full">
             Search books
           </ButtonLink>
-          <ButtonLink href={continueReadingHref} variant="primary" size="sm">
+          <ButtonLink href={continueReadingHref} variant="primary" size="sm" className="w-full">
             Continue reading
           </ButtonLink>
-          <ButtonLink href="/library/" variant="outline" size="sm">
+          <ButtonLink href="/library/" variant="outline" size="sm" className="w-full">
             Open library
           </ButtonLink>
-          <ButtonLink href={readingRoomTabHref("trail")} variant="outline" size="sm">
+          <ButtonLink href={readingRoomTabHref("trail")} variant="outline" size="sm" className="w-full">
             Trail
           </ButtonLink>
         </div>

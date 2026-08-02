@@ -24,7 +24,7 @@ export function PreviewDashboardSection() {
           <Link
             href="/signup"
             className={cn(
-              "inline-flex min-h-[44px] w-full max-w-xs items-center justify-center rounded-lg bg-primary px-4 py-2.5 font-semibold text-puce-red hover:opacity-90 sm:w-auto"
+              "inline-flex min-h-[44px] w-full max-w-xs items-center justify-center rounded-lg bg-primary px-4 py-2.5 font-semibold text-on-primary hover:opacity-90 sm:w-auto"
             )}
           >
             Start reading

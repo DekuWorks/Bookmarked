@@ -9,6 +9,7 @@ import { useUserBooksRealtime } from "@/lib/hooks/useUserBooksRealtime";
 import { BookCoverAmbience } from "@/components/books/BookCoverAmbience";
 import { BookCover } from "@/components/books/BookCover";
 import { BookShelfActions } from "@/components/books/BookShelfActions";
+import { BookFormatToggle } from "@/components/books/BookFormatToggle";
 import { ReadingProgressPanel } from "@/components/books/ReadingProgressPanel";
 import { ReadingJournalSection } from "@/components/books/ReadingJournalSection";
 import { ReadingNotesSection } from "@/components/books/ReadingNotesSection";
@@ -192,6 +193,13 @@ function BookDetailsContent() {
       </BookCoverAmbience>
 
       <div className="min-w-0 px-1">
+        <div className="flex justify-center">
+          <BookFormatToggle
+            bookId={book.id}
+            format={book.format}
+            onFormatChange={loadBookDetails}
+          />
+        </div>
 
         {book.series_name ? (
           <p className="mt-2">

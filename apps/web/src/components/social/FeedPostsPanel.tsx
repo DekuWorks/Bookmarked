@@ -149,7 +149,7 @@ export function FeedPostsPanel({
               className={cn(
                 "flex-1 rounded-md px-4 py-2 text-center text-sm font-semibold transition-colors",
                 tab === option.id
-                  ? "bg-primary text-puce-red shadow-sm"
+                  ? "bg-primary text-on-primary shadow-sm"
                   : "text-text-muted hover:text-text"
               )}
             >

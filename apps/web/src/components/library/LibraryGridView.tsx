@@ -30,6 +30,7 @@ export function LibraryGridView({ shelves }: Props) {
                     coverUrl={book?.cover_url}
                     shelfStatus={shelf.status}
                     progressPercent={Number(ub.progress_percent) || 0}
+                    format={book?.format}
                     href={book?.id ? bookDetailsPath(book.id) : undefined}
                   />
                 );

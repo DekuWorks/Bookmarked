@@ -106,9 +106,12 @@ function BookRow({ row }: { row: LibraryBookRow }) {
     >
       <BookCover url={book.cover_url} title={book.title} sizeClassName="w-12 h-16" saved badgeSize="medium" />
       <View className="flex-1">
-        <Text className="font-semibold text-ink" numberOfLines={1}>
-          {book.title}
-        </Text>
+        <View className="flex-row items-center gap-1.5">
+          <Text className="font-semibold text-ink" numberOfLines={1}>
+            {book.title}
+          </Text>
+          {book.format === "audiobook" ? <Text className="text-xs">🎧</Text> : null}
+        </View>
         {book.author ? (
           <Text className="text-sm text-ink-muted" numberOfLines={1}>
             {book.author}

@@ -2,6 +2,8 @@
 
 :root {
   --color-primary: #B89DBB;
+  /* Ink on lavender fills — stays dark in both themes for readable primary buttons. */
+  --color-on-primary: #642F37;
   --color-puce-red: #642F37;
   --color-rust: #C0350F;
   --color-royal-orange: #F3904B;
@@ -20,6 +22,7 @@
 
 :root[data-theme="dark"] {
   --color-primary: #C9AED0;
+  --color-on-primary: #642F37;
   --color-puce-red: #E8C4CC;
   --color-rust: #F07A52;
   --color-royal-orange: #FFB07A;
@@ -34,6 +37,7 @@
 
 @theme inline {
   --color-primary: var(--color-primary);
+  --color-on-primary: var(--color-on-primary);
   --color-puce-red: var(--color-puce-red);
   --color-rust: var(--color-rust);
   --color-royal-orange: var(--color-royal-orange);
@@ -261,7 +265,7 @@ body {
 
 .pill-tab[data-active="true"] {
   background: var(--color-primary);
-  color: var(--color-surface);
+  color: var(--color-on-primary);
   box-shadow: 0 1px 3px color-mix(in srgb, var(--color-puce-red) 12%, transparent);
 }
 

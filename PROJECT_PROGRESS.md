@@ -190,8 +190,10 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Item | Status | Notes / references |
 |------|--------|-------------------|
 | Audiobook data model | ✅ | `20260801164028_sprint_8_audiobooks.sql` adds format, duration, listening progress, and session fields |
-| Listening progress | ✅ | Web `ReadingProgressPanel` and native iOS book detail use listening time for audiobook metadata |
+| Mark a book as an audiobook | ✅ | Web `BookFormatToggle` on the book detail page + native iOS "Track as" pill on `book/[id].tsx`; both call a dedicated format-update action/service so `books.format` can actually be set — previously nothing in the UI could set it, so the listening UI below was unreachable |
+| Listening progress | ✅ | Web `ReadingProgressPanel` and native iOS book detail use listening time for audiobook metadata once a book is marked as an audiobook |
 | Listening history and activity | ✅ | Audiobook saves create `reading_sessions` rows and activity events with listening metadata |
+| Library discoverability | ✅ | 🎧 badge on web `BookCard` (grid/shelf views) and native iOS `CoverTile` / My Books list |
 | Provider research | ✅ | `docs/AUDIOBOOK_RESEARCH.md` documents safe Audible, Spotify, and timer follow-up paths |
 
 ---

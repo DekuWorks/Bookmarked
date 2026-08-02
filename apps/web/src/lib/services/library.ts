@@ -28,6 +28,7 @@ export type LibraryBookRow = {
     published_date: string | null;
     publisher: string | null;
     isbn: string | null;
+    format: "book" | "ebook" | "audiobook" | null;
   } | null;
 };
 
@@ -39,7 +40,7 @@ export type ShelfGroup = {
 };
 
 const LIBRARY_SELECT =
-  "id, shelf_status, progress_percent, progress_pages, rating, is_favorite, finished_at, started_at, dnf, expected_read_date, created_at, updated_at, books(id, title, author, cover_url, page_count, subjects, external_id, external_source, description, published_date, publisher, isbn)";
+  "id, shelf_status, progress_percent, progress_pages, rating, is_favorite, finished_at, started_at, dnf, expected_read_date, created_at, updated_at, books(id, title, author, cover_url, page_count, subjects, external_id, external_source, description, published_date, publisher, isbn, format)";
 
 export async function getUserLibraryBooks(userId: string): Promise<LibraryBookRow[]> {
   const supabase = createClient();

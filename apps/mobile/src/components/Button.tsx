@@ -17,13 +17,14 @@ export function Button({
   const base =
     "rounded-xl px-4 py-3 items-center justify-center min-h-[48px] active:scale-[0.98]";
   const variants = {
-    primary: "bg-puce-red",
+    // Fixed dark brand fill so white label stays readable in dark mode.
+    primary: "bg-on-primary",
     secondary: "bg-primary",
     ghost: "bg-transparent border border-brand-border",
   };
   const textColors = {
     primary: "text-white font-semibold",
-    secondary: "text-puce-red font-semibold",
+    secondary: "text-on-primary font-semibold",
     ghost: "text-puce-red font-medium",
   };
 

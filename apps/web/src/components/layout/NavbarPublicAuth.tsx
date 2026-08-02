@@ -54,7 +54,7 @@ export function NavbarPublicAuth({ layout = "inline" }: Props) {
         href="/reading-room/"
         className={cn(
           linkClass,
-          "bg-primary text-puce-red hover:opacity-90",
+          "bg-primary text-on-primary hover:opacity-90",
           stacked && "w-full"
         )}
       >

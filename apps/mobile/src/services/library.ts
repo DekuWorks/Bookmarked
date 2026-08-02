@@ -33,6 +33,7 @@ export type LibraryBookRow = {
     page_count: number | null;
     published_date: string | null;
     subjects: string[] | null;
+    format: "book" | "ebook" | "audiobook" | null;
   } | null;
 };
 
@@ -44,7 +45,7 @@ export type ShelfGroup = {
 };
 
 const LIBRARY_SELECT =
-  "id, shelf_status, progress_percent, progress_pages, rating, is_favorite, finished_at, started_at, completion_tags, dnf, expected_read_date, created_at, updated_at, books(id, title, author, cover_url, page_count, published_date, subjects)";
+  "id, shelf_status, progress_percent, progress_pages, rating, is_favorite, finished_at, started_at, completion_tags, dnf, expected_read_date, created_at, updated_at, books(id, title, author, cover_url, page_count, published_date, subjects, format)";
 
 export async function getUserLibraryBooks(userId: string): Promise<LibraryBookRow[]> {
   const { data, error } = await supabase
@@ -591,6 +592,25 @@ export async function updateBookTotalPages(
   const { error } = await supabase
     .from("books")
     .update({ page_count: totalPages, updated_at: new Date().toISOString() })
+    .eq("id", bookId);
+
+  if (error) return { error: error.message };
+  return {};
+}
+
+/**
+ * Explicitly sets a catalog book's format (book vs. audiobook). This is the
+ * only way a book becomes trackable as an audiobook — without it, the
+ * listening-time UI in `updateReadingProgress` has no way to activate since
+ * it only reads the format that's already stored.
+ */
+export async function updateBookFormat(
+  bookId: string,
+  format: "book" | "audiobook"
+): Promise<{ error?: string }> {
+  const { error } = await supabase
+    .from("books")
+    .update({ format, updated_at: new Date().toISOString() })
     .eq("id", bookId);
 
   if (error) return { error: error.message };
