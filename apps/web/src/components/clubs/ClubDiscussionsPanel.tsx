@@ -86,6 +86,9 @@ export function ClubDiscussionsPanel({
         getDiscussion(clubId, discussionId),
         listReplies(discussionId),
       ]);
+      if (!discussion) {
+        throw new Error("Discussion not found.");
+      }
       setActiveDiscussion(discussion);
       setReplies(replyRows);
     },

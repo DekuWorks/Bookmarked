@@ -1235,7 +1235,7 @@ export async function listReplies(
   const { data, error } = await supabase
     .from("book_club_discussion_replies")
     .select(
-      `id, discussion_id, club_id, user_id, body, contains_spoilers, created_at, updated_at, profiles!book_club_discussion_replies_user_id_profiles_fkey (${PROFILE_SELECT})`
+      `id, discussion_id, club_id, user_id, body, contains_spoilers, created_at, updated_at, profiles!book_club_discussion_replies_user_profiles_fkey (${PROFILE_SELECT})`
     )
     .eq("discussion_id", discussionId)
     .order("created_at", { ascending: true });
