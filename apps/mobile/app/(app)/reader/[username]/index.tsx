@@ -105,6 +105,7 @@ export default function ReaderScreen() {
     <View className="flex-1 bg-background">
       <ScreenHeader
         title={`@${reader.username ?? handle}`}
+        fallbackHref="/(app)/feed"
         right={
           !isSelf ? (
             <Pressable

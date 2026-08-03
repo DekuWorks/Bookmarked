@@ -1109,6 +1109,7 @@ export async function createDiscussion(
           metadata_json: clubDiscussionMetadata({
             clubId,
             clubName: club.name,
+            discussionId: inserted.id,
             bodySnippet: trimmedBody.length > 140 ? `${trimmedBody.slice(0, 140)}…` : trimmedBody,
             book,
           }),

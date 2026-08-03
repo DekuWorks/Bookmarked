@@ -25,7 +25,7 @@ export default function SeriesScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <ScreenHeader title={data?.name || seriesName || "Series"} />
+      <ScreenHeader title={data?.name || seriesName || "Series"} fallbackHref="/(app)/search" />
       {query.isLoading ? (
         <LoadingState message="Loading series…" />
       ) : !data || data.books.length === 0 ? (

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ScrollView, useWindowDimensions, View, type LayoutChangeEvent } from "react-native";
+import { useLocalSearchParams } from "expo-router";
 import { BrandTopHeader } from "../components/BrandTopHeader";
 import { FeedSearchBar } from "../components/FeedSearchBar";
 import { FeedSearchResults } from "../components/FeedSearchResults";
@@ -24,6 +25,8 @@ export function FeedScreen() {
   const { width } = useWindowDimensions();
   const pagerRef = useRef<ScrollView>(null);
   const userId = useAuthStore((s) => s.user?.id);
+  const params = useLocalSearchParams<{ post?: string }>();
+  const highlightedPostId = typeof params.post === "string" ? params.post.trim() : "";
   const [tab, setTab] = useState<FeedTab>("for-you");
   const [headerHeight, setHeaderHeight] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
@@ -34,6 +37,12 @@ export function FeedScreen() {
   const { onScroll } = useTabBarScroll();
 
   const isSearching = debouncedQuery.trim().length > 0;
+
+  useEffect(() => {
+    if (!highlightedPostId) return;
+    setTab("for-you");
+    pagerRef.current?.scrollTo({ x: 0, animated: false });
+  }, [highlightedPostId]);
 
   useEffect(() => {
     const handle = setTimeout(() => {
@@ -84,12 +93,12 @@ export function FeedScreen() {
       />
       <View onLayout={onHeaderLayout}>
         <BrandTopHeader>
-          <View className="mt-3 px-1">
+          <View className="mt-4 w-full">
             <FeedSearchBar value={searchQuery} onChange={setSearchQuery} />
           </View>
           {!isSearching ? (
             <SegmentedTabs
-              className="mt-3"
+              className="mt-4"
               equalWidth
               options={TAB_OPTIONS}
               value={tab}
@@ -124,7 +133,13 @@ export function FeedScreen() {
         style={{ flex: 1 }}
       >
         {TAB_OPTIONS.map((option) => (
-          <FeedTabPanel key={option.id} tab={option.id} width={width} onScroll={onScroll} />
+          <FeedTabPanel
+            key={option.id}
+            tab={option.id}
+            width={width}
+            onScroll={onScroll}
+            highlightedPostId={option.id === "for-you" ? highlightedPostId || undefined : undefined}
+          />
         ))}
       </ScrollView>
       )}

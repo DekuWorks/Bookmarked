@@ -27,6 +27,11 @@ import {
   buildMessageSharePayload,
   type ShareComposerPayload,
 } from "../../../../packages/utils/sharePreview";
+import {
+  copyShareLink,
+  shareExternally,
+  toExternalShareContent,
+} from "../services/externalShare";
 
 export type MobileSharePayload = ShareComposerPayload;
 
@@ -192,6 +197,36 @@ export function ShareContentSheet({
     router.push(`/messages/${convo.conversationId}`);
   }
 
+  async function shareToApps() {
+    const share = payload;
+    if (!share) return;
+    setSubmitting(true);
+    const result = await shareExternally(share);
+    setSubmitting(false);
+    if (result === "shared" || result === "copied") {
+      onClose();
+      if (result === "copied") Alert.alert("Copied", "Link copied to clipboard.");
+      return;
+    }
+    if (result === "cancelled") return;
+    Alert.alert("Couldn't share", "Try Copy link instead.");
+  }
+
+  async function shareCopyLink() {
+    const share = payload;
+    if (!share) return;
+    setSubmitting(true);
+    const result = await copyShareLink(toExternalShareContent(share).url);
+    setSubmitting(false);
+    if (result === "shared" || result === "copied") {
+      onClose();
+      if (result === "copied") Alert.alert("Copied", "Link copied to clipboard.");
+      return;
+    }
+    if (result === "cancelled") return;
+    Alert.alert("Couldn't copy", "Please try again.");
+  }
+
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <Pressable className="flex-1 justify-end bg-black/40" onPress={onClose}>
@@ -228,6 +263,26 @@ export function ShareContentSheet({
                 className="items-center rounded-full border border-brand-border px-4 py-3 active:opacity-80"
               >
                 <Text style={{ fontFamily: SANS_FONT_BOLD, color: colors.ink }}>Share → Message</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => void shareToApps()}
+                disabled={submitting}
+                className="items-center rounded-full border border-brand-border px-4 py-3 active:opacity-80"
+              >
+                {submitting ? (
+                  <ActivityIndicator color={colors.ink} />
+                ) : (
+                  <Text style={{ fontFamily: SANS_FONT_BOLD, color: colors.ink }}>Share → Apps</Text>
+                )}
+              </Pressable>
+              <Pressable
+                onPress={() => void shareCopyLink()}
+                disabled={submitting}
+                className="items-center rounded-full px-4 py-2 active:opacity-80"
+              >
+                <Text style={{ fontFamily: SANS_FONT_MEDIUM, color: colors.inkMuted }}>
+                  Copy link
+                </Text>
               </Pressable>
             </View>
           ) : (

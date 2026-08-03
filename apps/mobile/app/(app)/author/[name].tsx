@@ -26,7 +26,7 @@ export default function AuthorScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <ScreenHeader title={authorName || "Author"} />
+      <ScreenHeader title={authorName || "Author"} fallbackHref="/(app)/search" />
       {query.isLoading ? (
         <LoadingState message="Loading books…" />
       ) : isEmpty ? (

@@ -1,7 +1,9 @@
+import { useRef } from "react";
 import { Redirect, Stack, useSegments } from "expo-router";
 import { LoadingState } from "../../src/components/LoadingState";
 import { useProfile } from "../../src/hooks/useProfile";
 import { useAuthStore } from "../../src/store/authStore";
+import { usePendingDeepLinkStore } from "../../src/store/pendingDeepLinkStore";
 
 export default function AuthLayout() {
   const initialized = useAuthStore((s) => s.initialized);
@@ -9,13 +11,18 @@ export default function AuthLayout() {
   const { data: profile, isLoading } = useProfile();
   const segments = useSegments();
   const inProfileSetup = segments.includes("profile-setup");
+  const postAuthDestination = useRef<string | null>(null);
 
   if (!initialized || (session && isLoading)) {
     return <LoadingState />;
   }
 
   if (session && profile?.username?.trim()) {
-    return <Redirect href="/(app)" />;
+    if (!postAuthDestination.current) {
+      postAuthDestination.current =
+        usePendingDeepLinkStore.getState().consume() ?? "/(app)";
+    }
+    return <Redirect href={postAuthDestination.current as never} />;
   }
 
   if (session && !profile?.username?.trim() && !inProfileSetup) {

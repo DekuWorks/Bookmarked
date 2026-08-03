@@ -8,6 +8,7 @@ import { AuthorOpenLibrarySection } from "@/components/books/AuthorOpenLibrarySe
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
+import { BackNav } from "@/components/ui/BackNav";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { getBooksByAuthor } from "@/lib/services/authorBooks";
 import { authorPagePath } from "@/lib/routes/author";
@@ -50,9 +51,7 @@ function AuthorPageContent() {
     return (
       <div className="space-y-4 text-center">
         <p className="text-text-muted">Sign in to browse books by this author.</p>
-        <Link href="/library" className="text-sm font-medium text-primary hover:underline">
-          ← Back to library
-        </Link>
+        <BackNav label="library" fallbackHref="/library/" />
       </div>
     );
   }
@@ -63,9 +62,7 @@ function AuthorPageContent() {
   return (
     <div className="mx-auto max-w-5xl space-y-10">
       <header className="space-y-4 text-center">
-        <Link href="/library" className="text-sm font-medium text-primary hover:underline">
-          ← Back to library
-        </Link>
+        <BackNav label="library" fallbackHref="/library/" />
         <div className="flex flex-wrap items-center justify-center gap-3">
           <h1 className="text-3xl font-bold text-puce-red">{authorName}</h1>
           <CopyLinkButton path={authorPagePath(authorName)} label="Copy link" variant="outline" />

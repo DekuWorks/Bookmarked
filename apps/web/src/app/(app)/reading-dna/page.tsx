@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { ReadingDnaDashboard } from "@/components/reading-dna/ReadingDnaDashboard";
+import { BackNav } from "@/components/ui/BackNav";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { useSubscription } from "@/lib/hooks/useSubscription";
@@ -88,9 +88,7 @@ export default function ReadingDnaPage() {
   return (
     <div className={layout.pageStackWide}>
       <p>
-        <Link href="/profile/" className="text-sm font-medium text-primary hover:underline">
-          ← Back to profile
-        </Link>
+        <BackNav label="profile" fallbackHref="/profile/" />
       </p>
 
       {dna ? (

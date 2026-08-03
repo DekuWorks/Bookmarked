@@ -4,6 +4,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { BackNav } from "@/components/ui/BackNav";
 import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -278,9 +279,7 @@ function ClubDetailContent() {
       ) : null}
 
       <p>
-        <Link href={clubsPath()} className="text-sm font-medium text-primary hover:underline">
-          ← Back to book clubs
-        </Link>
+        <BackNav label="book clubs" fallbackHref={clubsPath()} />
       </p>
 
       <header className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">

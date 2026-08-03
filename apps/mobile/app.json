@@ -16,6 +16,10 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.dekuworks.bookmarked",
       "icon": "./assets/brand/icon.png",
+      "associatedDomains": [
+        "applinks:bookmarked.online",
+        "applinks:www.bookmarked.online"
+      ],
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Bookmarked needs access to your photos so you can attach images to posts, comments, and messages.",
         "ITSAppUsesNonExemptEncryption": false

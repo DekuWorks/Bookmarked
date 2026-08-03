@@ -224,6 +224,7 @@ export function clubDiscussionMetadata(input: {
   clubId: string;
   clubName: string;
   bodySnippet: string;
+  discussionId?: string | null;
   book?: { id: string; title: string; author?: string | null; cover_url?: string | null } | null;
 }): Record<string, unknown> {
   const book = input.book;
@@ -231,6 +232,7 @@ export function clubDiscussionMetadata(input: {
     club_id: input.clubId,
     club_name: input.clubName,
     body_snippet: input.bodySnippet,
+    ...(input.discussionId ? { discussion_id: input.discussionId } : {}),
     ...(book
       ? {
           book_id: book.id,

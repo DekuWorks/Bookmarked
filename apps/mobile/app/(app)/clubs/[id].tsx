@@ -9,7 +9,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  Share,
   Text,
   TextInput,
   View,
@@ -31,6 +30,8 @@ import { Input } from "../../../src/components/Input";
 import { InviteMembersSheet } from "../../../src/components/InviteMembersSheet";
 import { LoadingState } from "../../../src/components/LoadingState";
 import { isEntitlementLimitError } from "../../../src/utils/subscription";
+import { shareExternally } from "../../../src/services/externalShare";
+import { buildClubShareComposerPayload } from "../../../../../packages/utils/sharePreview";
 import {
   useAddClubBook,
   useApproveJoinRequest,
@@ -146,8 +147,14 @@ function memberName(member: BookClubMemberWithProfile): string {
 }
 
 export default function ClubDetailRoute() {
-  const params = useLocalSearchParams<{ id: string; tab?: string }>();
+  const params = useLocalSearchParams<{
+    id: string;
+    tab?: string;
+    discussion?: string;
+  }>();
   const clubId = typeof params.id === "string" ? params.id : "";
+  const deepLinkDiscussionId =
+    typeof params.discussion === "string" ? params.discussion.trim() : "";
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
@@ -182,15 +189,18 @@ export default function ClubDetailRoute() {
   const approveRequest = useApproveJoinRequest(clubId);
   const declineRequest = useDeclineJoinRequest(clubId);
 
-  const initialTab = TABS.some((tab) => tab.id === params.tab)
-    ? (params.tab as HubTab)
-    : "overview";
+  const initialTab = deepLinkDiscussionId
+    ? "discussions"
+    : TABS.some((tab) => tab.id === params.tab)
+      ? (params.tab as HubTab)
+      : "overview";
   const [activeTab, setActiveTab] = useState<HubTab>(initialTab);
   const [discussionTitle, setDiscussionTitle] = useState("");
   const [discussionBody, setDiscussionBody] = useState("");
   const [discussionSpoilers, setDiscussionSpoilers] = useState(false);
   const [threadDiscussion, setThreadDiscussion] =
     useState<BookClubDiscussionWithAuthor | null>(null);
+  const [openedFromDeepLink, setOpenedFromDeepLink] = useState(Boolean(deepLinkDiscussionId));
   const [editOpen, setEditOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -216,6 +226,18 @@ export default function ClubDetailRoute() {
       setEditJoinPolicy(club.join_policy);
     }
   }, [editOpen, club]);
+
+  useEffect(() => {
+    if (!deepLinkDiscussionId) return;
+    setActiveTab("discussions");
+    setOpenedFromDeepLink(true);
+    const match = (discussions.data ?? []).find((row) => row.id === deepLinkDiscussionId);
+    if (match) {
+      setThreadDiscussion(match);
+      return;
+    }
+    // Wait for list hydration; if missing after load, leave thread closed.
+  }, [deepLinkDiscussionId, discussions.data]);
 
   const isMember = Boolean(club?.viewer_is_member);
   const viewerRole = club?.viewer_role ?? null;
@@ -421,13 +443,15 @@ export default function ClubDetailRoute() {
           return;
         }
         if (label === "Share link") {
-          try {
-            await Share.share({
-              message: `Join ${club.name} on Bookmarked: https://bookmarked.online/clubs/club/?id=${club.id}`,
-            });
-          } catch {
-            // user dismissed
-          }
+          await shareExternally(
+            buildClubShareComposerPayload({
+              clubId: club.id,
+              name: club.name,
+              coverUrl: club.image_url,
+              description: club.description,
+              destinationPath: `/clubs/club/?id=${encodeURIComponent(club.id)}`,
+            })
+          );
         }
       }
     );
@@ -872,7 +896,10 @@ export default function ClubDetailRoute() {
               <ClubDiscussionCard
                 key={post.id}
                 post={post}
-                onPress={() => setThreadDiscussion(post)}
+                onPress={() => {
+                  setOpenedFromDeepLink(false);
+                  setThreadDiscussion(post);
+                }}
               />
             ))}
             {!discussions.data?.length ? (
@@ -1377,7 +1404,10 @@ export default function ClubDetailRoute() {
             canDelete={item.user_id === userId || canManageMembers(viewerRole)}
             deleting={deletingPostId === item.id}
             onDelete={() => confirmDeletePost(item.id)}
-            onPress={() => setThreadDiscussion(item)}
+            onPress={() => {
+              setOpenedFromDeepLink(false);
+              setThreadDiscussion(item);
+            }}
           />
         )}
         ListEmptyComponent={
@@ -1427,7 +1457,11 @@ export default function ClubDetailRoute() {
         viewerId={userId ?? ""}
         viewerRole={viewerRole}
         isMember={isMember}
-        onClose={() => setThreadDiscussion(null)}
+        exitClubOnClose={openedFromDeepLink}
+        onClose={() => {
+          setThreadDiscussion(null);
+          setOpenedFromDeepLink(false);
+        }}
       />
 
       <Modal

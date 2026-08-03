@@ -9,7 +9,7 @@ type Props = {
 
 export function FeedSearchBar({ value, onChange }: Props) {
   return (
-    <div className="relative mx-auto max-w-xl">
+    <div className="relative w-full">
       <Input
         label="Search feed"
         variant="search"
@@ -18,7 +18,7 @@ export function FeedSearchBar({ value, onChange }: Props) {
         placeholder="Search readers, books, or posts"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="pr-11"
+        className="w-full pr-11"
         autoComplete="off"
       />
       <span

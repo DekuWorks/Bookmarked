@@ -24,6 +24,7 @@ import { LoadingState } from "@/components/ui/LoadingState";
 import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
+import { BackNav } from "@/components/ui/BackNav";
 import { ShareHead } from "@/components/seo/ShareHead";
 import { bookDetailsPath } from "@/lib/routes/book";
 import { authorPagePath } from "@/lib/routes/author";
@@ -101,9 +102,7 @@ function BookDetailsContent() {
     return (
       <div className="space-y-4 text-center">
         <p className="text-text-muted">Book not found or you need to sign in.</p>
-        <Link href="/library" className="text-sm font-medium text-primary hover:underline">
-          ← Back to library
-        </Link>
+        <BackNav label="library" fallbackHref="/library/" />
       </div>
     );
   }
@@ -149,9 +148,7 @@ function BookDetailsContent() {
       />
       <BookCoverAmbience coverUrl={book.cover_url}>
         <div className="flex flex-wrap items-center justify-center gap-3">
-          <Link href="/library" className="text-sm font-medium text-primary hover:underline">
-            ← Back to library
-          </Link>
+          <BackNav label="library" fallbackHref="/library/" />
           <CopyLinkButton path={bookDetailsPath(book.id)} label="Copy link" variant="outline" />
         </div>
 

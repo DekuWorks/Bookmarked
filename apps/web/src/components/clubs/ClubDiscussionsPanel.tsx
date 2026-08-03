@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { BookCover } from "@/components/books/BookCover";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { Button } from "@/components/ui/Button";
@@ -60,6 +61,7 @@ export function ClubDiscussionsPanel({
   initialDiscussionId,
 }: Props) {
   const toast = useToast();
+  const router = useRouter();
   const locale = usePreferredLocale();
   const canPin = canPinDiscussions(viewerRole);
   const canModerate = canModerateDiscussions(viewerRole);
@@ -74,6 +76,21 @@ export function ClubDiscussionsPanel({
   const [replyBody, setReplyBody] = useState("");
   const [replySpoilers, setReplySpoilers] = useState(false);
   const [pending, setPending] = useState(false);
+  const [fromDeepLink, setFromDeepLink] = useState(Boolean(initialDiscussionId));
+
+  function clearActiveDiscussion() {
+    setFromDeepLink(false);
+    setActiveId(null);
+    setActiveDiscussion(null);
+  }
+
+  function handleBackFromThread() {
+    if (fromDeepLink && typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
+    clearActiveDiscussion();
+  }
 
   const loadList = useCallback(async () => {
     const rows = await listDiscussions(clubId);
@@ -111,12 +128,17 @@ export function ClubDiscussionsPanel({
     void loadThread(activeId).catch((err) => {
       console.error("[club-discussions] thread failed:", err);
       toast.error("Could not open discussion.");
+      setFromDeepLink(false);
       setActiveId(null);
+      setActiveDiscussion(null);
     });
   }, [activeId, loadThread, toast]);
 
   useEffect(() => {
-    if (initialDiscussionId) setActiveId(initialDiscussionId);
+    if (initialDiscussionId) {
+      setFromDeepLink(true);
+      setActiveId(initialDiscussionId);
+    }
   }, [initialDiscussionId]);
 
   const handleRealtimeInsert = useCallback(
@@ -189,7 +211,7 @@ export function ClubDiscussionsPanel({
       return;
     }
     toast.success("Discussion deleted.");
-    setActiveId(null);
+    clearActiveDiscussion();
     await loadList();
   }
 
@@ -216,10 +238,11 @@ export function ClubDiscussionsPanel({
       <section className="space-y-4 text-left">
         <button
           type="button"
-          onClick={() => setActiveId(null)}
-          className="text-left text-sm font-medium text-primary hover:underline"
+          onClick={handleBackFromThread}
+          className="text-left text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
+          aria-label={fromDeepLink ? "Go back" : "Back to discussions"}
         >
-          ← Back to discussions
+          {fromDeepLink ? "← Back" : "← Back to discussions"}
         </button>
 
         <article className="rounded-xl border border-border bg-surface p-5 text-left shadow-sm">
@@ -538,7 +561,10 @@ export function ClubDiscussionsPanel({
             <li key={discussion.id}>
               <ClubDiscussionCard
                 discussion={discussion}
-                onOpen={() => setActiveId(discussion.id)}
+                onOpen={() => {
+                  setFromDeepLink(false);
+                  setActiveId(discussion.id);
+                }}
               />
             </li>
           ))}

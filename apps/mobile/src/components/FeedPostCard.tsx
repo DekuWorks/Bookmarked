@@ -531,8 +531,14 @@ function DiscussionCard({ entry }: { entry: DiscussionEntry }) {
           ) : null}
         </View>
         <Pressable
-          onPress={() => router.push(`/clubs/${entry.clubId}`)}
+          onPress={() =>
+            router.push(
+              `/(app)/clubs/${entry.clubId}?tab=discussions&discussion=${encodeURIComponent(entry.id)}` as never
+            )
+          }
           className="rounded-full bg-puce-red px-4 py-2 active:opacity-80"
+          accessibilityRole="button"
+          accessibilityLabel="Join discussion"
         >
           <Text className="text-sm font-semibold text-white">Join Discussion →</Text>
         </Pressable>

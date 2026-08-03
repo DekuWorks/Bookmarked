@@ -384,7 +384,7 @@ export default function BookScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <ScreenHeader title={book.title} />
+      <ScreenHeader title={book.title} fallbackHref="/(app)/search" />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: TAB_BAR_SPACE, gap: 16 }}>
         <BookCoverAmbience>
           <View className="items-center">

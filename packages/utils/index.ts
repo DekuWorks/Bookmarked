@@ -267,10 +267,13 @@ export {
 
 export {
   SHARE_CONTENT_TYPES,
+  DEFAULT_SITE_URL,
+  absoluteShareUrl,
   buildActivityShareComposerPayload,
   buildAuthorShareComposerPayload,
   buildBookShareComposerPayload,
   buildClubShareComposerPayload,
+  buildExternalShareContent,
   buildMessageSharePayload,
   buildPostShareComposerPayload,
   buildProfileShareComposerPayload,
@@ -286,6 +289,7 @@ export {
   shareContentTypeLabel,
   truncateShareDescription,
   unavailableShareCard,
+  type ExternalShareContent,
   type MessageSharePayload as ShareMessagePayload,
   type ShareComposerPayload,
   type ShareContentType,

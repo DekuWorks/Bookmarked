@@ -11,6 +11,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Avatar } from "./Avatar";
 import { Button } from "./Button";
@@ -41,6 +42,8 @@ type Props = {
   viewerId: string;
   viewerRole: BookClubMemberRole | null;
   isMember: boolean;
+  /** When true, Back also leaves the club screen (deep link from Feed/share). */
+  exitClubOnClose?: boolean;
   onClose: () => void;
 };
 
@@ -58,8 +61,10 @@ export function ClubDiscussionThreadSheet({
   viewerId,
   viewerRole,
   isMember,
+  exitClubOnClose = false,
   onClose,
 }: Props) {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const discussionId = discussion?.id ?? "";
   const replies = useClubDiscussionReplies(discussionId);
@@ -74,6 +79,14 @@ export function ClubDiscussionThreadSheet({
   const canPin = canPinDiscussions(viewerRole);
   const canModerate = canModerateDiscussions(viewerRole);
   const locked = Boolean(discussion?.is_locked);
+
+  function handleBack() {
+    onClose();
+    if (exitClubOnClose) {
+      if (router.canGoBack()) router.back();
+      else router.replace("/(app)/feed" as never);
+    }
+  }
 
   async function handleReply() {
     if (!discussion || !body.trim()) return;
@@ -105,24 +118,25 @@ export function ClubDiscussionThreadSheet({
   }
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} animationType="slide" onRequestClose={handleBack}>
       <KeyboardAvoidingView
         className="flex-1 bg-background"
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
       >
-        <View className="flex-row items-center justify-between border-b border-brand-border px-4 py-3">
+        <View className="flex-row items-center border-b border-brand-border px-2 py-2">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            onPress={handleBack}
+            className="h-11 w-11 items-center justify-center rounded-full active:bg-primary/10"
+          >
+            <Text className="text-2xl text-puce-red">‹</Text>
+          </Pressable>
           <Text className="flex-1 text-lg font-bold text-puce-red" numberOfLines={1}>
             {discussion?.title?.trim() || "Discussion"}
           </Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Close discussion thread"
-            onPress={onClose}
-            className="min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-primary/15 px-3 active:opacity-80"
-          >
-            <Text className="text-sm font-semibold text-puce-red">Close</Text>
-          </Pressable>
+          <View className="w-11" />
         </View>
 
         {!discussion ? (

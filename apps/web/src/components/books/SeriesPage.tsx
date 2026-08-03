@@ -7,6 +7,7 @@ import { BookCover } from "@/components/books/BookCover";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
+import { BackNav } from "@/components/ui/BackNav";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { getBooksInSeries, type SeriesData, type SeriesBook } from "@/lib/services/series";
 import { bookDetailsPath } from "@/lib/routes/book";
@@ -140,9 +141,7 @@ function SeriesPageContent() {
           No books from this series are in the catalog yet. Add more books from this
           series and they&apos;ll be grouped here automatically.
         </p>
-        <Link href="/library" className="text-sm font-medium text-primary hover:underline">
-          ← Back to library
-        </Link>
+        <BackNav label="library" fallbackHref="/library/" />
       </div>
     );
   }
@@ -153,9 +152,7 @@ function SeriesPageContent() {
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <header className="space-y-4 text-center">
-        <Link href="/library" className="text-sm font-medium text-primary hover:underline">
-          ← Back to library
-        </Link>
+        <BackNav label="library" fallbackHref="/library/" />
         <div className="flex flex-wrap items-center justify-center gap-3">
           <h1 className="text-3xl font-bold text-puce-red">{name}</h1>
           <CopyLinkButton path={seriesPagePath(name)} label="Copy link" variant="outline" />

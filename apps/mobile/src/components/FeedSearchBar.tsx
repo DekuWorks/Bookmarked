@@ -10,7 +10,7 @@ export function FeedSearchBar({ value, onChange }: Props) {
   const colors = useThemeColors();
 
   return (
-    <View className="relative">
+    <View className="relative w-full">
       <TextInput
         accessibilityLabel="Search feed"
         placeholder="Search readers, books, or posts"
@@ -20,7 +20,7 @@ export function FeedSearchBar({ value, onChange }: Props) {
         autoCapitalize="none"
         autoCorrect={false}
         returnKeyType="search"
-        className="rounded-full border border-brand-border bg-surface px-4 py-3 pr-11 text-base text-ink shadow-sm"
+        className="w-full rounded-full border border-brand-border bg-surface px-5 py-3.5 pr-12 text-base text-ink shadow-sm"
       />
       <View
         pointerEvents="none"

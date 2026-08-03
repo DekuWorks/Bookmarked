@@ -7,6 +7,17 @@ export function eventsPath(): string {
   return "/events/";
 }
 
-export function clubDetailPath(clubId: string): string {
-  return `/clubs/club/?id=${encodeURIComponent(clubId)}`;
+export function clubDetailPath(
+  clubId: string,
+  options?: { tab?: string; discussionId?: string | null }
+): string {
+  const params = new URLSearchParams();
+  params.set("id", clubId);
+  if (options?.discussionId?.trim()) {
+    params.set("tab", options.tab?.trim() || "discussions");
+    params.set("discussion", options.discussionId.trim());
+  } else if (options?.tab?.trim()) {
+    params.set("tab", options.tab.trim());
+  }
+  return `/clubs/club/?${params.toString()}`;
 }

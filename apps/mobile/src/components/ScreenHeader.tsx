@@ -7,6 +7,8 @@ type Props = {
   title: string;
   /** Show a back chevron (defaults to true). */
   back?: boolean;
+  /** When history is empty, navigate here instead of a no-op back. */
+  fallbackHref?: string;
   /** Optional press handler for the title (e.g. open peer profile). */
   onTitlePress?: () => void;
   /** Optional avatar shown beside the title. */
@@ -16,9 +18,28 @@ type Props = {
 };
 
 /** Plain screen header with an optional back button + title, matching mockup detail screens. */
-export function ScreenHeader({ title, back = true, onTitlePress, left, right }: Props) {
+export function ScreenHeader({
+  title,
+  back = true,
+  fallbackHref,
+  onTitlePress,
+  left,
+  right,
+}: Props) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+
+  function handleBack() {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    if (fallbackHref) {
+      router.replace(fallbackHref as never);
+      return;
+    }
+    router.back();
+  }
 
   return (
     <View
@@ -30,7 +51,7 @@ export function ScreenHeader({ title, back = true, onTitlePress, left, right }: 
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Go back"
-            onPress={() => router.back()}
+            onPress={handleBack}
             className="h-11 w-11 items-center justify-center rounded-full active:bg-primary/10"
           >
             <Text className="text-2xl text-puce-red">‹</Text>

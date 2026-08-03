@@ -24,6 +24,11 @@ import {
   buildMessageSharePayload,
   type ShareComposerPayload,
 } from "@bookmarked/utils/sharePreview";
+import {
+  copyShareLink,
+  shareExternally,
+  toExternalShareContent,
+} from "@/lib/utils/externalShare";
 
 export type SharePayload = ShareComposerPayload;
 
@@ -155,6 +160,42 @@ export function ShareContentModal({
     router.push(messageThreadPath(convo.conversationId));
   }
 
+  async function handleShareExternally() {
+    const share = payload;
+    if (!share) return;
+    setSubmitting(true);
+    setError(null);
+    const result = await shareExternally(share);
+    setSubmitting(false);
+    if (result === "shared") {
+      toast.success("Opened share sheet.");
+      onClose();
+      return;
+    }
+    if (result === "copied") {
+      toast.success("Link copied.");
+      onClose();
+      return;
+    }
+    if (result === "cancelled") return;
+    setError("Could not share. Try Copy link.");
+    toast.error("Could not share.");
+  }
+
+  async function handleCopyLink() {
+    const share = payload;
+    if (!share) return;
+    setSubmitting(true);
+    const result = await copyShareLink(toExternalShareContent(share).url);
+    setSubmitting(false);
+    if (result === "copied") {
+      toast.success("Link copied.");
+      onClose();
+      return;
+    }
+    toast.error("Could not copy link.");
+  }
+
   const recentProfiles: MessageProfile[] = recent.flatMap((row) => {
     const peer = row.participants?.find((participant) => participant.user_id !== currentUserId);
     const profile = peer?.profile;
@@ -189,6 +230,22 @@ export function ShareContentModal({
             </Button>
             <Button type="button" variant="outline" onClick={() => setMode("message")}>
               Share → Message
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              loading={submitting}
+              onClick={() => void handleShareExternally()}
+            >
+              Share → Apps
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              loading={submitting}
+              onClick={() => void handleCopyLink()}
+            >
+              Copy link
             </Button>
           </div>
         ) : (

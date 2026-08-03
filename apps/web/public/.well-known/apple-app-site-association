@@ -1,0 +1,31 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "KR52VK4ZKR.com.dekuworks.bookmarked",
+        "paths": [
+          "/",
+          "/feed",
+          "/feed/*",
+          "/book",
+          "/book/*",
+          "/reader",
+          "/reader/*",
+          "/clubs",
+          "/clubs/*",
+          "/reading-dna",
+          "/reading-dna/*",
+          "/author",
+          "/author/*",
+          "/series",
+          "/series/*",
+          "*"
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["KR52VK4ZKR.com.dekuworks.bookmarked"]
+  }
+}

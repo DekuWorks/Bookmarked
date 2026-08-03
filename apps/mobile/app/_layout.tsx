@@ -20,6 +20,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "../src/lib/queryClient";
 import { useAuthBootstrap } from "../src/hooks/useAuth";
+import { useDeepLinkRouting } from "../src/hooks/useDeepLinkRouting";
 import { useThemeStore } from "../src/store/themeStore";
 import { BACKGROUND_TINT } from "../src/constants/theme";
 
@@ -29,6 +30,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {
 
 function RootLayoutNav() {
   useAuthBootstrap();
+  useDeepLinkRouting();
   const hydrate = useThemeStore((state) => state.hydrate);
   const syncSystem = useThemeStore((state) => state.syncSystem);
 

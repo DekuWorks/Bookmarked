@@ -568,3 +568,61 @@ export function conversationSharePreviewText(input: {
   if (input.attachmentUrl) return "Sent an image";
   return "No messages yet";
 }
+
+export const DEFAULT_SITE_URL = "https://bookmarked.online";
+
+export type ExternalShareContent = {
+  title: string;
+  /** Branded preview text (no internal IDs). */
+  text: string;
+  /** Absolute https URL for rich previews / deep links. */
+  url: string;
+};
+
+export function absoluteShareUrl(
+  destinationPath: string,
+  siteUrl: string = DEFAULT_SITE_URL
+): string {
+  const path = normalizeShareDestination(destinationPath);
+  const base = siteUrl.replace(/\/$/, "");
+  return `${base}${path}`;
+}
+
+/**
+ * Build native/Web Share API payload from a composer or message share snapshot.
+ * Text stays human-readable; the absolute URL is provided separately for link previews.
+ */
+export function buildExternalShareContent(
+  input: ShareComposerPayload | MessageSharePayload,
+  siteUrl: string = DEFAULT_SITE_URL
+): ExternalShareContent {
+  const snap = input.snapshot;
+  const label = shareContentTypeLabel(input.contentType);
+  const title = `${snap.title} · Bookmarked`;
+
+  const lines: string[] = [];
+  if (snap.posterName?.trim()) {
+    lines.push(`${label} by ${snap.posterName.trim()}`);
+  } else {
+    lines.push(label);
+  }
+  lines.push(snap.title.trim());
+  if (snap.subtitle?.trim() && snap.subtitle.trim() !== snap.posterName?.trim()) {
+    lines.push(snap.subtitle.trim());
+  }
+  if (typeof snap.rating === "number" && Number.isFinite(snap.rating)) {
+    const stars = "★".repeat(Math.min(5, Math.max(0, Math.round(snap.rating))));
+    lines.push(`${stars} ${snap.rating.toFixed(1).replace(/\.0$/, "")}/5`);
+  }
+  if (snap.description?.trim()) {
+    lines.push(`“${snap.description.trim()}”`);
+  }
+  lines.push("");
+  lines.push("Shared via Bookmarked");
+
+  return {
+    title,
+    text: lines.join("\n"),
+    url: absoluteShareUrl(snap.destinationPath, siteUrl),
+  };
+}

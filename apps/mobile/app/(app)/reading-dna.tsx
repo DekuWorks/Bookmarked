@@ -155,7 +155,7 @@ export default function ReadingDnaRoute() {
 
   return (
     <View className="flex-1 bg-background">
-      <ScreenHeader title="Reading DNA" />
+      <ScreenHeader title="Reading DNA" fallbackHref="/(app)/profile" />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: TAB_BAR_SPACE }}>
         {loading && !dna ? (
           <ActivityIndicator color={colors.puceRed} />

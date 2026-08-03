@@ -9,6 +9,7 @@ import { FeedSearchBar } from "@/components/social/FeedSearchBar";
 import { FeedSearchResults } from "@/components/social/FeedSearchResults";
 import { PostCard } from "@/components/social/PostCard";
 import { PostComposer } from "@/components/social/PostComposer";
+import { ShareHead } from "@/components/seo/ShareHead";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { FeedCardSkeleton, PostCardSkeleton } from "@/components/ui/Skeleton";
@@ -22,6 +23,7 @@ import type { FeedItem } from "@/lib/services/socialFeed";
 import { getPostById, listFeedPosts } from "@/lib/services/posts";
 import type { PostWithAuthor } from "@/types";
 import { interleaveFeedWithDiscovery } from "@bookmarked/utils/feedDiscovery";
+import { truncateShareDescription } from "@bookmarked/utils/sharePreview";
 import { layout } from "@/lib/constants/layout";
 
 type PostFeedRow =
@@ -57,6 +59,8 @@ function FeedContent() {
   const [searchResults, setSearchResults] = useState<FeedSearchData | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [deepLinkPost, setDeepLinkPost] = useState<PostWithAuthor | null>(null);
+  const [deepLinkUnavailable, setDeepLinkUnavailable] = useState(false);
 
   const isSearching = debouncedQuery.trim().length > 0;
 
@@ -127,11 +131,22 @@ function FeedContent() {
   });
 
   useEffect(() => {
-    if (!user || !highlightedPostId || feedView !== "posts" || isSearching) return;
+    if (!user || !highlightedPostId || feedView !== "posts" || isSearching) {
+      setDeepLinkPost(null);
+      setDeepLinkUnavailable(false);
+      return;
+    }
 
+    setDeepLinkUnavailable(false);
     void getPostById(highlightedPostId, user.id)
       .then((post) => {
-        if (!post) return;
+        if (!post) {
+          setDeepLinkPost(null);
+          setDeepLinkUnavailable(true);
+          return;
+        }
+        setDeepLinkPost(post);
+        setDeepLinkUnavailable(false);
         setPosts((current) => {
           if (!current) return [post];
           if (current.some((item) => item.id === post.id)) return current;
@@ -139,7 +154,8 @@ function FeedContent() {
         });
       })
       .catch(() => {
-        // Deep-linked post may be unavailable to this viewer.
+        setDeepLinkPost(null);
+        setDeepLinkUnavailable(true);
       });
   }, [user, highlightedPostId, feedView, isSearching]);
 
@@ -216,30 +232,48 @@ function FeedContent() {
     return query ? `/feed/?${query}` : "/feed/";
   }
 
+  const deepLinkAuthor =
+    deepLinkPost?.author.display_name?.trim() ||
+    deepLinkPost?.author.username?.trim() ||
+    "a reader";
+
   return (
     <div className={`${layout.pageStackWide} text-left`}>
-      <div className="-mx-4 feed-header-gradient px-4 pb-6 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-        <header className="text-left">
-          <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Feed</h1>
-          <p className="mt-1 max-w-2xl text-pretty text-text-muted">
-            Discover readers, follow posts, and see what people you follow are reading.
-          </p>
-        </header>
+      {deepLinkPost ? (
+        <ShareHead
+          title={deepLinkPost.book?.title?.trim() || `Post by ${deepLinkAuthor}`}
+          description={
+            truncateShareDescription(deepLinkPost.body) ??
+            `${deepLinkAuthor} shared a post on Bookmarked`
+          }
+          image={deepLinkPost.book?.cover_url ?? deepLinkPost.image_url}
+        />
+      ) : null}
 
-        <div className="mt-6 max-w-3xl">
+      <div className="-mx-4 feed-header-gradient px-4 pb-6 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+        <div className="mx-auto w-full max-w-3xl space-y-5 text-left">
+          <header>
+            <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Feed</h1>
+            <p className="mt-2 text-pretty text-text-muted">
+              Discover readers, follow posts, and see what people you follow are reading.
+            </p>
+          </header>
+
           <FeedSearchBar value={searchQuery} onChange={setSearchQuery} />
         </div>
       </div>
 
       {isSearching ? (
-        <FeedSearchResults
-          query={debouncedQuery.trim()}
-          results={searchResults}
-          loading={searchLoading}
-          error={searchError}
-        />
+        <div className="mx-auto w-full max-w-3xl">
+          <FeedSearchResults
+            query={debouncedQuery.trim()}
+            results={searchResults}
+            loading={searchLoading}
+            error={searchError}
+          />
+        </div>
       ) : (
-        <div className="mx-auto w-full max-w-3xl space-y-6">
+        <div className="mx-auto w-full max-w-3xl space-y-5">
           <div className="pill-tabs overflow-x-auto" role="tablist" aria-label="Feed content">
             {viewOptions.map((option) => (
               <Link
@@ -273,6 +307,12 @@ function FeedContent() {
           {error ? (
             <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-left text-sm text-red-700">
               {error}
+            </p>
+          ) : null}
+
+          {deepLinkUnavailable ? (
+            <p className="rounded-xl border border-dashed border-border bg-background px-4 py-3 text-sm text-text-muted">
+              This content is no longer available.
             </p>
           ) : null}
 

@@ -39,11 +39,18 @@ export function activityEventHref(
 }
 
 export function feedItemHref(
-  item: Pick<FeedItem, "event_type" | "bookId" | "profiles" | "clubId">
+  item: Pick<FeedItem, "event_type" | "bookId" | "profiles" | "clubId" | "metadata_json">
 ): string {
-  // Club discussions link to the club, even when a book is attached.
+  // Club discussions link to the club (and discussion when available).
   if (isClubActivityEvent(item.event_type) && item.clubId) {
-    return clubDetailPath(item.clubId);
+    const discussionId =
+      typeof item.metadata_json?.discussion_id === "string"
+        ? item.metadata_json.discussion_id
+        : null;
+    return clubDetailPath(item.clubId, {
+      tab: discussionId ? "discussions" : undefined,
+      discussionId,
+    });
   }
   return activityEventHref(item.event_type, item.bookId, item.profiles?.username);
 }
@@ -79,7 +86,14 @@ export function notificationHref(notification: NotificationWithActor): string {
   if (notification.type === "club") {
     const clubId = notification.metadata_json?.club_id;
     if (typeof clubId === "string") {
-      return clubDetailPath(clubId);
+      const discussionId =
+        typeof notification.metadata_json?.discussion_id === "string"
+          ? notification.metadata_json.discussion_id
+          : null;
+      return clubDetailPath(clubId, {
+        tab: discussionId ? "discussions" : undefined,
+        discussionId,
+      });
     }
     return "/clubs/";
   }

@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { Pressable, RefreshControl, Text, View } from "react-native";
+import { useEffect, useMemo, useRef } from "react";
+import { Pressable, RefreshControl, Text, View, type FlatList } from "react-native";
 import Animated from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import { Avatar } from "./Avatar";
@@ -25,6 +25,7 @@ type Props = {
   tab: FeedTab;
   width: number;
   onScroll: ScrollHandlerProcessed<Record<string, unknown>>;
+  highlightedPostId?: string;
 };
 
 function Composer() {
@@ -54,8 +55,9 @@ function Composer() {
   );
 }
 
-export function FeedTabPanel({ tab, width, onScroll }: Props) {
+export function FeedTabPanel({ tab, width, onScroll, highlightedPostId }: Props) {
   const colors = useThemeColors();
+  const listRef = useRef<FlatList<FeedListRow>>(null);
   const { data: feed, isLoading, isError, error, refetch, isRefetching } = useHomeFeed(tab);
 
   const rows = useMemo<FeedListRow[]>(() => {
@@ -74,13 +76,29 @@ export function FeedTabPanel({ tab, width, onScroll }: Props) {
     );
   }, [feed, tab]);
 
+  useEffect(() => {
+    if (!highlightedPostId || !rows.length) return;
+    const index = rows.findIndex(
+      (row) => row.kind === "item" && row.item.kind === "post" && row.item.id === highlightedPostId
+    );
+    if (index < 0) return;
+    const handle = setTimeout(() => {
+      listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.2 });
+    }, 350);
+    return () => clearTimeout(handle);
+  }, [highlightedPostId, rows]);
+
   return (
     <Animated.FlatList
+      ref={listRef}
       style={{ width }}
       data={rows}
       keyExtractor={(item) => item.key}
       onScroll={onScroll}
       scrollEventThrottle={16}
+      onScrollToIndexFailed={() => {
+        /* deep-linked post may not be in the first page */
+      }}
       contentContainerStyle={{ padding: 16, paddingBottom: TAB_BAR_SPACE, flexGrow: 1 }}
       renderItem={({ item }) =>
         item.kind === "discovery" ? (
