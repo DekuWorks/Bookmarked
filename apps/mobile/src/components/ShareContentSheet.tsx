@@ -12,6 +12,7 @@ import {
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Avatar } from "./Avatar";
+import { SharePreviewCard } from "./messages/SharePreviewCard";
 import {
   createDirectConversation,
   getConversations,
@@ -22,15 +23,12 @@ import { createPost } from "../services/posts";
 import { supabase } from "../services/supabase";
 import { SANS_FONT, SANS_FONT_BOLD, SANS_FONT_MEDIUM } from "../constants/theme";
 import { useThemeColors } from "../store/themeStore";
+import {
+  buildMessageSharePayload,
+  type ShareComposerPayload,
+} from "../../../../packages/utils/sharePreview";
 
-export type MobileSharePayload = {
-  kind: "post" | "review" | "book" | "activity";
-  title: string;
-  previewPath: string;
-  body: string;
-  bookId?: string | null;
-  imageUrl?: string | null;
-};
+export type MobileSharePayload = ShareComposerPayload;
 
 type ProfileRow = {
   id: string;
@@ -141,6 +139,8 @@ export function ShareContentSheet({
 
   if (!payload) return null;
 
+  const previewPayload = buildMessageSharePayload(payload);
+
   async function shareToFeed() {
     const share = payload;
     if (!share) return;
@@ -175,10 +175,13 @@ export function ShareContentSheet({
       Alert.alert("Couldn't share", convo.error ?? "Could not start conversation.");
       return;
     }
-    const messageBody = [note.trim(), share.body, `Open: ${share.previewPath}`]
-      .filter(Boolean)
-      .join("\n\n");
-    const sent = await sendMessage(convo.conversationId, messageBody);
+    const sent = await sendMessage(
+      convo.conversationId,
+      note.trim(),
+      null,
+      null,
+      share
+    );
     setSubmitting(false);
     if (sent.error) {
       Alert.alert("Couldn't send", sent.error);
@@ -200,14 +203,11 @@ export function ShareContentSheet({
           <Text className="text-xl" style={{ fontFamily: SANS_FONT_BOLD, color: colors.puceRed }}>
             Share
           </Text>
-          <View className="mt-3 rounded-2xl border border-brand-border px-4 py-3">
-            <Text style={{ fontFamily: SANS_FONT_MEDIUM, color: colors.inkMuted }}>Preview</Text>
-            <Text className="mt-1" style={{ fontFamily: SANS_FONT_BOLD, color: colors.ink }}>
-              {payload.title}
+          <View className="mt-3">
+            <Text style={{ fontFamily: SANS_FONT_MEDIUM, color: colors.inkMuted, marginBottom: 8 }}>
+              Preview
             </Text>
-            <Text className="mt-1" style={{ fontFamily: SANS_FONT, color: colors.ink }} numberOfLines={3}>
-              {payload.body}
-            </Text>
+            <SharePreviewCard payload={previewPayload} viewerId={currentUserId} />
           </View>
 
           {mode === "choose" ? (
@@ -235,7 +235,7 @@ export function ShareContentSheet({
               <TextInput
                 value={note}
                 onChangeText={setNote}
-                placeholder="Optional message"
+                placeholder="I think you'll love this."
                 placeholderTextColor={colors.inkMuted}
                 className="rounded-xl border border-brand-border px-3 py-3"
                 style={{ fontFamily: SANS_FONT, color: colors.ink }}

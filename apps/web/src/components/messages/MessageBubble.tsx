@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/Input";
 import { MessageReactionBar } from "@/components/messages/MessageReactionBar";
 import { MessageReactionPicker } from "@/components/messages/MessageReactionPicker";
 import { MessageReplyPreview } from "@/components/messages/MessageReplyPreview";
+import { SharePreviewCard } from "@/components/messages/SharePreviewCard";
 import { CommentAttachment } from "@/components/social/CommentAttachment";
 import { formatMessageTimestamp } from "@/lib/services/messages";
 import { usePreferredLocale } from "@/lib/hooks/usePreferredLocale";
@@ -18,6 +19,7 @@ type Props = {
   isOwn: boolean;
   showSenderName: boolean;
   participantNames: Map<string, string>;
+  viewerId?: string | null;
   onDelete?: (messageId: string) => void;
   onEdit?: (messageId: string, body: string) => Promise<{ error?: string }>;
   onReply?: (message: MessageWithSender) => void;
@@ -32,6 +34,7 @@ export function MessageBubble({
   isOwn,
   showSenderName,
   participantNames,
+  viewerId,
   onDelete,
   onEdit,
   onReply,
@@ -49,14 +52,17 @@ export function MessageBubble({
 
   const hasReply = Boolean(message.reply_to);
   const hasAttachment = Boolean(message.attachment_url);
+  const hasShare = Boolean(message.share_payload);
   const hasBody = Boolean(message.body?.trim());
-  const isAttachmentOnly = hasAttachment && !hasBody && !hasReply;
+  const isAttachmentOnly =
+    hasAttachment && !hasBody && !hasReply && !hasShare;
+  const isShareOnly = hasShare && !hasBody && !hasAttachment && !hasReply;
 
   async function handleSave() {
     if (!onEdit) return;
 
     const trimmed = draft.trim();
-    if (!trimmed) {
+    if (!trimmed && !message.share_payload) {
       setEditError("Message cannot be empty.");
       return;
     }
@@ -126,13 +132,15 @@ export function MessageBubble({
             <div
               className={cn(
                 "rounded-2xl text-sm leading-relaxed shadow-sm",
-                isAttachmentOnly ? "overflow-hidden p-1" : "px-4 py-2.5",
+                isAttachmentOnly || isShareOnly
+                  ? "overflow-hidden p-1"
+                  : "px-4 py-2.5",
                 isOwn
                   ? "rounded-br-md bg-puce-red text-white"
                   : "rounded-bl-md border border-border bg-surface text-text"
               )}
             >
-              <div className={cn(!isAttachmentOnly && "space-y-2")}>
+              <div className={cn(!(isAttachmentOnly || isShareOnly) && "space-y-2")}>
                 {hasReply ? (
                   <MessageReplyPreview reply={message.reply_to!} isOwn={isOwn} compact />
                 ) : null}
@@ -142,7 +150,15 @@ export function MessageBubble({
                     className={cn(isAttachmentOnly && "rounded-xl")}
                   />
                 ) : null}
-                {hasBody ? <p className={hasAttachment ? "px-1" : undefined}>{message.body}</p> : null}
+                {hasBody ? <p className={hasAttachment || hasShare ? "px-1" : undefined}>{message.body}</p> : null}
+                {hasShare && message.share_payload ? (
+                  <SharePreviewCard
+                    payload={message.share_payload}
+                    viewerId={viewerId}
+                    isOwn={isOwn}
+                    className={cn(!(isShareOnly && !hasBody) && "mt-1")}
+                  />
+                ) : null}
               </div>
             </div>
 

@@ -11,8 +11,14 @@ import type {
   MessageProfile,
   MessageReactionSummary,
   MessageReplyPreview,
+  MessageSharePayload,
   MessageWithSender,
 } from "../types";
+import {
+  buildMessageSharePayload,
+  parseMessageSharePayload,
+  type ShareComposerPayload,
+} from "../../../../packages/utils/sharePreview";
 
 /**
  * Mobile messages service. Mirrors the web service
@@ -76,6 +82,9 @@ function mapMessageRow(
     body: row.body ?? "",
     attachment_url: row.attachment_url ?? null,
     reply_to_id: row.reply_to_id ?? null,
+    share_payload: parseMessageSharePayload(
+      (row as Message & { share_payload?: unknown }).share_payload
+    ),
     created_at: row.created_at,
     updated_at: row.updated_at,
     deleted_at: row.deleted_at,
@@ -315,12 +324,18 @@ export async function getConversations(userId: string): Promise<ConversationPrev
   const latestByConversation = new Map<string, Message>();
   const messagesByConversation = new Map<string, Message[]>();
   for (const message of (allMessages ?? []) as Message[]) {
-    if (!latestByConversation.has(message.conversation_id)) {
-      latestByConversation.set(message.conversation_id, message);
+    const normalized: Message = {
+      ...message,
+      share_payload: parseMessageSharePayload(
+        (message as Message & { share_payload?: unknown }).share_payload
+      ),
+    };
+    if (!latestByConversation.has(normalized.conversation_id)) {
+      latestByConversation.set(normalized.conversation_id, normalized);
     }
-    const list = messagesByConversation.get(message.conversation_id) ?? [];
-    list.push(message);
-    messagesByConversation.set(message.conversation_id, list);
+    const list = messagesByConversation.get(normalized.conversation_id) ?? [];
+    list.push(normalized);
+    messagesByConversation.set(normalized.conversation_id, list);
   }
 
   const sorted = sortConversations(
@@ -444,12 +459,21 @@ export async function sendMessage(
   conversationId: string,
   body: string,
   attachmentUrl?: string | null,
-  replyToId?: string | null
+  replyToId?: string | null,
+  share?: ShareComposerPayload | MessageSharePayload | null
 ): Promise<{ message?: Message; error?: string }> {
   const trimmed = body.trim();
   const attachment = attachmentUrl?.trim() || null;
   const replyTo = replyToId?.trim() || null;
-  if (!trimmed && !attachment) return { error: "Message cannot be empty." };
+  const sharePayload: MessageSharePayload | null = !share
+    ? null
+    : "body" in share || "title" in share
+      ? buildMessageSharePayload(share as ShareComposerPayload)
+      : parseMessageSharePayload(share);
+
+  if (!trimmed && !attachment && !sharePayload) {
+    return { error: "Message cannot be empty." };
+  }
 
   try {
     const user = await requireUser();
@@ -482,6 +506,7 @@ export async function sendMessage(
         body: trimmed,
         attachment_url: attachment,
         reply_to_id: replyTo,
+        share_payload: sharePayload,
       })
       .select("*")
       .single();
@@ -499,7 +524,12 @@ export async function sendMessage(
       .eq("conversation_id", conversationId)
       .eq("user_id", user.id);
 
-    return { message: message as Message };
+    return {
+      message: mapMessageRow({
+        ...(message as MessageRow),
+        profiles: null,
+      }),
+    };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Could not send message." };
   }
@@ -791,10 +821,21 @@ export async function updateMessage(
   body: string
 ): Promise<{ message?: Message; error?: string }> {
   const trimmed = body.trim();
-  if (!trimmed) return { error: "Message cannot be empty." };
 
   try {
     const user = await requireUser();
+
+    if (!trimmed) {
+      const { data: existing } = await supabase
+        .from("messages")
+        .select("share_payload, attachment_url")
+        .eq("id", messageId)
+        .eq("sender_id", user.id)
+        .maybeSingle();
+      if (!existing?.share_payload && !existing?.attachment_url) {
+        return { error: "Message cannot be empty." };
+      }
+    }
 
     const { data: message, error } = await supabase
       .from("messages")
@@ -808,7 +849,14 @@ export async function updateMessage(
       .single();
 
     if (error) return { error: error.message };
-    return { message: message as Message };
+    return {
+      message: {
+        ...(message as Message),
+        share_payload: parseMessageSharePayload(
+          (message as Message & { share_payload?: unknown }).share_payload
+        ),
+      },
+    };
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : "Could not update message.",

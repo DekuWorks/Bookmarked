@@ -21,15 +21,13 @@ import { QuoteRepostModal } from "@/components/social/QuoteRepostModal";
 import { RepostPreview } from "@/components/social/RepostPreview";
 import { MentionText } from "@/components/social/MentionText";
 import { BookmarkedLikeSparkles } from "@/components/social/BookmarkedLikeSparkles";
-import {
-  ShareContentModal,
-  type SharePayload,
-} from "@/components/social/ShareContentModal";
+import { ShareContentModal } from "@/components/social/ShareContentModal";
 import { ContentActionsMenu } from "@/components/moderation/ContentActionsMenu";
 import { usePreferredLocale } from "@/lib/hooks/usePreferredLocale";
 import { isGiphyImageUrl } from "@/lib/utils/giphy";
 import { formatFeedTimestamp } from "@/lib/utils/locale";
 import { cn } from "@/lib/utils/cn";
+import { buildPostShareComposerPayload } from "@bookmarked/utils/sharePreview";
 
 type Props = {
   post: PostWithAuthor;
@@ -116,14 +114,21 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
     }));
   }
 
-  const sharePayload: SharePayload = {
-    kind: "post",
-    title: `Post by ${authorLabel(localPost.author)}`,
-    previewPath: postFeedPath(localPost.id),
-    body: localPost.body.trim() || "Shared a post on Bookmarked",
+  const sharePayload = buildPostShareComposerPayload({
+    postId: localPost.id,
+    body: localPost.body,
+    authorName: authorLabel(localPost.author),
+    authorAvatarUrl: localPost.author.avatar_url,
+    bookTitle: localPost.book?.title,
+    bookCoverUrl: localPost.book?.cover_url,
     bookId: localPost.book?.id ?? null,
     imageUrl: localPost.image_url,
-  };
+    createdAt: localPost.created_at,
+    destinationPath: postFeedPath(localPost.id),
+    edited: Boolean(
+      localPost.updated_at && localPost.updated_at !== localPost.created_at
+    ),
+  });
 
   function handleRepostClick() {
     if (localPost.viewer_has_reposted) {

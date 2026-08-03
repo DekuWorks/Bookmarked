@@ -11,7 +11,11 @@ import { MentionText } from "./MentionText";
 import { PostCommentsSheet } from "./PostCommentsSheet";
 import { ProfanityBlur } from "./ProfanityBlur";
 import { RepostPreview } from "./RepostPreview";
-import { ShareContentSheet, type MobileSharePayload } from "./ShareContentSheet";
+import { ShareContentSheet } from "./ShareContentSheet";
+import {
+  buildPostShareComposerPayload,
+  buildReviewShareComposerPayload,
+} from "../../../../packages/utils/sharePreview";
 import { StarRating } from "./StarRating";
 import { showContentActions } from "./ContentActions";
 import { timeAgo } from "../utils";
@@ -125,13 +129,19 @@ function ReviewCard({ entry, viewerId }: { entry: ReviewEntry; viewerId?: string
   const like = useToggleReviewLike();
   const hidden = entry.hasSpoilers && !revealed;
   const isSelf = entry.author.id === viewerId;
-  const sharePayload: MobileSharePayload = {
-    kind: "review",
-    title: `Review by ${entry.author.name}`,
-    previewPath: entry.book ? `/book/${entry.book.id}` : "/feed",
+  const sharePayload = buildReviewShareComposerPayload({
+    reviewId: entry.id,
     body: entry.reviewBody?.trim() || `${entry.author.name} shared a review`,
+    authorName: entry.author.name,
+    authorAvatarUrl: entry.author.avatarUrl,
+    bookTitle: entry.book?.title,
+    bookCoverUrl: entry.book?.coverUrl,
     bookId: entry.book?.id ?? null,
-  };
+    rating: entry.rating ?? null,
+    spoiler: Boolean(entry.hasSpoilers),
+    createdAt: entry.createdAt,
+    destinationPath: entry.book ? `/book/${entry.book.id}` : "/feed",
+  });
 
   function onMore() {
     if (isSelf) return;
@@ -302,14 +312,19 @@ function PostCard({ entry, viewerId }: { entry: PostEntry; viewerId?: string }) 
   const [shareOpen, setShareOpen] = useState(false);
   const isRepost = Boolean(post.repost_of_post_id);
   const mine = post.user_id === viewerId;
-  const sharePayload: MobileSharePayload = {
-    kind: "post",
-    title: `Post by ${entry.author.name}`,
-    previewPath: `/feed?post=${post.id}`,
+  const sharePayload = buildPostShareComposerPayload({
+    postId: post.id,
     body: post.body?.trim() || `${entry.author.name} shared a post`,
+    authorName: entry.author.name,
+    authorAvatarUrl: entry.author.avatarUrl,
+    bookTitle: post.book?.title,
+    bookCoverUrl: post.book?.cover_url,
     bookId: post.book?.id ?? null,
     imageUrl: post.image_url,
-  };
+    createdAt: post.created_at,
+    destinationPath: `/feed?post=${post.id}`,
+    edited: Boolean(post.updated_at && post.updated_at !== post.created_at),
+  });
 
   function onMore() {
     if (mine) {

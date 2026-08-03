@@ -16,6 +16,7 @@ import { profileDisplayName } from "@/lib/utils/messaging";
 import { useToast } from "@/components/ui/Toast";
 import type { ConversationPreview } from "@/types";
 import { cn } from "@/lib/utils/cn";
+import { conversationSharePreviewText } from "@bookmarked/utils/sharePreview";
 
 type Props = {
   conversation: ConversationPreview;
@@ -34,7 +35,13 @@ export function ConversationListItem({
 
   const title = conversationDisplayName(conversation, currentUserId);
   const latest = conversation.latestMessage;
-  const preview = latest?.body ?? "No messages yet";
+  const preview = latest
+    ? conversationSharePreviewText({
+        body: latest.body,
+        share: latest.share_payload,
+        attachmentUrl: latest.attachment_url,
+      })
+    : "No messages yet";
   const timestamp = latest ? formatMessageTimestamp(latest.created_at) : null;
 
   const avatarProfile =

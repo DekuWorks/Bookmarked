@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { UserAvatar } from "@/components/messages/UserAvatar";
+import { SharePreviewCard } from "@/components/messages/SharePreviewCard";
 import { useToast } from "@/components/ui/Toast";
 import {
   createDirectConversation,
@@ -20,15 +20,12 @@ import { messageThreadPath } from "@/lib/routes/messages";
 import { profileDisplayName } from "@/lib/utils/messaging";
 import type { ConversationPreview, MessageProfile } from "@/types";
 import { cn } from "@/lib/utils/cn";
+import {
+  buildMessageSharePayload,
+  type ShareComposerPayload,
+} from "@bookmarked/utils/sharePreview";
 
-export type SharePayload = {
-  kind: "post" | "review" | "book" | "activity";
-  title: string;
-  previewPath: string;
-  body: string;
-  bookId?: string | null;
-  imageUrl?: string | null;
-};
+export type SharePayload = ShareComposerPayload;
 
 type Props = {
   open: boolean;
@@ -101,6 +98,8 @@ export function ShareContentModal({
 
   if (!payload) return null;
 
+  const previewPayload = buildMessageSharePayload(payload);
+
   async function handleShareToFeed() {
     const share = payload;
     if (!share) return;
@@ -138,10 +137,13 @@ export function ShareContentModal({
       toast.error(convo.error ?? "Could not start conversation.");
       return;
     }
-    const body = [note.trim(), share.body, `Open: ${share.previewPath}`]
-      .filter(Boolean)
-      .join("\n\n");
-    const sent = await sendMessage(convo.conversationId, body);
+    const sent = await sendMessage(
+      convo.conversationId,
+      note.trim(),
+      null,
+      null,
+      share
+    );
     setSubmitting(false);
     if (sent.error) {
       setError(sent.error);
@@ -173,16 +175,11 @@ export function ShareContentModal({
   return (
     <Modal open={open} onClose={onClose} title="Share" className="max-w-lg">
       <div className="space-y-4 text-left">
-        <div className="rounded-xl border border-border bg-background px-4 py-3">
-          <p className="text-xs font-medium uppercase tracking-wide text-text-muted">Preview</p>
-          <p className="mt-1 text-sm font-semibold text-puce-red">{payload.title}</p>
-          <p className="mt-1 line-clamp-3 text-sm text-text">{payload.body}</p>
-          <Link
-            href={payload.previewPath}
-            className="mt-2 inline-block text-sm font-medium text-primary hover:underline"
-          >
-            Open content
-          </Link>
+        <div className="space-y-2">
+          <p className="text-xs font-medium uppercase tracking-wide text-text-muted">
+            Preview
+          </p>
+          <SharePreviewCard payload={previewPayload} viewerId={currentUserId} />
         </div>
 
         {mode === "choose" ? (
@@ -201,7 +198,7 @@ export function ShareContentModal({
               <Input
                 value={note}
                 onChange={(event) => setNote(event.target.value)}
-                placeholder="Add a note…"
+                placeholder="I think you'll love this."
                 className="mt-1"
               />
             </label>

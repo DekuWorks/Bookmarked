@@ -7,10 +7,7 @@ import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { StarDisplay } from "@/components/reviews/StarDisplay";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
-import {
-  ShareContentModal,
-  type SharePayload,
-} from "@/components/social/ShareContentModal";
+import { ShareContentModal } from "@/components/social/ShareContentModal";
 import { feedItemHref } from "@/lib/routes/activity";
 import { readerProfilePath } from "@/lib/routes/reader";
 import { bookDetailsPath } from "@/lib/routes/book";
@@ -18,6 +15,7 @@ import { deleteOwnActivity, isFeedEligibleEvent } from "@/lib/services/activity"
 import type { FeedItem } from "@/lib/services/socialFeed";
 import { usePreferredLocale } from "@/lib/hooks/usePreferredLocale";
 import { formatFeedTimestamp } from "@/lib/utils/locale";
+import { buildActivityShareComposerPayload } from "@bookmarked/utils/sharePreview";
 
 type Props = {
   item: FeedItem;
@@ -51,13 +49,17 @@ export const FeedCard = memo(function FeedCard({ item, viewerId, onDeleted }: Pr
       : null;
   const isOwn = Boolean(viewerId && item.user_id === viewerId);
 
-  const sharePayload: SharePayload = {
-    kind: "activity",
-    title: `${readerLabel(item)} · activity`,
-    previewPath: activityHref,
+  const sharePayload = buildActivityShareComposerPayload({
+    activityId: item.id,
+    title: item.bookTitle?.trim() || `${readerLabel(item)} · activity`,
     body: `${readerLabel(item)} ${item.actionMessage}`,
+    actorName: readerLabel(item),
+    actorAvatarUrl: item.profiles?.avatar_url,
     bookId: item.bookId ?? null,
-  };
+    bookCoverUrl: item.coverUrl ?? null,
+    destinationPath: activityHref,
+    createdAt: item.created_at,
+  });
 
   async function handleDelete() {
     if (!viewerId) return;

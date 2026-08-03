@@ -21,6 +21,7 @@ import { GroupSettingsSheet } from "../../../src/components/messages/GroupSettin
 import { LoadingState } from "../../../src/components/LoadingState";
 import { MessageReactionPicker } from "../../../src/components/messages/MessageReactionPicker";
 import { MessageReplyPreview } from "../../../src/components/messages/MessageReplyPreview";
+import { SharePreviewCard } from "../../../src/components/messages/SharePreviewCard";
 import { ScreenHeader } from "../../../src/components/ScreenHeader";
 import { MESSAGE_QUICK_REACTIONS } from "../../../src/constants/messageReactions";
 import {
@@ -373,6 +374,15 @@ export default function ThreadScreen() {
                         ) : null}
                         {item.body ? (
                           <Text className={mine ? "text-white" : "text-ink"}>{item.body}</Text>
+                        ) : null}
+                        {item.share_payload ? (
+                          <View className={item.body || item.attachment_url ? "mt-2" : undefined}>
+                            <SharePreviewCard
+                              payload={item.share_payload}
+                              viewerId={userId}
+                              isOwn={mine}
+                            />
+                          </View>
                         ) : null}
                         {edited ? (
                           <Text

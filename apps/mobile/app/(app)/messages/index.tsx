@@ -17,6 +17,7 @@ import { conversationDisplayName, formatMessageTimestamp } from "../../../src/se
 import { TAB_BAR_SPACE, useTabBarScroll } from "../../../src/navigation/TabBarScroll";
 import { useAuthStore } from "../../../src/store/authStore";
 import type { ConversationPreview } from "../../../src/types";
+import { conversationSharePreviewText } from "../../../../../packages/utils/sharePreview";
 
 type Segment = "dms" | "clubs";
 
@@ -31,9 +32,11 @@ const MESSAGES_WASH_HEIGHT_RATIO = 0.16;
 function conversationPreview(item: ConversationPreview): string {
   const latest = item.latestMessage;
   if (!latest) return "No messages yet";
-  if (latest.body?.trim()) return latest.body;
-  if (latest.attachment_url) return "Photo";
-  return "No messages yet";
+  return conversationSharePreviewText({
+    body: latest.body,
+    share: latest.share_payload,
+    attachmentUrl: latest.attachment_url,
+  });
 }
 
 export default function MessagesScreen() {

@@ -57,6 +57,7 @@ export function MessageList({
           isOwn={message.sender_id === currentUserId}
           showSenderName={isGroup}
           participantNames={participantNames}
+          viewerId={currentUserId}
           onDelete={onDeleteMessage}
           onEdit={onEditMessage}
           onReply={onReplyToMessage}

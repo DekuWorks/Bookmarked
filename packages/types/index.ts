@@ -191,6 +191,35 @@ export interface ConversationParticipant {
   pinned_at: string | null;
 }
 
+/** Structured DM share card payload (see packages/utils/sharePreview). */
+export type MessageSharePayload = {
+  contentType:
+    | "post"
+    | "review"
+    | "book"
+    | "club"
+    | "reading_list"
+    | "reading_dna"
+    | "author"
+    | "profile"
+    | "activity";
+  contentId: string;
+  snapshot: {
+    title: string;
+    subtitle?: string | null;
+    description?: string | null;
+    thumbnailUrl?: string | null;
+    posterName?: string | null;
+    posterAvatarUrl?: string | null;
+    rating?: number | null;
+    tags?: string[];
+    timestamp?: string | null;
+    spoiler?: boolean;
+    edited?: boolean;
+    destinationPath: string;
+  };
+};
+
 export interface Message {
   id: string;
   conversation_id: string;
@@ -198,6 +227,7 @@ export interface Message {
   body: string;
   attachment_url: string | null;
   reply_to_id: string | null;
+  share_payload: MessageSharePayload | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;

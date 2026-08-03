@@ -19,6 +19,7 @@ export type {
   Conversation,
   ConversationParticipant,
   Message,
+  MessageSharePayload,
   MessageReaction,
   MessageReactionSummary,
   MessageReplyPreview,

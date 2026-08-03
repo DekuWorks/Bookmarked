@@ -37,6 +37,7 @@ export type {
   ConversationWithParticipants,
   ConversationParticipantWithProfile,
   Message,
+  MessageSharePayload,
   MessageWithSender,
   MessageReactionSummary,
   MessageReplyPreview,
