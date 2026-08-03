@@ -205,10 +205,10 @@ export function ClubOverviewPanel({
   const memberPreview = club.members.slice(0, 8);
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
+    <div className="space-y-6 text-left">
+      <section className="rounded-xl border border-border bg-surface p-6 text-left shadow-sm">
         <div className="mb-4 flex items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold text-puce-red">Current Read</h2>
+          <h2 className="text-left text-lg font-semibold text-puce-red">Current Read</h2>
           {canManageRead ? (
             <Button type="button" variant="ghost" size="sm" onClick={() => setBookPickerOpen(true)}>
               {activeRead?.book ? "Change" : "Set book"}

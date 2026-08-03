@@ -213,20 +213,22 @@ export function ClubDiscussionsPanel({
       : null;
 
     return (
-      <section className="space-y-4">
+      <section className="space-y-4 text-left">
         <button
           type="button"
           onClick={() => setActiveId(null)}
-          className="text-sm font-medium text-primary hover:underline"
+          className="text-left text-sm font-medium text-primary hover:underline"
         >
           ← Back to discussions
         </button>
 
-        <article className="rounded-xl border border-border bg-surface p-5 shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-xl font-bold text-puce-red">{activeDiscussion.title}</h2>
+        <article className="rounded-xl border border-border bg-surface p-5 text-left shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3 text-left">
+            <div className="min-w-0 flex-1 text-left">
+              <div className="flex flex-wrap items-center gap-2 text-left">
+                <h2 className="text-left text-xl font-bold text-puce-red">
+                  {activeDiscussion.title}
+                </h2>
                 {activeDiscussion.is_pinned ? (
                   <span className="rounded-full bg-royal-orange/20 px-2 py-0.5 text-[10px] font-semibold uppercase text-royal-orange">
                     Pinned
@@ -320,8 +322,8 @@ export function ClubDiscussionsPanel({
             </div>
           </div>
 
-          <ProfanityBlur text={activeDiscussion.body} className="mt-4">
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-text">
+          <ProfanityBlur text={activeDiscussion.body} className="mt-4 text-left">
+            <p className="whitespace-pre-wrap text-left text-sm leading-relaxed text-text">
               {activeDiscussion.body}
             </p>
           </ProfanityBlur>
@@ -421,8 +423,8 @@ export function ClubDiscussionsPanel({
                         </button>
                       ) : null}
                     </div>
-                    <ProfanityBlur text={reply.body} className="mt-2">
-                      <p className="whitespace-pre-wrap text-sm text-text">{reply.body}</p>
+                    <ProfanityBlur text={reply.body} className="mt-2 text-left">
+                      <p className="whitespace-pre-wrap text-left text-sm text-text">{reply.body}</p>
                     </ProfanityBlur>
                   </li>
                 );
@@ -470,9 +472,9 @@ export function ClubDiscussionsPanel({
   }
 
   return (
-    <section className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold text-puce-red">Discussions</h2>
+    <section className="space-y-4 text-left">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-left">
+        <h2 className="text-left text-lg font-semibold text-puce-red">Discussions</h2>
         <div
           className="flex gap-1 overflow-x-auto"
           role="group"

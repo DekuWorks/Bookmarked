@@ -44,7 +44,7 @@ export function SpoilerReveal({
       onPress={() => setRevealed(true)}
       className={`min-h-[44px] justify-center rounded-xl bg-primary/15 px-3 py-3 ${className ?? ""}`}
     >
-      <Text className="text-sm font-semibold text-puce-red">{label}</Text>
+      <Text className="text-left text-sm font-semibold text-puce-red">{label}</Text>
     </Pressable>
   );
 }

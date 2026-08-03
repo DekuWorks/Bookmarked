@@ -152,7 +152,7 @@ export function ClubDiscussionThreadSheet({
                     </Text>
                   ) : null}
                 </View>
-                <Text className="text-xs text-ink-muted">
+                <Text className="text-left text-xs text-ink-muted">
                   {authorName(discussion.author)} · {timeAgo(discussion.created_at)}
                 </Text>
                 <SpoilerReveal
@@ -160,7 +160,7 @@ export function ClubDiscussionThreadSheet({
                   className="mt-3"
                 >
                   <ProfanityBlur text={discussion.body}>
-                    <Text className="leading-6 text-ink">{discussion.body}</Text>
+                    <Text className="text-left leading-6 text-ink">{discussion.body}</Text>
                   </ProfanityBlur>
                 </SpoilerReveal>
 

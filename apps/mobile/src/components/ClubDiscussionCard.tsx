@@ -55,97 +55,106 @@ export function ClubDiscussionCard({
       disabled={!onPress}
       className="mb-3 rounded-2xl border border-brand-border bg-surface p-4 active:opacity-90"
     >
-      <View className="flex-row items-center gap-3">
+      <View className="flex-row items-start gap-3">
         <Pressable
           onPress={() => username && router.push(`/reader/${username}`)}
           disabled={!username}
-          className="min-h-[44px] flex-1 flex-row items-center gap-3 active:opacity-80"
+          className="shrink-0 active:opacity-80"
           accessibilityRole={username ? "link" : undefined}
+          accessibilityLabel={authorName(post.author)}
         >
           <Avatar url={post.author.avatar_url} name={authorName(post.author)} size={36} />
-          <View className="flex-1">
-            <Text className="font-semibold text-ink" numberOfLines={1}>
-              {authorName(post.author)}
-            </Text>
-            <Text className="text-xs text-ink-muted">{timeAgo(post.created_at)}</Text>
-          </View>
         </Pressable>
-        {canDelete ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Delete discussion"
-            disabled={deleting}
-            onPress={onDelete}
-            className="min-h-[44px] justify-center rounded-full bg-primary/15 px-3 active:opacity-80"
-          >
-            {deleting ? (
-              <ActivityIndicator size="small" color="#642F37" />
-            ) : (
-              <Text className="text-xs font-semibold text-puce-red">Delete</Text>
-            )}
-          </Pressable>
-        ) : null}
-      </View>
 
-      {title ? (
-        <Text className="mt-3 text-base font-semibold text-puce-red" numberOfLines={2}>
-          {title}
-        </Text>
-      ) : null}
+        <View className="min-w-0 flex-1">
+          <View className="flex-row items-start gap-2">
+            <View className="min-w-0 flex-1">
+              <Text className="text-left font-semibold text-ink" numberOfLines={1}>
+                {authorName(post.author)}
+              </Text>
+              <Text className="text-left text-xs text-ink-muted">{timeAgo(post.created_at)}</Text>
+            </View>
+            {canDelete ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Delete discussion"
+                disabled={deleting}
+                onPress={onDelete}
+                className="min-h-[44px] justify-center rounded-full bg-primary/15 px-3 active:opacity-80"
+              >
+                {deleting ? (
+                  <ActivityIndicator size="small" color="#642F37" />
+                ) : (
+                  <Text className="text-xs font-semibold text-puce-red">Delete</Text>
+                )}
+              </Pressable>
+            ) : null}
+          </View>
 
-      <View className="mt-2 flex-row flex-wrap gap-2">
-        {pinned ? (
-          <Text className="rounded-full bg-primary/20 px-2 py-0.5 text-[11px] font-semibold text-puce-red">
-            Pinned
-          </Text>
-        ) : null}
-        {locked ? (
-          <Text className="rounded-full bg-primary/20 px-2 py-0.5 text-[11px] font-semibold text-puce-red">
-            Locked
-          </Text>
-        ) : null}
-        {spoilers ? (
-          <Text className="rounded-full bg-primary/20 px-2 py-0.5 text-[11px] font-semibold text-puce-red">
-            Spoilers
-          </Text>
-        ) : null}
-        {typeof replyCount === "number" ? (
-          <Text className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-ink-muted">
-            {replyCount} {replyCount === 1 ? "reply" : "replies"}
-          </Text>
-        ) : null}
-      </View>
-
-      <SpoilerReveal enabled={spoilers} className="mt-3">
-        <ProfanityBlur text={post.body}>
-          <Text className="leading-6 text-ink" numberOfLines={4}>
-            {post.body}
-          </Text>
-        </ProfanityBlur>
-      </SpoilerReveal>
-
-      {post.book ? (
-        <Pressable
-          onPress={() => router.push(`/book/${post.book!.id}`)}
-          className="mt-3 flex-row items-center gap-3 rounded-xl bg-background p-2 active:opacity-80"
-        >
-          <BookCover
-            url={post.book.cover_url}
-            title={post.book.title}
-            sizeClassName="w-10 h-14"
-          />
-          <View className="flex-1">
-            <Text className="text-sm font-medium text-ink" numberOfLines={2}>
-              {post.book.title}
+          {title ? (
+            <Text
+              className="mt-2 text-left text-base font-semibold text-puce-red"
+              numberOfLines={2}
+            >
+              {title}
             </Text>
-            {post.book.author ? (
-              <Text className="text-xs text-ink-muted" numberOfLines={1}>
-                {post.book.author}
+          ) : null}
+
+          <View className="mt-2 flex-row flex-wrap gap-2">
+            {pinned ? (
+              <Text className="rounded-full bg-primary/20 px-2 py-0.5 text-[11px] font-semibold text-puce-red">
+                Pinned
+              </Text>
+            ) : null}
+            {locked ? (
+              <Text className="rounded-full bg-primary/20 px-2 py-0.5 text-[11px] font-semibold text-puce-red">
+                Locked
+              </Text>
+            ) : null}
+            {spoilers ? (
+              <Text className="rounded-full bg-primary/20 px-2 py-0.5 text-[11px] font-semibold text-puce-red">
+                Spoilers
+              </Text>
+            ) : null}
+            {typeof replyCount === "number" ? (
+              <Text className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-ink-muted">
+                {replyCount} {replyCount === 1 ? "reply" : "replies"}
               </Text>
             ) : null}
           </View>
-        </Pressable>
-      ) : null}
+
+          <SpoilerReveal enabled={spoilers} className="mt-3">
+            <ProfanityBlur text={post.body}>
+              <Text className="text-left leading-6 text-ink" numberOfLines={4}>
+                {post.body}
+              </Text>
+            </ProfanityBlur>
+          </SpoilerReveal>
+
+          {post.book ? (
+            <Pressable
+              onPress={() => router.push(`/book/${post.book!.id}`)}
+              className="mt-3 flex-row items-center gap-3 rounded-xl bg-background p-2 active:opacity-80"
+            >
+              <BookCover
+                url={post.book.cover_url}
+                title={post.book.title}
+                sizeClassName="w-10 h-14"
+              />
+              <View className="min-w-0 flex-1">
+                <Text className="text-left text-sm font-medium text-ink" numberOfLines={2}>
+                  {post.book.title}
+                </Text>
+                {post.book.author ? (
+                  <Text className="text-left text-xs text-ink-muted" numberOfLines={1}>
+                    {post.book.author}
+                  </Text>
+                ) : null}
+              </View>
+            </Pressable>
+          ) : null}
+        </View>
+      </View>
     </Pressable>
   );
 }

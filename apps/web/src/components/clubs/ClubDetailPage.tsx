@@ -250,7 +250,7 @@ function ClubDetailContent() {
   const needsRequest = requiresJoinRequest({ joinPolicy: club.join_policy });
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6 text-left">
       <FeatureLimitModal
         open={limitOpen}
         onClose={() => setLimitOpen(false)}

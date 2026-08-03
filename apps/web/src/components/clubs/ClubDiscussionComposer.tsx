@@ -59,8 +59,8 @@ export function ClubDiscussionComposer({ clubId, viewerId, onPosted }: Props) {
   }
 
   return (
-    <section className="rounded-xl border border-border bg-surface p-4 shadow-sm">
-      <h2 className="mb-3 text-sm font-semibold text-puce-red">Start a discussion</h2>
+    <section className="rounded-xl border border-border bg-surface p-4 text-left shadow-sm">
+      <h2 className="mb-3 text-left text-sm font-semibold text-puce-red">Start a discussion</h2>
 
       <Input
         label="Title"

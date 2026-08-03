@@ -571,7 +571,7 @@ export default function ClubDetailRoute() {
     return (
       <>
         <Stack.Screen options={{ title: "Club" }} />
-        <LoadingState message="Loading clubù" />
+        <LoadingState message="Loading clubÔøΩ" />
       </>
     );
   }
@@ -643,7 +643,7 @@ export default function ClubDetailRoute() {
           </View>
           <Text className="mt-1 text-sm text-ink-muted">
             {memberLabel}
-            {viewerRole ? ` ù ${roleLabel(viewerRole)}` : ""}
+            {viewerRole ? ` ÔøΩ ${roleLabel(viewerRole)}` : ""}
           </Text>
           {club.description ? (
             <Text className="mt-3 leading-6 text-ink">{club.description}</Text>
@@ -961,7 +961,9 @@ export default function ClubDetailRoute() {
 
       {activeTab === "discussions" ? (
         <View>
-          <Text className="mb-3 text-lg font-semibold text-puce-red">Discussions</Text>
+          <Text className="mb-3 text-left text-lg font-semibold text-puce-red">
+            Discussions
+          </Text>
           {isMember ? (
             <KeyboardAvoidingView
               behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -974,14 +976,14 @@ export default function ClubDetailRoute() {
                 placeholder="What should we talk about?"
               />
               <TextInput
-                placeholder="Start the conversationù"
+                placeholder="Start the conversation‚Ä¶"
                 placeholderTextColor="#A99DAE"
                 multiline
                 value={discussionBody}
                 onChangeText={setDiscussionBody}
                 accessibilityLabel="Discussion body"
-                className="min-h-[72px] px-1 py-1 text-base text-ink"
-                style={{ textAlignVertical: "top" }}
+                className="min-h-[72px] px-1 py-1 text-left text-base text-ink"
+                style={{ textAlignVertical: "top", textAlign: "left" }}
               />
               <View className="mt-2 flex-row items-center justify-between">
                 <Pressable
@@ -1325,7 +1327,7 @@ export default function ClubDetailRoute() {
         <View className="rounded-2xl border border-brand-border bg-surface p-4">
           <Text className="text-lg font-semibold text-puce-red">Club stats</Text>
           {stats.isLoading ? (
-            <LoadingState message="Loading statsù" />
+            <LoadingState message="Loading statsÔøΩ" />
           ) : stats.data ? (
             <View className="mt-4 flex-row flex-wrap gap-3">
               {[
@@ -1381,7 +1383,7 @@ export default function ClubDetailRoute() {
         ListEmptyComponent={
           activeTab === "discussions" ? (
             discussions.isLoading ? (
-              <LoadingState message="Loading discussionsù" />
+              <LoadingState message="Loading discussionsÔøΩ" />
             ) : (
               <View className="rounded-2xl border border-dashed border-brand-border bg-surface px-4 py-8">
                 <Text className="text-center font-medium text-puce-red">
