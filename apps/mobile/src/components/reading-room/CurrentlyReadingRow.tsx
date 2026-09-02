@@ -6,6 +6,10 @@ import { CoverTile } from "../CoverTile";
 import { trackProductEvent } from "../../services/productAnalytics";
 import type { LibraryBookRow } from "../../services/library";
 import { CURRENTLY_READING_ADD_EVENTS } from "../../../../../packages/utils/currentlyReadingAdd";
+import {
+  CURRENTLY_READING_CARD_SIZE,
+  currentlyReadingCoverBoxStyle,
+} from "../../../../../packages/utils/currentlyReadingCard";
 
 type Props = {
   userId: string;
@@ -21,6 +25,9 @@ export function CurrentlyReadingRow({ userId, items, onRefresh }: Props) {
     setAddOpen(true);
   }
 
+  const cardSize = CURRENTLY_READING_CARD_SIZE.native;
+  const coverSize = currentlyReadingCoverBoxStyle("native");
+
   return (
     <View>
       {items.length === 0 ? (
@@ -33,14 +40,20 @@ export function CurrentlyReadingRow({ userId, items, onRefresh }: Props) {
       ) : (
         <View className="flex-row flex-wrap gap-3">
           {items.map((item) => (
-            <CoverTile
+            <View
               key={item.id}
-              bookId={item.books?.id}
-              title={item.books?.title}
-              author={item.books?.author}
-              coverUrl={item.books?.cover_url}
-              progressPercent={item.progress_percent}
-            />
+              style={{ width: cardSize.widthPx, minHeight: cardSize.heightPx }}
+            >
+              <CoverTile
+                bookId={item.books?.id}
+                title={item.books?.title}
+                author={item.books?.author}
+                coverUrl={item.books?.cover_url}
+                progressPercent={item.progress_percent}
+                frameStyle={{ width: cardSize.widthPx }}
+                coverSizeStyle={coverSize}
+              />
+            </View>
           ))}
           <AddBookCoverCard onPress={openAdd} />
         </View>

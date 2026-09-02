@@ -34,7 +34,7 @@ export function ActivityFeed({ userId }: { userId: string }) {
   const sectionAction = (
     <Link
       href={readingRoomTabHref("history")}
-      className="inline-flex min-h-[44px] items-center text-sm text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
+      className="inline-flex min-h-[44px] items-center justify-center text-center text-sm text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
     >
       {OVERVIEW_ACTIVITY_VIEW_ALL}
     </Link>

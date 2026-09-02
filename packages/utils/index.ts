@@ -237,6 +237,14 @@ export {
 } from "./overviewShelfCover";
 
 export {
+  CURRENTLY_READING_CARD_SIZE,
+  currentlyReadingCardBoxStyle,
+  currentlyReadingCoverBoxStyle,
+  type CurrentlyReadingCardPlatform,
+  type CurrentlyReadingCardSize,
+} from "./currentlyReadingCard";
+
+export {
   CURRENTLY_READING_ADD_COPY,
   OVERVIEW_ACTIVITY_VIEW_ALL,
   OVERVIEW_QUICK_ACTIONS,

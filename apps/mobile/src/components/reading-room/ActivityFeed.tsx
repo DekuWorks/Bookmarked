@@ -41,9 +41,9 @@ export function ActivityFeed({ userId, onViewAll }: Props) {
           onPress={onViewAll}
           accessibilityRole="button"
           accessibilityLabel={OVERVIEW_ACTIVITY_VIEW_ALL}
-          className="min-h-[44px] justify-center"
+          className="min-h-[44px] items-center justify-center"
         >
-          <Text className="text-sm text-primary-dark">{OVERVIEW_ACTIVITY_VIEW_ALL}</Text>
+          <Text className="text-center text-sm text-primary-dark">{OVERVIEW_ACTIVITY_VIEW_ALL}</Text>
         </Pressable>
       }
     >
