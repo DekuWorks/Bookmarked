@@ -4,13 +4,15 @@
  */
 
 import type { CurrentlyReadingAddEvent } from "../../../../packages/utils/currentlyReadingAdd";
+import type { OverviewQuickActionEvent } from "../../../../packages/utils/overviewQuickActions";
 
 export type ProductAnalyticsEvent =
   | "reading_completed"
   | "reading_completed_missing_page_count"
   | "reading_page_count_entered"
   | "reading_completed_with_manual_page_count"
-  | CurrentlyReadingAddEvent;
+  | CurrentlyReadingAddEvent
+  | OverviewQuickActionEvent;
 
 type EventPayload = Record<string, string | number | boolean | null | undefined>;
 

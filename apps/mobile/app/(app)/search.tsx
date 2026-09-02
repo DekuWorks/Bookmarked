@@ -39,7 +39,10 @@ import type { ShelfStatus } from "../../src/types";
 import type { UserShelf } from "../../src/types";
 import {
   CURRENTLY_READING_ADD_EVENTS,
+  endCurrentlyReadingAddFromSearch,
   isCurrentlyReadingAddFromOverview,
+  leaveCurrentlyReadingAddSearch,
+  tryBeginCurrentlyReadingAddFromSearch,
 } from "../../../../packages/utils/currentlyReadingAdd";
 import { CURRENTLY_READING_ADD_COPY } from "../../../../packages/utils/overviewCopy";
 
@@ -94,6 +97,12 @@ export default function SearchScreen() {
   const [memberships, setMemberships] = useState<Map<string, BookShelfMembership>>(new Map());
 
   useEffect(() => {
+    if (addFromOverview) return;
+    setSaving(false);
+    endCurrentlyReadingAddFromSearch();
+  }, [addFromOverview]);
+
+  useEffect(() => {
     if (!target || !userId) return;
     void listUserCustomShelves(userId)
       .then(setCustomShelves)
@@ -141,13 +150,14 @@ export default function SearchScreen() {
   ) {
     const book = options?.doc ?? target;
     if (!book) return;
+    const overviewAdd = addFromOverview && shelf === "currently_reading";
+    if (overviewAdd && !tryBeginCurrentlyReadingAddFromSearch()) return;
     const key = membershipKeyFor(book);
     const wasShelved = Boolean(memberships.get(key)?.shelfStatus);
     setSaving(true);
     const result = await addCatalogBookToShelf(book, shelf, {
       manualPageCount: options?.manualPageCount,
     });
-    setSaving(false);
     setTarget(null);
     setPendingShelf(null);
     setPageCountOpen(false);
@@ -159,8 +169,10 @@ export default function SearchScreen() {
         return next;
       });
     }
-    if (addFromOverview && shelf === "currently_reading") {
+    if (overviewAdd) {
       if (result.error) {
+        setSaving(false);
+        endCurrentlyReadingAddFromSearch();
         Alert.alert("Couldn't add book", result.error);
         return;
       }
@@ -168,9 +180,10 @@ export default function SearchScreen() {
       if (userId) {
         void queryClient.invalidateQueries({ queryKey: ["library", userId] });
       }
-      router.replace("/");
+      leaveCurrentlyReadingAddSearch(router);
       return;
     }
+    setSaving(false);
     Alert.alert(
       result.error ? "Couldn't add book" : wasShelved ? "Moved" : "Added",
       result.error ?? `"${book.title}" was saved to ${SHELF_LABEL_BY_STATUS[shelf]}.`
@@ -270,7 +283,7 @@ export default function SearchScreen() {
               accessibilityLabel="Cancel"
               onPress={() => {
                 trackProductEvent(CURRENTLY_READING_ADD_EVENTS.canceled);
-                router.replace("/");
+                leaveCurrentlyReadingAddSearch(router);
               }}
               className="min-h-[44px] min-w-[44px] items-center justify-center"
             >
@@ -323,6 +336,7 @@ export default function SearchScreen() {
                         ? "Tap to add to Currently Reading"
                         : "Tap to add to a shelf"
                   }
+                  disabled={addFromOverview && saving}
                   onPress={() => {
                     if (addFromOverview) {
                       void addToShelf("currently_reading", { doc: item });

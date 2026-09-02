@@ -30,7 +30,9 @@ import type { ShelfStatus } from "@/types";
 import {
   CURRENTLY_READING_ADD_EVENTS,
   currentlyReadingAddReturnHref,
+  endCurrentlyReadingAddFromSearch,
   isCurrentlyReadingAddFromOverview,
+  tryBeginCurrentlyReadingAddFromSearch,
 } from "@bookmarked/utils/currentlyReadingAdd";
 import { trackProductEvent } from "@/lib/services/productAnalytics";
 
@@ -253,6 +255,7 @@ export function SearchResultCard({
 
   function openShelfMenu() {
     if (addFromOverview) {
+      if (saving) return;
       void submitShelf("currently_reading");
       return;
     }
@@ -278,6 +281,8 @@ export function SearchResultCard({
     shelfStatusToApply: ShelfStatus,
     options?: { manualPageCount?: number }
   ) {
+    const overviewAdd = addFromOverview && shelfStatusToApply === "currently_reading";
+    if (overviewAdd && !tryBeginCurrentlyReadingAddFromSearch()) return;
     const previousShelf = optimisticShelf;
     setOptimisticShelf(shelfStatusToApply);
     setSaving(true);
@@ -302,6 +307,7 @@ export function SearchResultCard({
       const result = await addCatalogBookToShelf({}, formData);
       if (result.error) {
         setOptimisticShelf(previousShelf);
+        if (overviewAdd) endCurrentlyReadingAddFromSearch();
         toast.error(result.error || "Could not add book. Please try again.");
         return;
       }
@@ -315,7 +321,7 @@ export function SearchResultCard({
           onShelfMembershipChange?.({ bookId: result.bookId, shelfStatus: shelfStatusToApply });
         }
         onBookmarked?.();
-        if (addFromOverview && shelfStatusToApply === "currently_reading") {
+        if (overviewAdd) {
           trackProductEvent(CURRENTLY_READING_ADD_EVENTS.fromSearch, {
             book_id: result.bookId ?? "",
           });
@@ -324,6 +330,7 @@ export function SearchResultCard({
       }
     } catch (error) {
       setOptimisticShelf(previousShelf);
+      if (overviewAdd) endCurrentlyReadingAddFromSearch();
       toast.error(error instanceof Error ? error.message : "Could not update shelf.");
     } finally {
       setSaving(false);

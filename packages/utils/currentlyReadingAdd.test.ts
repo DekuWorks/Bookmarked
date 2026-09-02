@@ -1,15 +1,21 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   CURRENTLY_READING_ADD_EVENTS,
   CURRENTLY_READING_ADD_SHELF,
   HOME_OVERVIEW_CURRENTLY_READING_ORIGIN,
+  currentlyReadingAddClearedSearchParams,
+  currentlyReadingAddMobileReturnPath,
   currentlyReadingAddReturnHref,
+  currentlyReadingAddSearchClearPath,
   currentlyReadingAddSearchHref,
   currentlyReadingAddSearchPath,
   currentlyReadingAddSearchQuery,
+  endCurrentlyReadingAddFromSearch,
   filterTbrBooksByQuery,
   isCurrentlyReadingAddFromOverview,
+  leaveCurrentlyReadingAddSearch,
   selectWantToReadBooks,
+  tryBeginCurrentlyReadingAddFromSearch,
 } from "./currentlyReadingAdd";
 
 describe("currentlyReadingAdd navigation", () => {
@@ -31,6 +37,34 @@ describe("currentlyReadingAdd navigation", () => {
     expect(currentlyReadingAddSearchHref()).toBe(`/search/?${query}`);
     expect(currentlyReadingAddSearchPath()).toBe(`/search?${query}`);
     expect(currentlyReadingAddReturnHref()).toBe("/reading-room/");
+  });
+
+  it("clears Overview origin so a later Search visit is not add mode", () => {
+    const cleared = currentlyReadingAddClearedSearchParams();
+    expect(cleared.origin).toBeUndefined();
+    expect(cleared.shelf).toBeUndefined();
+    expect(isCurrentlyReadingAddFromOverview(cleared)).toBe(false);
+    expect(currentlyReadingAddSearchClearPath()).toBe("/search");
+    expect(currentlyReadingAddSearchClearPath()).not.toContain("origin=");
+    expect(currentlyReadingAddMobileReturnPath()).toBe("/");
+  });
+
+  it("clears Search origin/shelf before returning Home", () => {
+    const setParams = vi.fn();
+    const replace = vi.fn();
+    leaveCurrentlyReadingAddSearch({ setParams, replace });
+    expect(setParams).toHaveBeenCalledWith({ origin: undefined, shelf: undefined });
+    expect(replace).toHaveBeenCalledWith("/");
+    expect(setParams.mock.invocationCallOrder[0]).toBeLessThan(replace.mock.invocationCallOrder[0]);
+  });
+
+  it("rejects a second Overview add-from-search until the first ends", () => {
+    endCurrentlyReadingAddFromSearch();
+    expect(tryBeginCurrentlyReadingAddFromSearch()).toBe(true);
+    expect(tryBeginCurrentlyReadingAddFromSearch()).toBe(false);
+    endCurrentlyReadingAddFromSearch();
+    expect(tryBeginCurrentlyReadingAddFromSearch()).toBe(true);
+    endCurrentlyReadingAddFromSearch();
   });
 
   it("exposes product analytics event names", () => {

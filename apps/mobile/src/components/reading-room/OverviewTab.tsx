@@ -4,11 +4,14 @@ import { useRouter } from "expo-router";
 import { ActivityFeed } from "./ActivityFeed";
 import { CurrentlyReadingRow } from "./CurrentlyReadingRow";
 import { OverviewBookShelf, useDeferredOverviewSections } from "./OverviewBookShelf";
+import { QuickActionCard } from "./QuickActionCard";
 import { LoadingState } from "../LoadingState";
 import { SectionCard } from "../SectionCard";
 import type { LibraryBookRow } from "../../services/library";
 import { selectRecentlyFinishedBooks } from "../../../../../packages/utils/readingRoomHistory";
-import { OVERVIEW_QUICK_ACTIONS, OVERVIEW_SECTION_TITLES } from "../../../../../packages/utils/overviewCopy";
+import { OVERVIEW_SECTION_TITLES } from "../../../../../packages/utils/overviewCopy";
+import { OVERVIEW_QUICK_ACTIONS_LIST } from "../../../../../packages/utils/overviewQuickActions";
+import { trackProductEvent } from "../../services/productAnalytics";
 
 type Props = {
   userId: string;
@@ -17,28 +20,6 @@ type Props = {
   onSelectTab: (tab: "trail" | "history") => void;
   onRefresh: () => void;
 };
-
-function QuickLink({
-  icon,
-  label,
-  onPress,
-}: {
-  icon?: string;
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      className="min-h-[44px] flex-1 items-center justify-center rounded-2xl border border-brand-border bg-surface py-3 active:opacity-80"
-    >
-      {icon ? <Text className="text-xl">{icon}</Text> : null}
-      <Text className="mt-1 text-center text-xs font-medium text-puce-red">{label}</Text>
-    </Pressable>
-  );
-}
 
 export function OverviewTab({ userId, books, currentlyReading, onSelectTab, onRefresh }: Props) {
   const router = useRouter();
@@ -51,7 +32,6 @@ export function OverviewTab({ userId, books, currentlyReading, onSelectTab, onRe
     () => (deferredReady ? books.filter((book) => book.is_favorite).slice(0, 8) : []),
     [books, deferredReady]
   );
-  const continueReadingBook = currentlyReading.find((book) => book.books?.id);
 
   return (
     <View className="gap-4 md:gap-6">
@@ -101,30 +81,19 @@ export function OverviewTab({ userId, books, currentlyReading, onSelectTab, onRe
         <LoadingState message="Loading shelves…" />
       )}
 
-      <SectionCard title={OVERVIEW_SECTION_TITLES.quickActions} emoji="⚡">
-        <View className="gap-3">
-          <View className="flex-row gap-3">
-            <QuickLink
-              icon="🔍"
-              label={OVERVIEW_QUICK_ACTIONS.searchBooks}
-              onPress={() => router.push("/search")}
-            />
-            <QuickLink
-              label={OVERVIEW_QUICK_ACTIONS.continueReading}
-              onPress={() =>
-                continueReadingBook?.books?.id
-                  ? router.push(`/book/${continueReadingBook.books.id}`)
-                  : router.push("/search")
-              }
-            />
-          </View>
-          <View className="flex-row gap-3">
-            <QuickLink
-              label={OVERVIEW_QUICK_ACTIONS.openLibrary}
-              onPress={() => router.push("/library")}
-            />
-            <QuickLink label={OVERVIEW_QUICK_ACTIONS.trail} onPress={() => onSelectTab("trail")} />
-          </View>
+      <SectionCard title={OVERVIEW_SECTION_TITLES.quickActions}>
+        <View className="-mx-1.5 flex-row flex-wrap">
+          {OVERVIEW_QUICK_ACTIONS_LIST.map((action) => (
+            <View key={action.id} className="mb-3 w-1/2 px-1.5 md:w-1/3">
+              <QuickActionCard
+                action={action}
+                onPress={() => {
+                  trackProductEvent(action.analyticsEvent);
+                  router.push(action.mobileHref);
+                }}
+              />
+            </View>
+          ))}
         </View>
       </SectionCard>
 

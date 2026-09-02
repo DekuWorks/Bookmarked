@@ -9,10 +9,9 @@ export const OVERVIEW_SECTION_TITLES = {
 } as const;
 
 export const OVERVIEW_QUICK_ACTIONS = {
-  searchBooks: "Search Books",
-  continueReading: "Continue Reading",
   openLibrary: "Open Library",
-  trail: "Trail",
+  bookClubs: "Book Clubs",
+  readingChallenges: "Reading Challenges",
 } as const;
 
 export const OVERVIEW_ACTIVITY_VIEW_ALL = "View all activity";
