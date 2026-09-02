@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { BookCover } from "@/components/books/BookCover";
@@ -27,6 +27,12 @@ import { authorPagePath } from "@/lib/routes/author";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { cn } from "@/lib/utils/cn";
 import type { ShelfStatus } from "@/types";
+import {
+  CURRENTLY_READING_ADD_EVENTS,
+  currentlyReadingAddReturnHref,
+  isCurrentlyReadingAddFromOverview,
+} from "@bookmarked/utils/currentlyReadingAdd";
+import { trackProductEvent } from "@/lib/services/productAnalytics";
 
 /** Outline buttons on the desktop hover overlay (puce-red background). */
 const overlayOutlineButtonClass =
@@ -65,6 +71,7 @@ function ResultActions({
   addLoading,
   removing,
   shelved,
+  addLabel,
   editionLabel,
   overlay = false,
   className,
@@ -78,6 +85,7 @@ function ResultActions({
   addLoading: boolean;
   removing?: boolean;
   shelved: boolean;
+  addLabel?: string;
   editionLabel?: string | null;
   overlay?: boolean;
   className?: string;
@@ -114,7 +122,7 @@ function ResultActions({
         onClick={onAddToShelf}
         className={outlineButtonClass}
       >
-        {shelved ? "Move shelf" : "Add to shelf"}
+        {addLabel ?? (shelved ? "Move shelf" : "Add to shelf")}
       </Button>
       <Button
         type="button"
@@ -160,7 +168,11 @@ export function SearchResultCard({
   onShelfMembershipChange,
 }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const user = useAuthUser();
+  const addFromOverview = isCurrentlyReadingAddFromOverview({
+    origin: searchParams.get("origin"),
+  });
   const toast = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
   const [editionOpen, setEditionOpen] = useState(false);
@@ -240,6 +252,10 @@ export function SearchResultCard({
   }
 
   function openShelfMenu() {
+    if (addFromOverview) {
+      void submitShelf("currently_reading");
+      return;
+    }
     setMenuOpen(true);
   }
 
@@ -299,6 +315,12 @@ export function SearchResultCard({
           onShelfMembershipChange?.({ bookId: result.bookId, shelfStatus: shelfStatusToApply });
         }
         onBookmarked?.();
+        if (addFromOverview && shelfStatusToApply === "currently_reading") {
+          trackProductEvent(CURRENTLY_READING_ADD_EVENTS.fromSearch, {
+            book_id: result.bookId ?? "",
+          });
+          router.replace(currentlyReadingAddReturnHref());
+        }
       }
     } catch (error) {
       setOptimisticShelf(previousShelf);
@@ -380,6 +402,7 @@ export function SearchResultCard({
             <ResultActions
               overlay
               shelved={shelved}
+              addLabel={addFromOverview ? "Add to Currently Reading" : undefined}
               onViewDetails={handleViewDetails}
               onAddToShelf={openShelfMenu}
               onAddToCollection={() => void openCustomShelfMenu()}
@@ -417,6 +440,7 @@ export function SearchResultCard({
         <div className="flex flex-col gap-2 border-t border-border px-4 pb-4 pt-3 md:hidden">
           <ResultActions
             shelved={shelved}
+            addLabel={addFromOverview ? "Add to Currently Reading" : undefined}
             onViewDetails={handleViewDetails}
             onAddToShelf={openShelfMenu}
             onAddToCollection={() => void openCustomShelfMenu()}

@@ -10,6 +10,7 @@ import { LoadingState } from "@/components/ui/LoadingState";
 import { bookDetailsPath } from "@/lib/routes/book";
 import { readingRoomTabHref } from "@/lib/reading-room/readingRoomTabs";
 import type { ReadingRoomData } from "@/lib/services/readingRoom";
+import { OVERVIEW_QUICK_ACTIONS, OVERVIEW_SECTION_TITLES } from "@bookmarked/utils/overviewCopy";
 
 const ActivityFeed = dynamic(
   () => import("@/components/reading-room/ActivityFeed").then((m) => ({ default: m.ActivityFeed })),
@@ -70,14 +71,14 @@ export function OverviewTab({ userId, data, onRefresh }: Props) {
 
   return (
     <div className="space-y-8 md:space-y-10">
-      <ReadingRoomSection title="Currently reading" shelfIconId="currently_reading">
+      <ReadingRoomSection title={OVERVIEW_SECTION_TITLES.currentlyReading} shelfIconId="currently_reading">
         <CurrentlyReadingRow items={data.currentlyReading} onItemsChange={onRefresh} />
       </ReadingRoomSection>
 
       <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
         <DeferredSection label="recently finished">
           <OverviewBookShelf
-            title="Recently finished"
+            title={OVERVIEW_SECTION_TITLES.recentlyFinished}
             shelfIconId="read"
             items={data.recentlyFinished}
             showFinishedDate
@@ -89,7 +90,7 @@ export function OverviewTab({ userId, data, onRefresh }: Props) {
 
         <DeferredSection label="favorites">
           <OverviewBookShelf
-            title="Favorites"
+            title={OVERVIEW_SECTION_TITLES.favorites}
             items={data.favorites}
             showFavoriteBadge
             viewAllHref="/library/"
@@ -99,19 +100,19 @@ export function OverviewTab({ userId, data, onRefresh }: Props) {
         </DeferredSection>
       </div>
 
-      <ReadingRoomSection title="Quick actions">
+      <ReadingRoomSection title={OVERVIEW_SECTION_TITLES.quickActions}>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <ButtonLink href="/search/" variant="secondary" size="sm" className="w-full">
-            Search books
+            {OVERVIEW_QUICK_ACTIONS.searchBooks}
           </ButtonLink>
           <ButtonLink href={continueReadingHref} variant="primary" size="sm" className="w-full">
-            Continue reading
+            {OVERVIEW_QUICK_ACTIONS.continueReading}
           </ButtonLink>
           <ButtonLink href="/library/" variant="outline" size="sm" className="w-full">
-            Open library
+            {OVERVIEW_QUICK_ACTIONS.openLibrary}
           </ButtonLink>
           <ButtonLink href={readingRoomTabHref("trail")} variant="outline" size="sm" className="w-full">
-            Trail
+            {OVERVIEW_QUICK_ACTIONS.trail}
           </ButtonLink>
         </div>
       </ReadingRoomSection>

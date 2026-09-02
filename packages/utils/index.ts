@@ -237,6 +237,29 @@ export {
 } from "./overviewShelfCover";
 
 export {
+  CURRENTLY_READING_ADD_COPY,
+  OVERVIEW_ACTIVITY_VIEW_ALL,
+  OVERVIEW_QUICK_ACTIONS,
+  OVERVIEW_SECTION_TITLES,
+} from "./overviewCopy";
+
+export {
+  CURRENTLY_READING_ADD_EVENTS,
+  CURRENTLY_READING_ADD_SHELF,
+  HOME_OVERVIEW_CURRENTLY_READING_ORIGIN,
+  TBR_PICKER_SEARCH_THRESHOLD,
+  currentlyReadingAddReturnHref,
+  currentlyReadingAddSearchHref,
+  currentlyReadingAddSearchPath,
+  currentlyReadingAddSearchQuery,
+  filterTbrBooksByQuery,
+  isCurrentlyReadingAddFromOverview,
+  selectWantToReadBooks,
+  type CurrentlyReadingAddEvent,
+  type CurrentlyReadingAddSearchParams,
+} from "./currentlyReadingAdd";
+
+export {
   DEFAULT_PAGE_SIZE,
   paginateItems,
   type PageSlice,

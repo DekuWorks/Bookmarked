@@ -1,11 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { formatActivityMessage } from "@/lib/services/activity";
 import { ReadingRoomSection } from "@/components/reading-room/ReadingRoomSection";
-import { ButtonLink } from "@/components/ui/ButtonLink";
 import { readingRoomTabHref } from "@/lib/reading-room/readingRoomTabs";
+import {
+  OVERVIEW_ACTIVITY_VIEW_ALL,
+  OVERVIEW_SECTION_TITLES,
+} from "@bookmarked/utils/overviewCopy";
 
 type ActivityEvent = {
   event_type: string;
@@ -28,14 +32,21 @@ export function ActivityFeed({ userId }: { userId: string }) {
   }, [userId]);
 
   const sectionAction = (
-    <ButtonLink href={readingRoomTabHref("history")} variant="ghost" size="sm" className="shrink-0">
-      View all activity
-    </ButtonLink>
+    <Link
+      href={readingRoomTabHref("history")}
+      className="inline-flex min-h-[44px] items-center text-sm text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
+    >
+      {OVERVIEW_ACTIVITY_VIEW_ALL}
+    </Link>
   );
 
   if (!events) {
     return (
-      <ReadingRoomSection title="Recent activity" action={sectionAction}>
+      <ReadingRoomSection
+        title={OVERVIEW_SECTION_TITLES.recentActivity}
+        action={sectionAction}
+        actionLayout="stacked"
+      >
         <p className="text-center text-sm text-text-muted" role="status">
           Loading activity…
         </p>
@@ -45,7 +56,11 @@ export function ActivityFeed({ userId }: { userId: string }) {
 
   if (!events.length) {
     return (
-      <ReadingRoomSection title="Recent activity" action={sectionAction}>
+      <ReadingRoomSection
+        title={OVERVIEW_SECTION_TITLES.recentActivity}
+        action={sectionAction}
+        actionLayout="stacked"
+      >
         <p className="rounded-xl border border-dashed border-border bg-background px-4 py-8 text-center text-sm text-text-muted">
           Your reading activity will show up here as you add books, track progress, and write
           reviews.
@@ -55,7 +70,11 @@ export function ActivityFeed({ userId }: { userId: string }) {
   }
 
   return (
-    <ReadingRoomSection title="Recent activity" action={sectionAction}>
+    <ReadingRoomSection
+      title={OVERVIEW_SECTION_TITLES.recentActivity}
+      action={sectionAction}
+      actionLayout="stacked"
+    >
       <ul className="mx-auto max-w-2xl space-y-3" aria-label="Recent reading activity">
         {events.map((event, i) => (
           <li
