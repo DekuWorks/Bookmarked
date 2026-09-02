@@ -7,6 +7,10 @@ import { StarDisplay } from "@/components/reviews/StarDisplay";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { bookDetailsPath } from "@/lib/routes/book";
 import type { LibraryBookRow } from "@/lib/services/library";
+import {
+  OVERVIEW_SHELF_COVER,
+  overviewShelfCoverBoxStyle,
+} from "@bookmarked/utils/overviewShelfCover";
 
 type Props = {
   title: string;
@@ -66,15 +70,18 @@ export function OverviewBookShelf({
             const finishedLabel = showFinishedDate ? formatFinishedDate(ub.finished_at) : null;
 
             const inner = (
-              <div className="flex gap-3 rounded-xl border border-border bg-background p-3 transition hover:shadow-sm">
-                <BookCover
-                  title={book?.title ?? "Untitled"}
-                  author={book?.author}
-                  coverUrl={book?.cover_url}
-                  className="h-28 w-20 shrink-0 shadow-sm"
-                  sizes="80px"
-                  bookmarked
-                />
+              <div className="flex items-start gap-3 rounded-xl border border-border bg-background p-3 transition hover:shadow-sm">
+                <div className="shrink-0 self-start" style={overviewShelfCoverBoxStyle()}>
+                  <BookCover
+                    title={book?.title ?? "Untitled"}
+                    author={book?.author}
+                    coverUrl={book?.cover_url}
+                    className="shadow-sm"
+                    sizes={`${OVERVIEW_SHELF_COVER.widthPx}px`}
+                    objectFit={OVERVIEW_SHELF_COVER.fit}
+                    bookmarked
+                  />
+                </div>
                 <div className="min-w-0 flex-1 overflow-hidden text-left">
                   <p className="line-clamp-2 text-sm font-semibold text-text">
                     {book?.title ?? "Untitled"}

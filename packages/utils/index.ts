@@ -228,6 +228,15 @@ export {
 } from "./discoveryCard";
 
 export {
+  OVERVIEW_SHELF_COVER,
+  OVERVIEW_SHELF_COVER_ASPECT_RATIO,
+  isPortraitCoverFrame,
+  overviewShelfCoverBoxStyle,
+  overviewShelfCoverFrame,
+  type OverviewShelfCoverFit,
+} from "./overviewShelfCover";
+
+export {
   DEFAULT_PAGE_SIZE,
   paginateItems,
   type PageSlice,

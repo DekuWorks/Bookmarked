@@ -5,6 +5,10 @@ import { BookCover } from "../BookCover";
 import { SectionCard } from "../SectionCard";
 import { StarRating } from "../StarRating";
 import type { LibraryBookRow } from "../../services/library";
+import {
+  OVERVIEW_SHELF_COVER,
+  overviewShelfCoverBoxStyle,
+} from "../../../../../packages/utils/overviewShelfCover";
 
 type Props = {
   title: string;
@@ -62,16 +66,19 @@ export function OverviewBookShelf({
                 key={item.id}
                 disabled={!book?.id}
                 onPress={() => book?.id && router.push(`/book/${book.id}`)}
-                className="flex-row gap-3 rounded-xl border border-brand-border bg-background/70 p-3 active:opacity-80"
+                className="flex-row items-start gap-3 rounded-xl border border-brand-border bg-background/70 p-3 active:opacity-80"
                 accessibilityRole="button"
                 accessibilityLabel={book?.title ?? "Book"}
               >
-                <BookCover
-                  url={book?.cover_url}
-                  title={book?.title}
-                  sizeClassName="h-24 w-16"
-                  saved
-                />
+                <View className="shrink-0">
+                  <BookCover
+                    url={book?.cover_url}
+                    title={book?.title}
+                    sizeStyle={overviewShelfCoverBoxStyle()}
+                    resizeMode={OVERVIEW_SHELF_COVER.fit}
+                    saved
+                  />
+                </View>
                 <View className="min-w-0 flex-1 overflow-hidden">
                   <Text className="text-sm font-semibold text-ink" numberOfLines={2}>
                     {book?.title ?? "Untitled"}
