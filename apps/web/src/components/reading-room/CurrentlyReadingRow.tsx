@@ -12,6 +12,10 @@ import { useToast } from "@/components/ui/Toast";
 import type { LibraryBookRow } from "@/lib/services/library";
 import { cn } from "@/lib/utils/cn";
 import { CURRENTLY_READING_ADD_EVENTS } from "@bookmarked/utils/currentlyReadingAdd";
+import {
+  CURRENTLY_READING_CARD_SIZE,
+  currentlyReadingCardBoxStyle,
+} from "@bookmarked/utils/currentlyReadingCard";
 
 type Props = {
   items: LibraryBookRow[];
@@ -62,10 +66,19 @@ export function CurrentlyReadingRow({ items, onItemsChange }: Props) {
             const bookId = book?.id;
             const isClosing = closingId === bookId;
 
+            const cardSize = CURRENTLY_READING_CARD_SIZE.web;
+            const cardBox = currentlyReadingCardBoxStyle("web");
+
             return (
               <li
                 key={ub.id}
-                className="relative flex w-full max-w-[220px] flex-col items-center rounded-xl border border-border bg-background p-4 text-center shadow-sm transition hover:shadow-md"
+                className="relative flex shrink-0 flex-col items-center border border-border bg-background text-center shadow-sm transition hover:shadow-md"
+                style={{
+                  width: cardBox.width,
+                  minHeight: cardBox.height,
+                  borderRadius: cardBox.borderRadius,
+                  padding: cardSize.paddingPx,
+                }}
               >
                 {bookId ? (
                   <button
@@ -83,14 +96,19 @@ export function CurrentlyReadingRow({ items, onItemsChange }: Props) {
                   </button>
                 ) : null}
 
-                <BookCover
-                  title={book?.title ?? "Untitled"}
-                  author={book?.author}
-                  coverUrl={book?.cover_url}
-                  className="mx-auto w-28 shadow-sm"
-                  sizes="112px"
-                  bookmarked
-                />
+                <div
+                  className="mx-auto"
+                  style={{ width: cardSize.coverWidthPx }}
+                >
+                  <BookCover
+                    title={book?.title ?? "Untitled"}
+                    author={book?.author}
+                    coverUrl={book?.cover_url}
+                    className="shadow-sm"
+                    sizes={`${cardSize.coverWidthPx}px`}
+                    bookmarked
+                  />
+                </div>
 
                 <p className="mt-3 line-clamp-2 w-full px-1 font-display text-base font-bold leading-snug tracking-tight text-text">
                   {book?.title ?? "Untitled"}
@@ -111,7 +129,7 @@ export function CurrentlyReadingRow({ items, onItemsChange }: Props) {
               </li>
             );
           })}
-          <li className="flex w-full max-w-[220px] items-start justify-center pt-4">
+          <li className="flex shrink-0 items-stretch justify-center">
             <AddBookCoverCard onClick={openAdd} />
           </li>
         </ul>

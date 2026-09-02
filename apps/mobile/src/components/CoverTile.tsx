@@ -13,6 +13,10 @@ type Props = {
   format?: "book" | "ebook" | "audiobook" | null;
   widthClassName?: string;
   coverSizeClassName?: string;
+  /** Pixel width; when set, wins over `widthClassName`. */
+  frameStyle?: { width: number };
+  /** Pixel cover frame; when set, wins over `coverSizeClassName`. */
+  coverSizeStyle?: { width: number; height: number };
 };
 
 /** Tappable book cover tile that deep-links to the book screen. */
@@ -25,16 +29,24 @@ export function CoverTile({
   format,
   widthClassName = "w-24",
   coverSizeClassName = "w-24 h-36",
+  frameStyle,
+  coverSizeStyle,
 }: Props) {
   const router = useRouter();
   return (
     <Pressable
       disabled={!bookId}
       onPress={() => bookId && router.push(`/book/${bookId}`)}
-      className={`${widthClassName} active:opacity-80`}
+      className={`${frameStyle ? "" : widthClassName} active:opacity-80`.trim()}
+      style={frameStyle}
     >
       <View className="relative">
-        <BookCover url={coverUrl} title={title} sizeClassName={coverSizeClassName} />
+        <BookCover
+          url={coverUrl}
+          title={title}
+          sizeClassName={coverSizeStyle ? undefined : coverSizeClassName}
+          sizeStyle={coverSizeStyle}
+        />
         {format === "audiobook" ? (
           <View className="absolute bottom-1 right-1 rounded-full bg-puce-red/90 px-1.5 py-0.5">
             <Text className="text-[10px] font-semibold text-white">🎧</Text>

@@ -407,8 +407,8 @@ Full hub sprint (Phases 1–30). Docs: `docs/BOOK_CLUB_CURRENT_STATE.md`, `BOOK_
 | Item | Status | Notes / references |
 |------|--------|--------------------|
 | Overview Title Capitalization | ✅ | Shared labels in `packages/utils/overviewCopy.ts`. Web `OverviewTab` + iOS `OverviewTab` / `ActivityFeed`. Book titles, authors, reviews, notes, posts, and DB copy are unchanged. Accessibility labels match visible Quick Action and section copy. |
-| Recent Activity Layout | ✅ | Heading + “View all activity” now stack left-aligned. Web: `ReadingRoomSection` `actionLayout="stacked"`. iOS: `SectionCard` same prop. Route, filters, sorting, and activity records are unchanged. Spacing: 6px heading→link, 16px link→content. |
-| Currently Reading Add Book | ✅ | Cover-sized `+` card on empty and populated Currently Reading rows (`AddBookCoverCard`). Options: **Choose from TBR** / **Search for a Book**. TBR uses `getUserLibraryBooks` + `selectWantToReadBooks`, then existing `setBookShelfStatus` (web) / `setShelfStatus` (iOS). Search uses `origin=home_overview_currently_reading`; add goes straight to Currently Reading via `addCatalogBookToShelf`. Cancel/back returns to Home → Overview. Analytics events reused existing `trackProductEvent` (no new platform). Overview shelf cover 80×120 contain frame was not changed. |
+| Recent Activity Layout | ✅ | Heading + “View all activity” are a centered stack (title, then link, then feed). Same heading token as other Overview sections: web `READING_ROOM_SECTION_HEADING_CLASS` (`text-lg font-semibold text-puce-red md:text-xl`) via `ReadingRoomSection`; iOS `SECTION_CARD_HEADING_CLASS` (`text-base font-bold leading-tight text-puce-red`) via `SectionCard`. `actionLayout="stacked"` is column-only on all breakpoints. Spacing: 6px heading→link (`gap-1.5`), 16px link→content (`mb-4`). Route, filters, sorting, and activity records are unchanged. |
+| Currently Reading Add Book | ✅ | Full-card `+` slot on empty and populated Currently Reading rows (`AddBookCoverCard`). Shared `CURRENTLY_READING_CARD_SIZE`: web **220×356**, radius 12, padding 16, cover 112×168, plus icon 40; iOS **96×224**, radius 12, cover 96×144, plus icon 32. Used by real CR cards and Add Book. Options: **Choose from TBR** / **Search for a Book**. TBR uses `getUserLibraryBooks` + `selectWantToReadBooks`, then existing `setBookShelfStatus` (web) / `setShelfStatus` (iOS). Search uses `origin=home_overview_currently_reading`; add goes straight to Currently Reading via `addCatalogBookToShelf`. Cancel/back returns to Home → Overview. Analytics events reused existing `trackProductEvent` (no new platform). Overview shelf cover 80×120 contain frame was not changed. |
 | Overview Tab – Quick Actions Button Colors | ⚠️ | Three equal filled cards shipped on web + iOS. A valid **fourth current Quick Action was not available** after replacing Search Books / Trail and removing Continue Reading; no fourth destination was invented. Reserved fill `#d18dbe` is unused. |
 
 ### Quick Actions (Sprint 13)
@@ -438,8 +438,8 @@ Shipped actions (same order, web + iOS):
 
 ### Testing
 
-- Unit: `packages/utils/overviewCopy.test.ts`, `overviewQuickActions.test.ts`, `currentlyReadingAdd.test.ts`; web `overviewCopy.test.ts`; iOS `overviewCopy.test.ts`, `overviewQuickActions.test.ts`
-- Manual QA: Overview capitalization, Recent Activity stack (desktop + mobile web), Add Book card, Quick Action cards (light/dark)
+- Unit: `packages/utils/overviewCopy.test.ts`, `overviewQuickActions.test.ts`, `currentlyReadingAdd.test.ts`, `currentlyReadingCard.test.ts`; web `overviewCopy.test.ts`, `currentlyReadingCard.test.ts`; iOS `overviewCopy.test.ts`, `overviewQuickActions.test.ts`, `currentlyReadingCard.test.ts`, `sectionHeading.test.ts`
+- Manual QA: Overview capitalization, Recent Activity centered stack (desktop + mobile web + iOS), Add Book full-card size vs CR cards, Quick Action cards (light/dark)
 - Blockers: Reading Room is auth-gated — browser verification may stop at sign-in. Quick Actions fourth card is a product gap (do not invent Notes/Journal/Goals/Search).
 
 ---
@@ -476,7 +476,7 @@ Tracking against the Free/Plus/Reading DNA master spec (Phases 1–42). Distinct
 | Reading DNA algorithm | `docs/READING_DNA_ALGORITHM.md` |
 | Sprint 6 polish / DNF QA | `docs/SPRINT_6_POLISH.md` |
 
-**Last updated:** 2 September 2026 (Home / Overview polish: title case, Recent Activity stack, Currently Reading Add Book, Quick Actions colors)
+**Last updated:** 2 September 2026 (Home / Overview polish: centered Recent Activity header, Currently Reading Add Book full-card size)
 
 ---
 
