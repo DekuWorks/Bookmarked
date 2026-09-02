@@ -183,6 +183,7 @@ export default function HomeReadingRoom() {
             books={books}
             currentlyReading={currentlyReading}
             onSelectTab={setTab}
+            onRefresh={() => void library.refetch()}
           />
         ) : null}
 

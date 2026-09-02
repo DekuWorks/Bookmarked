@@ -2,18 +2,20 @@ import { useMemo } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { ActivityFeed } from "./ActivityFeed";
+import { CurrentlyReadingRow } from "./CurrentlyReadingRow";
 import { OverviewBookShelf, useDeferredOverviewSections } from "./OverviewBookShelf";
-import { CoverTile } from "../CoverTile";
 import { LoadingState } from "../LoadingState";
 import { SectionCard } from "../SectionCard";
 import type { LibraryBookRow } from "../../services/library";
 import { selectRecentlyFinishedBooks } from "../../../../../packages/utils/readingRoomHistory";
+import { OVERVIEW_QUICK_ACTIONS, OVERVIEW_SECTION_TITLES } from "../../../../../packages/utils/overviewCopy";
 
 type Props = {
   userId: string;
   books: LibraryBookRow[];
   currentlyReading: LibraryBookRow[];
   onSelectTab: (tab: "trail" | "history") => void;
+  onRefresh: () => void;
 };
 
 function QuickLink({
@@ -29,15 +31,16 @@ function QuickLink({
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
+      accessibilityLabel={label}
       className="min-h-[44px] flex-1 items-center justify-center rounded-2xl border border-brand-border bg-surface py-3 active:opacity-80"
     >
       {icon ? <Text className="text-xl">{icon}</Text> : null}
-      <Text className="mt-1 text-xs font-medium text-puce-red">{label}</Text>
+      <Text className="mt-1 text-center text-xs font-medium text-puce-red">{label}</Text>
     </Pressable>
   );
 }
 
-export function OverviewTab({ userId, books, currentlyReading, onSelectTab }: Props) {
+export function OverviewTab({ userId, books, currentlyReading, onSelectTab, onRefresh }: Props) {
   const router = useRouter();
   const deferredReady = useDeferredOverviewSections(true);
   const recentlyFinished = useMemo(
@@ -53,57 +56,26 @@ export function OverviewTab({ userId, books, currentlyReading, onSelectTab }: Pr
   return (
     <View className="gap-4 md:gap-6">
       <SectionCard
-        title="Currently reading"
+        title={OVERVIEW_SECTION_TITLES.currentlyReading}
         shelfIconId="currently_reading"
         action={
-          <Pressable onPress={() => router.push("/library/reading")} accessibilityRole="button">
+          <Pressable
+            onPress={() => router.push("/library/reading")}
+            accessibilityRole="button"
+            accessibilityLabel="View shelf"
+          >
             <Text className="text-sm font-semibold text-primary-dark">View shelf ›</Text>
           </Pressable>
         }
       >
-        {currentlyReading.length === 0 ? (
-          <View className="items-center gap-3 py-2">
-            <Text className="text-center text-sm text-ink-muted">
-              You aren&apos;t currently reading anything.
-            </Text>
-            <View className="w-full flex-row gap-3">
-              <Pressable
-                onPress={() => router.push("/search")}
-                accessibilityRole="button"
-                className="min-h-[44px] flex-1 items-center justify-center rounded-xl border border-brand-border bg-surface px-3 py-2 active:opacity-80"
-              >
-                <Text className="text-sm font-semibold text-puce-red">Browse books</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => router.push("/library/want-to-read")}
-                accessibilityRole="button"
-                className="min-h-[44px] flex-1 items-center justify-center rounded-xl bg-primary px-3 py-2 active:opacity-80"
-              >
-                <Text className="text-sm font-semibold text-on-primary">Start reading</Text>
-              </Pressable>
-            </View>
-          </View>
-        ) : (
-          <View className="flex-row flex-wrap gap-3">
-            {currentlyReading.map((item) => (
-              <CoverTile
-                key={item.id}
-                bookId={item.books?.id}
-                title={item.books?.title}
-                author={item.books?.author}
-                coverUrl={item.books?.cover_url}
-                progressPercent={item.progress_percent}
-              />
-            ))}
-          </View>
-        )}
+        <CurrentlyReadingRow userId={userId} items={currentlyReading} onRefresh={onRefresh} />
       </SectionCard>
 
       {deferredReady ? (
         <View className="gap-4 md:flex-row md:gap-3">
           <View className="md:flex-1">
             <OverviewBookShelf
-              title="Recently finished"
+              title={OVERVIEW_SECTION_TITLES.recentlyFinished}
               shelfIconId="read"
               items={recentlyFinished}
               showFinishedDate
@@ -115,7 +87,7 @@ export function OverviewTab({ userId, books, currentlyReading, onSelectTab }: Pr
 
           <View className="md:flex-1">
             <OverviewBookShelf
-              title="Favorites"
+              title={OVERVIEW_SECTION_TITLES.favorites}
               emoji="⭐"
               items={favorites}
               showFavoriteBadge
@@ -129,12 +101,16 @@ export function OverviewTab({ userId, books, currentlyReading, onSelectTab }: Pr
         <LoadingState message="Loading shelves…" />
       )}
 
-      <SectionCard title="Quick actions" emoji="⚡">
+      <SectionCard title={OVERVIEW_SECTION_TITLES.quickActions} emoji="⚡">
         <View className="gap-3">
           <View className="flex-row gap-3">
-            <QuickLink icon="🔍" label="Search" onPress={() => router.push("/search")} />
             <QuickLink
-              label="Continue"
+              icon="🔍"
+              label={OVERVIEW_QUICK_ACTIONS.searchBooks}
+              onPress={() => router.push("/search")}
+            />
+            <QuickLink
+              label={OVERVIEW_QUICK_ACTIONS.continueReading}
               onPress={() =>
                 continueReadingBook?.books?.id
                   ? router.push(`/book/${continueReadingBook.books.id}`)
@@ -143,8 +119,11 @@ export function OverviewTab({ userId, books, currentlyReading, onSelectTab }: Pr
             />
           </View>
           <View className="flex-row gap-3">
-            <QuickLink label="Library" onPress={() => router.push("/library")} />
-            <QuickLink label="Trail" onPress={() => onSelectTab("trail")} />
+            <QuickLink
+              label={OVERVIEW_QUICK_ACTIONS.openLibrary}
+              onPress={() => router.push("/library")}
+            />
+            <QuickLink label={OVERVIEW_QUICK_ACTIONS.trail} onPress={() => onSelectTab("trail")} />
           </View>
         </View>
       </SectionCard>

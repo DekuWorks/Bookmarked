@@ -3,6 +3,10 @@ import { Pressable, Text, View } from "react-native";
 import { formatActivityMessage } from "../../services/activity";
 import { supabase } from "../../services/supabase";
 import { SectionCard } from "../SectionCard";
+import {
+  OVERVIEW_ACTIVITY_VIEW_ALL,
+  OVERVIEW_SECTION_TITLES,
+} from "../../../../../packages/utils/overviewCopy";
 
 type ActivityEvent = {
   event_type: string;
@@ -30,11 +34,16 @@ export function ActivityFeed({ userId, onViewAll }: Props) {
 
   return (
     <SectionCard
-      title="Recent activity"
-      emoji="📋"
+      title={OVERVIEW_SECTION_TITLES.recentActivity}
+      actionLayout="stacked"
       action={
-        <Pressable onPress={onViewAll} accessibilityRole="button">
-          <Text className="text-sm font-semibold text-primary-dark">View all activity</Text>
+        <Pressable
+          onPress={onViewAll}
+          accessibilityRole="button"
+          accessibilityLabel={OVERVIEW_ACTIVITY_VIEW_ALL}
+          className="min-h-[44px] justify-center"
+        >
+          <Text className="text-sm text-primary-dark">{OVERVIEW_ACTIVITY_VIEW_ALL}</Text>
         </Pressable>
       }
     >

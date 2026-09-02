@@ -7,7 +7,11 @@ export type ProductAnalyticsEvent =
   | "reading_completed"
   | "reading_completed_missing_page_count"
   | "reading_page_count_entered"
-  | "reading_completed_with_manual_page_count";
+  | "reading_completed_with_manual_page_count"
+  | "currently_reading_add_opened"
+  | "currently_reading_add_from_tbr"
+  | "currently_reading_add_from_search"
+  | "currently_reading_add_canceled";
 
 type EventPayload = Record<string, string | number | boolean | null | undefined>;
 

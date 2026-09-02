@@ -402,6 +402,28 @@ Full hub sprint (Phases 1–30). Docs: `docs/BOOK_CLUB_CURRENT_STATE.md`, `BOOK_
 | DNF movement preserves custom shelves | ✅ | Moving to DNF changes the built-in shelf without deleting custom-shelf memberships |
 | Direct Total Pages editing | ✅ | Native book detail can correct the shared catalog page count |
 
+## Sprint 13 — Home / Overview polish ✅
+
+| Item | Status | Notes / references |
+|------|--------|--------------------|
+| Overview Title Capitalization | ✅ | Shared labels in `packages/utils/overviewCopy.ts`. Web `OverviewTab` + iOS `OverviewTab` / `ActivityFeed`. Book titles, authors, reviews, notes, posts, and DB copy are unchanged. Accessibility labels match visible Quick Action and section copy. |
+| Recent Activity Layout | ✅ | Heading + “View all activity” now stack left-aligned. Web: `ReadingRoomSection` `actionLayout="stacked"`. iOS: `SectionCard` same prop. Route, filters, sorting, and activity records are unchanged. Spacing: 6px heading→link, 16px link→content. |
+| Currently Reading Add Book | ✅ | Cover-sized `+` card on empty and populated Currently Reading rows (`AddBookCoverCard`). Options: **Choose from TBR** / **Search for a Book**. TBR uses `getUserLibraryBooks` + `selectWantToReadBooks`, then existing `setBookShelfStatus` (web) / `setShelfStatus` (iOS). Search uses `origin=home_overview_currently_reading`; add goes straight to Currently Reading via `addCatalogBookToShelf`. Cancel/back returns to Home → Overview. Analytics events reused existing `trackProductEvent` (no new platform). Overview shelf cover 80×120 contain frame was not changed. |
+
+### Navigation / shelf transition (Add Book)
+
+- Origin: `home_overview_currently_reading` (`packages/utils/currentlyReadingAdd.ts`)
+- Web search: `/search/?origin=…&shelf=currently_reading` → success `replace /reading-room/`
+- iOS search: `/search?origin=…&shelf=currently_reading` → success `replace /` + invalidate `["library", userId]`
+- Normal Search / TBR entry from Library or the Search tab is unchanged
+- System shelf move is exclusive via existing services; custom-shelf memberships are not rewritten
+
+### Testing
+
+- Unit: `packages/utils/overviewCopy.test.ts`, `currentlyReadingAdd.test.ts`; web `overviewCopy.test.ts`; iOS `overviewCopy.test.ts`
+- Manual QA: Overview capitalization, Recent Activity stack (desktop + mobile web), Add Book card, light/dark
+- Blockers: Reading Room is auth-gated — browser verification may stop at sign-in
+
 ---
 
 ## Free / Plus / Reading DNA (master phases)
@@ -436,7 +458,7 @@ Tracking against the Free/Plus/Reading DNA master spec (Phases 1–42). Distinct
 | Reading DNA algorithm | `docs/READING_DNA_ALGORITHM.md` |
 | Sprint 6 polish / DNF QA | `docs/SPRINT_6_POLISH.md` |
 
-**Last updated:** August 1, 2026 (Sprint 6 DNF polish + library-first shelf moves)
+**Last updated:** 2 September 2026 (Home / Overview polish: title case, Recent Activity stack, Currently Reading Add Book)
 
 ---
 

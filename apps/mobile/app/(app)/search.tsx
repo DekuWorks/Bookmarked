@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "expo-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { ActivityIndicator, Alert, Modal, Pressable, Text, TextInput, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -33,9 +33,15 @@ import { ShelfBadge } from "../../src/components/ShelfBadge";
 import { ShelfIcon } from "../../src/components/ShelfIcon";
 import { TAB_BAR_SPACE, useTabBarScroll } from "../../src/navigation/TabBarScroll";
 import { useAuthStore } from "../../src/store/authStore";
+import { trackProductEvent } from "../../src/services/productAnalytics";
 import type { CatalogDoc } from "../../src/services/isbndb";
 import type { ShelfStatus } from "../../src/types";
 import type { UserShelf } from "../../src/types";
+import {
+  CURRENTLY_READING_ADD_EVENTS,
+  isCurrentlyReadingAddFromOverview,
+} from "../../../../packages/utils/currentlyReadingAdd";
+import { CURRENTLY_READING_ADD_COPY } from "../../../../packages/utils/overviewCopy";
 
 type Mode = "books" | "people" | "clubs";
 
@@ -67,6 +73,10 @@ function membershipKeyFor(doc: Pick<CatalogDoc, "isbn" | "key">): string {
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { origin: originParam } = useLocalSearchParams<{ origin?: string }>();
+  const origin = Array.isArray(originParam) ? originParam[0] : originParam;
+  const addFromOverview = isCurrentlyReadingAddFromOverview({ origin });
   const userId = useAuthStore((s) => s.user?.id);
   const { onScroll } = useTabBarScroll();
 
@@ -125,12 +135,16 @@ export default function SearchScreen() {
     enabled: mode === "clubs" && Boolean(userId) && query.trim().length >= 2,
   });
 
-  async function addToShelf(shelf: ShelfStatus, options?: { manualPageCount?: number }) {
-    if (!target) return;
-    const wasShelved = Boolean(targetMembership?.shelfStatus);
-    const key = membershipKeyFor(target);
+  async function addToShelf(
+    shelf: ShelfStatus,
+    options?: { manualPageCount?: number; doc?: CatalogDoc }
+  ) {
+    const book = options?.doc ?? target;
+    if (!book) return;
+    const key = membershipKeyFor(book);
+    const wasShelved = Boolean(memberships.get(key)?.shelfStatus);
     setSaving(true);
-    const result = await addCatalogBookToShelf(target, shelf, {
+    const result = await addCatalogBookToShelf(book, shelf, {
       manualPageCount: options?.manualPageCount,
     });
     setSaving(false);
@@ -145,9 +159,21 @@ export default function SearchScreen() {
         return next;
       });
     }
+    if (addFromOverview && shelf === "currently_reading") {
+      if (result.error) {
+        Alert.alert("Couldn't add book", result.error);
+        return;
+      }
+      trackProductEvent(CURRENTLY_READING_ADD_EVENTS.fromSearch, { book_id: result.bookId ?? "" });
+      if (userId) {
+        void queryClient.invalidateQueries({ queryKey: ["library", userId] });
+      }
+      router.replace("/");
+      return;
+    }
     Alert.alert(
       result.error ? "Couldn't add book" : wasShelved ? "Moved" : "Added",
-      result.error ?? `"${target.title}" was saved to ${SHELF_LABEL_BY_STATUS[shelf]}.`
+      result.error ?? `"${book.title}" was saved to ${SHELF_LABEL_BY_STATUS[shelf]}.`
     );
   }
 
@@ -236,6 +262,22 @@ export default function SearchScreen() {
       <ScreenGradientWash />
       <View style={{ paddingTop: insets.top + 8 }} className="px-4 pb-2">
         <Text className="mb-2 text-3xl font-black text-puce-red">Search</Text>
+        {addFromOverview ? (
+          <View className="mb-3 flex-row items-center justify-between rounded-xl border border-brand-border bg-surface px-3 py-2">
+            <Text className="flex-1 text-sm text-ink">{CURRENTLY_READING_ADD_COPY.addingBanner}</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Cancel"
+              onPress={() => {
+                trackProductEvent(CURRENTLY_READING_ADD_EVENTS.canceled);
+                router.replace("/");
+              }}
+              className="min-h-[44px] min-w-[44px] items-center justify-center"
+            >
+              <Text className="text-sm font-semibold text-primary-dark">Cancel</Text>
+            </Pressable>
+          </View>
+        ) : null}
         <Input
           placeholder={
             mode === "books"
@@ -274,8 +316,20 @@ export default function SearchScreen() {
                   title={item.title}
                   author={item.author_name?.join(", ")}
                   coverUrl={item.cover_url}
-                  subtitle={item.first_publish_year ? `${item.first_publish_year}` : "Tap to add to a shelf"}
-                  onPress={() => setTarget(item)}
+                  subtitle={
+                    item.first_publish_year
+                      ? `${item.first_publish_year}`
+                      : addFromOverview
+                        ? "Tap to add to Currently Reading"
+                        : "Tap to add to a shelf"
+                  }
+                  onPress={() => {
+                    if (addFromOverview) {
+                      void addToShelf("currently_reading", { doc: item });
+                      return;
+                    }
+                    setTarget(item);
+                  }}
                   rightAccessory={
                     membership?.shelfStatus ? (
                       <ShelfBadge label={SHELF_LABEL_BY_STATUS[membership.shelfStatus]} />

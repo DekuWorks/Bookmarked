@@ -8,6 +8,7 @@ import { SearchResults } from "@/components/search/SearchResults";
 import { ReaderSearchResults } from "@/components/search/ReaderSearchResults";
 import { getSearchMode, SearchModeTabs } from "@/components/search/SearchModeTabs";
 import { BecauseYouReadPanel } from "@/components/discovery/BecauseYouReadPanel";
+import { CurrentlyReadingAddBanner } from "@/components/search/CurrentlyReadingAddBanner";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 
@@ -29,6 +30,7 @@ function SearchContent() {
       </header>
 
       <SearchModeTabs />
+      <CurrentlyReadingAddBanner />
       <SearchForm mode={mode} />
 
       {q ? (
