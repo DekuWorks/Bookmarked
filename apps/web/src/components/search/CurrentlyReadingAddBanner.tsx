@@ -1,11 +1,13 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { trackProductEvent } from "@/lib/services/productAnalytics";
 import {
   CURRENTLY_READING_ADD_EVENTS,
   currentlyReadingAddReturnHref,
+  endCurrentlyReadingAddFromSearch,
   isCurrentlyReadingAddFromOverview,
 } from "@bookmarked/utils/currentlyReadingAdd";
 import { CURRENTLY_READING_ADD_COPY } from "@bookmarked/utils/overviewCopy";
@@ -13,6 +15,10 @@ import { CURRENTLY_READING_ADD_COPY } from "@bookmarked/utils/overviewCopy";
 export function CurrentlyReadingAddBanner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  useEffect(() => {
+    endCurrentlyReadingAddFromSearch();
+  }, []);
 
   if (!isCurrentlyReadingAddFromOverview({ origin: searchParams.get("origin") })) {
     return null;

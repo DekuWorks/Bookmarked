@@ -409,6 +409,24 @@ Full hub sprint (Phases 1–30). Docs: `docs/BOOK_CLUB_CURRENT_STATE.md`, `BOOK_
 | Overview Title Capitalization | ✅ | Shared labels in `packages/utils/overviewCopy.ts`. Web `OverviewTab` + iOS `OverviewTab` / `ActivityFeed`. Book titles, authors, reviews, notes, posts, and DB copy are unchanged. Accessibility labels match visible Quick Action and section copy. |
 | Recent Activity Layout | ✅ | Heading + “View all activity” now stack left-aligned. Web: `ReadingRoomSection` `actionLayout="stacked"`. iOS: `SectionCard` same prop. Route, filters, sorting, and activity records are unchanged. Spacing: 6px heading→link, 16px link→content. |
 | Currently Reading Add Book | ✅ | Cover-sized `+` card on empty and populated Currently Reading rows (`AddBookCoverCard`). Options: **Choose from TBR** / **Search for a Book**. TBR uses `getUserLibraryBooks` + `selectWantToReadBooks`, then existing `setBookShelfStatus` (web) / `setShelfStatus` (iOS). Search uses `origin=home_overview_currently_reading`; add goes straight to Currently Reading via `addCatalogBookToShelf`. Cancel/back returns to Home → Overview. Analytics events reused existing `trackProductEvent` (no new platform). Overview shelf cover 80×120 contain frame was not changed. |
+| Overview Tab – Quick Actions Button Colors | ⚠️ | Three equal filled cards shipped on web + iOS. A valid **fourth current Quick Action was not available** after replacing Search Books / Trail and removing Continue Reading; no fourth destination was invented. Reserved fill `#d18dbe` is unused. |
+
+### Quick Actions (Sprint 13)
+
+Shipped actions (same order, web + iOS):
+
+| Card | Label | Color | Purple token | Web | iOS |
+|------|-------|-------|--------------|-----|-----|
+| 1 | Open Library | `#e7a4a6` | — | `/library/` | `/library` |
+| 2 | Book Clubs | `#eb9f8e` | — | `/clubs/` | `/clubs` |
+| 3 | Reading Challenges | `#B89DBB` | Official `--color-primary` light / `BRAND.primary` | `/challenges/` | `/challenges` |
+| 4 | **Missing** | `#d18dbe` reserved | — | not invented | not invented |
+
+- Shared config/copy: `packages/utils/overviewCopy.ts`, `packages/utils/overviewQuickActions.ts`
+- Cards: web `QuickActionCard` + `OverviewTab`; iOS same names under `apps/mobile/src/components/reading-room/`
+- Analytics (existing `trackProductEvent`): `quick_action_open_library`, `quick_action_book_clubs`, `quick_action_reading_challenges`
+- Search, Trail, and Continue Reading remain elsewhere (nav Search tab, Reading Room Trail tab, Currently Reading row). They are not Quick Actions.
+- Fourth-action STOP: current Quick Actions were Search Books, Continue Reading, Open Library, Trail. After the required replacements/removal only Open Library remained of the old set, and it is already one of the three required cards.
 
 ### Navigation / shelf transition (Add Book)
 
@@ -420,9 +438,9 @@ Full hub sprint (Phases 1–30). Docs: `docs/BOOK_CLUB_CURRENT_STATE.md`, `BOOK_
 
 ### Testing
 
-- Unit: `packages/utils/overviewCopy.test.ts`, `currentlyReadingAdd.test.ts`; web `overviewCopy.test.ts`; iOS `overviewCopy.test.ts`
-- Manual QA: Overview capitalization, Recent Activity stack (desktop + mobile web), Add Book card, light/dark
-- Blockers: Reading Room is auth-gated — browser verification may stop at sign-in
+- Unit: `packages/utils/overviewCopy.test.ts`, `overviewQuickActions.test.ts`, `currentlyReadingAdd.test.ts`; web `overviewCopy.test.ts`; iOS `overviewCopy.test.ts`, `overviewQuickActions.test.ts`
+- Manual QA: Overview capitalization, Recent Activity stack (desktop + mobile web), Add Book card, Quick Action cards (light/dark)
+- Blockers: Reading Room is auth-gated — browser verification may stop at sign-in. Quick Actions fourth card is a product gap (do not invent Notes/Journal/Goals/Search).
 
 ---
 
@@ -458,7 +476,7 @@ Tracking against the Free/Plus/Reading DNA master spec (Phases 1–42). Distinct
 | Reading DNA algorithm | `docs/READING_DNA_ALGORITHM.md` |
 | Sprint 6 polish / DNF QA | `docs/SPRINT_6_POLISH.md` |
 
-**Last updated:** 2 September 2026 (Home / Overview polish: title case, Recent Activity stack, Currently Reading Add Book)
+**Last updated:** 2 September 2026 (Home / Overview polish: title case, Recent Activity stack, Currently Reading Add Book, Quick Actions colors)
 
 ---
 

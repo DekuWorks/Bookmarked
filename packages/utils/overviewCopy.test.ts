@@ -15,10 +15,12 @@ describe("overviewCopy", () => {
   });
 
   it("uses Title Case for Quick Action buttons", () => {
-    expect(OVERVIEW_QUICK_ACTIONS.searchBooks).toBe("Search Books");
-    expect(OVERVIEW_QUICK_ACTIONS.continueReading).toBe("Continue Reading");
     expect(OVERVIEW_QUICK_ACTIONS.openLibrary).toBe("Open Library");
-    expect(OVERVIEW_QUICK_ACTIONS.trail).toBe("Trail");
+    expect(OVERVIEW_QUICK_ACTIONS.bookClubs).toBe("Book Clubs");
+    expect(OVERVIEW_QUICK_ACTIONS.readingChallenges).toBe("Reading Challenges");
+    expect(OVERVIEW_QUICK_ACTIONS).not.toHaveProperty("searchBooks");
+    expect(OVERVIEW_QUICK_ACTIONS).not.toHaveProperty("continueReading");
+    expect(OVERVIEW_QUICK_ACTIONS).not.toHaveProperty("trail");
   });
 
   it("keeps Recent Activity link copy and Add Book a11y labels", () => {

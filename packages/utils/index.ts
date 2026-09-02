@@ -244,17 +244,38 @@ export {
 } from "./overviewCopy";
 
 export {
+  BOOKMARKED_PURPLE,
+  OVERVIEW_QUICK_ACTION_COLORS,
+  OVERVIEW_QUICK_ACTION_EVENTS,
+  OVERVIEW_QUICK_ACTION_FOURTH_SLOT,
+  OVERVIEW_QUICK_ACTIONS_LIST,
+  contrastRatio,
+  quickActionContrastText,
+  relativeLuminance,
+  type OverviewQuickAction,
+  type OverviewQuickActionEvent,
+  type OverviewQuickActionIcon,
+  type OverviewQuickActionId,
+} from "./overviewQuickActions";
+
+export {
   CURRENTLY_READING_ADD_EVENTS,
   CURRENTLY_READING_ADD_SHELF,
   HOME_OVERVIEW_CURRENTLY_READING_ORIGIN,
   TBR_PICKER_SEARCH_THRESHOLD,
+  currentlyReadingAddClearedSearchParams,
+  currentlyReadingAddMobileReturnPath,
   currentlyReadingAddReturnHref,
+  currentlyReadingAddSearchClearPath,
   currentlyReadingAddSearchHref,
   currentlyReadingAddSearchPath,
   currentlyReadingAddSearchQuery,
+  endCurrentlyReadingAddFromSearch,
   filterTbrBooksByQuery,
   isCurrentlyReadingAddFromOverview,
+  leaveCurrentlyReadingAddSearch,
   selectWantToReadBooks,
+  tryBeginCurrentlyReadingAddFromSearch,
   type CurrentlyReadingAddEvent,
   type CurrentlyReadingAddSearchParams,
 } from "./currentlyReadingAdd";
