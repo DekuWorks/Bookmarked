@@ -9,6 +9,11 @@ import {
   buildNotesBookFilterOptions,
   type NotesBookFilterOption,
 } from "@bookmarked/utils/notesBookFilter";
+import {
+  HOME_RECENT_NOTED_BOOKS_LIMIT,
+  pickLatestNotePerBook,
+  selectRecentNotedBooks,
+} from "@bookmarked/utils/recentNotesByBook";
 import type {
   ReadingNote,
   ReadingNoteCategory,
@@ -366,6 +371,68 @@ export async function listNotedBooksForUser(
       noteCount: counts.get(option.userBookId) ?? option.noteCount,
     })),
   };
+}
+
+/** Five most recently read books that have notes, one latest note each. */
+export async function listRecentNotedBooksForHome(
+  userId: string
+): Promise<{ notes: ReadingNoteWithBook[]; error?: string }> {
+  const supabase = createClient();
+  const { data: noteIds, error: noteIdsError } = await supabase
+    .from("reading_notes")
+    .select("user_book_id")
+    .eq("user_id", userId);
+
+  if (noteIdsError) {
+    return { notes: [], error: NOTES_BOOK_FILTER_COPY.error };
+  }
+
+  const userBookIds = [
+    ...new Set(
+      (noteIds ?? [])
+        .map((row) => row.user_book_id)
+        .filter((id): id is string => typeof id === "string" && Boolean(id))
+    ),
+  ];
+  if (userBookIds.length === 0) return { notes: [] };
+
+  const { data: userBooks, error: booksError } = await supabase
+    .from("user_books")
+    .select("id, finished_at, started_at, updated_at")
+    .eq("user_id", userId)
+    .in("id", userBookIds);
+
+  if (booksError) {
+    return { notes: [], error: NOTES_BOOK_FILTER_COPY.error };
+  }
+
+  const selected = selectRecentNotedBooks(
+    (userBooks ?? []).map((row) => ({
+      userBookId: row.id,
+      lastReadAt: row.finished_at ?? row.started_at,
+      updatedAt: row.updated_at,
+    }))
+  );
+  const selectedIds = selected.map((book) => book.userBookId);
+  if (selectedIds.length === 0) return { notes: [] };
+
+  const { data: latestNotes, error: notesError } = await supabase
+    .from("reading_notes")
+    .select("*")
+    .eq("user_id", userId)
+    .in("user_book_id", selectedIds)
+    .order("created_at", { ascending: false })
+    .limit(HOME_RECENT_NOTED_BOOKS_LIMIT * 8);
+
+  if (notesError) {
+    return { notes: [], error: NOTES_BOOK_FILTER_COPY.error };
+  }
+
+  const latestByBook = pickLatestNotePerBook(
+    (latestNotes ?? []) as ReadingNote[],
+    selectedIds
+  );
+  return { notes: await enrichNotesWithBooks([...latestByBook.values()]) };
 }
 
 async function enrichNotesWithBooks(

@@ -9,10 +9,11 @@ import { Button } from "@/components/ui/Button";
 import { LoadingState } from "@/components/ui/LoadingState";
 import {
   listNotedBooksForUser,
+  listRecentNotedBooksForHome,
   searchNotesWithBooks,
   type ReadingNoteWithBook,
 } from "@/lib/services/readingNotes";
-import { HOME_NOTES_PREVIEW_LIMIT } from "@bookmarked/utils/noteLocation";
+import { HOME_RECENT_NOTES_COPY } from "@bookmarked/utils/recentNotesByBook";
 import {
   NOTES_BOOK_FILTER_COPY,
   NOTES_BOOK_QUERY_PARAM,
@@ -69,11 +70,13 @@ export function NotesPanel({ userId }: Props) {
       setOptions(booksResult.options);
 
       const resolved = matchNotesBookFilter(bookParam, booksResult.options);
-      const { notes: rows, error: notesError } = await searchNotesWithBooks({
-        userId,
-        userBookId: resolved ?? undefined,
-        limit: resolved ? 100 : HOME_NOTES_PREVIEW_LIMIT,
-      });
+      const { notes: rows, error: notesError } = resolved
+        ? await searchNotesWithBooks({
+            userId,
+            userBookId: resolved,
+            limit: 100,
+          })
+        : await listRecentNotedBooksForHome(userId);
       if (cancelled) return;
       if (notesError) {
         setNotes([]);
@@ -94,23 +97,29 @@ export function NotesPanel({ userId }: Props) {
 
   return (
     <div className="space-y-6 text-left">
-      <div className="flex justify-center">
+      <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
         <Link
           href="/notes/"
           className="inline-flex min-h-[44px] items-center justify-center rounded-full bg-puce-red px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
         >
           Open Full Notes Page
         </Link>
+        <Link
+          href="/notes/"
+          className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-border bg-surface px-5 py-2.5 text-sm font-semibold text-puce-red transition hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
+        >
+          Open Notes Search
+        </Link>
       </div>
 
       <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
         <h3 className="text-center text-base font-semibold text-puce-red">
-          {selectedUserBookId ? "Notes" : "Recent notes"}
+          {selectedUserBookId ? "Notes" : HOME_RECENT_NOTES_COPY.title}
         </h3>
         <p className="mt-1 text-center text-sm text-text-muted">
           {selectedUserBookId
             ? "Every note saved for this book, oldest first."
-            : "Your five most recent notes."}
+            : HOME_RECENT_NOTES_COPY.subtitle}
         </p>
 
         <div className="mx-auto mt-4 max-w-xl">
@@ -137,7 +146,9 @@ export function NotesPanel({ userId }: Props) {
           </div>
         ) : notes.length === 0 ? (
           <p className="mt-4 text-center text-sm text-text-muted">
-            {notesEmptyMessage(selectedUserBookId)}
+            {selectedUserBookId
+              ? notesEmptyMessage(selectedUserBookId)
+              : HOME_RECENT_NOTES_COPY.empty}
           </p>
         ) : (
           <ul className="mt-4 space-y-4">

@@ -19,7 +19,12 @@ import {
   ensureCatalogBook,
 } from "@/lib/services/books";
 import { removeFromShelf } from "@/lib/actions/book";
-import { listCustomShelfIdsForBook } from "@/lib/services/customShelves";
+import {
+  addBookToCustomShelf,
+  listCustomShelfIdsForBook,
+  listUserCustomShelves,
+} from "@/lib/services/customShelves";
+import type { UserShelf } from "@/types";
 import { needsMissingPageCountPrompt } from "@/lib/services/completeReadingSession";
 import { resolveDisplayCoverUrl } from "@/lib/services/covers";
 import { bookDetailsPath } from "@/lib/routes/book";
@@ -35,6 +40,7 @@ import {
   tryBeginCurrentlyReadingAddFromSearch,
 } from "@bookmarked/utils/currentlyReadingAdd";
 import { trackProductEvent } from "@/lib/services/productAnalytics";
+import { withOriginQuery } from "@bookmarked/utils/navigationOrigin";
 
 /** Outline buttons on the desktop hover overlay (puce-red background). */
 const overlayOutlineButtonClass =
@@ -191,6 +197,7 @@ export function SearchResultCard({
   const [resolvedBookId, setResolvedBookId] = useState<string | null>(bookId);
   const [optimisticShelf, setOptimisticShelf] = useState<ShelfStatus | null>(shelfStatus);
   const [memberShelfIds, setMemberShelfIds] = useState<string[]>([]);
+  const [customShelves, setCustomShelves] = useState<UserShelf[]>([]);
 
   useEffect(() => {
     setResolvedBookId(bookId);
@@ -199,6 +206,16 @@ export function SearchResultCard({
   useEffect(() => {
     setOptimisticShelf(shelfStatus);
   }, [shelfStatus]);
+
+  useEffect(() => {
+    if (!user) {
+      setCustomShelves([]);
+      return;
+    }
+    void listUserCustomShelves(user.id)
+      .then(setCustomShelves)
+      .catch((error) => console.error("[custom-shelf] list failed:", error));
+  }, [user]);
 
   useEffect(() => {
     if (!user || !resolvedBookId) {
@@ -247,7 +264,13 @@ export function SearchResultCard({
         toast.error(result.error ?? "Could not open book details.");
         return;
       }
-      router.push(bookDetailsPath(result.bookId));
+      router.push(
+        withOriginQuery(bookDetailsPath(result.bookId), {
+          origin: "search_books",
+          query: searchParams.get("q"),
+          scroll: typeof window !== "undefined" ? Math.round(window.scrollY) : null,
+        })
+      );
     } finally {
       setViewDetailsLoading(false);
     }
@@ -478,7 +501,35 @@ export function SearchResultCard({
         loading={saving}
         currentShelfStatus={optimisticShelf}
         mode={optimisticShelf ? "move" : "add"}
+        customShelves={customShelves}
+        memberShelfIds={memberShelfIds}
         onSelectShelf={handleSelectShelf}
+        onSelectCustom={async (shelf) => {
+          if (!user) {
+            toast.error("Sign in to add this book to a collection.");
+            return;
+          }
+          setSaving(true);
+          try {
+            const ensured = await ensureCatalogBook(bookPayload);
+            if (ensured.error || !ensured.bookId) {
+              toast.error(ensured.error ?? "Could not prepare this book.");
+              return;
+            }
+            setResolvedBookId(ensured.bookId);
+            const result = await addBookToCustomShelf(shelf.id, user.id, ensured.bookId);
+            if (result.error) {
+              toast.error(result.error);
+              return;
+            }
+            setMemberShelfIds((prev) => [...prev, shelf.id]);
+            toast.success(`Added to ${shelf.name}`);
+            setMenuOpen(false);
+          } finally {
+            setSaving(false);
+          }
+        }}
+        onOpenCustomCollections={() => void openCustomShelfMenu()}
         onClose={() => {
           if (!saving) setMenuOpen(false);
         }}

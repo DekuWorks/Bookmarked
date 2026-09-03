@@ -96,7 +96,7 @@ export function CustomShelfCollectionsPanel({
                   variant="outline"
                   size="sm"
                 >
-                  📚 {shelf.name}
+                  {shelf.name}
                 </ButtonLink>
               ))}
             </div>

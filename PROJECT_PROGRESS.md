@@ -506,7 +506,62 @@ Tracking against the Free/Plus/Reading DNA master spec (Phases 1–42). Distinct
 | Reading DNA algorithm | `docs/READING_DNA_ALGORITHM.md` |
 | Sprint 6 polish / DNF QA | `docs/SPRINT_6_POLISH.md` |
 
-**Last updated:** 3 September 2026 (Notes Tab – Filter by Book on Home Notes + Full Notes, web + iOS)
+**Last updated:** 3 September 2026 (Twelfth Sprint QA — web + iOS)
+
+---
+
+## Twelfth Sprint — Product polish ✅
+
+| # | Item | Status | Notes |
+|---|------|--------|-------|
+| 1 | Login Remember Me | ✅ | Web `rememberMe` localStorage vs sessionStorage. iOS preference + SecureStore/keychain tokens (not password). Logout clears. |
+| 2 | Quick Action alignment | ✅ | Icon then text, shared size/spacing. Custom purple SVG icons. 3 cards only. |
+| 3 | Title Case | ✅ skipped-already-done | Overview copy in `overviewCopy.ts`. User-generated text unchanged. |
+| 4 | Bookmark placement | ✅ | Left of cover/spine on web + iOS `BookCover` / `BookSpine`. |
+| 5 | Favorites View All | ✅ | Favorites-only listing. Origin `home_overview`. |
+| 6 | Overview View Shelf back | ✅ | `origin=home_overview` vs Library. |
+| 7 | Trail session notes + list/grid | ✅ | Separate session-notes view. List/Grid toggle stays on Trail. |
+| 8 | Home Notes Recent Notes | ✅ | 5 recent books × 1 latest note. Not the book-title filter. |
+| 9 | Reviews filters | ✅ | All / Star Rating Only / Written Review Only / **Private Reviews** / Spoiler Reviews. Fixed-height chips so tabs do not resize. |
+| 10 | History Recently Finished | ✅ | Title + Browse Read Shelf `origin=home_history`. |
+| 11 | Recent Sessions | ✅ | “Recent Sessions” heading. |
+| 12 | Feed Trending Add to Shelf | ✅ | One Add to Shelf (TBR/CR/Finished/DNF/custom) + Rate & Review. Origin `feed`. |
+| 13 | Feed Create a Post | ✅ | Placeholder “Write a post.” iOS: GIF, photo, Tag a Book from Library, mention tools. Cancel uses origin. |
+| 14 | Feed spoiler toggle | ✅ | Tap reveal/hide, 30s auto-hide, cleanup. Shared `spoilerReveal`. |
+| 15 | Feed Like sparkle | ✅ | Like-only, Reduce Motion, existing Bookmarked sparkles. |
+| 16 | Feed Comment | ✅ | Opens that post’s comments sheet. Cover/title still go to Book Details. |
+| 17 | Star ratings one row | ✅ | Shared `starFill` + nowrap `StarDisplay` / `StarRating`. |
+| 18 | Feed → Book Club back | ✅ | `origin=feed` + scroll. |
+| 19 | Club discussion under nav | ✅ | Sticky club tabs use `--app-nav-clearance`. Extra discussion padding. No extra z-index stacking. |
+| 20 | Search → People back | ✅ | `origin=search_people` + query. |
+| 21 | Search Details + Add to Shelf | ✅ | Two actions. After add stay on Search. |
+| 22 | Search category switch | ✅ | Clears query/results and focuses input. |
+| 23 | Search → Club back | ✅ | `origin=search_clubs`. |
+| 24 | Custom shelves move | ✅ | `shelfMove` + `moveUserBookToDestination` updates existing `user_books`. Custom memberships via `user_shelf_books`. |
+| 25 | Create Custom Shelf (iOS) | ✅ | Name, genre, privacy. Same backend as web. |
+| 26 | Page progress | ✅ | Current Page + Total Pages. Saves `user_books.total_pages` only. |
+| 27 | Custom Bookmarked icons | ⏳ waiting-on-assets | Existing custom purple set used (QA, shelves, nav). Final Leighton pack not in repo. Covers/user content untouched. |
+| 28 | App opening animation (iOS) | ⏳ waiting-on-assets | Fresh-launch overlay only (`LaunchIntro`). Logo + sparkle fallback. Reduce Motion. Final cinematic assets not in repo. |
+| 29 | Custom mood tags | ✅ | Create/edit/archive. Built-ins stay. Additive migration `20260903120000_twelfth_sprint_progress_mood.sql`. |
+| 30 | Library All Books (iOS) | ✅ | Magnifying glass removed. `+` → Search `origin=library_all_books`. Filter order TBR → CR → Finished → DNF → All. |
+| 31 | Feed Trending inline (iOS only) | ✅ | Horizontal carousels in feed. Not added to web. Weekly staleTime. |
+| 32 | Reviews emoji selected (iOS) | ✅ | Border/bg + tap again to deselect. |
+| 33 | Book Page Set Date to Read (iOS) | ✅ | Control removed; DNF stays full-width. |
+| 34 | Search Already in Library (iOS) | ✅ | Bookmark + confirm copy. Continue still allows multi-collection. |
+| 35 | iPad Grid View | ✅ | 4-across at `width >= 768`. iPhone stays 3. |
+
+### Shared / data
+
+- Origins: `packages/utils/navigationOrigin.ts`
+- Notes-by-book query: `packages/utils/recentNotesByBook.ts` + `listRecentNotedBooksForHome`
+- Additive migration only: `user_books.total_pages`, `user_mood_tags` (owner RLS). No destructive data change.
+- Android: not in scope. No RLS breakage. Migration must be applied before mood tags / user total pages work in production.
+
+### Testing
+
+- Unit: `navigationOrigin`, `recentNotesByBook`, `spoilerReveal`, `pageProgress`, `libraryFilters`, `starRatingDisplay`, `customMoodTags`, `shelfMove`, `rememberMe`
+- Manual QA: origin back, search category clear, shelf move, spoiler timer, stars, Home Recent Notes
+- Blockers: web app is auth-gated — browser QA may stop at sign-in. Mood/total-pages need the new migration applied.
 
 ---
 

@@ -11,6 +11,9 @@ type Props = {
   coverUrl?: string | null;
   progressPercent?: number | null;
   format?: "book" | "ebook" | "audiobook" | null;
+  /** Show the saved bookmark on the left of the cover, matching web. */
+  saved?: boolean;
+  origin?: string | null;
   widthClassName?: string;
   coverSizeClassName?: string;
   /** Pixel width; when set, wins over `widthClassName`. */
@@ -27,6 +30,8 @@ export function CoverTile({
   coverUrl,
   progressPercent,
   format,
+  saved,
+  origin,
   widthClassName = "w-24",
   coverSizeClassName = "w-24 h-36",
   frameStyle,
@@ -36,7 +41,11 @@ export function CoverTile({
   return (
     <Pressable
       disabled={!bookId}
-      onPress={() => bookId && router.push(`/book/${bookId}`)}
+      onPress={() => {
+        if (!bookId) return;
+        const href = origin ? `/book/${bookId}?origin=${origin}` : `/book/${bookId}`;
+        router.push(href);
+      }}
       className={`${frameStyle ? "" : widthClassName} active:opacity-80`.trim()}
       style={frameStyle}
     >
@@ -46,6 +55,8 @@ export function CoverTile({
           title={title}
           sizeClassName={coverSizeStyle ? undefined : coverSizeClassName}
           sizeStyle={coverSizeStyle}
+          saved={saved}
+          badgeSize="small"
         />
         {format === "audiobook" ? (
           <View className="absolute bottom-1 right-1 rounded-full bg-puce-red/90 px-1.5 py-0.5">

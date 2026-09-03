@@ -4,6 +4,8 @@ import { EmptyShelfMessage } from "@/components/library/EmptyShelfMessage";
 import { ShelfTitleRow } from "@/components/shelves/ShelfTitleRow";
 import { bookDetailsPath } from "@/lib/routes/book";
 import { readerLibraryShelfPath } from "@/lib/routes/readerLibrary";
+import { OVERVIEW_SHELF_ACTIONS } from "@bookmarked/utils/overviewCopy";
+import { withOriginQuery } from "@bookmarked/utils/navigationOrigin";
 import type { LibraryBookRow } from "@/lib/services/library";
 import type { ShelfStatus } from "@/types";
 
@@ -27,7 +29,7 @@ export function BookshelfSection({
 }: Props) {
   const shelfHref = username
     ? readerLibraryShelfPath(username, slug)
-    : `/library/${slug}`;
+    : withOriginQuery(`/library/${slug}`, { origin: "library_shelf" });
 
   return (
     <section className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
@@ -41,7 +43,7 @@ export function BookshelfSection({
             href={shelfHref}
             className="text-sm font-medium text-primary hover:underline"
           >
-            View shelf
+            {OVERVIEW_SHELF_ACTIONS.viewShelf}
           </Link>
         ) : null}
       </div>
@@ -61,6 +63,7 @@ export function BookshelfSection({
                   coverUrl={book?.cover_url}
                   pageCount={book?.page_count}
                   href={book?.id ? bookDetailsPath(book.id) : undefined}
+                  bookmarked
                 />
               );
             })}

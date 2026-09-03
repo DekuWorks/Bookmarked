@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ShelfIcon } from "@/components/shelves/ShelfIcon";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import {
@@ -105,9 +106,7 @@ export function AddToCustomShelfMenu({
                       : "border-border bg-background hover:border-primary hover:bg-primary/5"
                   )}
                 >
-                  <span aria-hidden className="text-lg">
-                    📚
-                  </span>
+                  <ShelfIcon id="want_to_read" size="medium" />
                   <span className="flex-1">
                     <span className="block font-medium text-text">{shelf.name}</span>
                     {shelf.genre ? (

@@ -160,17 +160,29 @@ export function RateReviewSheet({
               Signature emoji
             </Text>
             <View className="flex-row flex-wrap gap-2">
-              {RATING_EMOJIS.map((e) => (
-                <Pressable
-                  key={e}
-                  onPress={() => setEmoji((prev) => (prev === e ? null : e))}
-                  className={`h-10 w-10 items-center justify-center rounded-full ${
-                    emoji === e ? "bg-primary/30" : "bg-primary/10"
-                  }`}
-                >
-                  <Text className="text-xl">{e}</Text>
-                </Pressable>
-              ))}
+              {RATING_EMOJIS.map((e) => {
+                const selected = emoji === e;
+                return (
+                  <Pressable
+                    key={e}
+                    onPress={() => setEmoji((prev) => (prev === e ? null : e))}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    className={`h-11 w-11 items-center justify-center rounded-full border-2 ${
+                      selected
+                        ? "border-puce-red bg-primary/25"
+                        : "border-transparent bg-primary/10"
+                    }`}
+                  >
+                    <Text className="text-xl">{e}</Text>
+                    {selected ? (
+                      <View className="absolute -right-0.5 -top-0.5 h-4 w-4 items-center justify-center rounded-full bg-puce-red">
+                        <Text className="text-[9px] font-bold text-white">✓</Text>
+                      </View>
+                    ) : null}
+                  </Pressable>
+                );
+              })}
             </View>
           </View>
 

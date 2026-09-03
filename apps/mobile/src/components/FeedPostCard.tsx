@@ -9,6 +9,7 @@ import { FeelingChip } from "./FeelingChip";
 import { BookmarkedLikeSparkles } from "./BookmarkedLikeSparkles";
 import { MentionText } from "./MentionText";
 import { PostCommentsSheet } from "./PostCommentsSheet";
+import { ReviewCommentsSheet } from "./ReviewCommentsSheet";
 import { ProfanityBlur } from "./ProfanityBlur";
 import { RepostPreview } from "./RepostPreview";
 import { ShareContentSheet } from "./ShareContentSheet";
@@ -16,6 +17,7 @@ import {
   buildPostShareComposerPayload,
   buildReviewShareComposerPayload,
 } from "../../../../packages/utils/sharePreview";
+import { BrandChromeIcon } from "./BrandChromeIcon";
 import { StarRating } from "./StarRating";
 import { showContentActions } from "./ContentActions";
 import { timeAgo } from "../utils";
@@ -23,6 +25,9 @@ import { useToggleReviewLike, useRepostPost, useTogglePostLike } from "../hooks/
 import { deletePost } from "../services/posts";
 import { setShelfStatus } from "../services/library";
 import { useAuthStore } from "../store/authStore";
+import { useSpoilerReveal } from "../hooks/useSpoilerReveal";
+import { feedBookHref, feedClubHref, feedComposeHref } from "../lib/feedNav";
+import { SPOILER_WARNING_COPY } from "../../../../packages/utils";
 import type { DiscussionEntry, FeedEntry, PostEntry, ReviewEntry } from "../services/socialFeed";
 
 function CardShell({ children }: { children: React.ReactNode }) {
@@ -113,21 +118,30 @@ function ActionRow({
         </Pressable>
       ) : null}
       <View className="flex-1" />
-      <Pressable className="active:opacity-70" onPress={onSave}>
-        <Text className="text-base">🔖</Text>
+      <Pressable className="active:opacity-70" onPress={onSave} accessibilityLabel="Save">
+        <BrandChromeIcon name="save" />
       </Pressable>
     </View>
   );
 }
 
-function ReviewCard({ entry, viewerId }: { entry: ReviewEntry; viewerId?: string }) {
+function ReviewCard({
+  entry,
+  viewerId,
+  getScrollOffset,
+}: {
+  entry: ReviewEntry;
+  viewerId?: string;
+  getScrollOffset?: () => number;
+}) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [revealed, setRevealed] = useState(false);
+  const spoiler = useSpoilerReveal();
+  const [commentsOpen, setCommentsOpen] = useState(false);
   const [showAnimation, setShowAnimation] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const like = useToggleReviewLike();
-  const hidden = entry.hasSpoilers && !revealed;
+  const hidden = entry.hasSpoilers && !spoiler.revealed;
   const isSelf = entry.author.id === viewerId;
   const sharePayload = buildReviewShareComposerPayload({
     reviewId: entry.id,
@@ -169,7 +183,10 @@ function ReviewCard({ entry, viewerId }: { entry: ReviewEntry; viewerId?: string
       <AuthorRow entry={entry} action="reviewed a book" onMore={isSelf ? undefined : onMore} />
       <Pressable
         className="mt-3 flex-row gap-3 active:opacity-80"
-        onPress={() => entry.book && router.push(`/book/${entry.book.id}`)}
+        onPress={() =>
+          entry.book &&
+          router.push(feedBookHref(entry.book.id, { scroll: getScrollOffset?.() }) as never)
+        }
       >
         {entry.book ? (
           <BookCover
@@ -200,18 +217,21 @@ function ReviewCard({ entry, viewerId }: { entry: ReviewEntry; viewerId?: string
       {entry.reviewBody ? (
         hidden ? (
           <Pressable
-            onPress={() => setRevealed(true)}
+            onPress={spoiler.toggle}
             className="mt-3 flex-row items-center gap-2 rounded-xl bg-primary/10 px-3 py-3 active:opacity-80"
           >
             <Text className="text-base text-puce-red">🔒</Text>
-            <Text className="text-sm font-medium text-puce-red">
-              Spoiler review (tap to view)
-            </Text>
+            <Text className="text-sm font-medium text-puce-red">{SPOILER_WARNING_COPY.hidden}</Text>
           </Pressable>
         ) : (
-          <ProfanityBlur text={entry.reviewBody} className="mt-3">
-            <Text className="leading-5 text-ink">{entry.reviewBody}</Text>
-          </ProfanityBlur>
+          <Pressable onPress={entry.hasSpoilers ? spoiler.toggle : undefined} className="mt-3">
+            <ProfanityBlur text={entry.reviewBody}>
+              <Text className="leading-5 text-ink">{entry.reviewBody}</Text>
+            </ProfanityBlur>
+            {entry.hasSpoilers ? (
+              <Text className="mt-2 text-xs font-medium text-ink-muted">{SPOILER_WARNING_COPY.hide}</Text>
+            ) : null}
+          </Pressable>
         )
       ) : null}
 
@@ -234,9 +254,14 @@ function ReviewCard({ entry, viewerId }: { entry: ReviewEntry; viewerId?: string
           }
           like.mutate(entry.id);
         }}
-        onComment={() => entry.book && router.push(`/book/${entry.book.id}`)}
+        onComment={() => setCommentsOpen(true)}
         onSave={save}
         onShare={() => setShareOpen(true)}
+      />
+      <ReviewCommentsSheet
+        reviewId={entry.id}
+        visible={commentsOpen}
+        onClose={() => setCommentsOpen(false)}
       />
       {viewerId ? (
         <ShareContentSheet
@@ -301,7 +326,15 @@ function PostActions({
   );
 }
 
-function PostCard({ entry, viewerId }: { entry: PostEntry; viewerId?: string }) {
+function PostCard({
+  entry,
+  viewerId,
+  getScrollOffset,
+}: {
+  entry: PostEntry;
+  viewerId?: string;
+  getScrollOffset?: () => number;
+}) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const post = entry.post;
@@ -357,7 +390,8 @@ function PostCard({ entry, viewerId }: { entry: PostEntry; viewerId?: string }) 
       { text: "Cancel", style: "cancel" },
       {
         text: "Quote",
-        onPress: () => router.push(`/compose?repostOf=${post.id}`),
+        onPress: () =>
+          router.push(feedComposeHref(getScrollOffset?.(), { repostOf: post.id }) as never),
       },
       {
         text: post.viewer_has_reposted ? "Already reposted" : "Repost",
@@ -415,7 +449,10 @@ function PostCard({ entry, viewerId }: { entry: PostEntry; viewerId?: string }) 
       {post.book && !isRepost ? (
         <Pressable
           className="mt-3 overflow-visible rounded-xl border border-primary/30 bg-primary/15 active:opacity-80"
-          onPress={() => post.book && router.push(`/book/${post.book.id}`)}
+          onPress={() =>
+            post.book &&
+            router.push(feedBookHref(post.book.id, { scroll: getScrollOffset?.() }) as never)
+          }
         >
           <View className="flex-row items-stretch gap-3 p-3">
             <BookCover
@@ -478,9 +515,16 @@ function PostCard({ entry, viewerId }: { entry: PostEntry; viewerId?: string }) 
   );
 }
 
-function DiscussionCard({ entry }: { entry: DiscussionEntry }) {
+function DiscussionCard({
+  entry,
+  getScrollOffset,
+}: {
+  entry: DiscussionEntry;
+  getScrollOffset?: () => number;
+}) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const discussionSpoiler = useSpoilerReveal();
   const extra = Math.max(0, entry.participantCount - entry.participantAvatars.length);
 
   function onMore() {
@@ -504,11 +548,22 @@ function DiscussionCard({ entry }: { entry: DiscussionEntry }) {
           <BookCover url={entry.book.coverUrl} title={entry.book.title} sizeClassName="w-14 h-20" />
         ) : null}
         <View className="flex-1">
-          <ProfanityBlur text={entry.body}>
-            <Text className="font-bold text-ink" numberOfLines={3}>
-              {entry.body}
-            </Text>
-          </ProfanityBlur>
+          {entry.containsSpoilers && !discussionSpoiler.revealed ? (
+            <Pressable
+              onPress={discussionSpoiler.toggle}
+              className="rounded-xl bg-primary/10 px-3 py-3 active:opacity-80"
+            >
+              <Text className="text-sm font-medium text-puce-red">{SPOILER_WARNING_COPY.hidden}</Text>
+            </Pressable>
+          ) : (
+            <Pressable onPress={entry.containsSpoilers ? discussionSpoiler.toggle : undefined}>
+              <ProfanityBlur text={entry.body}>
+                <Text className="font-bold text-ink" numberOfLines={3}>
+                  {entry.body}
+                </Text>
+              </ProfanityBlur>
+            </Pressable>
+          )}
           {entry.book ? (
             <Text className="mt-1 text-xs text-ink-muted" numberOfLines={1}>
               {entry.book.title}
@@ -533,7 +588,11 @@ function DiscussionCard({ entry }: { entry: DiscussionEntry }) {
         <Pressable
           onPress={() =>
             router.push(
-              `/(app)/clubs/${entry.clubId}?tab=discussions&discussion=${encodeURIComponent(entry.id)}` as never
+              feedClubHref(entry.clubId, {
+                tab: "discussions",
+                discussionId: entry.id,
+                scroll: getScrollOffset?.(),
+              }) as never
             )
           }
           className="rounded-full bg-puce-red px-4 py-2 active:opacity-80"
@@ -547,9 +606,19 @@ function DiscussionCard({ entry }: { entry: DiscussionEntry }) {
   );
 }
 
-export function FeedPostCard({ entry }: { entry: FeedEntry }) {
+export function FeedPostCard({
+  entry,
+  getScrollOffset,
+}: {
+  entry: FeedEntry;
+  getScrollOffset?: () => number;
+}) {
   const viewerId = useAuthStore((s) => s.user?.id);
-  if (entry.kind === "review") return <ReviewCard entry={entry} viewerId={viewerId} />;
-  if (entry.kind === "post") return <PostCard entry={entry} viewerId={viewerId} />;
-  return <DiscussionCard entry={entry} />;
+  if (entry.kind === "review") {
+    return <ReviewCard entry={entry} viewerId={viewerId} getScrollOffset={getScrollOffset} />;
+  }
+  if (entry.kind === "post") {
+    return <PostCard entry={entry} viewerId={viewerId} getScrollOffset={getScrollOffset} />;
+  }
+  return <DiscussionCard entry={entry} getScrollOffset={getScrollOffset} />;
 }

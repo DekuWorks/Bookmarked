@@ -51,6 +51,8 @@ export type {
   PostCommentReply,
   PostCommentReplyWithAuthor,
   PostWithAuthor,
+  ReviewReply,
+  ReviewReplyWithAuthor,
   ContentReaction,
   ReactionCounts,
 } from "../../../../packages/types";

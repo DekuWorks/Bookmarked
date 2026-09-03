@@ -1,4 +1,4 @@
-import { bookDetailsPath, bookDetailsReviewsPath } from "@/lib/routes/book";
+import { bookDetailsPath, bookDetailsReviewsPath, type BookPathOrigin } from "@/lib/routes/book";
 import { clubDetailPath } from "@/lib/routes/clubs";
 import { messageThreadPath, messagesInboxPath } from "@/lib/routes/messages";
 import { readerProfilePath } from "@/lib/routes/reader";
@@ -24,12 +24,13 @@ export function isClubActivityEvent(eventType: string): boolean {
 export function activityEventHref(
   eventType: string,
   bookId: string | null | undefined,
-  fallbackUsername?: string | null
+  fallbackUsername?: string | null,
+  extras?: BookPathOrigin
 ): string {
   if (bookId) {
     return isReviewActivityEvent(eventType)
-      ? bookDetailsReviewsPath(bookId)
-      : bookDetailsPath(bookId);
+      ? bookDetailsReviewsPath(bookId, extras)
+      : bookDetailsPath(bookId, extras);
   }
 
   const username = fallbackUsername?.trim();
@@ -39,7 +40,8 @@ export function activityEventHref(
 }
 
 export function feedItemHref(
-  item: Pick<FeedItem, "event_type" | "bookId" | "profiles" | "clubId" | "metadata_json">
+  item: Pick<FeedItem, "event_type" | "bookId" | "profiles" | "clubId" | "metadata_json">,
+  extras?: BookPathOrigin
 ): string {
   // Club discussions link to the club (and discussion when available).
   if (isClubActivityEvent(item.event_type) && item.clubId) {
@@ -50,9 +52,11 @@ export function feedItemHref(
     return clubDetailPath(item.clubId, {
       tab: discussionId ? "discussions" : undefined,
       discussionId,
+      origin: extras?.origin,
+      scroll: extras?.scroll,
     });
   }
-  return activityEventHref(item.event_type, item.bookId, item.profiles?.username);
+  return activityEventHref(item.event_type, item.bookId, item.profiles?.username, extras);
 }
 
 export function notificationHref(notification: NotificationWithActor): string {

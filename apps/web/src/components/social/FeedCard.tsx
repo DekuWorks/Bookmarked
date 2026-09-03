@@ -1,21 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { memo, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import { FeedBookAttachment } from "@/components/social/FeedBookAttachment";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { StarDisplay } from "@/components/reviews/StarDisplay";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { ShareContentModal } from "@/components/social/ShareContentModal";
-import { feedItemHref } from "@/lib/routes/activity";
+import { ReplyThread } from "@/components/social/ReplyThread";
+import { MentionText } from "@/components/social/MentionText";
+import { feedItemHref, isClubActivityEvent } from "@/lib/routes/activity";
 import { readerProfilePath } from "@/lib/routes/reader";
 import { bookDetailsPath } from "@/lib/routes/book";
 import { deleteOwnActivity, isFeedEligibleEvent } from "@/lib/services/activity";
+import {
+  addReviewReply,
+  deleteReviewReply,
+  listReviewReplies,
+} from "@/lib/services/reviewEngagement";
 import type { FeedItem } from "@/lib/services/socialFeed";
+import type { ReviewReplyWithAuthor } from "@/types";
+import type { ThreadNode } from "@/lib/utils/threadReplies";
 import { usePreferredLocale } from "@/lib/hooks/usePreferredLocale";
+import { useSpoilerReveal } from "@/lib/hooks/useSpoilerReveal";
+import { feedOriginExtras } from "@/lib/feedNav";
 import { formatFeedTimestamp } from "@/lib/utils/locale";
 import { buildActivityShareComposerPayload } from "@bookmarked/utils/sharePreview";
+import { SPOILER_WARNING_COPY } from "@bookmarked/utils/spoilerReveal";
+import { BrandChromeIcon } from "@/components/icons/BrandChromeIcon";
 
 type Props = {
   item: FeedItem;
@@ -32,13 +45,20 @@ function readerHref(item: FeedItem): string | null {
   return username ? readerProfilePath(username) : null;
 }
 
+type ReviewReplyNode = Omit<ReviewReplyWithAuthor, "children">;
+
 export const FeedCard = memo(function FeedCard({ item, viewerId, onDeleted }: Props) {
   const locale = usePreferredLocale();
   const toast = useToast();
+  const spoiler = useSpoilerReveal();
   const [shareOpen, setShareOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [replies, setReplies] = useState<ThreadNode<ReviewReplyNode>[]>([]);
+  const [repliesLoading, setRepliesLoading] = useState(false);
   const profileHref = readerHref(item);
-  const activityHref = feedItemHref(item);
+  const originExtras = feedOriginExtras();
+  const activityHref = feedItemHref(item, originExtras);
   const showBookCover =
     isFeedEligibleEvent(item.event_type) || Boolean(item.bookId || item.coverUrl);
   const isReviewEvent =
@@ -48,6 +68,24 @@ export const FeedCard = memo(function FeedCard({ item, viewerId, onDeleted }: Pr
       ? Number(item.metadata_json.rating)
       : null;
   const isOwn = Boolean(viewerId && item.user_id === viewerId);
+  const isClub = isClubActivityEvent(item.event_type);
+  const hiddenSpoiler = Boolean(item.hasSpoilers && item.reviewBody && !spoiler.revealed);
+
+  const loadReplies = useCallback(async () => {
+    if (!item.reviewId) return;
+    setRepliesLoading(true);
+    try {
+      setReplies(await listReviewReplies(item.reviewId));
+    } catch {
+      toast.error("Could not load comments.");
+    } finally {
+      setRepliesLoading(false);
+    }
+  }, [item.reviewId, toast]);
+
+  useEffect(() => {
+    if (commentsOpen && item.reviewId) void loadReplies();
+  }, [commentsOpen, item.reviewId, loadReplies]);
 
   const sharePayload = buildActivityShareComposerPayload({
     activityId: item.id,
@@ -133,6 +171,7 @@ export const FeedCard = memo(function FeedCard({ item, viewerId, onDeleted }: Pr
               cover_url: item.coverUrl,
             }}
             variant="compact"
+            originExtras={originExtras}
           />
         </div>
       ) : showBookCover ? (
@@ -140,11 +179,48 @@ export const FeedCard = memo(function FeedCard({ item, viewerId, onDeleted }: Pr
           href={activityHref}
           className="mt-4 flex h-24 w-16 items-center justify-center overflow-hidden rounded-lg bg-primary/15 text-2xl shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
         >
-          📚
+          <BrandChromeIcon name="library" className="h-8 w-8" />
         </Link>
       ) : null}
 
+      {item.reviewBody ? (
+        hiddenSpoiler ? (
+          <button
+            type="button"
+            onClick={spoiler.toggle}
+            className="mt-4 w-full rounded-lg bg-primary/10 px-3 py-3 text-left text-sm font-medium text-puce-red focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
+          >
+            {SPOILER_WARNING_COPY.hidden}
+          </button>
+        ) : (
+          <div className="mt-4 text-sm leading-relaxed text-text">
+            {item.hasSpoilers ? (
+              <button
+                type="button"
+                onClick={spoiler.toggle}
+                className="mb-2 text-xs font-medium text-text-muted hover:text-primary"
+              >
+                {SPOILER_WARNING_COPY.hide}
+              </button>
+            ) : null}
+            <MentionText body={item.reviewBody} />
+          </div>
+        )
+      ) : null}
+
       <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border/60 pt-4">
+        {item.reviewId ? (
+          <Button type="button" variant="outline" size="sm" onClick={() => setCommentsOpen((open) => !open)}>
+            {commentsOpen ? "Hide comments" : "Comments"}
+          </Button>
+        ) : isClub ? (
+          <Link
+            href={activityHref}
+            className="text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
+          >
+            Comments
+          </Link>
+        ) : null}
         <Link
           href={activityHref}
           className="text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
@@ -158,7 +234,7 @@ export const FeedCard = memo(function FeedCard({ item, viewerId, onDeleted }: Pr
         ) : null}
         {item.bookId ? (
           <Link
-            href={bookDetailsPath(item.bookId)}
+            href={bookDetailsPath(item.bookId, originExtras)}
             className="text-sm font-medium text-text-muted hover:text-primary hover:underline"
           >
             Open book
@@ -176,6 +252,25 @@ export const FeedCard = memo(function FeedCard({ item, viewerId, onDeleted }: Pr
           </Button>
         ) : null}
       </div>
+
+      {commentsOpen && item.reviewId && viewerId ? (
+        <div className="mt-3">
+          {repliesLoading ? (
+            <p className="text-sm text-text-muted">Loading comments…</p>
+          ) : (
+            <ReplyThread
+              replies={replies}
+              viewerId={viewerId}
+              onSubmitReply={(body, parentReplyId, attachmentUrl) =>
+                addReviewReply(item.reviewId!, body, parentReplyId, attachmentUrl)
+              }
+              onDeleteReply={deleteReviewReply}
+              onRefresh={() => void loadReplies()}
+              composerPlaceholder="Reply to this review…"
+            />
+          )}
+        </div>
+      ) : null}
 
       {viewerId ? (
         <ShareContentModal

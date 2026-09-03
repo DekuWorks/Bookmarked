@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "expo-router";
-import { FlatList, Pressable, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { BookCover } from "../BookCover";
 import { FeelingChip } from "../FeelingChip";
 import { LoadingState } from "../LoadingState";
@@ -13,6 +13,7 @@ import {
   hasStarRating,
   hasWrittenReview,
   REVIEW_FILTER_OPTIONS,
+  REVIEW_PANEL_COPY,
   type ReviewFilter,
 } from "../../../../../packages/utils/readingRoomReviews";
 import { ShareReviewButton } from "./ShareReviewButton";
@@ -38,10 +39,8 @@ export function ReviewsPanel({ reviews }: Props) {
   );
 
   return (
-    <SectionCard title="Your reviews" emoji="⭐">
-      <Text className="text-sm text-ink-muted">
-        Ratings and reviews across your reading history.
-      </Text>
+    <SectionCard title={REVIEW_PANEL_COPY.title}>
+      <Text className="text-sm text-ink-muted">{REVIEW_PANEL_COPY.subtitle}</Text>
 
       {reviews === null ? (
         <View className="mt-4">
@@ -53,8 +52,12 @@ export function ReviewsPanel({ reviews }: Props) {
         </Text>
       ) : (
         <>
-          <View
-            className="mt-4 flex-row flex-wrap gap-2"
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="mt-4"
+            style={{ flexGrow: 0, flexShrink: 0, height: 40 }}
+            contentContainerStyle={{ alignItems: "center", gap: 8, height: 40, paddingRight: 8 }}
             accessibilityRole="radiogroup"
             accessibilityLabel="Filter reviews"
           >
@@ -66,7 +69,7 @@ export function ReviewsPanel({ reviews }: Props) {
                   onPress={() => setFilter(option.id)}
                   accessibilityRole="radio"
                   accessibilityState={{ selected: active }}
-                  className={`rounded-full border px-3 py-1.5 ${
+                  className={`h-8 shrink-0 items-center justify-center rounded-full border px-3 ${
                     active ? "border-puce-red bg-puce-red" : "border-brand-border bg-background"
                   }`}
                 >
@@ -78,7 +81,7 @@ export function ReviewsPanel({ reviews }: Props) {
                 </Pressable>
               );
             })}
-          </View>
+          </ScrollView>
 
           {filtered.length === 0 ? (
             <Text className="mt-4 text-sm text-ink-muted">No reviews match this filter.</Text>

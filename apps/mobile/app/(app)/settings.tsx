@@ -11,6 +11,11 @@ import { useProfile } from "../../src/hooks/useProfile";
 import { getUserLibraryBooks } from "../../src/services/library";
 import { deleteAccount } from "../../src/services/moderation";
 import { computeReadingGoal } from "../../src/services/readingGoal";
+import { env } from "../../src/constants/env";
+import {
+  clearPersistedAuthSession,
+  supabaseAuthStorageKey,
+} from "../../src/services/rememberMe";
 import { supabase } from "../../src/services/supabase";
 import { ThemePreferencePanel } from "../../src/components/ThemePreferencePanel";
 import { useAuthStore } from "../../src/store/authStore";
@@ -33,6 +38,8 @@ export default function SettingsRoute() {
 
   async function signOut() {
     await supabase.auth.signOut();
+    const authKey = supabaseAuthStorageKey(env.supabaseUrl);
+    await clearPersistedAuthSession(authKey ? [authKey] : []);
     router.replace("/(auth)/login");
   }
 

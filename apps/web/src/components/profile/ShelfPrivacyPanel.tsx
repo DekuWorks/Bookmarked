@@ -191,7 +191,7 @@ export function ShelfPrivacyPanel({ profile }: Props) {
             className="flex flex-col gap-2 rounded-lg border border-border bg-background px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
           >
             <div>
-              <p className="font-medium text-text">📚 {shelf.name}</p>
+              <p className="font-medium text-text">{shelf.name}</p>
               {shelf.genre ? (
                 <p className="text-xs text-text-muted">Genre: {shelf.genre}</p>
               ) : (

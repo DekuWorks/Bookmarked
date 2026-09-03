@@ -110,7 +110,7 @@ export default function QuoteGraphicsRoute() {
         />
 
         <View className="mt-4 gap-2">
-          <Button title="Preview" variant="outline" onPress={() => setPreview(Boolean(quote.trim()))} />
+          <Button title="Preview" variant="secondary" onPress={() => setPreview(Boolean(quote.trim()))} />
           <Button title="Save graphic" loading={saving} onPress={() => void handleSave()} />
           <Button title="Back to notes" variant="ghost" onPress={() => router.push("/(app)/notes")} />
         </View>

@@ -37,6 +37,7 @@ async function deleteUserData(
     { table: "reading_notes", column: "user_id" },
     { table: "reading_sessions", column: "user_id" },
     { table: "user_reading_note_categories", column: "user_id" },
+    { table: "user_mood_tags", column: "user_id" },
     { table: "user_shelf_books", column: "user_id" },
     { table: "user_shelves", column: "user_id" },
     { table: "reviews", column: "user_id" },

@@ -72,7 +72,7 @@ export function BookReviewSection({
 
       {ownReviews.length > 0 ? (
         <div className="text-left">
-          <h3 className="mb-3 text-lg font-semibold text-puce-red">Your reviews</h3>
+          <h3 className="mb-3 text-lg font-semibold text-puce-red">Your Reviews</h3>
           <ul className="space-y-3">
             {ownReviews.map((review) => (
               <li key={review.id}>

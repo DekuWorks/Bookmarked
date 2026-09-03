@@ -19,8 +19,13 @@ describe("filterReviews", () => {
   const reviews = [
     review({ rating: 5, review_body: null }),
     review({ rating: null, review_body: "Words only" }),
-    review({ rating: 4, review_body: "Both", has_spoilers: true }),
-    review({ rating: 3, review_body: "  ", has_spoilers: false }),
+    review({ rating: 4, review_body: "Both", has_spoilers: true, visibility: "public" }),
+    review({
+      rating: 3,
+      review_body: "  ",
+      has_spoilers: false,
+      visibility: "private",
+    }),
   ];
 
   it("returns all reviews for the all filter", () => {
@@ -39,10 +44,10 @@ describe("filterReviews", () => {
     expect(result[0]?.review_body).toBe("Words only");
   });
 
-  it("filters rating and review combinations", () => {
-    const result = filterReviews(reviews, "rating_and_review");
+  it("filters private reviews", () => {
+    const result = filterReviews(reviews, "private");
     expect(result).toHaveLength(1);
-    expect(result[0]?.review_body).toBe("Both");
+    expect(result[0]?.visibility).toBe("private");
   });
 
   it("filters spoiler reviews", () => {

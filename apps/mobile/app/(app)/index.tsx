@@ -174,10 +174,10 @@ export default function HomeReadingRoom() {
 
         {tab === "progress" ? (
           <>
-            <SectionCard title="Reading goal" emoji="🎯">
+            <SectionCard title="Reading Goal">
               <ReadingGoalPanel status={goal} />
             </SectionCard>
-            <SectionCard title="Reading statistics" emoji="📈">
+            <SectionCard title="Reading Statistics">
               {analytics.isLoading ? (
                 <LoadingState message="Loading statistics…" />
               ) : analytics.data ? (

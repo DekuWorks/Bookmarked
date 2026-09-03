@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { BookCover } from "@/components/books/BookCover";
+import { BrandChromeIcon } from "@/components/icons/BrandChromeIcon";
 import { clubDetailPath } from "@/lib/routes/clubs";
 import { roleLabel, visibilityLabel } from "@bookmarked/utils/clubPermissions";
 import type { BookClubSummary } from "@/types";
@@ -12,14 +13,15 @@ type Props = {
   club: BookClubSummary;
   /** When true, emphasize the Open Club CTA (My Clubs). */
   showOpenCta?: boolean;
+  href?: string;
 };
 
-export function ClubCard({ club, showOpenCta = false }: Props) {
+export function ClubCard({ club, showOpenCta = false, href }: Props) {
   const memberLabel = `${club.member_count} member${club.member_count === 1 ? "" : "s"}`;
 
   return (
     <Link
-      href={clubDetailPath(club.id)}
+      href={href ?? clubDetailPath(club.id)}
       className={cn(
         "flex gap-4 rounded-xl border border-border bg-surface p-4 text-left shadow-sm transition",
         "hover:border-primary/40 hover:shadow-md"
@@ -43,8 +45,8 @@ export function ClubCard({ club, showOpenCta = false }: Props) {
             className="h-full w-full rounded-full"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-primary/30 via-puce-red/10 to-royal-orange/25 text-2xl">
-            📚
+          <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-primary/30 via-puce-red/10 to-royal-orange/25">
+            <BrandChromeIcon name="clubs" className="h-7 w-7" />
           </div>
         )}
       </div>

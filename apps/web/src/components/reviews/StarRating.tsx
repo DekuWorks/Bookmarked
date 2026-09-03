@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils/cn";
+import { STAR_RATING_ROW_CLASS, starFills } from "@bookmarked/utils/starRatingDisplay";
 
 type Props = {
   value: number;
@@ -9,12 +10,6 @@ type Props = {
   disabled?: boolean;
   size?: "sm" | "md";
 };
-
-function starFill(value: number, star: number): "full" | "half" | "empty" {
-  if (value >= star) return "full";
-  if (value >= star - 0.5) return "half";
-  return "empty";
-}
 
 export function StarRating({ value, onChange, disabled = false, size = "md" }: Props) {
   const [hoverValue, setHoverValue] = useState<number | null>(null);
@@ -28,15 +23,17 @@ export function StarRating({ value, onChange, disabled = false, size = "md" }: P
     onChange(next === value ? 0 : next);
   }
 
+  const fills = starFills(display);
+
   return (
     <div
-      className="flex gap-0.5"
+      className={cn(STAR_RATING_ROW_CLASS, "shrink-0 gap-0.5")}
       role="radiogroup"
       aria-label="Rating"
       onMouseLeave={() => setHoverValue(null)}
     >
-      {[1, 2, 3, 4, 5].map((star) => {
-        const fill = starFill(display, star);
+      {fills.map((fill, index) => {
+        const star = index + 1;
         return (
           <button
             key={star}

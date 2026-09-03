@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils/cn";
 import { updateReadingProgress, type BookActionState } from "@/lib/actions/book";
 import { useActionState } from "react";
 import { useActionToast } from "@/lib/hooks/useActionToast";
+import { validatePageProgress } from "@bookmarked/utils/pageProgress";
 
 const initial: BookActionState = {};
 
@@ -135,10 +136,20 @@ export function ReadingProgressPanel({
 
   function commitPreview() {
     setEditing(false);
-    const cur = Number(page) || 0;
-    const tot = Number(total) || totalPages || 0;
-    const next = percentFromPages(cur, tot);
-    if (next != null) setDisplayPercent(next);
+    if (isAudiobook) {
+      const cur = Number(page) || 0;
+      const tot = Number(total) || totalPages || 0;
+      const next = percentFromPages(cur, tot);
+      if (next != null) setDisplayPercent(next);
+      return;
+    }
+    const validated = validatePageProgress({ currentPage: page, totalPages: total });
+    if (validated.ok) {
+      setDisplayPercent(validated.percent);
+      setClientError(null);
+      return;
+    }
+    setClientError(validated.error);
   }
 
   if (!onShelf) {

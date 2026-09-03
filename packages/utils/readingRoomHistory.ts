@@ -22,6 +22,12 @@ export type HistorySortMode =
 export const DEFAULT_HISTORY_SORT: HistorySortMode = "added_newest";
 export const DEFAULT_HISTORY_VISIBLE_LIMIT = 10;
 
+export const HISTORY_PANEL_COPY = {
+  title: "Recently Finished",
+  browseReadShelf: "Browse Read Shelf",
+  recentSessions: "Recent Sessions",
+} as const;
+
 export const HISTORY_SORT_OPTIONS: { mode: HistorySortMode; label: string }[] = [
   { mode: "title_asc", label: "Title A–Z" },
   { mode: "title_desc", label: "Title Z–A" },

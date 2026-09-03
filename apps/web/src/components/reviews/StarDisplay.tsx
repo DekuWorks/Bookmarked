@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils/cn";
 import { formatStarRating } from "@/lib/utils/ratings";
+import { STAR_RATING_ROW_CLASS, starFills } from "@bookmarked/utils/starRatingDisplay";
 
 type Props = {
   rating: number;
@@ -7,39 +8,30 @@ type Props = {
   showNumeric?: boolean;
 };
 
-function starFill(value: number, star: number): "full" | "half" | "empty" {
-  if (value >= star) return "full";
-  if (value >= star - 0.5) return "half";
-  return "empty";
-}
-
 export function StarDisplay({ rating, className, showNumeric = false }: Props) {
-  const value = Number(rating) || 0;
+  const fills = starFills(rating);
 
   return (
     <span className={cn("inline-flex items-center gap-1 text-royal-orange", className)}>
-      <span className="inline-flex" aria-hidden>
-        {[1, 2, 3, 4, 5].map((star) => {
-          const fill = starFill(value, star);
-          return (
-            <span key={star} className="relative inline-block w-[1em] text-center">
-              <span className="text-border">☆</span>
-              {fill !== "empty" ? (
-                <span
-                  className={cn(
-                    "absolute inset-0 text-royal-orange",
-                    fill === "half" && "[clip-path:inset(0_50%_0_0)]"
-                  )}
-                >
-                  ★
-                </span>
-              ) : null}
-            </span>
-          );
-        })}
+      <span className={cn(STAR_RATING_ROW_CLASS, "shrink-0")} aria-hidden>
+        {fills.map((fill, index) => (
+          <span key={index} className="relative inline-block w-[1em] shrink-0 text-center">
+            <span className="text-border">☆</span>
+            {fill !== "empty" ? (
+              <span
+                className={cn(
+                  "absolute inset-0 text-royal-orange",
+                  fill === "half" && "[clip-path:inset(0_50%_0_0)]"
+                )}
+              >
+                ★
+              </span>
+            ) : null}
+          </span>
+        ))}
       </span>
       {showNumeric ? (
-        <span className="text-sm font-medium text-text">{formatStarRating(value)}</span>
+        <span className="text-sm font-medium text-text">{formatStarRating(Number(rating) || 0)}</span>
       ) : null}
     </span>
   );

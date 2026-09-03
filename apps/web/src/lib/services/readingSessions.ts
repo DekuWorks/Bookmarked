@@ -77,11 +77,15 @@ export type UserReadingSession = ReadingSession & {
   bookTitle: string | null;
   bookAuthor: string | null;
   bookId: string | null;
+  bookCoverUrl: string | null;
 };
 
 type UserBookJoinRow = {
   book_id: string;
-  books: { title: string; author: string | null } | { title: string; author: string | null }[] | null;
+  books:
+    | { title: string; author: string | null; cover_url: string | null }
+    | { title: string; author: string | null; cover_url: string | null }[]
+    | null;
 };
 
 export async function listUserReadingSessions(
@@ -92,7 +96,7 @@ export async function listUserReadingSessions(
 
   const { data, error } = await supabase
     .from("reading_sessions")
-    .select("*, user_books(book_id, books(title, author))")
+    .select("*, user_books(book_id, books(title, author, cover_url))")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -115,6 +119,7 @@ export async function listUserReadingSessions(
       bookTitle: book?.title ?? null,
       bookAuthor: book?.author ?? null,
       bookId: join?.book_id ?? null,
+      bookCoverUrl: book?.cover_url ?? null,
     };
   });
 }

@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
+import { OriginBackNav } from "@/components/navigation/OriginBackNav";
+import { originBackHref, parseNavOrigin } from "@bookmarked/utils/navigationOrigin";
 import { getShelfConfigBySlug } from "@/lib/constants/shelves";
 import { ShelfTitleRow } from "@/components/shelves/ShelfTitleRow";
 import { getProfile } from "@/lib/services/profile";
@@ -26,6 +28,9 @@ import type { ShelfGroup } from "@/lib/services/library";
 
 export default function ShelfPageClient() {
   const params = useParams<{ shelf: string }>();
+  const searchParams = useSearchParams();
+  const origin = parseNavOrigin(searchParams.get("origin"));
+  const libraryBackHref = originBackHref(origin, "web") ?? "/library/";
   const user = useAuthUser();
   const toast = useToast();
   const config = getShelfConfigBySlug(params.shelf);
@@ -75,9 +80,7 @@ export default function ShelfPageClient() {
     return (
       <div className="text-center">
         <p className="text-text-muted">Shelf not found.</p>
-        <Link href="/library" className="mt-4 inline-block text-sm text-primary hover:underline">
-          ← Back to library
-        </Link>
+        <OriginBackNav fallbackLabel="Library" fallbackHref="/library/" />
       </div>
     );
   }
@@ -90,9 +93,7 @@ export default function ShelfPageClient() {
     return (
       <div className="text-center">
         <p className="text-rust">{loadError}</p>
-        <Link href="/library" className="mt-4 inline-block text-sm text-primary hover:underline">
-          ← Back to library
-        </Link>
+        <OriginBackNav fallbackLabel="Library" fallbackHref="/library/" />
       </div>
     );
   }
@@ -103,12 +104,7 @@ export default function ShelfPageClient() {
     <div className={layout.pageStackWide}>
       <header className="flex flex-col items-center gap-4 text-center">
         <div>
-          <Link
-            href="/library"
-            className="inline-block text-sm font-medium text-primary hover:underline"
-          >
-            ← Back to library
-          </Link>
+          <OriginBackNav fallbackLabel="Library" fallbackHref={libraryBackHref} />
           <h1 className="mt-2 flex justify-center">
             <ShelfTitleRow
               id={config.status}

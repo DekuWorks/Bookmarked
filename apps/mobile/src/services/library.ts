@@ -9,7 +9,9 @@ import {
   type ActivityEventType,
 } from "./activity";
 import { buildUserBookShelfPatch } from "../../../../packages/utils/shelfStatus";
+import type { ShelfMoveDestination } from "../../../../packages/utils/shelfMove";
 import type { ShelfStatus, UserBook } from "../types";
+import { addBookToCustomShelf } from "./customShelves";
 
 export type LibraryBookRow = {
   id: string;
@@ -23,6 +25,7 @@ export type LibraryBookRow = {
   completion_tags: string[] | null;
   dnf: boolean;
   expected_read_date: string | null;
+  total_pages?: number | null;
   updated_at: string;
   created_at: string;
   books: {
@@ -45,7 +48,7 @@ export type ShelfGroup = {
 };
 
 const LIBRARY_SELECT =
-  "id, shelf_status, progress_percent, progress_pages, rating, is_favorite, finished_at, started_at, completion_tags, dnf, expected_read_date, created_at, updated_at, books(id, title, author, cover_url, page_count, published_date, subjects, format)";
+  "id, shelf_status, progress_percent, progress_pages, total_pages, rating, is_favorite, finished_at, started_at, completion_tags, dnf, expected_read_date, created_at, updated_at, books(id, title, author, cover_url, page_count, published_date, subjects, format)";
 
 export async function getUserLibraryBooks(userId: string): Promise<LibraryBookRow[]> {
   const { data, error } = await supabase
@@ -376,6 +379,7 @@ export async function updateReadingProgress(
   input: {
     progressPages?: number | null;
     progressPercent: number;
+    totalPages?: number | null;
     format?: "book" | "audiobook";
     listeningProgressSeconds?: number;
     totalListeningSeconds?: number;
@@ -400,7 +404,10 @@ export async function updateReadingProgress(
       progress_percent: progressPercent,
       ...(isAudiobook
         ? { listening_progress_seconds: listeningProgressSeconds }
-        : { progress_pages: input.progressPages ?? 0 }),
+        : {
+            progress_pages: input.progressPages ?? 0,
+            ...(input.totalPages && input.totalPages > 0 ? { total_pages: input.totalPages } : {}),
+          }),
       updated_at: new Date().toISOString(),
     })
     .eq("user_id", userId)
@@ -580,19 +587,34 @@ export async function setDnf(
   return {};
 }
 
-/** Enrich the shared catalog page count from the native book-detail flow. */
+/** Save the reader's selected-edition page count — never the shared catalog. */
 export async function updateBookTotalPages(
+  userId: string,
   bookId: string,
-  totalPages: number
+  totalPages: number,
+  currentPage = 0
 ): Promise<{ error?: string }> {
   if (!Number.isInteger(totalPages) || totalPages <= 0) {
     return { error: "Enter a whole number greater than zero." };
   }
+  if (!Number.isInteger(currentPage) || currentPage < 0) {
+    return { error: "Current page cannot be negative." };
+  }
+  if (currentPage > totalPages) {
+    return { error: "Current page cannot be greater than total pages." };
+  }
 
+  const percent = Math.min(100, Math.round((currentPage / totalPages) * 1000) / 10);
   const { error } = await supabase
-    .from("books")
-    .update({ page_count: totalPages, updated_at: new Date().toISOString() })
-    .eq("id", bookId);
+    .from("user_books")
+    .update({
+      total_pages: totalPages,
+      progress_pages: currentPage,
+      progress_percent: percent,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", userId)
+    .eq("book_id", bookId);
 
   if (error) return { error: error.message };
   return {};
@@ -733,4 +755,26 @@ export async function getBookShelfMemberships(
     if (book.isbn) memberships.set(book.isbn.replace(/[-\s]/g, ""), membership);
   }
   return memberships;
+}
+
+/**
+ * Move an existing user_books row to a built-in shelf or custom collection.
+ * Never deletes/recreates the library row — progress, notes, and reviews stay.
+ */
+export async function moveUserBookToDestination(
+  userId: string,
+  book: {
+    id: string;
+    title: string;
+    cover_url?: string | null;
+    subjects?: string[] | null;
+    page_count?: number | null;
+    isbn?: string | null;
+  },
+  destination: ShelfMoveDestination
+): Promise<{ error?: string }> {
+  if (destination.kind === "builtin") {
+    return setShelfStatus(userId, book, destination.status);
+  }
+  return addBookToCustomShelf(destination.shelfId, userId, book.id);
 }

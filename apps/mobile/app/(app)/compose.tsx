@@ -17,6 +17,7 @@ import { GifPicker } from "../../src/components/GifPicker";
 import { RepostPreview } from "../../src/components/RepostPreview";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { createPost, getPostById, repostPost } from "../../src/services/posts";
+import { getUserLibraryBooks, type LibraryBookRow } from "../../src/services/library";
 import { deleteDraft, listDrafts, saveDraft } from "../../src/services/postDrafts";
 import { searchProfiles, type ProfileSearchResult } from "../../src/services/profile";
 import { pickImageFromLibrary, uploadPostImage } from "../../src/services/storage";
@@ -38,6 +39,9 @@ export default function ComposeRoute() {
   const [body, setBody] = useState("");
   const [selection, setSelection] = useState({ start: 0, end: 0 });
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
+  const [libraryBooks, setLibraryBooks] = useState<LibraryBookRow[]>([]);
+  const [bookPickerOpen, setBookPickerOpen] = useState(false);
   const [gifOpen, setGifOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -50,6 +54,7 @@ export default function ComposeRoute() {
   const mentionDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isQuote = Boolean(repostOf);
+  const selectedBook = libraryBooks.find((row) => row.books?.id === selectedBookId)?.books ?? null;
 
   useEffect(() => {
     if (!repostOf) return;
@@ -63,6 +68,13 @@ export default function ComposeRoute() {
   useEffect(() => {
     listDrafts().then(setDrafts);
   }, []);
+
+  useEffect(() => {
+    if (!viewerId) return;
+    void getUserLibraryBooks(viewerId)
+      .then((rows) => setLibraryBooks(rows.filter((row) => row.books?.id)))
+      .catch(() => setLibraryBooks([]));
+  }, [viewerId]);
 
   const mentionQuery = useMemo(
     () => activeMentionQuery(body.slice(0, selection.start)),
@@ -110,7 +122,8 @@ export default function ComposeRoute() {
     setImageUrl(upload.url);
   }
 
-  const canSubmit = (body.trim().length > 0 || Boolean(imageUrl) || isQuote) && !uploading;
+  const canSubmit =
+    (body.trim().length > 0 || Boolean(imageUrl) || Boolean(selectedBookId) || isQuote) && !uploading;
 
   async function share() {
     if (!canSubmit) return;
@@ -124,7 +137,7 @@ export default function ComposeRoute() {
     setSaving(true);
     const result = isQuote
       ? await repostPost(String(repostOf), { body, imageUrl })
-      : await createPost({ body, imageUrl });
+      : await createPost({ body, imageUrl, bookId: selectedBookId });
     setSaving(false);
     if (result.error) {
       Alert.alert("Couldn't post", result.error);
@@ -136,12 +149,12 @@ export default function ComposeRoute() {
   }
 
   async function persistDraft() {
-    if (!body.trim() && !imageUrl) {
-      Alert.alert("Nothing to save", "Add some text or an image first.");
+    if (!body.trim() && !imageUrl && !selectedBookId) {
+      Alert.alert("Nothing to save", "Add some text, an image, or a book first.");
       return;
     }
     setSaving(true);
-    const result = await saveDraft({ id: draftId, body, imageUrl });
+    const result = await saveDraft({ id: draftId, body, imageUrl, bookId: selectedBookId });
     setSaving(false);
     if (result.error || !result.draft) {
       Alert.alert("Couldn't save draft", result.error ?? "Please try again.");
@@ -156,6 +169,7 @@ export default function ComposeRoute() {
     setDraftId(draft.id);
     setBody(draft.body);
     setImageUrl(draft.image_url);
+    setSelectedBookId(draft.book_id);
     setDraftsOpen(false);
   }
 
@@ -217,7 +231,7 @@ export default function ComposeRoute() {
               value={body}
               onChangeText={(t) => setBody(t.slice(0, MAX))}
               onSelectionChange={(e) => setSelection(e.nativeEvent.selection)}
-              placeholder={isQuote ? "Say something about this…" : "What are you reading?"}
+              placeholder={isQuote ? "Say something about this…" : "Write a post."}
               placeholderTextColor="#A99DAE"
               multiline
               className="min-h-[110px] rounded-xl border border-brand-border bg-background px-3 py-3 text-base text-ink"
@@ -265,6 +279,48 @@ export default function ComposeRoute() {
 
             {isQuote && original ? <RepostPreview original={original} /> : null}
 
+            {selectedBook ? (
+              <View className="mt-3 flex-row items-center justify-between rounded-xl border border-primary/30 bg-primary/10 px-3 py-2">
+                <Text className="flex-1 text-sm font-medium text-ink" numberOfLines={1}>
+                  {selectedBook.title}
+                </Text>
+                <Pressable onPress={() => setSelectedBookId(null)}>
+                  <Text className="text-xs font-semibold text-puce-red">Remove</Text>
+                </Pressable>
+              </View>
+            ) : null}
+
+            {bookPickerOpen ? (
+              <View className="mt-3 rounded-xl border border-brand-border bg-background p-3">
+                <Text className="mb-2 text-xs font-semibold uppercase text-ink-muted">
+                  From your library
+                </Text>
+                {libraryBooks.length === 0 ? (
+                  <Text className="text-sm text-ink-muted">No books in your library yet.</Text>
+                ) : (
+                  libraryBooks.slice(0, 12).map((row) => {
+                    const book = row.books;
+                    if (!book) return null;
+                    const selected = selectedBookId === book.id;
+                    return (
+                      <Pressable
+                        key={row.id}
+                        onPress={() => {
+                          setSelectedBookId(selected ? null : book.id);
+                          setBookPickerOpen(false);
+                        }}
+                        className={`mb-1 rounded-lg px-3 py-2 ${selected ? "bg-primary/20" : "bg-surface"}`}
+                      >
+                        <Text className="text-sm font-medium text-ink" numberOfLines={1}>
+                          {book.title}
+                        </Text>
+                      </Pressable>
+                    );
+                  })
+                )}
+              </View>
+            ) : null}
+
             <View className="mt-3 flex-row items-center gap-3">
               <Pressable
                 onPress={attachImage}
@@ -279,6 +335,12 @@ export default function ComposeRoute() {
                 className="h-10 items-center justify-center rounded-full bg-primary/15 px-3 active:opacity-70"
               >
                 <Text className="text-xs font-bold text-puce-red">GIF</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setBookPickerOpen((open) => !open)}
+                className="h-10 items-center justify-center rounded-full bg-primary/15 px-3 active:opacity-70"
+              >
+                <Text className="text-xs font-bold text-puce-red">Tag a Book</Text>
               </Pressable>
               <View className="flex-1" />
               <Text className="text-xs text-ink-muted">

@@ -1,18 +1,24 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { BookmarkedLogo } from "../components/BookmarkedLogo";
 import { Button } from "../components/Button";
 import { Input } from "../components/Input";
 import { ScreenContainer } from "../components/ScreenContainer";
+import { hydrateRememberMePreference, setRememberMe } from "../services/rememberMe";
 import { supabase } from "../services/supabase";
 
 export function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMeChecked] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    void hydrateRememberMePreference().then(setRememberMeChecked);
+  }, []);
 
   async function onSubmit() {
     const trimmedEmail = email.trim();
@@ -25,6 +31,7 @@ export function LoginScreen() {
 
     setLoading(true);
     try {
+      await setRememberMe(rememberMe);
       const { error: signError } = await supabase.auth.signInWithPassword({
         email: trimmedEmail,
         password,
@@ -65,6 +72,28 @@ export function LoginScreen() {
         value={password}
         onChangeText={setPassword}
       />
+
+      <Pressable
+        onPress={() => setRememberMeChecked((current) => !current)}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: rememberMe }}
+        accessibilityLabel="Remember me"
+        className="mb-4 min-h-[44px] flex-row items-start gap-3"
+      >
+        <View
+          className={`mt-0.5 h-5 w-5 items-center justify-center rounded border ${
+            rememberMe ? "border-puce-red bg-puce-red" : "border-brand-border bg-background"
+          }`}
+        >
+          {rememberMe ? <Text className="text-xs font-bold text-white">✓</Text> : null}
+        </View>
+        <View className="flex-1">
+          <Text className="text-sm font-medium text-ink">Remember me</Text>
+          <Text className="mt-0.5 text-xs text-ink-muted">
+            Stay signed in on this device until you log out.
+          </Text>
+        </View>
+      </Pressable>
 
       {error ? <Text className="text-rust mb-3">{error}</Text> : null}
 

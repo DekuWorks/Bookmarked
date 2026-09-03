@@ -4,7 +4,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { BackNav } from "@/components/ui/BackNav";
+import { OriginBackNav } from "@/components/navigation/OriginBackNav";
 import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -279,7 +279,7 @@ function ClubDetailContent() {
       ) : null}
 
       <p>
-        <BackNav label="book clubs" fallbackHref={clubsPath()} />
+        <OriginBackNav fallbackLabel="book clubs" fallbackHref={clubsPath()} />
       </p>
 
       <header className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
@@ -490,7 +490,8 @@ function ClubDetailContent() {
 
       <nav
         aria-label="Club sections"
-        className="flex gap-2 overflow-x-auto border-b border-border pb-3"
+        className="sticky z-10 flex gap-2 overflow-x-auto border-b border-border bg-background/95 pb-3 pt-2 backdrop-blur-sm"
+        style={{ top: "var(--app-nav-clearance)" }}
         role="tablist"
       >
         {TABS.map(([id, label]) => (

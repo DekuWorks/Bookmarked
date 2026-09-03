@@ -28,6 +28,7 @@ import { isGiphyImageUrl } from "@/lib/utils/giphy";
 import { formatFeedTimestamp } from "@/lib/utils/locale";
 import { cn } from "@/lib/utils/cn";
 import { buildPostShareComposerPayload } from "@bookmarked/utils/sharePreview";
+import { feedOriginExtras } from "@/lib/feedNav";
 
 type Props = {
   post: PostWithAuthor;
@@ -301,7 +302,7 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
 
               {localPost.book ? (
                 <div className="mt-3">
-                  <FeedBookAttachment book={localPost.book} />
+                  <FeedBookAttachment book={localPost.book} originExtras={feedOriginExtras()} />
                 </div>
               ) : null}
             </>

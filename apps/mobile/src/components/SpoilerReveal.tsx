@@ -1,5 +1,7 @@
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
+import { useSpoilerReveal } from "../hooks/useSpoilerReveal";
+import { SPOILER_WARNING_COPY } from "../../../../packages/utils";
 
 type Props = {
   enabled: boolean;
@@ -13,25 +15,25 @@ export function SpoilerReveal({
   enabled,
   children,
   className,
-  label = "Contains spoilers — tap to reveal",
+  label = SPOILER_WARNING_COPY.hidden,
 }: Props) {
-  const [revealed, setRevealed] = useState(false);
+  const spoiler = useSpoilerReveal();
 
   if (!enabled) {
     return <View className={className}>{children}</View>;
   }
 
-  if (revealed) {
+  if (spoiler.revealed) {
     return (
       <View className={className}>
         {children}
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Hide spoilers"
-          onPress={() => setRevealed(false)}
+          accessibilityLabel={SPOILER_WARNING_COPY.hide}
+          onPress={spoiler.toggle}
           className="mt-2 min-h-[44px] justify-center self-start"
         >
-          <Text className="text-xs font-semibold text-ink-muted">Hide spoilers</Text>
+          <Text className="text-xs font-semibold text-ink-muted">{SPOILER_WARNING_COPY.hide}</Text>
         </Pressable>
       </View>
     );
@@ -41,7 +43,7 @@ export function SpoilerReveal({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      onPress={() => setRevealed(true)}
+      onPress={spoiler.toggle}
       className={`min-h-[44px] justify-center rounded-xl bg-primary/15 px-3 py-3 ${className ?? ""}`}
     >
       <Text className="text-left text-sm font-semibold text-puce-red">{label}</Text>

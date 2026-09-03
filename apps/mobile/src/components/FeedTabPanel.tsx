@@ -16,6 +16,7 @@ import { interleaveFeedWithDiscovery } from "../../../../packages/utils";
 import type { ScrollHandlerProcessed } from "react-native-reanimated";
 import type { FeedEntry } from "../services/socialFeed";
 import type { FeedDiscoverySectionId } from "../../../../packages/utils";
+import { feedComposeHref } from "../lib/feedNav";
 
 type FeedListRow =
   | { kind: "item"; item: FeedEntry; key: string }
@@ -26,26 +27,30 @@ type Props = {
   width: number;
   onScroll: ScrollHandlerProcessed<Record<string, unknown>>;
   highlightedPostId?: string;
+  restoreScroll?: number;
 };
 
-function Composer() {
+function Composer({ getScrollOffset }: { getScrollOffset: () => number }) {
   const router = useRouter();
   const colors = useThemeColors();
   const { data: profile } = useProfile();
+  function openCompose() {
+    router.push(feedComposeHref(getScrollOffset()) as never);
+  }
 
   return (
     <View className="mb-4 flex-row items-center gap-3 rounded-full border border-brand-border bg-surface px-3 py-2 shadow-sm">
       <Avatar url={profile?.avatar_url} name={profile?.display_name ?? profile?.username} size={36} />
       <Pressable
-        onPress={() => router.push("/compose")}
+        onPress={openCompose}
         className="flex-1 active:opacity-70"
         accessibilityRole="button"
-        accessibilityLabel="What are you reading?"
+        accessibilityLabel="Write a post."
       >
-        <Text style={{ fontFamily: SANS_FONT, color: colors.inkMuted }}>What are you reading?</Text>
+        <Text style={{ fontFamily: SANS_FONT, color: colors.inkMuted }}>Write a post.</Text>
       </Pressable>
       <Pressable
-        onPress={() => router.push("/compose")}
+        onPress={openCompose}
         accessibilityLabel="Add a photo"
         className="h-9 w-9 items-center justify-center rounded-full bg-primary/15 active:opacity-70"
       >
@@ -55,9 +60,10 @@ function Composer() {
   );
 }
 
-export function FeedTabPanel({ tab, width, onScroll, highlightedPostId }: Props) {
+export function FeedTabPanel({ tab, width, onScroll, highlightedPostId, restoreScroll }: Props) {
   const colors = useThemeColors();
   const listRef = useRef<FlatList<FeedListRow>>(null);
+  const scrollOffsetRef = useRef(0);
   const { data: feed, isLoading, isError, error, refetch, isRefetching } = useHomeFeed(tab);
 
   const rows = useMemo<FeedListRow[]>(() => {
@@ -75,6 +81,14 @@ export function FeedTabPanel({ tab, width, onScroll, highlightedPostId }: Props)
         : { kind: "item" as const, item: row.item, key: `${row.item.kind}:${row.item.id}` }
     );
   }, [feed, tab]);
+
+  useEffect(() => {
+    if (restoreScroll == null || restoreScroll <= 0 || !rows.length) return;
+    const handle = setTimeout(() => {
+      listRef.current?.scrollToOffset({ offset: restoreScroll, animated: false });
+    }, 200);
+    return () => clearTimeout(handle);
+  }, [restoreScroll, rows]);
 
   useEffect(() => {
     if (!highlightedPostId || !rows.length) return;
@@ -95,6 +109,12 @@ export function FeedTabPanel({ tab, width, onScroll, highlightedPostId }: Props)
       data={rows}
       keyExtractor={(item) => item.key}
       onScroll={onScroll}
+      onMomentumScrollEnd={(event) => {
+        scrollOffsetRef.current = event.nativeEvent.contentOffset.y;
+      }}
+      onScrollEndDrag={(event) => {
+        scrollOffsetRef.current = event.nativeEvent.contentOffset.y;
+      }}
       scrollEventThrottle={16}
       onScrollToIndexFailed={() => {
         /* deep-linked post may not be in the first page */
@@ -102,15 +122,17 @@ export function FeedTabPanel({ tab, width, onScroll, highlightedPostId }: Props)
       contentContainerStyle={{ padding: 16, paddingBottom: TAB_BAR_SPACE, flexGrow: 1 }}
       renderItem={({ item }) =>
         item.kind === "discovery" ? (
-          <FeedDiscoveryCard sectionId={item.id} />
+          <FeedDiscoveryCard sectionId={item.id} getScrollOffset={() => scrollOffsetRef.current} />
         ) : (
-          <FeedPostCard entry={item.item} />
+          <FeedPostCard entry={item.item} getScrollOffset={() => scrollOffsetRef.current} />
         )
       }
       refreshControl={
         <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.puceRed} />
       }
-      ListHeaderComponent={tab === "clubs" ? null : <Composer />}
+      ListHeaderComponent={
+        tab === "clubs" ? null : <Composer getScrollOffset={() => scrollOffsetRef.current} />
+      }
       ListEmptyComponent={
         isLoading ? (
           <LoadingState message="Loading your feed…" />

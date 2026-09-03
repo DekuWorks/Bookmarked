@@ -1,12 +1,15 @@
 import type { ReactNode } from "react";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { originBackHref, parseNavOrigin } from "../../../../packages/utils/navigationOrigin";
 
 type Props = {
   title: string;
   /** Show a back chevron (defaults to true). */
   back?: boolean;
+  /** When set, Back goes here instead of history (origin-aware search/library). */
+  backHref?: string;
   /** When history is empty, navigate here instead of a no-op back. */
   fallbackHref?: string;
   /** Optional press handler for the title (e.g. open peer profile). */
@@ -17,19 +20,41 @@ type Props = {
   right?: ReactNode;
 };
 
+function firstParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 /** Plain screen header with an optional back button + title, matching mockup detail screens. */
 export function ScreenHeader({
   title,
   back = true,
   fallbackHref,
+  backHref,
   onTitlePress,
   left,
   right,
 }: Props) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<{
+    origin?: string | string[];
+    q?: string | string[];
+    scroll?: string | string[];
+  }>();
+  const originHref = originBackHref(parseNavOrigin(firstParam(params.origin)), "mobile", {
+    query: firstParam(params.q),
+    scroll: firstParam(params.scroll),
+  });
 
   function handleBack() {
+    if (backHref) {
+      router.replace(backHref as never);
+      return;
+    }
+    if (originHref) {
+      router.replace(originHref as never);
+      return;
+    }
     if (router.canGoBack()) {
       router.back();
       return;

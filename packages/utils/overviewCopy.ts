@@ -14,7 +14,20 @@ export const OVERVIEW_QUICK_ACTIONS = {
   readingChallenges: "Reading Challenges",
 } as const;
 
-export const OVERVIEW_ACTIVITY_VIEW_ALL = "View all activity";
+export const OVERVIEW_ACTIVITY_VIEW_ALL = "View All Activity";
+
+export const OVERVIEW_SHELF_ACTIONS = {
+  viewAll: "View All",
+  viewShelf: "View Shelf",
+} as const;
+
+export const FAVORITES_LISTING = {
+  title: "Favorites",
+  description: "Books you've starred from their detail page.",
+  empty: "Star books from their detail page to collect favorites here.",
+  webPath: "/library/favorites/",
+  mobilePath: "/library/favorites",
+} as const;
 
 export const CURRENTLY_READING_ADD_COPY = {
   cardLabel: "Add Book to Currently Reading",

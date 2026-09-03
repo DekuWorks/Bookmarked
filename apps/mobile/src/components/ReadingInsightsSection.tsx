@@ -33,7 +33,7 @@ export function ReadingInsightsSection() {
         )}
       </SectionCard>
 
-      <SectionCard title="AI insights" emoji="✨">
+      <SectionCard title="AI Insights">
         {subscriptionLoading ? (
           <LoadingState message="Checking subscription…" />
         ) : hasAiInsights ? (

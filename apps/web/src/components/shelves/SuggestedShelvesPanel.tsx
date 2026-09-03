@@ -336,7 +336,7 @@ export function SuggestedShelvesPanel({
                   onClick={() => handleChipClick(shelf)}
                   className="min-h-[44px] px-3 py-2 text-left text-sm transition hover:bg-primary/5 disabled:opacity-50"
                 >
-                  <span className="block font-medium text-text">📚 {shelf.name}</span>
+                  <span className="block font-medium text-text">{shelf.name}</span>
                   <span className="block text-xs text-text-muted">
                     {suggestionSubtitle(shelf)}
                   </span>

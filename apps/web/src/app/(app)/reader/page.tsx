@@ -22,7 +22,7 @@ import {
 import { ReadingStreakCard } from "@/components/profile/ReadingStreakCard";
 import { readerLibraryPath } from "@/lib/routes/readerLibrary";
 import { ShareHead } from "@/components/seo/ShareHead";
-import { BackNav } from "@/components/ui/BackNav";
+import { OriginBackNav } from "@/components/navigation/OriginBackNav";
 import { PublicReviewsSection } from "@/components/profile/PublicReviewsSection";
 import { ProfileClubsSection } from "@/components/profile/ProfileClubsSection";
 
@@ -195,7 +195,7 @@ function ReaderProfileContent() {
       <PublicReviewsSection userId={profile.id} readerName={displayName} />
 
       <p className="text-center">
-        <BackNav label="feed" fallbackHref="/feed/" />
+        <OriginBackNav fallbackLabel="feed" fallbackHref="/feed/" />
       </p>
     </div>
   );

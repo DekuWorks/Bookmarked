@@ -19,6 +19,7 @@ type Props = {
   emptyMessage: string;
   emptyAction?: { label: string; href: string };
   viewAllHref: string;
+  viewAllLabel?: string;
   showFinishedDate?: boolean;
   showFavoriteBadge?: boolean;
 };
@@ -37,6 +38,7 @@ export function OverviewBookShelf({
   emptyMessage,
   emptyAction,
   viewAllHref,
+  viewAllLabel = "View All",
   showFinishedDate = false,
   showFavoriteBadge = false,
 }: Props) {
@@ -46,7 +48,7 @@ export function OverviewBookShelf({
       shelfIconId={shelfIconId}
       action={
         <ButtonLink href={viewAllHref} variant="ghost" size="sm" className="shrink-0">
-          View all
+          {viewAllLabel}
         </ButtonLink>
       }
     >

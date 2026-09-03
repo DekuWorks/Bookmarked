@@ -145,7 +145,7 @@ export function ClubDiscussionThreadSheet({
           <FlatList
             data={replies.data ?? []}
             keyExtractor={(item) => item.id}
-            contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
+            contentContainerStyle={{ padding: 16, paddingTop: 20, paddingBottom: 24 }}
             keyboardShouldPersistTaps="handled"
             ListHeaderComponent={
               <View className="mb-4 rounded-2xl border border-brand-border bg-surface p-4">

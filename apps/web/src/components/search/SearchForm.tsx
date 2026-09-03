@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import type { SearchMode } from "@/components/search/SearchModeTabs";
@@ -14,24 +14,39 @@ type Props = {
 export function SearchForm({ mode = "books" }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [q, setQ] = useState(searchParams.get("q") ?? "");
+
+  useEffect(() => {
+    setQ(searchParams.get("q") ?? "");
+  }, [searchParams]);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, [mode]);
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = q.trim();
     if (!trimmed) return;
 
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams();
     params.set("q", trimmed);
-    if (mode === "people") {
-      params.set("mode", "people");
-    } else {
-      params.delete("mode");
+    if (mode !== "books") {
+      params.set("cat", mode);
     }
     router.push(`/search/?${params.toString()}`);
   }
 
   const isbnHint = mode === "books" && isIsbnQuery(q);
+  const placeholder =
+    mode === "people"
+      ? "Name or @username"
+      : mode === "clubs"
+        ? "Club name"
+        : "Title, author, or ISBN";
+  const label =
+    mode === "people" ? "Search readers" : mode === "clubs" ? "Search book clubs" : "Search books";
 
   return (
     <form
@@ -40,13 +55,12 @@ export function SearchForm({ mode = "books" }: Props) {
     >
       <div className="min-w-0 w-full flex-1 sm:max-w-md">
         <Input
-          label={mode === "people" ? "Search readers" : "Search books"}
+          ref={inputRef}
+          label={label}
           variant="search"
           hideLabel
           name="q"
-          placeholder={
-            mode === "people" ? "Name or @username" : "Title, author, or ISBN"
-          }
+          placeholder={placeholder}
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />

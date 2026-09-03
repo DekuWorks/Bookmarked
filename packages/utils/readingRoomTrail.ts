@@ -2,6 +2,28 @@
 
 import type { HistorySortMode } from "./readingRoomHistory";
 
+export const TRAIL_BOOKS_VIEW_MODES = ["list", "grid"] as const;
+export type TrailBooksViewMode = (typeof TRAIL_BOOKS_VIEW_MODES)[number];
+export const DEFAULT_TRAIL_BOOKS_VIEW: TrailBooksViewMode = "list";
+export const TRAIL_BOOKS_VIEW_STORAGE_KEY = "bookmarked.trail.booksView";
+
+export const TRAIL_BOOKS_VIEW_OPTIONS: { id: TrailBooksViewMode; label: string }[] = [
+  { id: "list", label: "List View" },
+  { id: "grid", label: "Grid View" },
+];
+
+export const TRAIL_COPY = {
+  title: "Trail",
+  pickBook: "Pick a book to view its session notes.",
+  sessionNotes: "Session Notes",
+  backToTrail: "← Trail",
+  backToSessions: "← Session Notes",
+} as const;
+
+export function parseTrailBooksView(value: string | null | undefined): TrailBooksViewMode {
+  return value === "grid" ? "grid" : "list";
+}
+
 export type TrailSortableSession = {
   created_at: string;
 };

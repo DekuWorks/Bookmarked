@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { BookCover } from "@/components/books/BookCover";
+import { BrandChromeIcon } from "@/components/icons/BrandChromeIcon";
 import { getUserClubs } from "@/lib/services/bookClubs";
 import { clubDetailPath, clubsPath } from "@/lib/routes/clubs";
 import type { BookClubSummary } from "@/types";
@@ -60,8 +61,8 @@ export function ProfileClubsSection({ profileUserId, viewerId, isOwnProfile }: P
                   className="h-full w-full"
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/30 via-puce-red/10 to-royal-orange/25 text-xl">
-                  📚
+                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/30 via-puce-red/10 to-royal-orange/25">
+                  <BrandChromeIcon name="clubs" />
                 </div>
               )}
             </div>

@@ -235,7 +235,7 @@ export function ClubDiscussionsPanel({
       : null;
 
     return (
-      <section className="space-y-4 text-left">
+      <section className="space-y-4 pt-6 text-left scroll-mt-[var(--app-nav-clearance)]">
         <button
           type="button"
           onClick={handleBackFromThread}
@@ -495,7 +495,7 @@ export function ClubDiscussionsPanel({
   }
 
   return (
-    <section className="space-y-4 text-left">
+    <section className="space-y-4 pt-6 text-left scroll-mt-[var(--app-nav-clearance)]">
       <div className="flex flex-wrap items-center justify-between gap-2 text-left">
         <h2 className="text-left text-lg font-semibold text-puce-red">Discussions</h2>
         <div

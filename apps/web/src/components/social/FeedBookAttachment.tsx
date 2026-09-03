@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { BookCover } from "@/components/books/BookCover";
 import { authorPagePath } from "@/lib/routes/author";
-import { bookDetailsPath } from "@/lib/routes/book";
+import { bookDetailsPath, type BookPathOrigin } from "@/lib/routes/book";
 import { cn } from "@/lib/utils/cn";
 
 type BookRef = {
@@ -16,9 +16,15 @@ type Props = {
   className?: string;
   /** Compact for repost previews; default for feed posts. */
   variant?: "default" | "compact";
+  originExtras?: BookPathOrigin;
 };
 
-export function FeedBookAttachment({ book, className, variant = "default" }: Props) {
+export function FeedBookAttachment({
+  book,
+  className,
+  variant = "default",
+  originExtras,
+}: Props) {
   const compact = variant === "compact";
   const coverClass = compact ? "h-20 w-14" : "h-28 w-[4.5rem]";
 
@@ -31,7 +37,7 @@ export function FeedBookAttachment({ book, className, variant = "default" }: Pro
     >
       <div className={cn("flex items-stretch gap-4", compact ? "p-2.5" : "p-3.5")}>
         <Link
-          href={bookDetailsPath(book.id)}
+          href={bookDetailsPath(book.id, originExtras)}
           className={cn("relative shrink-0 overflow-visible rounded-lg shadow-sm", coverClass)}
         >
           <BookCover
@@ -47,7 +53,7 @@ export function FeedBookAttachment({ book, className, variant = "default" }: Pro
             Book
           </p>
           <Link
-            href={bookDetailsPath(book.id)}
+            href={bookDetailsPath(book.id, originExtras)}
             className={cn(
               "mt-1 font-semibold leading-snug text-puce-red hover:underline",
               compact ? "line-clamp-2 text-sm" : "line-clamp-3 text-base"

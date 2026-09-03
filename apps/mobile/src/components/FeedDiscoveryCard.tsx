@@ -1,9 +1,18 @@
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { useState } from "react";
+import { ActionSheetIOS, Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { BookCover } from "./BookCover";
 import { StarRating } from "./StarRating";
 import { fetchTrendingSections, type TrendingBook } from "../services/trending";
+import { setShelfStatus } from "../services/library";
+import {
+  addBookToCustomShelf,
+  listUserCustomShelves,
+} from "../services/customShelves";
+import { useAuthStore } from "../store/authStore";
+import { getShelvesInOrder } from "../constants/shelves";
+import { feedBookHref } from "../lib/feedNav";
 import type { FeedDiscoverySectionId } from "../../../../packages/utils";
 import {
   DISCOVERY_CARD_ROW_PX,
@@ -13,6 +22,7 @@ import {
 } from "../../../../packages/utils";
 import { SANS_FONT, SANS_FONT_BOLD, SANS_FONT_MEDIUM } from "../constants/theme";
 import { useThemeColors } from "../store/themeStore";
+import type { ShelfStatus } from "../types";
 
 const TITLES: Record<FeedDiscoverySectionId, string> = {
   trending: "Trending Books",
@@ -20,15 +30,20 @@ const TITLES: Record<FeedDiscoverySectionId, string> = {
   reviewed: "Most Reviewed",
 };
 
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
 type Props = {
   sectionId: FeedDiscoverySectionId;
+  getScrollOffset?: () => number;
 };
 
 const CARD_WIDTH = 112;
 
-function Card({ book }: { book: TrendingBook }) {
+function Card({ book, getScrollOffset }: { book: TrendingBook; getScrollOffset?: () => number }) {
   const router = useRouter();
   const colors = useThemeColors();
+  const userId = useAuthStore((s) => s.user?.id);
+  const [saving, setSaving] = useState(false);
   const hasRating = Boolean(book.communityRating);
   const reviewState = discoveryReviewState({
     hasRating,
@@ -36,13 +51,90 @@ function Card({ book }: { book: TrendingBook }) {
   });
   const summary = discoveryReviewSummaryLabel(reviewState);
 
+  function openBook() {
+    router.push(feedBookHref(book.bookId, { scroll: getScrollOffset?.() }) as never);
+  }
+
+  function openReview() {
+    router.push(
+      feedBookHref(book.bookId, { scroll: getScrollOffset?.(), section: "reviews" }) as never
+    );
+  }
+
+  async function applyShelf(status: ShelfStatus) {
+    if (!userId) return;
+    setSaving(true);
+    const result = await setShelfStatus(
+      userId,
+      { id: book.bookId, title: book.title, cover_url: book.coverUrl },
+      status
+    );
+    setSaving(false);
+    Alert.alert(
+      result.error ? "Couldn't save" : "Saved",
+      result.error ?? `Added to ${status.replace(/_/g, " ")}.`
+    );
+  }
+
+  async function applyCustomShelf(shelfId: string, name: string) {
+    if (!userId) return;
+    setSaving(true);
+    const result = await addBookToCustomShelf(shelfId, userId, book.bookId);
+    setSaving(false);
+    Alert.alert(result.error ? "Couldn't save" : "Saved", result.error ?? `Added to ${name}.`);
+  }
+
+  async function openShelfPicker() {
+    if (!userId || saving) return;
+    const shelves = getShelvesInOrder();
+    let custom: { id: string; name: string }[] = [];
+    try {
+      custom = (await listUserCustomShelves(userId)).map((shelf) => ({
+        id: shelf.id,
+        name: shelf.name,
+      }));
+    } catch {
+      custom = [];
+    }
+
+    const options = [...shelves.map((shelf) => shelf.title), "Custom collections…", "Cancel"];
+    ActionSheetIOS.showActionSheetWithOptions(
+      {
+        options,
+        cancelButtonIndex: options.length - 1,
+        title: `Add ${book.title} to a shelf`,
+      },
+      (index) => {
+        if (index < 0 || index === options.length - 1) return;
+        if (index < shelves.length) {
+          const shelf = shelves[index];
+          if (shelf) void applyShelf(shelf.status);
+          return;
+        }
+        if (!custom.length) {
+          Alert.alert("No collections", "Create a custom shelf from your library first.");
+          return;
+        }
+        const customOptions = [...custom.map((shelf) => shelf.name), "Cancel"];
+        ActionSheetIOS.showActionSheetWithOptions(
+          {
+            options: customOptions,
+            cancelButtonIndex: customOptions.length - 1,
+            title: "Custom collections",
+          },
+          (customIndex) => {
+            if (customIndex < 0 || customIndex >= custom.length) return;
+            const shelf = custom[customIndex];
+            if (shelf) void applyCustomShelf(shelf.id, shelf.name);
+          }
+        );
+      }
+    );
+  }
+
   return (
-    <Pressable
-      onPress={() => router.push(`/book/${book.bookId}`)}
-      style={{ width: CARD_WIDTH, marginRight: 12 }}
-      className="active:opacity-80"
-    >
-      <View>
+    <View style={{ width: CARD_WIDTH, marginRight: 12 }}>
+      <Pressable onPress={openBook} className="active:opacity-80">
         <View
           style={{ height: DISCOVERY_CARD_ROW_PX.coverHeight, overflow: "hidden" }}
         >
@@ -96,17 +188,30 @@ function Card({ book }: { book: TrendingBook }) {
         >
           {book.metric} {book.metricLabel}
         </Text>
-      </View>
-    </Pressable>
+      </Pressable>
+      <Pressable
+        onPress={() => void openShelfPicker()}
+        disabled={saving}
+        className="mt-2 min-h-[32px] items-center justify-center rounded-md border border-brand-border active:opacity-70"
+      >
+        <Text className="text-[11px] font-medium text-ink">Add to Shelf</Text>
+      </Pressable>
+      <Pressable
+        onPress={openReview}
+        className="mt-1 min-h-[32px] items-center justify-center active:opacity-70"
+      >
+        <Text className="text-[11px] font-medium text-primary-dark">Rate & Review</Text>
+      </Pressable>
+    </View>
   );
 }
 
-export function FeedDiscoveryCard({ sectionId }: Props) {
+export function FeedDiscoveryCard({ sectionId, getScrollOffset }: Props) {
   const colors = useThemeColors();
   const { data: sections } = useQuery({
     queryKey: ["trending-sections"],
     queryFn: fetchTrendingSections,
-    staleTime: 5 * 60 * 1000,
+    staleTime: WEEK_MS,
   });
 
   const section = sections?.find((row) => row.id === sectionId) ?? null;
@@ -122,7 +227,7 @@ export function FeedDiscoveryCard({ sectionId }: Props) {
       </Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-3">
         {section.books.map((book) => (
-          <Card key={book.bookId} book={book} />
+          <Card key={book.bookId} book={book} getScrollOffset={getScrollOffset} />
         ))}
       </ScrollView>
     </View>

@@ -24,7 +24,7 @@ import { LoadingState } from "@/components/ui/LoadingState";
 import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
-import { BackNav } from "@/components/ui/BackNav";
+import { OriginBackNav } from "@/components/navigation/OriginBackNav";
 import { ShareHead } from "@/components/seo/ShareHead";
 import { bookDetailsPath } from "@/lib/routes/book";
 import { authorPagePath } from "@/lib/routes/author";
@@ -102,7 +102,7 @@ function BookDetailsContent() {
     return (
       <div className="space-y-4 text-center">
         <p className="text-text-muted">Book not found or you need to sign in.</p>
-        <BackNav label="library" fallbackHref="/library/" />
+        <OriginBackNav fallbackLabel="library" fallbackHref="/library/" />
       </div>
     );
   }
@@ -148,7 +148,7 @@ function BookDetailsContent() {
       />
       <BookCoverAmbience coverUrl={book.cover_url}>
         <div className="flex flex-wrap items-center justify-center gap-3">
-          <BackNav label="library" fallbackHref="/library/" />
+          <OriginBackNav fallbackLabel="library" fallbackHref="/library/" />
           <CopyLinkButton path={bookDetailsPath(book.id)} label="Copy link" variant="outline" />
         </div>
 
@@ -314,7 +314,7 @@ function BookDetailsContent() {
           bookTitle={book.title}
           onShelf={Boolean(userBook)}
           currentPage={Number(userBook?.progress_pages) || 0}
-          totalPages={book.page_count ?? 0}
+          totalPages={userBook?.total_pages || book.page_count || 0}
           progressPercent={Number(userBook?.progress_percent) || 0}
           format={book.format}
           currentListeningSeconds={Number(userBook?.listening_progress_seconds) || 0}

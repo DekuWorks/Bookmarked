@@ -201,6 +201,17 @@ function FeedContent() {
     [activityItems]
   );
 
+  useEffect(() => {
+    const raw = searchParams.get("scroll");
+    if (!raw) return;
+    const y = Number(raw);
+    if (!Number.isFinite(y) || y <= 0) return;
+    const handle = window.setTimeout(() => {
+      window.scrollTo({ top: y, behavior: "auto" });
+    }, 80);
+    return () => window.clearTimeout(handle);
+  }, [searchParams, interleavedPosts, interleavedActivity]);
+
   if (user === undefined) {
     return <LoadingState message="Loading feed…" />;
   }

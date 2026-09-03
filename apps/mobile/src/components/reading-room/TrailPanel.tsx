@@ -1,6 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Pressable, Text, TextInput, View } from "react-native";
+import { BookCover } from "../BookCover";
 import { LoadingState } from "../LoadingState";
 import { SectionCard } from "../SectionCard";
 import { useThemeColors } from "../../store/themeStore";
@@ -18,8 +20,14 @@ import {
 } from "../../../../../packages/utils/readingRoomHistory";
 import { DEFAULT_PAGE_SIZE, paginateItems } from "../../../../../packages/utils/pagination";
 import {
+  DEFAULT_TRAIL_BOOKS_VIEW,
+  TRAIL_BOOKS_VIEW_OPTIONS,
+  TRAIL_BOOKS_VIEW_STORAGE_KEY,
+  TRAIL_COPY,
   filterTrailBookGroupsByQuery,
+  parseTrailBooksView,
   sortTrailBookGroups,
+  type TrailBooksViewMode,
 } from "../../../../../packages/utils/readingRoomTrail";
 import { HistorySortSelect } from "./HistorySortSelect";
 import { BookListPagination } from "./BookListPagination";
@@ -39,6 +47,18 @@ export function TrailPanel({ sessions }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sort, setSort] = useState<HistorySortMode>(DEFAULT_HISTORY_SORT);
   const [page, setPage] = useState(1);
+  const [booksView, setBooksView] = useState<TrailBooksViewMode>(DEFAULT_TRAIL_BOOKS_VIEW);
+
+  useEffect(() => {
+    void AsyncStorage.getItem(TRAIL_BOOKS_VIEW_STORAGE_KEY).then((stored) => {
+      setBooksView(parseTrailBooksView(stored));
+    });
+  }, []);
+
+  function changeBooksView(mode: TrailBooksViewMode) {
+    setBooksView(mode);
+    void AsyncStorage.setItem(TRAIL_BOOKS_VIEW_STORAGE_KEY, mode);
+  }
 
   const bookGroups = useMemo(
     () => (sessions ? groupSessionsByBook(sessions) : []),
@@ -98,7 +118,7 @@ export function TrailPanel({ sessions }: Props) {
 
   if (sessions === null) {
     return (
-      <SectionCard title="Trail" emoji="🥾">
+      <SectionCard title={TRAIL_COPY.title}>
         <LoadingState message="Loading trail…" />
       </SectionCard>
     );
@@ -106,7 +126,7 @@ export function TrailPanel({ sessions }: Props) {
 
   if (!sessions.length) {
     return (
-      <SectionCard title="Trail" emoji="🥾">
+      <SectionCard title={TRAIL_COPY.title}>
         <Text className="text-sm text-ink-muted">
           Save reading progress to build your trail.
         </Text>
@@ -116,9 +136,9 @@ export function TrailPanel({ sessions }: Props) {
 
   if (view === "detail" && activeBook && activeSession) {
     return (
-      <SectionCard title="Trail" emoji="🥾">
+      <SectionCard title={TRAIL_COPY.title}>
         <Pressable onPress={backToSessions} className="self-start active:opacity-80">
-          <Text className="text-sm font-semibold text-primary-dark">← Back to sessions</Text>
+          <Text className="text-sm font-semibold text-primary-dark">{TRAIL_COPY.backToSessions}</Text>
         </Pressable>
         <View className="mt-4 rounded-xl border border-brand-border bg-background/70 px-4 py-4">
           <Text className="text-base font-semibold text-ink">{activeBook.bookTitle}</Text>
@@ -157,9 +177,9 @@ export function TrailPanel({ sessions }: Props) {
 
   if (view === "sessions" && activeBook) {
     return (
-      <SectionCard title="Trail" emoji="🥾">
+      <SectionCard title={TRAIL_COPY.sessionNotes}>
         <Pressable onPress={backToBooks} className="self-start active:opacity-80">
-          <Text className="text-sm font-semibold text-primary-dark">← Back to books</Text>
+          <Text className="text-sm font-semibold text-primary-dark">{TRAIL_COPY.backToTrail}</Text>
         </Pressable>
         <View className="mt-4">
           <Text className="text-base font-semibold text-ink">{activeBook.bookTitle}</Text>
@@ -209,8 +229,32 @@ export function TrailPanel({ sessions }: Props) {
   }
 
   return (
-    <SectionCard title="Trail" emoji="🥾">
-      <Text className="mb-3 text-sm text-ink-muted">Pick a book to view its session notes.</Text>
+    <SectionCard title={TRAIL_COPY.title}>
+      <Text className="mb-3 text-sm text-ink-muted">{TRAIL_COPY.pickBook}</Text>
+      <View
+        className="mb-3 h-10 flex-row rounded-xl border border-brand-border bg-surface p-1"
+        accessibilityRole="tablist"
+        accessibilityLabel="Trail books view"
+      >
+        {TRAIL_BOOKS_VIEW_OPTIONS.map((option) => {
+          const active = booksView === option.id;
+          return (
+            <Pressable
+              key={option.id}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: active }}
+              onPress={() => changeBooksView(option.id)}
+              className={`min-h-8 flex-1 items-center justify-center rounded-lg ${
+                active ? "bg-puce-red" : "active:bg-primary/10"
+              }`}
+            >
+              <Text className={`text-sm font-semibold ${active ? "text-white" : "text-ink-muted"}`}>
+                {option.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
       <View className="relative">
         <TextInput
           accessibilityLabel="Search books"
@@ -229,23 +273,44 @@ export function TrailPanel({ sessions }: Props) {
       </View>
       {bookPage.total === 0 ? (
         <Text className="mt-4 text-center text-sm text-ink-muted">No books match your search.</Text>
-      ) : (
-        <View className="mt-4 gap-2">
+      ) : booksView === "grid" ? (
+        <View className="mt-4 flex-row flex-wrap gap-3">
           {bookPage.pageItems.map((group) => (
             <Pressable
               key={group.key}
               onPress={() => openBook(group)}
-              className="rounded-xl border border-brand-border bg-background/70 px-4 py-3 active:opacity-80"
+              className="w-[30%] active:opacity-80"
+              accessibilityRole="button"
+              accessibilityLabel={`${group.bookTitle}, ${group.sessions.length} sessions`}
             >
-              <Text className="text-sm font-semibold text-ink">
-                {group.bookTitle}
-                <Text className="text-xs font-normal text-ink-muted">
-                  {" "}
-                  ({group.sessions.length} session{group.sessions.length === 1 ? "" : "s"})
-                </Text>
-              </Text>
+              <BookCover
+                url={group.bookCoverUrl}
+                title={group.bookTitle}
+                sizeClassName="w-full aspect-[2/3]"
+              />
             </Pressable>
           ))}
+        </View>
+      ) : (
+        <View className="mt-4 gap-2">
+          {bookPage.pageItems.map((group) => {
+            const latest = group.sessions[0];
+            return (
+              <Pressable
+                key={group.key}
+                onPress={() => openBook(group)}
+                className="rounded-xl border border-brand-border bg-background/70 px-4 py-3 active:opacity-80"
+              >
+                <Text className="text-sm font-semibold text-ink">{group.bookTitle}</Text>
+                <Text className="mt-1 text-xs text-ink-muted">
+                  {group.sessions.length} session{group.sessions.length === 1 ? "" : "s"}
+                  {latest
+                    ? ` · ${formatSessionDate(latest.created_at)} · ${sessionSummary(latest)}`
+                    : ""}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
       )}
       <BookListPagination
