@@ -70,6 +70,14 @@ describe("formatNoteLocation", () => {
       formatNoteLocation({ pageNumber: 20, chapterNumber: "2.1" })
     ).toBe("Page 20 • Chapter 2.1");
   });
+
+  it("shows audiobook timestamps instead of a fake page or chapter", () => {
+    expect(formatNoteLocation({ chapterNumber: "1:23:45" })).toBe("1:23:45");
+    expect(formatNoteLocation({ chapterNumber: "12:34" })).toBe("12:34");
+    expect(
+      formatNoteLocation({ pageNumber: 3720, chapterNumber: "1:02:03" })
+    ).toBe("1:02:03");
+  });
 });
 
 describe("HOME_NOTES_PREVIEW_LIMIT", () => {

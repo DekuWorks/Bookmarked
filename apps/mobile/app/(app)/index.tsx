@@ -25,7 +25,6 @@ import { useProfile } from "../../src/hooks/useProfile";
 import { getUserLibraryBooks } from "../../src/services/library";
 import { loadReadingAnalytics } from "../../src/services/analytics";
 import { computeReadingGoal } from "../../src/services/readingGoal";
-import { searchNotesWithBooks } from "../../src/services/readingNotes";
 import { listUserReviews } from "../../src/services/readingRoom";
 import { listUserReadingSessions } from "../../src/services/readingSessions";
 import { TAB_BAR_SPACE, useTabBarScroll } from "../../src/navigation/TabBarScroll";
@@ -39,7 +38,10 @@ function parseReadingRoomTabParam(value: string | string[] | undefined): Reading
 }
 
 export default function HomeReadingRoom() {
-  const { tab: tabParam } = useLocalSearchParams<{ tab?: string }>();
+  const { tab: tabParam, book: bookParam } = useLocalSearchParams<{
+    tab?: string;
+    book?: string;
+  }>();
   const colors = useThemeColors();
   const userId = useAuthStore((s) => s.user?.id);
   const { data: profile, refetch: refetchProfile } = useProfile();
@@ -54,9 +56,7 @@ export default function HomeReadingRoom() {
     null
   );
   const [reviews, setReviews] = useState<Awaited<ReturnType<typeof listUserReviews>> | null>(null);
-  const [recentNotes, setRecentNotes] = useState<
-    Awaited<ReturnType<typeof searchNotesWithBooks>> | null
-  >(null);
+  const [notesRefreshId, setNotesRefreshId] = useState(0);
 
   const library = useQuery({
     queryKey: ["library", userId],
@@ -87,15 +87,6 @@ export default function HomeReadingRoom() {
     setReviews(rows);
   }, [userId]);
 
-  const loadNotes = useCallback(async () => {
-    if (!userId) return;
-    const rows = await searchNotesWithBooks({
-      userId,
-      limit: 5,
-    });
-    setRecentNotes(rows);
-  }, [userId]);
-
   useEffect(() => {
     if (tab === "trail" || tab === "history") {
       void loadSessions();
@@ -107,12 +98,6 @@ export default function HomeReadingRoom() {
       void loadReviews();
     }
   }, [tab, loadReviews]);
-
-  useEffect(() => {
-    if (tab === "notes") {
-      void loadNotes();
-    }
-  }, [tab, loadNotes]);
 
   const books = library.data ?? [];
   const currentlyReading = useMemo(
@@ -128,7 +113,7 @@ export default function HomeReadingRoom() {
     if (tab === "progress") void analytics.refetch();
     if (tab === "trail" || tab === "history") void loadSessions();
     if (tab === "reviews") void loadReviews();
-    if (tab === "notes") void loadNotes();
+    if (tab === "notes") setNotesRefreshId((id) => id + 1);
   }
 
   if (library.isLoading) {
@@ -207,7 +192,13 @@ export default function HomeReadingRoom() {
 
         {tab === "trail" ? <TrailPanel sessions={sessions} /> : null}
 
-        {tab === "notes" ? <NotesPanel notes={recentNotes} /> : null}
+        {tab === "notes" && userId ? (
+          <NotesPanel
+            userId={userId}
+            bookParam={Array.isArray(bookParam) ? bookParam[0] : bookParam}
+            refreshId={notesRefreshId}
+          />
+        ) : null}
 
         {tab === "reviews" ? <ReviewsPanel reviews={reviews} /> : null}
 

@@ -11,6 +11,7 @@ import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { layout } from "@/lib/constants/layout";
 import type { ReadingNoteCategory } from "@/types";
 import { isReadingNoteCategoryValue } from "@/lib/readingNotes/categories";
+import { NOTES_BOOK_QUERY_PARAM, parseNotesBookQueryParam } from "@bookmarked/utils/notesBookFilter";
 
 function isReadingNoteCategory(value: string): value is ReadingNoteCategory {
   return isReadingNoteCategoryValue(value);
@@ -22,13 +23,6 @@ function parsePageNumber(value: string | null): number | undefined {
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : undefined;
 }
 
-function hasActiveSearch(params: URLSearchParams): boolean {
-  const q = params.get("q")?.trim();
-  const category = params.get("category")?.trim();
-  const page = params.get("page")?.trim();
-  return Boolean(q || category || page);
-}
-
 function NotesSearchContent() {
   const searchParams = useSearchParams();
   const user = useAuthUser();
@@ -36,7 +30,7 @@ function NotesSearchContent() {
   const categoryParam = searchParams.get("category")?.trim() ?? "";
   const category = isReadingNoteCategory(categoryParam) ? categoryParam : undefined;
   const pageNumber = parsePageNumber(searchParams.get("page"));
-  const searching = hasActiveSearch(searchParams);
+  const userBookId = parseNotesBookQueryParam(searchParams.get(NOTES_BOOK_QUERY_PARAM));
 
   if (user === undefined) {
     return <LoadingState message="Loading…" />;
@@ -61,36 +55,14 @@ function NotesSearchContent() {
       </header>
 
       <NotesSearchForm />
-
-      {searching ? (
-        <>
-          <NotesSearchFilters />
-          <NotesSearchResults
-            userId={user.id}
-            keyword={q || undefined}
-            category={category}
-            pageNumber={pageNumber}
-          />
-        </>
-      ) : (
-        <div className="space-y-4">
-          <p className="text-text-muted">
-            Enter a keyword or choose a filter to search your notes.
-          </p>
-          <NotesSearchFilters />
-          <p className="text-sm text-text-muted">
-            Add notes from any{" "}
-            <Link href="/library/" className="font-medium text-primary hover:underline">
-              library book
-            </Link>{" "}
-            or your{" "}
-            <Link href="/reading-room/" className="font-medium text-primary hover:underline">
-              Reading Room
-            </Link>
-            .
-          </p>
-        </div>
-      )}
+      <NotesSearchFilters />
+      <NotesSearchResults
+        userId={user.id}
+        keyword={q || undefined}
+        category={category}
+        pageNumber={pageNumber}
+        userBookId={userBookId}
+      />
 
       <div className="border-t border-border pt-6 text-center">
         <Link

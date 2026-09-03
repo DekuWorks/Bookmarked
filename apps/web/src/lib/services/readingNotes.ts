@@ -4,6 +4,11 @@ import {
   canSaveQuote,
   toSubscriptionAccessFromRow,
 } from "@/lib/utils/subscription";
+import {
+  NOTES_BOOK_FILTER_COPY,
+  buildNotesBookFilterOptions,
+  type NotesBookFilterOption,
+} from "@bookmarked/utils/notesBookFilter";
 import type {
   ReadingNote,
   ReadingNoteCategory,
@@ -258,13 +263,110 @@ export async function searchNotesWithBooks(
   return { notes: await enrichNotesWithBooks(notes), error };
 }
 
-export type ReadingNoteWithBook = ReadingNote & {
-  book: {
-    id: string;
-    title: string;
-    cover_url: string | null;
-  } | null;
+export type ReadingNoteBookSummary = {
+  id: string;
+  title: string;
+  author: string | null;
+  cover_url: string | null;
 };
+
+export type ReadingNoteWithBook = ReadingNote & {
+  book: ReadingNoteBookSummary | null;
+};
+
+function resolveBookSummary(book: unknown): ReadingNoteBookSummary | null {
+  const resolved = Array.isArray(book) ? book[0] : book;
+  if (!resolved || typeof resolved !== "object") return null;
+  const row = resolved as {
+    id?: unknown;
+    title?: unknown;
+    author?: unknown;
+    cover_url?: unknown;
+  };
+  if (typeof row.id !== "string" || !row.id) return null;
+  return {
+    id: row.id,
+    title: typeof row.title === "string" ? row.title : "Untitled",
+    author: typeof row.author === "string" ? row.author : null,
+    cover_url: typeof row.cover_url === "string" ? row.cover_url : null,
+  };
+}
+
+async function loadBooksByUserBookIds(
+  supabase: SupabaseClient,
+  userBookIds: string[],
+  ownerUserId?: string
+): Promise<Map<string, ReadingNoteBookSummary> | null> {
+  if (userBookIds.length === 0) return new Map();
+
+  let query = supabase
+    .from("user_books")
+    .select("id, book_id, books(id, title, author, cover_url)")
+    .in("id", userBookIds);
+
+  if (ownerUserId) {
+    query = query.eq("user_id", ownerUserId);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.error("[readingNotes] load books failed:", error);
+    return null;
+  }
+
+  const bookByUserBookId = new Map<string, ReadingNoteBookSummary>();
+  for (const row of data ?? []) {
+    const summary = resolveBookSummary(row.books);
+    if (!summary) continue;
+    bookByUserBookId.set(row.id, {
+      ...summary,
+      id: typeof row.book_id === "string" && row.book_id ? row.book_id : summary.id,
+    });
+  }
+  return bookByUserBookId;
+}
+
+/** Books that have at least one of the signed-in user's notes. RLS still scopes rows. */
+export async function listNotedBooksForUser(
+  userId: string
+): Promise<{ options: NotesBookFilterOption[]; error?: string }> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("reading_notes")
+    .select("user_book_id")
+    .eq("user_id", userId);
+
+  if (error) {
+    console.error("[readingNotes] noted books failed:", error);
+    return { options: [], error: NOTES_BOOK_FILTER_COPY.error };
+  }
+
+  const counts = new Map<string, number>();
+  for (const row of data ?? []) {
+    if (!row.user_book_id) continue;
+    counts.set(row.user_book_id, (counts.get(row.user_book_id) ?? 0) + 1);
+  }
+
+  const userBookIds = [...counts.keys()];
+  const bookByUserBookId = await loadBooksByUserBookIds(supabase, userBookIds, userId);
+  if (!bookByUserBookId) {
+    return { options: [], error: NOTES_BOOK_FILTER_COPY.error };
+  }
+
+  const stubs = userBookIds.map((userBookId) => ({
+    id: userBookId,
+    user_book_id: userBookId,
+    created_at: "",
+    book: bookByUserBookId.get(userBookId) ?? null,
+  }));
+
+  return {
+    options: buildNotesBookFilterOptions(stubs).map((option) => ({
+      ...option,
+      noteCount: counts.get(option.userBookId) ?? option.noteCount,
+    })),
+  };
+}
 
 async function enrichNotesWithBooks(
   notes: ReadingNote[]
@@ -274,30 +376,10 @@ async function enrichNotesWithBooks(
   const supabase = createClient();
   const userBookIds = [...new Set(notes.map((note) => note.user_book_id))];
 
-  const { data, error } = await supabase
-    .from("user_books")
-    .select("id, books(id, title, cover_url)")
-    .in("id", userBookIds);
+  const bookByUserBookId = await loadBooksByUserBookIds(supabase, userBookIds);
 
-  if (error) {
-    console.error("[readingNotes] enrich books failed:", error);
+  if (!bookByUserBookId) {
     return notes.map((note) => ({ ...note, book: null }));
-  }
-
-  const bookByUserBookId = new Map<
-    string,
-    { id: string; title: string; cover_url: string | null }
-  >();
-
-  for (const row of data ?? []) {
-    const book = row.books;
-    const resolved = Array.isArray(book) ? book[0] : book;
-    if (!resolved?.id) continue;
-    bookByUserBookId.set(row.id, {
-      id: resolved.id,
-      title: resolved.title,
-      cover_url: resolved.cover_url,
-    });
   }
 
   return notes.map((note) => ({

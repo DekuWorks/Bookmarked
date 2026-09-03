@@ -4,6 +4,11 @@ import {
   canSaveQuote,
   toSubscriptionAccessFromRow,
 } from "../utils/subscription";
+import {
+  NOTES_BOOK_FILTER_COPY,
+  buildNotesBookFilterOptions,
+  type NotesBookFilterOption,
+} from "../../../../packages/utils/notesBookFilter";
 import type { ReadingNote, ReadingNoteCategory, ReadingNoteVisibility } from "../types";
 
 /**
@@ -22,12 +27,21 @@ export type ReadingNoteInput = {
   visibility?: ReadingNoteVisibility;
 };
 
+export type ReadingNoteBookSummary = {
+  id: string;
+  title: string;
+  author: string | null;
+  cover_url: string | null;
+};
+
 export type ReadingNoteWithBook = ReadingNote & {
-  book: { id: string; title: string; cover_url: string | null } | null;
+  book: ReadingNoteBookSummary | null;
 };
 
 export type ReadingNoteSearchFilters = {
   userId?: string;
+  bookId?: string;
+  userBookId?: string;
   category?: ReadingNoteCategory;
   keyword?: string;
   limit?: number;
@@ -62,31 +76,109 @@ export async function listNotesByBook(userBookId: string): Promise<ReadingNote[]
   return (data ?? []) as ReadingNote[];
 }
 
+function resolveBookSummary(book: unknown): ReadingNoteBookSummary | null {
+  const resolved = Array.isArray(book) ? book[0] : book;
+  if (!resolved || typeof resolved !== "object") return null;
+  const row = resolved as {
+    id?: unknown;
+    title?: unknown;
+    author?: unknown;
+    cover_url?: unknown;
+  };
+  if (typeof row.id !== "string" || !row.id) return null;
+  return {
+    id: row.id,
+    title: typeof row.title === "string" ? row.title : "Untitled",
+    author: typeof row.author === "string" ? row.author : null,
+    cover_url: typeof row.cover_url === "string" ? row.cover_url : null,
+  };
+}
+
+async function loadBooksByUserBookIds(
+  userBookIds: string[],
+  ownerUserId?: string
+): Promise<Map<string, ReadingNoteBookSummary> | null> {
+  if (userBookIds.length === 0) return new Map();
+
+  let query = supabase
+    .from("user_books")
+    .select("id, book_id, books(id, title, author, cover_url)")
+    .in("id", userBookIds);
+
+  if (ownerUserId) {
+    query = query.eq("user_id", ownerUserId);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.error("[readingNotes] load books failed:", error);
+    return null;
+  }
+
+  const bookByUserBookId = new Map<string, ReadingNoteBookSummary>();
+  for (const row of data ?? []) {
+    const summary = resolveBookSummary(row.books);
+    if (!summary) continue;
+    bookByUserBookId.set(row.id as string, {
+      ...summary,
+      id:
+        typeof row.book_id === "string" && row.book_id
+          ? row.book_id
+          : summary.id,
+    });
+  }
+  return bookByUserBookId;
+}
+
+/** Books that have at least one of the signed-in user's notes. RLS still scopes rows. */
+export async function listNotedBooksForUser(
+  userId: string
+): Promise<{ options: NotesBookFilterOption[]; error?: string }> {
+  const { data, error } = await supabase
+    .from("reading_notes")
+    .select("user_book_id")
+    .eq("user_id", userId);
+
+  if (error) {
+    console.error("[readingNotes] noted books failed:", error);
+    return { options: [], error: NOTES_BOOK_FILTER_COPY.error };
+  }
+
+  const counts = new Map<string, number>();
+  for (const row of data ?? []) {
+    const userBookId = row.user_book_id as string | null;
+    if (!userBookId) continue;
+    counts.set(userBookId, (counts.get(userBookId) ?? 0) + 1);
+  }
+
+  const userBookIds = [...counts.keys()];
+  const bookByUserBookId = await loadBooksByUserBookIds(userBookIds, userId);
+  if (!bookByUserBookId) {
+    return { options: [], error: NOTES_BOOK_FILTER_COPY.error };
+  }
+
+  const stubs = userBookIds.map((userBookId) => ({
+    id: userBookId,
+    user_book_id: userBookId,
+    created_at: "",
+    book: bookByUserBookId.get(userBookId) ?? null,
+  }));
+
+  return {
+    options: buildNotesBookFilterOptions(stubs).map((option) => ({
+      ...option,
+      noteCount: counts.get(option.userBookId) ?? option.noteCount,
+    })),
+  };
+}
+
 async function enrichNotesWithBooks(notes: ReadingNote[]): Promise<ReadingNoteWithBook[]> {
   if (!notes.length) return [];
 
   const userBookIds = [...new Set(notes.map((note) => note.user_book_id))];
-  const { data, error } = await supabase
-    .from("user_books")
-    .select("id, books(id, title, cover_url)")
-    .in("id", userBookIds);
-
-  if (error) {
+  const bookByUserBookId = await loadBooksByUserBookIds(userBookIds);
+  if (!bookByUserBookId) {
     return notes.map((note) => ({ ...note, book: null }));
-  }
-
-  const bookByUserBookId = new Map<
-    string,
-    { id: string; title: string; cover_url: string | null }
-  >();
-  for (const row of data ?? []) {
-    const book = row.books as
-      | { id: string; title: string; cover_url: string | null }
-      | { id: string; title: string; cover_url: string | null }[]
-      | null;
-    const resolved = Array.isArray(book) ? book[0] : book;
-    if (!resolved?.id) continue;
-    bookByUserBookId.set(row.id as string, resolved);
   }
 
   return notes.map((note) => ({
@@ -101,12 +193,13 @@ export async function listProfileNotesForUser(
   options: { isOwnProfile?: boolean; limit?: number } = {}
 ): Promise<ReadingNoteWithBook[]> {
   const limit = options.limit ?? 50;
-  return searchNotesWithBooks({ userId, limit });
+  const { notes } = await searchNotesWithBooks({ userId, limit });
+  return notes;
 }
 
 export async function searchNotesWithBooks(
   filters: ReadingNoteSearchFilters
-): Promise<ReadingNoteWithBook[]> {
+): Promise<{ notes: ReadingNoteWithBook[]; error?: string }> {
   let query = supabase
     .from("reading_notes")
     .select("*")
@@ -114,15 +207,28 @@ export async function searchNotesWithBooks(
     .limit(filters.limit ?? 50);
 
   if (filters.userId) query = query.eq("user_id", filters.userId);
+  if (filters.userBookId) query = query.eq("user_book_id", filters.userBookId);
   if (filters.category) query = query.eq("category", filters.category);
 
   const { data, error } = await query;
   if (error) {
     console.error("[readingNotes] search failed:", error);
-    return [];
+    return { notes: [], error: NOTES_BOOK_FILTER_COPY.error };
   }
 
   let notes = (data ?? []) as ReadingNote[];
+
+  if (filters.bookId) {
+    const allowed = await loadBooksByUserBookIds(
+      [...new Set(notes.map((note) => note.user_book_id))],
+      filters.userId
+    );
+    if (!allowed) {
+      return { notes: [], error: NOTES_BOOK_FILTER_COPY.error };
+    }
+    notes = notes.filter((note) => allowed.get(note.user_book_id)?.id === filters.bookId);
+  }
+
   const keyword = filters.keyword?.trim().toLowerCase();
   if (keyword) {
     notes = notes.filter((n) =>
@@ -132,7 +238,7 @@ export async function searchNotesWithBooks(
     );
   }
 
-  return enrichNotesWithBooks(notes);
+  return { notes: await enrichNotesWithBooks(notes) };
 }
 
 export async function createReadingNote(

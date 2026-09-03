@@ -8,11 +8,10 @@ import { AnalyticsGrid } from "@/components/analytics/AnalyticsGrid";
 import { ReadingActivityPanel } from "@/components/analytics/ReadingActivityPanel";
 import { AiInsightsPanel } from "@/components/premium/AiInsightsPanel";
 import { PremiumFeatureLock } from "@/components/premium/PremiumFeatureLock";
-import { NotesSearchResultCard } from "@/components/notes/NotesSearchResultCard";
+import { NotesPanel } from "@/components/reading-room/NotesPanel";
 import { OverviewTab } from "@/components/reading-room/OverviewTab";
 import { ReadingGoalPanel } from "@/components/reading-goal/ReadingGoalPanel";
 import { TrailPanel } from "@/components/reading-room/TrailPanel";
-import { searchNotesWithBooks } from "@/lib/services/readingNotes";
 import type { ReadingRoomData } from "@/lib/services/readingRoom";
 import { listUserReviews, type UserReviewWithBook } from "@/lib/services/readingRoom";
 import {
@@ -54,9 +53,6 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
   const hasAiInsights = canAccess("ai_insights");
   const [sessions, setSessions] = useState<UserReadingSession[] | null>(null);
   const [reviews, setReviews] = useState<UserReviewWithBook[] | null>(null);
-  const [recentNotes, setRecentNotes] = useState<
-    Awaited<ReturnType<typeof searchNotesWithBooks>>["notes"] | null
-  >(null);
   const libraryBooks = useMemo(
     () => data.shelves.flatMap((shelf) => shelf.items),
     [data.shelves]
@@ -72,11 +68,6 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
     setReviews(rows);
   }, [userId]);
 
-  const loadNotes = useCallback(async () => {
-    const { notes } = await searchNotesWithBooks({ userId, limit: 5 });
-    setRecentNotes(notes);
-  }, [userId]);
-
   useEffect(() => {
     if (tab === "trail" || tab === "history") {
       void loadSessions();
@@ -88,12 +79,6 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
       void loadReviews();
     }
   }, [tab, loadReviews]);
-
-  useEffect(() => {
-    if (tab === "notes") {
-      void loadNotes();
-    }
-  }, [tab, loadNotes]);
 
   useEffect(() => {
     if (tab !== "progress" || typeof window === "undefined") return;
@@ -217,42 +202,7 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
 
         {tab === "trail" ? <TrailPanel sessions={sessions} /> : null}
 
-        {tab === "notes" ? (
-          <div className="space-y-6 text-left">
-            <div className="flex justify-center">
-              <Link
-                href="/notes/"
-                className="inline-flex min-h-[44px] items-center justify-center rounded-full bg-puce-red px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
-              >
-                Open Full Notes Page
-              </Link>
-            </div>
-
-            <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
-              <h3 className="text-center text-base font-semibold text-puce-red">
-                Recent notes
-              </h3>
-              <p className="mt-1 text-center text-sm text-text-muted">
-                Your five most recent notes.
-              </p>
-              {recentNotes === null ? (
-                <LoadingState message="Loading notes…" />
-              ) : recentNotes.length === 0 ? (
-                <p className="mt-4 text-center text-sm text-text-muted">
-                  Add notes from any book in your library.
-                </p>
-              ) : (
-                <ul className="mt-4 space-y-4">
-                  {recentNotes.map((note) => (
-                    <li key={note.id}>
-                      <NotesSearchResultCard note={note} />
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-          </div>
-        ) : null}
+        {tab === "notes" ? <NotesPanel userId={userId} /> : null}
 
         {tab === "reviews" ? <ReviewsPanel reviews={reviews} /> : null}
 

@@ -1,22 +1,88 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { BookCover } from "../BookCover";
+import { Button } from "../Button";
 import { LoadingState } from "../LoadingState";
 import { SectionCard } from "../SectionCard";
-import { READING_NOTE_CATEGORIES, type ReadingNoteWithBook } from "../../services/readingNotes";
-import { formatNoteLocation } from "../../../../../packages/utils/noteLocation";
 import { NoteTag } from "../NoteTag";
+import {
+  NotesBookFilterButton,
+  NotesBookFilterSheet,
+} from "./NotesBookFilterSheet";
+import {
+  NOTES_BOOK_FILTER_COPY,
+  matchNotesBookFilter,
+  notesEmptyMessage,
+  sortNotesForBookFilter,
+  type NotesBookFilterOption,
+} from "../../../../../packages/utils/notesBookFilter";
+import {
+  HOME_NOTES_PREVIEW_LIMIT,
+  formatNoteLocation,
+} from "../../../../../packages/utils/noteLocation";
+import {
+  READING_NOTE_CATEGORIES,
+  listNotedBooksForUser,
+  searchNotesWithBooks,
+  type ReadingNoteWithBook,
+} from "../../services/readingNotes";
 
 function categoryMeta(value: ReadingNoteWithBook["category"]) {
   return READING_NOTE_CATEGORIES.find((c) => c.value === value);
 }
 
 type Props = {
-  notes: ReadingNoteWithBook[] | null;
+  userId: string;
+  bookParam?: string | null;
+  refreshId?: number;
 };
 
-export function NotesPanel({ notes }: Props) {
+export function NotesPanel({ userId, bookParam = null, refreshId = 0 }: Props) {
   const router = useRouter();
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [options, setOptions] = useState<NotesBookFilterOption[] | null>(null);
+  const [notes, setNotes] = useState<ReadingNoteWithBook[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadId, setReloadId] = useState(0);
+
+  const selectedUserBookId = useMemo(
+    () => matchNotesBookFilter(bookParam, options ?? []),
+    [bookParam, options]
+  );
+
+  const load = useCallback(async () => {
+    setNotes(null);
+    setError(null);
+    const booksResult = await listNotedBooksForUser(userId);
+    if (booksResult.error) {
+      setOptions([]);
+      setNotes([]);
+      setError(booksResult.error);
+      return;
+    }
+    setOptions(booksResult.options);
+    const resolved = matchNotesBookFilter(bookParam, booksResult.options);
+    const { notes: rows, error: notesError } = await searchNotesWithBooks({
+      userId,
+      userBookId: resolved ?? undefined,
+      limit: resolved ? 100 : HOME_NOTES_PREVIEW_LIMIT,
+    });
+    if (notesError) {
+      setNotes([]);
+      setError(NOTES_BOOK_FILTER_COPY.error);
+      return;
+    }
+    setNotes(sortNotesForBookFilter(rows, resolved));
+  }, [userId, bookParam]);
+
+  useEffect(() => {
+    void load();
+  }, [load, reloadId, refreshId]);
+
+  function selectBook(userBookId: string | null) {
+    router.setParams({ book: userBookId ?? "", tab: "notes" });
+  }
 
   return (
     <View className="gap-4">
@@ -29,11 +95,30 @@ export function NotesPanel({ notes }: Props) {
         <Text className="text-sm font-semibold text-white">Open Full Notes Page</Text>
       </Pressable>
 
-      <SectionCard title="Recent notes" emoji="🗒️">
-        {notes === null ? (
+      <SectionCard title={selectedUserBookId ? "Notes" : "Recent notes"} emoji="🗒️">
+        <View className="mb-3">
+          <NotesBookFilterButton
+            options={options ?? []}
+            selectedUserBookId={selectedUserBookId}
+            onPress={() => setPickerOpen(true)}
+          />
+        </View>
+
+        {notes === null || options === null ? (
           <LoadingState message="Loading notes…" />
+        ) : error ? (
+          <View className="items-center gap-3 py-4">
+            <Text className="text-center text-sm text-ink-muted">
+              {NOTES_BOOK_FILTER_COPY.error}
+            </Text>
+            <Button
+              title={NOTES_BOOK_FILTER_COPY.retry}
+              variant="ghost"
+              onPress={() => setReloadId((id) => id + 1)}
+            />
+          </View>
         ) : notes.length === 0 ? (
-          <Text className="text-sm text-ink-muted">Add notes from any book in your library.</Text>
+          <Text className="text-sm text-ink-muted">{notesEmptyMessage(selectedUserBookId)}</Text>
         ) : (
           <View className="gap-3">
             {notes.map((note) => {
@@ -78,6 +163,7 @@ export function NotesPanel({ notes }: Props) {
                     {note.book ? (
                       <Text className="text-xs text-ink-muted" numberOfLines={1}>
                         {note.book.title}
+                        {note.book.author ? ` · ${note.book.author}` : ""}
                       </Text>
                     ) : null}
                   </View>
@@ -87,6 +173,14 @@ export function NotesPanel({ notes }: Props) {
           </View>
         )}
       </SectionCard>
+
+      <NotesBookFilterSheet
+        visible={pickerOpen}
+        options={options ?? []}
+        selectedUserBookId={selectedUserBookId}
+        onClose={() => setPickerOpen(false)}
+        onSelect={selectBook}
+      />
     </View>
   );
 }
