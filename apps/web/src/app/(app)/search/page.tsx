@@ -1,11 +1,12 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { SearchForm } from "@/components/search/SearchForm";
 import { SearchFiltersBar } from "@/components/search/SearchFiltersBar";
 import { SearchResults } from "@/components/search/SearchResults";
 import { ReaderSearchResults } from "@/components/search/ReaderSearchResults";
+import { ClubSearchResults } from "@/components/search/ClubSearchResults";
 import { getSearchMode, SearchModeTabs } from "@/components/search/SearchModeTabs";
 import { BecauseYouReadPanel } from "@/components/discovery/BecauseYouReadPanel";
 import { CurrentlyReadingAddBanner } from "@/components/search/CurrentlyReadingAddBanner";
@@ -19,6 +20,14 @@ function SearchContent() {
   const q = searchParams.get("q") ?? undefined;
   const mode = getSearchMode(searchParams);
   const user = useAuthUser();
+
+  useEffect(() => {
+    const raw = searchParams.get("scroll");
+    if (!raw) return;
+    const y = Number(raw);
+    if (!Number.isFinite(y) || y <= 0) return;
+    requestAnimationFrame(() => window.scrollTo(0, y));
+  }, [searchParams]);
 
   return (
     <div className={layout.pageStackWide}>
@@ -36,6 +45,8 @@ function SearchContent() {
       {q ? (
         mode === "people" ? (
           <ReaderSearchResults query={q} />
+        ) : mode === "clubs" ? (
+          <ClubSearchResults query={q} />
         ) : (
           <>
             <SearchFiltersBar />
@@ -47,7 +58,9 @@ function SearchContent() {
           <p className="text-text-muted">
             {mode === "people"
               ? "Search by display name or @username to find readers."
-              : "Enter a title, author, or ISBN to start searching books."}
+              : mode === "clubs"
+                ? "Search public book clubs by name."
+                : "Enter a title, author, or ISBN to start searching books."}
           </p>
           {mode === "books" && user ? (
             <section className="surface-card p-6">

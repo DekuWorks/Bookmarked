@@ -148,6 +148,7 @@ export {
   hasStarRating,
   hasWrittenReview,
   REVIEW_FILTER_OPTIONS,
+  REVIEW_PANEL_COPY,
   type ReviewFilter,
   type ReviewFilterable,
   type ReviewShareInput,
@@ -158,6 +159,7 @@ export {
   DEFAULT_HISTORY_VISIBLE_LIMIT,
   countFinishedHistoryBooks,
   filterFinishedHistoryBooks,
+  HISTORY_PANEL_COPY,
   HISTORY_SORT_OPTIONS,
   selectHistoryBooks,
   selectRecentlyFinishedBooks,
@@ -264,9 +266,11 @@ export {
 
 export {
   CURRENTLY_READING_ADD_COPY,
+  FAVORITES_LISTING,
   OVERVIEW_ACTIVITY_VIEW_ALL,
   OVERVIEW_QUICK_ACTIONS,
   OVERVIEW_SECTION_TITLES,
+  OVERVIEW_SHELF_ACTIONS,
 } from "./overviewCopy";
 
 export {
@@ -313,8 +317,15 @@ export {
 } from "./pagination";
 
 export {
+  DEFAULT_TRAIL_BOOKS_VIEW,
+  TRAIL_BOOKS_VIEW_MODES,
+  TRAIL_BOOKS_VIEW_OPTIONS,
+  TRAIL_BOOKS_VIEW_STORAGE_KEY,
+  TRAIL_COPY,
   filterTrailBookGroupsByQuery,
+  parseTrailBooksView,
   sortTrailBookGroups,
+  type TrailBooksViewMode,
   type TrailSortableGroup,
   type TrailSortableSession,
 } from "./readingRoomTrail";
@@ -375,3 +386,85 @@ export {
   type SharePreviewCardModel,
   type SharePreviewSnapshot,
 } from "./sharePreview";
+
+export {
+  NAV_ORIGINS,
+  NAV_ORIGIN_QUERY_PARAM,
+  NAV_QUERY_QUERY_PARAM,
+  NAV_SCROLL_QUERY_PARAM,
+  originBackHref,
+  originBackLink,
+  originSearchParams,
+  parseNavOrigin,
+  parseNavOriginParam,
+  resolveOriginBack,
+  restoreSearchHref,
+  withOriginQuery,
+  type NavOrigin,
+  type OriginBackTarget,
+} from "./navigationOrigin";
+
+export {
+  HOME_RECENT_NOTED_BOOKS_LIMIT,
+  HOME_RECENT_NOTES_COPY,
+  pickLatestNotePerBook,
+  recentReadTimestamp,
+  selectRecentNotedBooks,
+  type RecentNoteCandidate,
+  type RecentNotedBookInput,
+} from "./recentNotesByBook";
+
+export {
+  SPOILER_AUTO_HIDE_MS,
+  SPOILER_WARNING_COPY,
+  initialSpoilerRevealState,
+  remainingSpoilerHideMs,
+  spoilerShouldAutoHide,
+  toggleSpoilerReveal,
+  type SpoilerRevealState,
+} from "./spoilerReveal";
+
+export {
+  parsePageCount,
+  percentFromPages,
+  resolveUserEditionTotalPages,
+  validatePageProgress,
+  type PageProgressInput,
+  type PageProgressValidation,
+} from "./pageProgress";
+
+export {
+  LIBRARY_FILTER_OPTIONS,
+  LIBRARY_FILTER_ORDER,
+  LIBRARY_TABLET_MIN_WIDTH,
+  libraryGridColumnCount,
+  parseLibraryFilter,
+  type LibraryFilterId,
+} from "./libraryFilters";
+
+export {
+  ALREADY_IN_LIBRARY_COPY,
+  formatLibraryMemberships,
+  parseShelfMoveDestination,
+  shelfMovePreservesUserBook,
+  type ShelfMoveDestination,
+} from "./shelfMove";
+
+export {
+  STAR_RATING_ROW_CLASS,
+  clampStarRating,
+  starFill,
+  starFills,
+  type StarFill,
+} from "./starRatingDisplay";
+
+export {
+  BUILTIN_MOOD_TAGS,
+  archiveCustomMoodTag,
+  isBuiltinMoodTag,
+  mergeMoodTags,
+  normalizeMoodTagName,
+  validateCustomMoodTagName,
+  type BuiltinMoodTag,
+  type CustomMoodTag,
+} from "./customMoodTags";

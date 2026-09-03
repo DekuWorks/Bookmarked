@@ -29,6 +29,7 @@ function session(
     bookTitle: "Dune",
     bookAuthor: null,
     bookId: "book-1",
+    bookCoverUrl: null,
     ...overrides,
   };
 }

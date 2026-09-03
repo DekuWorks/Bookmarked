@@ -63,6 +63,7 @@ export type DiscussionEntry = {
   clubId: string;
   clubName: string;
   body: string;
+  containsSpoilers: boolean;
   participantCount: number;
   participantAvatars: (string | null)[];
 };
@@ -133,8 +134,10 @@ type DiscussionRow = {
   id: string;
   club_id: string;
   user_id: string;
-  book_id: string | null;
+  book_id?: string | null;
+  related_book_id?: string | null;
   body: string;
+  contains_spoilers?: boolean;
   created_at: string;
 };
 
@@ -246,8 +249,8 @@ async function loadDiscussions(
   if (!publicClubIds.length) return [];
 
   let query = supabase
-    .from("book_club_posts")
-    .select("id, club_id, user_id, book_id, body, created_at")
+    .from("book_club_discussions")
+    .select("id, club_id, user_id, related_book_id, book_id, body, contains_spoilers, created_at")
     .in("club_id", publicClubIds)
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -280,7 +283,11 @@ async function loadDiscussions(
       ...rows.map((r) => r.user_id),
       ...(memberRows ?? []).map((m) => m.user_id as string),
     ]),
-    fetchBooks(rows.map((r) => r.book_id).filter((id): id is string => Boolean(id))),
+    fetchBooks(
+      rows
+        .map((r) => r.related_book_id ?? r.book_id)
+        .filter((id): id is string => Boolean(id))
+    ),
   ]);
 
   return rows.map((row) => {
@@ -290,10 +297,13 @@ async function loadDiscussions(
       id: row.id,
       createdAt: row.created_at,
       author: toAuthor(row.user_id, profiles),
-      book: row.book_id ? books.get(row.book_id) ?? null : null,
+      book: (row.related_book_id ?? row.book_id)
+        ? books.get((row.related_book_id ?? row.book_id) as string) ?? null
+        : null,
       clubId: row.club_id,
       clubName: clubNameById.get(row.club_id) ?? "Book club",
       body: row.body,
+      containsSpoilers: Boolean(row.contains_spoilers),
       participantCount: members.length,
       participantAvatars: members
         .slice(0, 3)

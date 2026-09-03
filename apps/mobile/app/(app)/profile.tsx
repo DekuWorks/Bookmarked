@@ -9,6 +9,7 @@ import { useSubscription } from "../../src/hooks/useSubscription";
 import { ShelfBadge } from "../../src/components/ShelfBadge";
 import { useFollowCounts } from "../../src/hooks/useFollows";
 import { useProfile } from "../../src/hooks/useProfile";
+import { BrandChromeIcon, type BrandChromeIconName } from "../../src/components/BrandChromeIcon";
 import { ShelfIcon } from "../../src/components/ShelfIcon";
 import type { ShelfIconId } from "../../src/constants/shelfIcons";
 import { ReadingDnaSection } from "../../src/components/ReadingDnaSection";
@@ -89,11 +90,11 @@ export default function ProfileRoute() {
           <ProfileLink icon="✨" label="Explore membership" onPress={() => router.push("/upgrade")} />
         ) : null}
         <ProfileLink shelfIconId="want_to_read" label="Library" onPress={() => router.push("/library")} />
-        <ProfileLink icon="📝" label="Reading Notes" onPress={() => router.push("/notes")} />
+        <ProfileLink chromeIcon="notes" label="Reading Notes" onPress={() => router.push("/notes")} />
         <ProfileLink icon="🖼" label="Quote graphics" onPress={() => router.push("/quote-graphics")} />
         <ProfileLink icon="🏁" label="Challenges" onPress={() => router.push("/challenges")} />
         <ProfileLink icon="🧬" label="Reading DNA" onPress={() => router.push("/reading-dna")} />
-        <ProfileLink icon="♣️" label="Book Clubs" onPress={() => router.push("/clubs")} />
+        <ProfileLink chromeIcon="clubs" label="Book Clubs" onPress={() => router.push("/clubs")} />
       </View>
 
       <View className="h-24" />
@@ -103,11 +104,13 @@ export default function ProfileRoute() {
 
 function ProfileLink({
   icon,
+  chromeIcon,
   shelfIconId,
   label,
   onPress,
 }: {
   icon?: string;
+  chromeIcon?: BrandChromeIconName;
   shelfIconId?: ShelfIconId;
   label: string;
   onPress: () => void;
@@ -119,6 +122,8 @@ function ProfileLink({
     >
       {shelfIconId ? (
         <ShelfIcon id={shelfIconId} size="small" />
+      ) : chromeIcon ? (
+        <BrandChromeIcon name={chromeIcon} />
       ) : (
         <Text className="text-lg">{icon}</Text>
       )}

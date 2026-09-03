@@ -5,6 +5,7 @@ export type BookSessionGroup = {
   bookId: string | null;
   bookTitle: string;
   bookAuthor: string | null;
+  bookCoverUrl: string | null;
   sessions: UserReadingSession[];
 };
 
@@ -27,6 +28,7 @@ export function groupSessionsByBook(sessions: UserReadingSession[]): BookSession
         bookId: session.bookId,
         bookTitle: session.bookTitle ?? "Reading session",
         bookAuthor: session.bookAuthor ?? null,
+        bookCoverUrl: session.bookCoverUrl ?? null,
         sessions: [session],
       });
     }

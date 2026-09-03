@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { BrandChromeIcon } from "@/components/icons/BrandChromeIcon";
 import { BookSpine } from "@/components/library/BookSpine";
 import { EmptyShelfMessage } from "@/components/library/EmptyShelfMessage";
 import { DeleteCustomShelfModal } from "@/components/shelves/DeleteCustomShelfModal";
@@ -49,7 +50,7 @@ export function CustomShelfSection({ shelf, showHeaderLink = true, onDeleted }: 
         <div className="flex flex-col items-center justify-center gap-2 border-b border-border px-4 py-3 text-center sm:flex-row sm:justify-between">
           <div>
             <h2 className="flex flex-wrap items-center justify-center gap-2 text-lg font-semibold text-puce-red sm:justify-start">
-              <span aria-hidden>📚</span>
+              <BrandChromeIcon name="library" />
               {shelf.name}
               <span className="text-sm font-normal text-text-muted">({shelf.items.length})</span>
             </h2>
@@ -63,7 +64,7 @@ export function CustomShelfSection({ shelf, showHeaderLink = true, onDeleted }: 
                 href={customShelfPath(shelf.slug)}
                 className="text-sm font-medium text-primary hover:underline"
               >
-                View shelf
+                View Shelf
               </Link>
             ) : null}
             {onDeleted ? (

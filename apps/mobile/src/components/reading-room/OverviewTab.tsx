@@ -9,7 +9,12 @@ import { LoadingState } from "../LoadingState";
 import { SectionCard } from "../SectionCard";
 import type { LibraryBookRow } from "../../services/library";
 import { selectRecentlyFinishedBooks } from "../../../../../packages/utils/readingRoomHistory";
-import { OVERVIEW_SECTION_TITLES } from "../../../../../packages/utils/overviewCopy";
+import {
+  FAVORITES_LISTING,
+  OVERVIEW_SECTION_TITLES,
+  OVERVIEW_SHELF_ACTIONS,
+} from "../../../../../packages/utils/overviewCopy";
+import { withOriginQuery } from "../../../../../packages/utils/navigationOrigin";
 import { OVERVIEW_QUICK_ACTIONS_LIST } from "../../../../../packages/utils/overviewQuickActions";
 import { trackProductEvent } from "../../services/productAnalytics";
 
@@ -40,11 +45,15 @@ export function OverviewTab({ userId, books, currentlyReading, onSelectTab, onRe
         shelfIconId="currently_reading"
         action={
           <Pressable
-            onPress={() => router.push("/library/reading")}
+            onPress={() =>
+              router.push(withOriginQuery("/library/reading", { origin: "home_overview" }))
+            }
             accessibilityRole="button"
-            accessibilityLabel="View shelf"
+            accessibilityLabel={OVERVIEW_SHELF_ACTIONS.viewShelf}
           >
-            <Text className="text-sm font-semibold text-primary-dark">View shelf ›</Text>
+            <Text className="text-sm font-semibold text-primary-dark">
+              {OVERVIEW_SHELF_ACTIONS.viewShelf} ›
+            </Text>
           </Pressable>
         }
       >
@@ -60,8 +69,10 @@ export function OverviewTab({ userId, books, currentlyReading, onSelectTab, onRe
               items={recentlyFinished}
               showFinishedDate
               emptyMessage="Books you finish will appear here."
-              viewAllLabel="View all"
-              onViewAll={() => router.push("/library/read")}
+              viewAllLabel={OVERVIEW_SHELF_ACTIONS.viewShelf}
+              onViewAll={() =>
+                router.push(withOriginQuery("/library/read", { origin: "home_overview" }))
+              }
             />
           </View>
 
@@ -71,9 +82,11 @@ export function OverviewTab({ userId, books, currentlyReading, onSelectTab, onRe
               emoji="⭐"
               items={favorites}
               showFavoriteBadge
-              emptyMessage="Star books from their detail page to collect favorites here."
-              viewAllLabel="View all"
-              onViewAll={() => router.push("/library")}
+              emptyMessage={FAVORITES_LISTING.empty}
+              viewAllLabel={OVERVIEW_SHELF_ACTIONS.viewAll}
+              onViewAll={() =>
+                router.push(withOriginQuery(FAVORITES_LISTING.mobilePath, { origin: "home_overview" }))
+              }
             />
           </View>
         </View>

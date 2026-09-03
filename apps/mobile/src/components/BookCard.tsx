@@ -7,17 +7,19 @@ type Props = PressableProps & {
   author?: string | null;
   coverUrl?: string | null;
   subtitle?: string | null;
+  /** Show the saved bookmark when the book is already in the library. */
+  saved?: boolean;
   /** Optional trailing accessory, e.g. a current-shelf badge in Search results. */
   rightAccessory?: ReactNode;
 };
 
-export function BookCard({ title, author, coverUrl, subtitle, rightAccessory, ...rest }: Props) {
+export function BookCard({ title, author, coverUrl, subtitle, saved, rightAccessory, ...rest }: Props) {
   return (
     <Pressable
       className="flex-row items-center gap-3 rounded-2xl border border-brand-border bg-surface p-3 mb-3 active:opacity-80"
       {...rest}
     >
-      <BookCover url={coverUrl} title={title} sizeClassName="w-14 h-20" />
+      <BookCover url={coverUrl} title={title} sizeClassName="w-14 h-20" saved={saved} badgeSize="small" />
       <View className="flex-1 justify-center">
         <Text className="font-semibold text-ink" numberOfLines={2}>
           {title}

@@ -18,6 +18,12 @@
      Used to keep page content, bottom-aligned buttons, and toasts clear of
      the floating nav on small screens (see MobileBottomNav.tsx). */
   --mobile-nav-clearance: calc(4.5rem + env(safe-area-inset-bottom));
+  /* Sticky app header + notch. Used as scroll/content inset, not z-index. */
+  --app-nav-clearance: calc(4.75rem + env(safe-area-inset-top, 0px));
+}
+
+html {
+  scroll-padding-top: var(--app-nav-clearance);
 }
 
 :root[data-theme="dark"] {

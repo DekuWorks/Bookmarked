@@ -16,7 +16,12 @@ import {
 import { needsMissingPageCountPrompt } from "@/lib/services/completeReadingSession";
 import { getShelvesInOrder } from "@/lib/constants/shelves";
 import { ShelfIcon } from "@/components/shelves/ShelfIcon";
-import { listCustomShelfIdsForBook } from "@/lib/services/customShelves";
+import {
+  addBookToCustomShelf,
+  listCustomShelfIdsForBook,
+  listUserCustomShelves,
+} from "@/lib/services/customShelves";
+import type { UserShelf } from "@/types";
 import { ShelfBadge } from "@/components/shelves/ShelfBadge";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import type { ShelfStatus } from "@/types";
@@ -53,6 +58,7 @@ export function BookShelfActions({
   const [pending, setPending] = useState(false);
   const [optimisticShelf, setOptimisticShelf] = useState<ShelfStatus | null>(currentShelf);
   const [memberShelfIds, setMemberShelfIds] = useState<string[]>([]);
+  const [customShelves, setCustomShelves] = useState<UserShelf[]>([]);
   const [removeState, removeAction, removing] = useActionState(removeFromShelf, initial);
   const [favState, favAction, favoriting] = useActionState(toggleFavorite, initial);
 
@@ -65,6 +71,9 @@ export function BookShelfActions({
     void listCustomShelfIdsForBook(user.id, bookId)
       .then(setMemberShelfIds)
       .catch((error) => console.error("[custom-shelf] membership load failed:", error));
+    void listUserCustomShelves(user.id)
+      .then(setCustomShelves)
+      .catch((error) => console.error("[custom-shelf] list failed:", error));
   }, [user, bookId]);
 
   useActionToast(removeState);
@@ -200,7 +209,23 @@ export function BookShelfActions({
         loading={pending}
         currentShelfStatus={optimisticShelf}
         mode={optimisticShelf ? "move" : "add"}
+        customShelves={customShelves}
+        memberShelfIds={memberShelfIds}
         onSelectShelf={applyShelf}
+        onSelectCustom={async (shelf) => {
+          if (!user) return;
+          setPending(true);
+          const result = await addBookToCustomShelf(shelf.id, user.id, bookId);
+          setPending(false);
+          if (result.error) {
+            toast.error(result.error);
+            return;
+          }
+          setMemberShelfIds((prev) => [...prev, shelf.id]);
+          toast.success(`Added to ${shelf.name}`);
+          setMenuOpen(false);
+        }}
+        onOpenCustomCollections={() => setCustomMenuOpen(true)}
         onClose={() => {
           if (!pending) setMenuOpen(false);
         }}

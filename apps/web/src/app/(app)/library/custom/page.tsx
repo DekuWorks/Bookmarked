@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { BrandChromeIcon } from "@/components/icons/BrandChromeIcon";
 import { BookSpine } from "@/components/library/BookSpine";
 import { EmptyShelfMessage } from "@/components/library/EmptyShelfMessage";
 import { ShelfSortSelect } from "@/components/library/ShelfSortSelect";
@@ -140,7 +141,7 @@ function CustomShelfContent() {
             ← Back to library
           </Link>
           <h1 className="mt-2 flex items-center justify-center gap-2 text-3xl font-bold text-puce-red sm:text-4xl">
-            <span aria-hidden>📚</span>
+            <BrandChromeIcon name="library" className="h-8 w-8" />
             {shelf.name}
           </h1>
           {shelf.genre ? (

@@ -123,6 +123,7 @@ export default function CustomShelfScreen() {
                   author={item.books?.author}
                   coverUrl={item.books?.cover_url}
                   pageCount={item.books?.page_count}
+                  saved
                 />
               ))}
             </View>

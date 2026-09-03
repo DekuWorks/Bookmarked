@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { libraryShelfPath } from "../../lib/libraryRoutes";
+import { OVERVIEW_SHELF_ACTIONS } from "../../../../../packages/utils/overviewCopy";
 import type { LibraryBookRow } from "../../services/library";
 import type { ShelfStatus } from "../../types";
 import { ShelfTitleRow } from "../ShelfTitleRow";
@@ -35,7 +36,9 @@ export function BookshelfSection({
             onPress={() => router.push(libraryShelfPath(slug))}
             className="active:opacity-70"
           >
-            <Text className="text-sm font-medium text-primary-dark">View shelf</Text>
+            <Text className="text-sm font-medium text-primary-dark">
+              {OVERVIEW_SHELF_ACTIONS.viewShelf}
+            </Text>
           </Pressable>
         ) : null}
       </View>
@@ -54,6 +57,7 @@ export function BookshelfSection({
                   author={item.books?.author}
                   coverUrl={item.books?.cover_url}
                   pageCount={item.books?.page_count}
+                  saved
                 />
               ))}
             </View>

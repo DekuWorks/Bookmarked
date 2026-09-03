@@ -45,7 +45,7 @@ export function ReadingNotesSection({ userBookId, loading: externalLoading }: Pr
   return (
     <CollapsibleSection
       id="reading-notes"
-      title="Reading notes"
+      title="Reading Notes"
       description="Save quotes, reflections, and highlights — newest first."
       badge={badge}
     >

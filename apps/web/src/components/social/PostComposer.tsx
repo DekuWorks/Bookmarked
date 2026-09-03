@@ -424,7 +424,7 @@ export function PostComposer({ userId, onPostCreated }: Props) {
           setBody(value);
           scheduleAutosave();
         }}
-        placeholder="Share a reading thought, recommendation, or update… Use @ to mention someone."
+        placeholder="Write a post."
         minHeightClassName="min-h-[100px]"
         maxLength={MAX_POST_BODY_LENGTH}
         className="mb-3"

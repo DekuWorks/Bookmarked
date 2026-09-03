@@ -671,6 +671,8 @@ export interface UserBook {
   shelf_status: ShelfStatus;
   progress_pages: number;
   progress_percent: number;
+  /** Reader-owned page count for their selected edition. */
+  total_pages?: number | null;
   listening_progress_seconds?: number;
   started_at: string | null;
   finished_at: string | null;

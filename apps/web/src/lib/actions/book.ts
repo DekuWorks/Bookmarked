@@ -13,6 +13,7 @@ import { getShelfLabel, isShelfStatus } from "@/lib/constants/shelfLabels";
 import { parseHalfStarRating } from "@/lib/utils/ratings";
 import { sanitizeRatingEmoji } from "@/lib/constants/reviewEmojis";
 import { buildUserBookShelfPatch } from "../../../../../packages/utils/shelfStatus";
+import { validatePageProgress } from "../../../../../packages/utils/pageProgress";
 import type { ReviewRatingMode, ShelfStatus } from "@/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -374,8 +375,8 @@ export async function updateReadingProgress(
   formData: FormData
 ): Promise<BookActionState> {
   const bookId = String(formData.get("book_id") ?? "");
-  const currentPage = Math.max(0, Number(formData.get("current_page") ?? 0));
-  const totalPages = Math.max(0, Number(formData.get("total_pages") ?? 0));
+  const currentPageRaw = formData.get("current_page");
+  const totalPagesRaw = formData.get("total_pages");
   const isAudiobook = String(formData.get("format") ?? "") === "audiobook";
   const currentListeningSeconds = Math.max(
     0,
@@ -394,20 +395,26 @@ export async function updateReadingProgress(
     return { error: "Add this book to a shelf before tracking progress." };
   }
 
-  const effectiveTotal = isAudiobook
-    ? totalListeningSeconds || book.audiobook_duration_seconds || 0
-    : totalPages || book.page_count || 0;
+  let currentPage = 0;
+  let userTotalPages: number | null = null;
+  let progress_percent = 0;
 
-  // Cap display percent only — never auto-finish from page edits.
-  // Keep progress_pages as entered even when total is corrected downward.
-  const progress_percent =
-    effectiveTotal > 0
-      ? Math.min(
-          100,
-          Math.round(((isAudiobook ? currentListeningSeconds : currentPage) / effectiveTotal) * 1000) /
-            10
-        )
-      : 0;
+  if (isAudiobook) {
+    const effectiveTotal = totalListeningSeconds || book.audiobook_duration_seconds || 0;
+    progress_percent =
+      effectiveTotal > 0
+        ? Math.min(100, Math.round((currentListeningSeconds / effectiveTotal) * 1000) / 10)
+        : 0;
+  } else {
+    const validated = validatePageProgress({
+      currentPage: currentPageRaw == null ? null : String(currentPageRaw),
+      totalPages: totalPagesRaw == null ? null : String(totalPagesRaw),
+    });
+    if (!validated.ok) return { error: validated.error };
+    currentPage = validated.currentPage;
+    userTotalPages = validated.totalPages;
+    progress_percent = validated.percent;
+  }
 
   const now = new Date().toISOString();
   const previousPage = Number(userBook.progress_pages) || 0;
@@ -417,7 +424,7 @@ export async function updateReadingProgress(
   const updates: Record<string, unknown> = {
     ...(isAudiobook
       ? { listening_progress_seconds: currentListeningSeconds }
-      : { progress_pages: finalPage }),
+      : { progress_pages: finalPage, total_pages: userTotalPages }),
     progress_percent: finalPercent,
     started_at: userBook.started_at ?? now,
     updated_at: now,
@@ -443,15 +450,14 @@ export async function updateReadingProgress(
 
   if (error) return { error: error.message };
 
-  if (effectiveTotal > 0) {
-    await supabase
-      .from("books")
-      .update(
-        isAudiobook
-          ? { format: "audiobook", audiobook_duration_seconds: effectiveTotal }
-          : { page_count: effectiveTotal }
-      )
-      .eq("id", bookId);
+  if (isAudiobook && (totalListeningSeconds || book.audiobook_duration_seconds)) {
+    const listeningTotal = totalListeningSeconds || book.audiobook_duration_seconds || 0;
+    if (listeningTotal > 0) {
+      await supabase
+        .from("books")
+        .update({ format: "audiobook", audiobook_duration_seconds: listeningTotal })
+        .eq("id", bookId);
+    }
   }
 
   const sessionResult = await createReadingSessionWithClient(supabase, {

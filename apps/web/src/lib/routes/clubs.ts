@@ -1,3 +1,5 @@
+import { withOriginQuery } from "@bookmarked/utils/navigationOrigin";
+
 /** Static-safe book club URLs for GitHub Pages (query params, trailing slash for export). */
 export function clubsPath(): string {
   return "/clubs/";
@@ -9,7 +11,12 @@ export function eventsPath(): string {
 
 export function clubDetailPath(
   clubId: string,
-  options?: { tab?: string; discussionId?: string | null }
+  options?: {
+    tab?: string;
+    discussionId?: string | null;
+    origin?: string | null;
+    scroll?: string | number | null;
+  }
 ): string {
   const params = new URLSearchParams();
   params.set("id", clubId);
@@ -19,5 +26,8 @@ export function clubDetailPath(
   } else if (options?.tab?.trim()) {
     params.set("tab", options.tab.trim());
   }
-  return `/clubs/club/?${params.toString()}`;
+  return withOriginQuery(`/clubs/club/?${params.toString()}`, {
+    origin: options?.origin,
+    scroll: options?.scroll,
+  });
 }

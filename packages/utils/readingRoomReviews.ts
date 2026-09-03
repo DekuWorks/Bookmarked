@@ -4,21 +4,29 @@ export type ReviewFilter =
   | "all"
   | "rating_only"
   | "written_only"
-  | "rating_and_review"
+  | "private"
   | "spoiler";
+
+export type ReviewVisibility = "public" | "followers" | "private";
 
 export type ReviewFilterable = {
   rating: number | null;
   review_body: string | null;
   has_spoilers: boolean;
+  visibility?: ReviewVisibility | null;
   created_at: string;
 };
+
+export const REVIEW_PANEL_COPY = {
+  title: "Your Reviews",
+  subtitle: "Ratings and reviews across your reading history.",
+} as const;
 
 export const REVIEW_FILTER_OPTIONS: { id: ReviewFilter; label: string }[] = [
   { id: "all", label: "All" },
   { id: "rating_only", label: "Star Rating Only" },
   { id: "written_only", label: "Written Review Only" },
-  { id: "rating_and_review", label: "Rating & Review" },
+  { id: "private", label: "Private Reviews" },
   { id: "spoiler", label: "Spoiler Reviews" },
 ];
 
@@ -39,8 +47,8 @@ export function filterReviews<T extends ReviewFilterable>(
       return reviews.filter((review) => hasStarRating(review) && !hasWrittenReview(review));
     case "written_only":
       return reviews.filter((review) => hasWrittenReview(review) && !hasStarRating(review));
-    case "rating_and_review":
-      return reviews.filter((review) => hasStarRating(review) && hasWrittenReview(review));
+    case "private":
+      return reviews.filter((review) => review.visibility === "private");
     case "spoiler":
       return reviews.filter((review) => review.has_spoilers);
     default:

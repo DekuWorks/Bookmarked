@@ -51,9 +51,14 @@ export default function LibraryScreen() {
         <Text className="mt-1 text-sm text-ink-muted">
           Browse your shelves — switch between bookshelf and grid views.
         </Text>
-        <Pressable onPress={() => router.push("/library/my-books")} className="mt-2 self-start active:opacity-70">
-          <Text className="text-sm font-medium text-primary-dark">All books list ›</Text>
-        </Pressable>
+        <View className="mt-2 flex-row flex-wrap items-center gap-x-4 gap-y-1">
+          <Pressable onPress={() => router.push("/library/my-books")} className="self-start active:opacity-70">
+            <Text className="text-sm font-medium text-primary-dark">All Books List ›</Text>
+          </Pressable>
+          <Pressable onPress={() => router.push("/shelf-privacy")} className="self-start active:opacity-70">
+            <Text className="text-sm font-medium text-primary-dark">Create custom shelf ›</Text>
+          </Pressable>
+        </View>
       </View>
 
       {isLoading || customShelvesQuery.isLoading ? (

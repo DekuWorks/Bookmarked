@@ -22,8 +22,8 @@ export function getAuthStorage(): Storage {
   return isRememberMeEnabled() ? window.localStorage : window.sessionStorage;
 }
 
-function getSupabaseAuthStorageKey(): string | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+export function supabaseAuthStorageKey(supabaseUrl?: string): string | null {
+  const url = (supabaseUrl ?? process.env.NEXT_PUBLIC_SUPABASE_URL)?.trim();
   if (!url) return null;
 
   try {
@@ -32,6 +32,10 @@ function getSupabaseAuthStorageKey(): string | null {
   } catch {
     return null;
   }
+}
+
+function getSupabaseAuthStorageKey(): string | null {
+  return supabaseAuthStorageKey();
 }
 
 export function clearSupabaseAuthStorage(): void {

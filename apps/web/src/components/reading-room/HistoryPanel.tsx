@@ -12,10 +12,12 @@ import type { UserReadingSession } from "@/lib/services/readingSessions";
 import { cn } from "@/lib/utils/cn";
 import {
   DEFAULT_HISTORY_SORT,
+  HISTORY_PANEL_COPY,
   filterFinishedHistoryBooks,
   sortHistoryBooks,
   type HistorySortMode,
 } from "@bookmarked/utils/readingRoomHistory";
+import { withOriginQuery } from "@bookmarked/utils/navigationOrigin";
 import { DEFAULT_PAGE_SIZE, paginateItems } from "@bookmarked/utils/pagination";
 
 type Props = {
@@ -47,9 +49,7 @@ export function HistoryPanel({ books, sessions }: Props) {
   return (
     <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-lg font-semibold text-puce-red">
-          Recently finished books and reading sessions
-        </h2>
+        <h2 className="text-lg font-semibold text-puce-red">{HISTORY_PANEL_COPY.title}</h2>
         <HistorySortSelect value={sort} onChange={setSort} className="sm:min-w-[220px]" />
       </div>
 
@@ -57,7 +57,10 @@ export function HistoryPanel({ books, sessions }: Props) {
         <BookMiniGrid
           items={finishedBooksPage.pageItems}
           emptyMessage="Books you finish will appear here."
-          emptyAction={{ label: "Browse library", href: "/library/read/" }}
+          emptyAction={{
+            label: "Browse Library",
+            href: withOriginQuery("/library/read/", { origin: "home_history" }),
+          }}
         />
         <BookListPagination
           page={finishedBooksPage.page}
@@ -70,8 +73,11 @@ export function HistoryPanel({ books, sessions }: Props) {
       </div>
 
       <p className="mt-4 text-sm">
-        <Link href="/library/read/" className="font-semibold text-primary hover:underline">
-          Browse read shelf ›
+        <Link
+          href={withOriginQuery("/library/read/", { origin: "home_history" })}
+          className="font-semibold text-primary hover:underline"
+        >
+          {HISTORY_PANEL_COPY.browseReadShelf} ›
         </Link>
       </p>
 
@@ -79,7 +85,9 @@ export function HistoryPanel({ books, sessions }: Props) {
         <LoadingState message="Loading sessions…" />
       ) : sessions.length > 0 ? (
         <div className="mt-8 text-left">
-          <h3 className="text-center text-base font-semibold text-puce-red">Recent sessions</h3>
+          <h3 className="text-center text-base font-semibold text-puce-red">
+            {HISTORY_PANEL_COPY.recentSessions}
+          </h3>
           <ol className="mt-4 max-h-80 space-y-2 overflow-y-auto">
             {sessions.slice(0, 20).map((session) => (
               <li

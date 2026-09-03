@@ -28,6 +28,9 @@ export type FeedItem = {
   bookAuthor: string | null;
   clubId: string | null;
   clubName: string | null;
+  reviewId: string | null;
+  reviewBody: string | null;
+  hasSpoilers: boolean;
 };
 
 type RawFeedRow = {
@@ -134,6 +137,9 @@ export function enrichFeedRow(row: RawFeedRow): FeedItem {
     bookAuthor: bookAuthorFromMetadata(metadata),
     clubId,
     clubName,
+    reviewId: null,
+    reviewBody: null,
+    hasSpoilers: false,
   };
 }
 
@@ -150,10 +156,9 @@ export async function hydrateFeedItems(
   const reviewIds: string[] = [];
 
   for (const item of items) {
-    if (item.bookId) continue;
     const row = rowById.get(item.id);
     if (!row?.entity_id) continue;
-    if (row.entity_type === "user_book") userBookIds.push(row.entity_id);
+    if (row.entity_type === "user_book" && !item.bookId) userBookIds.push(row.entity_id);
     if (row.entity_type === "review") reviewIds.push(row.entity_id);
   }
 
@@ -178,21 +183,30 @@ export async function hydrateFeedItems(
     }
   }
 
+  const reviewById = new Map<
+    string,
+    { bookId: string; body: string | null; hasSpoilers: boolean }
+  >();
+
   if (reviewIds.length) {
     const { data } = await supabase
       .from("reviews")
-      .select("id, book_id")
+      .select("id, book_id, review_body, has_spoilers")
       .in("id", reviewIds);
 
-    const bookIdByReviewId = new Map(
-      (data ?? []).map((row) => [row.id, row.book_id as string])
-    );
+    for (const row of data ?? []) {
+      reviewById.set(row.id as string, {
+        bookId: row.book_id as string,
+        body: (row.review_body as string | null) ?? null,
+        hasSpoilers: Boolean(row.has_spoilers),
+      });
+    }
 
     for (const item of items) {
       const activity = rowById.get(item.id);
       if (activity?.entity_type === "review" && activity.entity_id) {
-        const bookId = bookIdByReviewId.get(activity.entity_id);
-        if (bookId) bookIdByItemId.set(item.id, bookId);
+        const review = reviewById.get(activity.entity_id);
+        if (review?.bookId) bookIdByItemId.set(item.id, review.bookId);
       }
     }
   }
@@ -224,6 +238,11 @@ export async function hydrateFeedItems(
   return items.map((item) => {
     const resolvedBookId = item.bookId ?? bookIdByItemId.get(item.id) ?? null;
     const book = resolvedBookId ? bookMap.get(resolvedBookId) : undefined;
+    const activity = rowById.get(item.id);
+    const review =
+      activity?.entity_type === "review" && activity.entity_id
+        ? reviewById.get(activity.entity_id)
+        : undefined;
 
     return {
       ...item,
@@ -231,6 +250,9 @@ export async function hydrateFeedItems(
       coverUrl: item.coverUrl ?? book?.cover_url ?? null,
       bookTitle: item.bookTitle !== "Book" ? item.bookTitle : book?.title ?? item.bookTitle,
       bookAuthor: item.bookAuthor ?? book?.author ?? null,
+      reviewId: activity?.entity_type === "review" ? activity.entity_id : null,
+      reviewBody: review?.body ?? null,
+      hasSpoilers: Boolean(review?.hasSpoilers),
     };
   });
 }

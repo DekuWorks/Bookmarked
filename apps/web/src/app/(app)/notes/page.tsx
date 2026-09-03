@@ -43,7 +43,7 @@ function NotesSearchContent() {
   return (
     <div className={layout.pageStackWide}>
       <header className={layout.pageHeader}>
-        <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Search reading notes</h1>
+        <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Search Reading Notes</h1>
         <p className="mx-auto mt-1 max-w-2xl text-pretty text-text-muted">
           Find quotes and reflections across every book in your library.
         </p>

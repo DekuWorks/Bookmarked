@@ -104,6 +104,7 @@ export interface UserBook {
   completion_tags: string[];
   dnf: boolean;
   expected_read_date: string | null;
+  total_pages?: number | null;
   created_at: string;
   updated_at: string;
   books?: import("../../../../packages/types").Book;

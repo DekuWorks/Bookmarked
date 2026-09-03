@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "expo-router";
-import { Modal, Pressable, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, Text, useWindowDimensions, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BookCover } from "../../../src/components/BookCover";
@@ -11,15 +11,13 @@ import { ScreenHeader } from "../../../src/components/ScreenHeader";
 import { useLibraryBooks } from "../../../src/hooks/useLibrary";
 import { TAB_BAR_SPACE, useTabBarScroll } from "../../../src/navigation/TabBarScroll";
 import type { LibraryBookRow } from "../../../src/services/library";
-
-type ShelfTab = "read" | "tbr" | "dnf" | "all";
-
-const SHELF_TABS: { id: ShelfTab; label: string }[] = [
-  { id: "read", label: "Finished" },
-  { id: "tbr", label: "TBR" },
-  { id: "dnf", label: "Did Not Finish" },
-  { id: "all", label: "All" },
-];
+import {
+  LIBRARY_FILTER_OPTIONS,
+  libraryGridColumnCount,
+  parseLibraryFilter,
+  type LibraryFilterId,
+} from "../../../../../packages/utils/libraryFilters";
+import { withOriginQuery } from "../../../../../packages/utils/navigationOrigin";
 
 type SortKey =
   | "date_added"
@@ -44,10 +42,12 @@ function isDnf(row: LibraryBookRow): boolean {
   return row.dnf || (row.completion_tags ?? []).some((t) => t.toLowerCase() === "dnf");
 }
 
-function matchesTab(row: LibraryBookRow, tab: ShelfTab): boolean {
+function matchesTab(row: LibraryBookRow, tab: LibraryFilterId): boolean {
   switch (tab) {
-    case "read":
+    case "finished":
       return row.shelf_status === "read" && !isDnf(row);
+    case "currently_reading":
+      return row.shelf_status === "currently_reading" && !isDnf(row);
     case "tbr":
       return row.shelf_status === "want_to_read";
     case "dnf":
@@ -101,7 +101,7 @@ function BookRow({ row }: { row: LibraryBookRow }) {
   if (!book) return null;
   return (
     <Pressable
-      onPress={() => router.push(`/book/${book.id}`)}
+      onPress={() => router.push(`/book/${book.id}?origin=library_all_books`)}
       className="flex-row items-center gap-3 border-b border-brand-border py-3 active:opacity-80"
     >
       <BookCover url={book.cover_url} title={book.title} sizeClassName="w-12 h-16" saved badgeSize="medium" />
@@ -132,14 +132,14 @@ function BookRow({ row }: { row: LibraryBookRow }) {
   );
 }
 
-function BookGridTile({ row }: { row: LibraryBookRow }) {
+function BookGridTile({ row, columns }: { row: LibraryBookRow; columns: number }) {
   const router = useRouter();
   const book = row.books;
   if (!book) return null;
   return (
     <Pressable
-      onPress={() => router.push(`/book/${book.id}`)}
-      className="mb-4 w-1/3 items-center px-1 active:opacity-80"
+      onPress={() => router.push(`/book/${book.id}?origin=library_all_books`)}
+      className={`mb-4 items-center px-1 active:opacity-80 ${columns >= 4 ? "w-1/4" : "w-1/3"}`}
     >
       <BookCover url={book.cover_url} title={book.title} sizeClassName="w-24 h-36" saved badgeSize="medium" />
       <Text className="mt-1 w-full text-center text-xs font-medium text-ink" numberOfLines={2}>
@@ -152,12 +152,14 @@ function BookGridTile({ row }: { row: LibraryBookRow }) {
 export default function MyBooksScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const { onScroll } = useTabBarScroll();
   const { data: books, isLoading, isError, error } = useLibraryBooks();
-  const [tab, setTab] = useState<ShelfTab>("all");
+  const [tab, setTab] = useState<LibraryFilterId>("all");
   const [sort, setSort] = useState<SortKey>("date_added");
   const [grid, setGrid] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
+  const columns = libraryGridColumnCount(width, grid);
 
   const rows = useMemo(() => {
     const filtered = (books ?? []).filter((b) => matchesTab(b, tab));
@@ -169,38 +171,40 @@ export default function MyBooksScreen() {
   return (
     <View className="flex-1 bg-background">
       <ScreenGradientWash />
-      <ScreenHeader title="All Books" />
-      <View className="px-4 pb-2">
-        <View className="flex-row items-center">
+      <ScreenHeader
+        title="All Books"
+        right={
           <Pressable
-            onPress={() => router.push("/search")}
-            accessibilityLabel="Search books"
-            className="h-10 w-10 items-center justify-center rounded-full active:bg-primary/10"
-          >
-            <Text className="text-xl text-puce-red">⌕</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => router.push("/search")}
+            onPress={() =>
+              router.push(withOriginQuery("/search", { origin: "library_all_books" }) as never)
+            }
             accessibilityLabel="Add a book"
-            className="ml-auto h-10 w-10 items-center justify-center rounded-full bg-puce-red active:opacity-80"
+            className="h-10 w-10 items-center justify-center rounded-full bg-puce-red active:opacity-80"
           >
             <Text className="text-2xl font-light leading-6 text-white">+</Text>
           </Pressable>
-        </View>
-
-        <View className="mt-3 flex-row">
-          {SHELF_TABS.map((t) => {
-            const active = t.id === tab;
-            return (
-              <Pressable key={t.id} onPress={() => setTab(t.id)} className="mr-6 pb-2">
-                <Text className={active ? "font-bold text-puce-red" : "font-medium text-ink-muted"}>
-                  {t.label}
-                </Text>
-                {active ? <View className="mt-1 h-0.5 rounded-full bg-puce-red" /> : null}
-              </Pressable>
-            );
-          })}
-        </View>
+        }
+      />
+      <View className="px-4 pb-2">
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-1">
+          <View className="flex-row">
+            {LIBRARY_FILTER_OPTIONS.map((t) => {
+              const active = t.id === tab;
+              return (
+                <Pressable
+                  key={t.id}
+                  onPress={() => setTab(parseLibraryFilter(t.id))}
+                  className="mr-5 pb-2"
+                >
+                  <Text className={active ? "font-bold text-puce-red" : "font-medium text-ink-muted"}>
+                    {t.label}
+                  </Text>
+                  {active ? <View className="mt-1 h-0.5 rounded-full bg-puce-red" /> : null}
+                </Pressable>
+              );
+            })}
+          </View>
+        </ScrollView>
       </View>
 
       <View className="flex-row items-center justify-between px-4 py-3">
@@ -234,14 +238,16 @@ export default function MyBooksScreen() {
         />
       ) : (
         <Animated.FlatList
-          key={grid ? "grid" : "list"}
+          key={grid ? `grid-${columns}` : "list"}
           data={rows}
           keyExtractor={(item) => item.id}
-          numColumns={grid ? 3 : 1}
+          numColumns={columns}
           onScroll={onScroll}
           scrollEventThrottle={16}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: TAB_BAR_SPACE }}
-          renderItem={({ item }) => (grid ? <BookGridTile row={item} /> : <BookRow row={item} />)}
+          renderItem={({ item }) =>
+            grid ? <BookGridTile row={item} columns={columns} /> : <BookRow row={item} />
+          }
           ListEmptyComponent={
             <EmptyState
               title="No books here yet"

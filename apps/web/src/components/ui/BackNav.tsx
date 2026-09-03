@@ -9,19 +9,25 @@ type Props = {
   /** Used when the browser has no in-app history to return to. */
   fallbackHref: string;
   className?: string;
+  /** When set, go here instead of history (origin-aware Feed/Search/Library). */
+  href?: string;
 };
 
 /**
  * History-aware back control for deep/detail screens.
- * Prefers router.back(); falls back to a known parent route.
+ * Prefers an explicit `href` (origin), then router.back(), then fallback.
  */
-export function BackNav({ label, fallbackHref, className }: Props) {
+export function BackNav({ label, fallbackHref, className, href }: Props) {
   const router = useRouter();
 
   return (
     <button
       type="button"
       onClick={() => {
+        if (href) {
+          router.push(href);
+          return;
+        }
         if (typeof window !== "undefined" && window.history.length > 1) {
           router.back();
           return;

@@ -182,7 +182,7 @@ export function SuggestedShelfPreviewBar({
                 id="shelf-preview-title"
                 className="truncate text-lg font-semibold text-puce-red"
               >
-                📚 {shelf.name}
+                {shelf.name}
               </h2>
               <p className="mt-0.5 text-sm text-text-muted">{shelfSubtitle(shelf)}</p>
             </div>

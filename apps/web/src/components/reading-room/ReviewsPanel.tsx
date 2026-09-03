@@ -16,6 +16,7 @@ import {
   hasStarRating,
   hasWrittenReview,
   REVIEW_FILTER_OPTIONS,
+  REVIEW_PANEL_COPY,
   type ReviewFilter,
 } from "@bookmarked/utils/readingRoomReviews";
 import { ShareReviewButton } from "@/components/reading-room/ShareReviewButton";
@@ -35,10 +36,8 @@ export function ReviewsPanel({ reviews }: Props) {
 
   return (
     <section className="rounded-2xl border border-border bg-surface/90 p-5 text-left shadow-sm md:p-6">
-      <h2 className="text-center text-lg font-semibold text-puce-red">Your reviews</h2>
-      <p className="mt-1 text-center text-sm text-text-muted">
-        Ratings and reviews across your reading history.
-      </p>
+      <h2 className="text-center text-lg font-semibold text-puce-red">{REVIEW_PANEL_COPY.title}</h2>
+      <p className="mt-1 text-center text-sm text-text-muted">{REVIEW_PANEL_COPY.subtitle}</p>
 
       {reviews === null ? (
         <LoadingState message="Loading reviews…" />
@@ -49,10 +48,12 @@ export function ReviewsPanel({ reviews }: Props) {
       ) : (
         <>
           <div
-            className="mt-4 flex flex-wrap justify-center gap-2"
+            className="review-filter-row isolate mt-4 h-10 overflow-x-auto overflow-y-hidden"
+            style={{ flex: "0 0 auto" }}
             role="group"
             aria-label="Filter reviews"
           >
+            <div className="flex h-10 w-max flex-nowrap items-center justify-start gap-2">
             {REVIEW_FILTER_OPTIONS.map((option) => (
               <button
                 key={option.id}
@@ -60,7 +61,7 @@ export function ReviewsPanel({ reviews }: Props) {
                 onClick={() => setFilter(option.id)}
                 aria-pressed={filter === option.id}
                 className={cn(
-                  "rounded-full border px-3 py-1.5 text-xs font-medium transition",
+                  "h-8 shrink-0 rounded-full border px-3 text-xs font-medium leading-8 transition",
                   filter === option.id
                     ? "border-puce-red bg-puce-red text-white"
                     : "border-border bg-background text-text-muted hover:border-primary"
@@ -69,6 +70,7 @@ export function ReviewsPanel({ reviews }: Props) {
                 {option.label}
               </button>
             ))}
+            </div>
           </div>
 
           {filtered.length === 0 ? (

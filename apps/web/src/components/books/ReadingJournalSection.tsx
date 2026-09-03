@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/Button";
 import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 import { useToast } from "@/components/ui/Toast";
 import { SessionMoodPicker, SessionMoodChip } from "@/components/books/SessionMoodPicker";
-import type { ReviewFeeling } from "@/lib/constants/reviewFeelings";
 import type { ReadingSession } from "@/types";
 
 export const READING_JOURNAL_PREVIEW_LIMIT = 5;
@@ -76,7 +75,7 @@ function SessionNoteEditor({ session, onSaved }: SessionNoteEditorProps) {
     toast.success("Trail entry saved");
   }
 
-  async function handleMoodChange(nextMood: ReviewFeeling | null) {
+  async function handleMoodChange(nextMood: string | null) {
     setMood(nextMood);
     const result = await updateReadingSession(session.id, { mood: nextMood });
     if (result.error) {

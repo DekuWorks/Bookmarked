@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { BookCover } from "./BookCover";
 import { LoadingState } from "./LoadingState";
+import { BrandChromeIcon } from "./BrandChromeIcon";
 import { SectionCard } from "./SectionCard";
 import { StarRating } from "./StarRating";
 import {
@@ -43,7 +44,7 @@ export function PublicReviewsSection({ userId, readerName }: Props) {
   );
 
   return (
-    <SectionCard title="Public reviews" emoji="📝">
+    <SectionCard title="Public reviews" icon={<BrandChromeIcon name="notes" />}>
       <Text className="text-sm text-ink-muted">Ratings and reviews {readerName} has chosen to share.</Text>
       {reviews === null ? (
         <View className="mt-4"><LoadingState message="Loading public reviews…" /></View>

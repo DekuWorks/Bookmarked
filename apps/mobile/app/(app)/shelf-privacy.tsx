@@ -56,6 +56,7 @@ export default function ShelfPrivacyScreen() {
   const [saving, setSaving] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
+  const [newGenre, setNewGenre] = useState("");
   const [newVisibility, setNewVisibility] = useState<ShelfVisibility>("public");
   const [creating, setCreating] = useState(false);
   const [limitOpen, setLimitOpen] = useState(false);
@@ -153,6 +154,7 @@ export default function ShelfPrivacyScreen() {
     setCreating(true);
     const result = await createCustomShelf(userId, {
       name: trimmed,
+      genre: newGenre.trim() || null,
       visibility: newVisibility,
     });
     setCreating(false);
@@ -166,6 +168,7 @@ export default function ShelfPrivacyScreen() {
       return;
     }
     setNewName("");
+    setNewGenre("");
     setNewVisibility("public");
     setCreateOpen(false);
     await refreshCustomShelves();
@@ -212,7 +215,7 @@ export default function ShelfPrivacyScreen() {
         {customShelves.map((shelf) => (
           <VisibilityRow
             key={shelf.id}
-            title={`📚 ${shelf.name}`}
+            title={shelf.name}
             subtitle={shelf.genre ? `Genre: ${shelf.genre}` : "Custom collection"}
             value={customValues[shelf.id] ?? shelf.visibility}
             onChange={(next) =>
@@ -230,6 +233,14 @@ export default function ShelfPrivacyScreen() {
               placeholder="Shelf name"
               placeholderTextColor="#A99DAE"
               maxLength={80}
+              className="min-h-[44px] rounded-xl border border-brand-border bg-background px-3 py-2 text-ink mb-3"
+            />
+            <TextInput
+              value={newGenre}
+              onChangeText={setNewGenre}
+              placeholder="Genre (optional)"
+              placeholderTextColor="#A99DAE"
+              maxLength={60}
               className="min-h-[44px] rounded-xl border border-brand-border bg-background px-3 py-2 text-ink mb-3"
             />
             <Text className="text-xs text-ink-muted mb-2">Privacy</Text>
@@ -262,6 +273,7 @@ export default function ShelfPrivacyScreen() {
                   onPress={() => {
                     setCreateOpen(false);
                     setNewName("");
+                    setNewGenre("");
                     setNewVisibility("public");
                   }}
                   disabled={creating}

@@ -138,7 +138,7 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
         {tab === "progress" ? (
           <div className="space-y-6">
             <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
-              <h2 className="text-lg font-semibold text-puce-red">Reading goal</h2>
+              <h2 className="text-lg font-semibold text-puce-red">Reading Goal</h2>
               <div className="mt-4">
                 <ReadingGoalPanel
                   status={data.readingGoal}
@@ -148,7 +148,7 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
             </section>
 
             <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
-              <h2 className="text-lg font-semibold text-puce-red">Reading statistics</h2>
+              <h2 className="text-lg font-semibold text-puce-red">Reading Statistics</h2>
               <div className="mt-4">
                 <AnalyticsGrid
                   analytics={data.analytics}
@@ -182,7 +182,7 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
               id="ai-insights"
               className="scroll-mt-24 rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6"
             >
-              <h2 className="text-lg font-semibold text-puce-red">AI insights</h2>
+              <h2 className="text-lg font-semibold text-puce-red">AI Insights</h2>
               <div className="mt-4">
                 {subscriptionLoading ? (
                   <LoadingState message="Checking subscription…" />

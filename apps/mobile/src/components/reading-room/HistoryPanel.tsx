@@ -8,10 +8,12 @@ import type { LibraryBookRow } from "../../services/library";
 import type { UserReadingSession } from "../../services/readingSessions";
 import {
   DEFAULT_HISTORY_SORT,
+  HISTORY_PANEL_COPY,
   filterFinishedHistoryBooks,
   sortHistoryBooks,
   type HistorySortMode,
 } from "../../../../../packages/utils/readingRoomHistory";
+import { withOriginQuery } from "../../../../../packages/utils/navigationOrigin";
 import { DEFAULT_PAGE_SIZE, paginateItems } from "../../../../../packages/utils/pagination";
 import { HistorySortSelect } from "./HistorySortSelect";
 import { BookListPagination } from "./BookListPagination";
@@ -53,7 +55,7 @@ export function HistoryPanel({ books, sessions }: Props) {
 
   return (
     <View className="gap-4">
-      <SectionCard title="Recently finished books and reading sessions" shelfIconId="read">
+      <SectionCard title={HISTORY_PANEL_COPY.title} shelfIconId="read">
         <View className="mt-1">
           <HistorySortSelect value={sort} onChange={setSort} />
         </View>
@@ -88,17 +90,21 @@ export function HistoryPanel({ books, sessions }: Props) {
         />
 
         <Pressable
-          onPress={() => router.push("/library/read")}
+          onPress={() =>
+            router.push(withOriginQuery("/library/read", { origin: "home_history" }))
+          }
           className="mt-4 self-start active:opacity-80"
         >
-          <Text className="text-sm font-semibold text-primary-dark">Browse read shelf ›</Text>
+          <Text className="text-sm font-semibold text-primary-dark">
+            {HISTORY_PANEL_COPY.browseReadShelf} ›
+          </Text>
         </Pressable>
       </SectionCard>
 
       {sessions === null ? (
         <LoadingState message="Loading sessions…" />
       ) : sessions.length > 0 ? (
-        <SectionCard title="Recent sessions" emoji="📖">
+        <SectionCard title={HISTORY_PANEL_COPY.recentSessions}>
           <View className="gap-2">
             {sessions.slice(0, 20).map((session) => (
               <View

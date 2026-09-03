@@ -6,6 +6,7 @@ import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { searchProfilesForMessaging } from "@/lib/services/messages";
 import { readerProfilePath } from "@/lib/routes/reader";
+import { withOriginQuery } from "@bookmarked/utils/navigationOrigin";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import type { MessageProfile } from "@/types";
 
@@ -86,7 +87,13 @@ export function ReaderSearchResults({ query }: Props) {
     <ul className="mx-auto grid max-w-2xl gap-3 text-left">
       {results.map((profile) => {
         const label = profile.display_name?.trim() || profile.username?.trim() || "Reader";
-        const href = profile.username ? readerProfilePath(profile.username) : null;
+        const href = profile.username
+          ? withOriginQuery(readerProfilePath(profile.username), {
+              origin: "search_people",
+              query,
+              scroll: typeof window !== "undefined" ? Math.round(window.scrollY) : null,
+            })
+          : null;
 
         return (
           <li key={profile.id}>

@@ -6,11 +6,13 @@ import { CurrentlyReadingRow } from "@/components/reading-room/CurrentlyReadingR
 import { OverviewBookShelf } from "@/components/reading-room/OverviewBookShelf";
 import { QuickActionCard } from "@/components/reading-room/QuickActionCard";
 import { ReadingRoomSection } from "@/components/reading-room/ReadingRoomSection";
+import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { trackProductEvent } from "@/lib/services/productAnalytics";
 import type { ReadingRoomData } from "@/lib/services/readingRoom";
-import { OVERVIEW_SECTION_TITLES } from "@bookmarked/utils/overviewCopy";
+import { FAVORITES_LISTING, OVERVIEW_SECTION_TITLES, OVERVIEW_SHELF_ACTIONS } from "@bookmarked/utils/overviewCopy";
 import { OVERVIEW_QUICK_ACTIONS_LIST } from "@bookmarked/utils/overviewQuickActions";
+import { withOriginQuery } from "@bookmarked/utils/navigationOrigin";
 
 const ActivityFeed = dynamic(
   () => import("@/components/reading-room/ActivityFeed").then((m) => ({ default: m.ActivityFeed })),
@@ -66,7 +68,19 @@ function DeferredSection({
 export function OverviewTab({ userId, data, onRefresh }: Props) {
   return (
     <div className="space-y-8 md:space-y-10">
-      <ReadingRoomSection title={OVERVIEW_SECTION_TITLES.currentlyReading} shelfIconId="currently_reading">
+      <ReadingRoomSection
+        title={OVERVIEW_SECTION_TITLES.currentlyReading}
+        shelfIconId="currently_reading"
+        action={
+          <ButtonLink
+            href={withOriginQuery("/library/reading/", { origin: "home_overview" })}
+            variant="ghost"
+            size="sm"
+          >
+            {OVERVIEW_SHELF_ACTIONS.viewShelf}
+          </ButtonLink>
+        }
+      >
         <CurrentlyReadingRow items={data.currentlyReading} onItemsChange={onRefresh} />
       </ReadingRoomSection>
 
@@ -77,9 +91,13 @@ export function OverviewTab({ userId, data, onRefresh }: Props) {
             shelfIconId="read"
             items={data.recentlyFinished}
             showFinishedDate
-            viewAllHref="/library/read/"
+            viewAllHref={withOriginQuery("/library/read/", { origin: "home_overview" })}
+            viewAllLabel={OVERVIEW_SHELF_ACTIONS.viewShelf}
             emptyMessage="Books you finish will appear here."
-            emptyAction={{ label: "Browse your library", href: "/library/read/" }}
+            emptyAction={{
+              label: "Browse Your Library",
+              href: withOriginQuery("/library/read/", { origin: "home_overview" }),
+            }}
           />
         </DeferredSection>
 
@@ -88,8 +106,9 @@ export function OverviewTab({ userId, data, onRefresh }: Props) {
             title={OVERVIEW_SECTION_TITLES.favorites}
             items={data.favorites}
             showFavoriteBadge
-            viewAllHref="/library/"
-            emptyMessage="Star books from their detail page to collect favorites here."
+            viewAllHref={withOriginQuery(FAVORITES_LISTING.webPath, { origin: "home_overview" })}
+            viewAllLabel={OVERVIEW_SHELF_ACTIONS.viewAll}
+            emptyMessage={FAVORITES_LISTING.empty}
             emptyAction={{ label: "Find a book", href: "/search/" }}
           />
         </DeferredSection>

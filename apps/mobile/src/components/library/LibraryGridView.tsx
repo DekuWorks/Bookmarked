@@ -1,3 +1,4 @@
+import { useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { CoverTile } from "../CoverTile";
@@ -10,8 +11,13 @@ type Props = {
   showHeaderLink?: boolean;
 };
 
+const TABLET_MIN_WIDTH = 768;
+
 export function LibraryGridView({ shelves, showHeaderLink = true }: Props) {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isTablet = width >= TABLET_MIN_WIDTH;
+  const tileWidth = isTablet ? "w-[23%]" : "w-[31%]";
 
   return (
     <View className="gap-4">
@@ -38,7 +44,7 @@ export function LibraryGridView({ shelves, showHeaderLink = true }: Props) {
           {shelf.items.length === 0 ? (
             <Text className="text-sm text-ink-muted">No books on this shelf yet.</Text>
           ) : (
-            <View className="flex-row flex-wrap gap-2">
+            <View className="flex-row flex-wrap justify-between gap-y-3">
               {shelf.items.map((item) => (
                 <CoverTile
                   key={item.id}
@@ -47,7 +53,8 @@ export function LibraryGridView({ shelves, showHeaderLink = true }: Props) {
                   author={item.books?.author}
                   coverUrl={item.books?.cover_url}
                   format={item.books?.format}
-                  widthClassName="w-[23%]"
+                  saved
+                  widthClassName={tileWidth}
                   coverSizeClassName="w-full aspect-[2/3]"
                 />
               ))}

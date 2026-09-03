@@ -18,15 +18,18 @@ const variantClass: Record<InputVariant, string> = {
   search: "search-input px-5 py-3",
 };
 
-export function Input({
-  label,
-  error,
-  variant = "default",
-  hideLabel = false,
-  className,
-  id,
-  ...rest
-}: InputProps) {
+export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
+  {
+    label,
+    error,
+    variant = "default",
+    hideLabel = false,
+    className,
+    id,
+    ...rest
+  },
+  ref
+) {
   const inputId = id ?? label?.toLowerCase().replace(/\s+/g, "-");
 
   return (
@@ -44,6 +47,7 @@ export function Input({
         </label>
       ) : null}
       <input
+        ref={ref}
         id={inputId}
         className={cn(fieldBase, variantClass[variant], error && "border-rust", className)}
         {...rest}
@@ -51,7 +55,7 @@ export function Input({
       {error ? <p className="mt-1.5 text-sm text-rust">{error}</p> : null}
     </div>
   );
-}
+});
 
 type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   label?: string;

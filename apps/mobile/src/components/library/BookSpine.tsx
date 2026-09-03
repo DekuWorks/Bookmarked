@@ -1,5 +1,6 @@
 import { useRouter } from "expo-router";
 import { Image, Pressable, Text, View } from "react-native";
+import { SavedBookBadge, SAVED_BOOK_BADGE_INSET, SAVED_BOOK_BADGE_Z } from "../SavedBookBadge";
 
 const SPINE_COLORS = ["bg-puce-red", "bg-primary", "bg-primary/80", "bg-puce-red/80"];
 
@@ -24,9 +25,10 @@ type Props = {
   author?: string | null;
   coverUrl?: string | null;
   pageCount?: number | null;
+  saved?: boolean;
 };
 
-export function BookSpine({ bookId, title, author, coverUrl, pageCount }: Props) {
+export function BookSpine({ bookId, title, author, coverUrl, pageCount, saved }: Props) {
   const router = useRouter();
   const label = title?.trim() || "Untitled";
   const width = spineWidth(pageCount);
@@ -58,6 +60,19 @@ export function BookSpine({ bookId, title, author, coverUrl, pageCount }: Props)
             {label}
           </Text>
         </View>
+        {saved ? (
+          <View
+            pointerEvents="none"
+            style={{
+              position: "absolute",
+              top: SAVED_BOOK_BADGE_INSET,
+              left: SAVED_BOOK_BADGE_INSET,
+              zIndex: SAVED_BOOK_BADGE_Z,
+            }}
+          >
+            <SavedBookBadge isSaved size="small" />
+          </View>
+        ) : null}
       </View>
       {author ? (
         <Text className="mt-1 max-w-full text-center text-[10px] text-ink-muted" numberOfLines={1}>

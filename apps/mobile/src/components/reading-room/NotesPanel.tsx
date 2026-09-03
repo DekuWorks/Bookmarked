@@ -17,16 +17,15 @@ import {
   sortNotesForBookFilter,
   type NotesBookFilterOption,
 } from "../../../../../packages/utils/notesBookFilter";
-import {
-  HOME_NOTES_PREVIEW_LIMIT,
-  formatNoteLocation,
-} from "../../../../../packages/utils/noteLocation";
+import { formatNoteLocation } from "../../../../../packages/utils/noteLocation";
 import {
   READING_NOTE_CATEGORIES,
   listNotedBooksForUser,
+  listRecentNotedBooksForHome,
   searchNotesWithBooks,
   type ReadingNoteWithBook,
 } from "../../services/readingNotes";
+import { HOME_RECENT_NOTES_COPY } from "../../../../../packages/utils/recentNotesByBook";
 
 function categoryMeta(value: ReadingNoteWithBook["category"]) {
   return READING_NOTE_CATEGORIES.find((c) => c.value === value);
@@ -63,11 +62,13 @@ export function NotesPanel({ userId, bookParam = null, refreshId = 0 }: Props) {
     }
     setOptions(booksResult.options);
     const resolved = matchNotesBookFilter(bookParam, booksResult.options);
-    const { notes: rows, error: notesError } = await searchNotesWithBooks({
-      userId,
-      userBookId: resolved ?? undefined,
-      limit: resolved ? 100 : HOME_NOTES_PREVIEW_LIMIT,
-    });
+    const { notes: rows, error: notesError } = resolved
+      ? await searchNotesWithBooks({
+          userId,
+          userBookId: resolved,
+          limit: 100,
+        })
+      : await listRecentNotedBooksForHome(userId);
     if (notesError) {
       setNotes([]);
       setError(NOTES_BOOK_FILTER_COPY.error);
@@ -94,8 +95,16 @@ export function NotesPanel({ userId, bookParam = null, refreshId = 0 }: Props) {
       >
         <Text className="text-sm font-semibold text-white">Open Full Notes Page</Text>
       </Pressable>
+      <Pressable
+        onPress={() => router.push("/notes")}
+        className="self-stretch items-center rounded-full border border-brand-border bg-surface px-4 py-3 active:opacity-80"
+        accessibilityRole="button"
+        accessibilityLabel="Open Notes Search"
+      >
+        <Text className="text-sm font-semibold text-puce-red">Open Notes Search</Text>
+      </Pressable>
 
-      <SectionCard title={selectedUserBookId ? "Notes" : "Recent notes"} emoji="🗒️">
+      <SectionCard title={selectedUserBookId ? "Notes" : HOME_RECENT_NOTES_COPY.title}>
         <View className="mb-3">
           <NotesBookFilterButton
             options={options ?? []}
@@ -118,7 +127,11 @@ export function NotesPanel({ userId, bookParam = null, refreshId = 0 }: Props) {
             />
           </View>
         ) : notes.length === 0 ? (
-          <Text className="text-sm text-ink-muted">{notesEmptyMessage(selectedUserBookId)}</Text>
+          <Text className="text-sm text-ink-muted">
+            {selectedUserBookId
+              ? notesEmptyMessage(selectedUserBookId)
+              : HOME_RECENT_NOTES_COPY.empty}
+          </Text>
         ) : (
           <View className="gap-3">
             {notes.map((note) => {

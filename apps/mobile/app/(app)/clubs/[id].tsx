@@ -92,6 +92,7 @@ import {
   roleLabel,
   visibilityLabel,
 } from "../../../../../packages/utils/clubPermissions";
+import { originBackHref, parseNavOrigin } from "../../../../../packages/utils/navigationOrigin";
 
 type HubTab =
   | "overview"
@@ -151,6 +152,9 @@ export default function ClubDetailRoute() {
     id: string;
     tab?: string;
     discussion?: string;
+    origin?: string;
+    q?: string;
+    scroll?: string;
   }>();
   const clubId = typeof params.id === "string" ? params.id : "";
   const deepLinkDiscussionId =
@@ -638,7 +642,32 @@ export default function ClubDetailRoute() {
 
   const header = (
     <View className="gap-4 pb-4">
-      <Stack.Screen options={{ title: club.name }} />
+      <Stack.Screen
+        options={{
+          title: club.name,
+          headerLeft: (() => {
+            const originHref = originBackHref(
+              parseNavOrigin(typeof params.origin === "string" ? params.origin : undefined),
+              "mobile",
+              {
+                query: typeof params.q === "string" ? params.q : undefined,
+                scroll: typeof params.scroll === "string" ? params.scroll : undefined,
+              }
+            );
+            if (!originHref) return undefined;
+            return () => (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Go back"
+                onPress={() => router.replace(originHref as never)}
+                className="min-h-[44px] min-w-[44px] justify-center"
+              >
+                <Text className="text-2xl text-puce-red">‹</Text>
+              </Pressable>
+            );
+          })(),
+        }}
+      />
       <FeatureLimitModal
         open={limitOpen}
         onClose={() => setLimitOpen(false)}
@@ -1395,7 +1424,11 @@ export default function ClubDetailRoute() {
         className="flex-1 bg-background"
         data={activeTab === "discussions" ? discussions.data ?? [] : []}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 20, paddingBottom: TAB_BAR_SPACE }}
+        contentContainerStyle={{
+          padding: 20,
+          paddingTop: 32,
+          paddingBottom: TAB_BAR_SPACE,
+        }}
         keyboardShouldPersistTaps="handled"
         ListHeaderComponent={header}
         renderItem={({ item }) => (

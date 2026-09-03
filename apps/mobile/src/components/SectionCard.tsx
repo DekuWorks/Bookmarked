@@ -7,6 +7,8 @@ import { ShelfIcon } from "./ShelfIcon";
 type Props = {
   title: string;
   emoji?: string;
+  /** waiting-on-assets: prefer BrandChromeIcon / ShelfIcon over Apple emoji. */
+  icon?: ReactNode;
   shelfIconId?: ShelfIconId;
   action?: ReactNode;
   /** `stacked` puts the action under the heading, centered (Recent Activity). */
@@ -19,6 +21,7 @@ type Props = {
 export function SectionCard({
   title,
   emoji,
+  icon,
   shelfIconId,
   action,
   actionLayout = "inline",
@@ -45,9 +48,9 @@ export function SectionCard({
               : "min-w-0 flex-1 flex-row items-center gap-2"
           }
         >
-          {shelfIconId ? <ShelfIcon id={shelfIconId} size="small" /> : null}
+          {icon ?? (shelfIconId ? <ShelfIcon id={shelfIconId} size="small" /> : null)}
           <Text className={`${SECTION_CARD_HEADING_CLASS}${stacked ? " text-center" : ""}`}>
-            {emoji && !shelfIconId ? `${emoji} ` : ""}
+            {emoji && !shelfIconId && !icon ? `${emoji} ` : ""}
             {title}
           </Text>
         </View>

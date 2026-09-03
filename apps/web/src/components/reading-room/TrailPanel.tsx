@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { BookCover } from "@/components/books/BookCover";
 import { SessionMoodChip } from "@/components/books/SessionMoodPicker";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -24,8 +25,14 @@ import {
 } from "@bookmarked/utils/readingRoomHistory";
 import { DEFAULT_PAGE_SIZE, paginateItems } from "@bookmarked/utils/pagination";
 import {
+  DEFAULT_TRAIL_BOOKS_VIEW,
+  TRAIL_BOOKS_VIEW_OPTIONS,
+  TRAIL_BOOKS_VIEW_STORAGE_KEY,
+  TRAIL_COPY,
   filterTrailBookGroupsByQuery,
+  parseTrailBooksView,
   sortTrailBookGroups,
+  type TrailBooksViewMode,
 } from "@bookmarked/utils/readingRoomTrail";
 
 type TrailView = "books" | "sessions" | "detail";
@@ -41,6 +48,24 @@ export function TrailPanel({ sessions }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sort, setSort] = useState<HistorySortMode>(DEFAULT_HISTORY_SORT);
   const [page, setPage] = useState(1);
+  const [booksView, setBooksView] = useState<TrailBooksViewMode>(DEFAULT_TRAIL_BOOKS_VIEW);
+
+  useEffect(() => {
+    try {
+      setBooksView(parseTrailBooksView(window.localStorage.getItem(TRAIL_BOOKS_VIEW_STORAGE_KEY)));
+    } catch {
+      setBooksView(DEFAULT_TRAIL_BOOKS_VIEW);
+    }
+  }, []);
+
+  function changeBooksView(mode: TrailBooksViewMode) {
+    setBooksView(mode);
+    try {
+      window.localStorage.setItem(TRAIL_BOOKS_VIEW_STORAGE_KEY, mode);
+    } catch {
+      /* ignore quota / private mode */
+    }
+  }
 
   const bookGroups = useMemo(
     () => (sessions ? groupSessionsByBook(sessions) : []),
@@ -101,7 +126,7 @@ export function TrailPanel({ sessions }: Props) {
   if (sessions === null) {
     return (
       <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
-        <h2 className="text-lg font-semibold text-puce-red">Trail</h2>
+        <h2 className="text-lg font-semibold text-puce-red">{TRAIL_COPY.title}</h2>
         <LoadingState message="Loading trail…" />
       </section>
     );
@@ -110,7 +135,7 @@ export function TrailPanel({ sessions }: Props) {
   if (!sessions.length) {
     return (
       <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
-        <h2 className="text-lg font-semibold text-puce-red">Trail</h2>
+        <h2 className="text-lg font-semibold text-puce-red">{TRAIL_COPY.title}</h2>
         <p className="mt-4 rounded-xl border border-dashed border-border bg-background px-4 py-8 text-center text-sm text-text-muted">
           Save reading progress to build your trail.
         </p>
@@ -122,7 +147,7 @@ export function TrailPanel({ sessions }: Props) {
     return (
       <section className="rounded-2xl border border-border bg-surface/90 p-5 text-left shadow-sm md:p-6">
         <Button type="button" variant="ghost" size="sm" onClick={backToSessions}>
-          ← Back to sessions
+          {TRAIL_COPY.backToSessions}
         </Button>
         <div className="mt-4 rounded-lg border border-border bg-background/50 px-4 py-4">
           <p className="text-base font-semibold text-text">{activeBook.bookTitle}</p>
@@ -169,9 +194,10 @@ export function TrailPanel({ sessions }: Props) {
     return (
       <section className="rounded-2xl border border-border bg-surface/90 p-5 text-left shadow-sm md:p-6">
         <Button type="button" variant="ghost" size="sm" onClick={backToBooks}>
-          ← Back to books
+          {TRAIL_COPY.backToTrail}
         </Button>
-        <div className="mt-4">
+        <h2 className="mt-4 text-lg font-semibold text-puce-red">{TRAIL_COPY.sessionNotes}</h2>
+        <div className="mt-2">
           <h3 className="text-base font-semibold text-text">{activeBook.bookTitle}</h3>
           {activeBook.bookId ? (
             <Link
@@ -226,8 +252,32 @@ export function TrailPanel({ sessions }: Props) {
   return (
     <section className="rounded-2xl border border-border bg-surface/90 p-5 text-left shadow-sm md:p-6">
       <div className="flex flex-col gap-1">
-        <h2 className="text-lg font-semibold text-puce-red">Trail</h2>
-        <p className="text-sm text-text-muted">Pick a book to view its session notes.</p>
+        <h2 className="text-lg font-semibold text-puce-red">{TRAIL_COPY.title}</h2>
+        <p className="text-sm text-text-muted">{TRAIL_COPY.pickBook}</p>
+      </div>
+      <div
+        className="mt-4 flex h-10 w-full max-w-sm rounded-lg border border-border bg-background p-1"
+        role="tablist"
+        aria-label="Trail books view"
+      >
+        {TRAIL_BOOKS_VIEW_OPTIONS.map((option) => {
+          const active = booksView === option.id;
+          return (
+            <button
+              key={option.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => changeBooksView(option.id)}
+              className={cn(
+                "min-h-8 flex-1 rounded-md px-3 text-sm font-medium transition",
+                active ? "bg-puce-red text-white" : "text-text-muted hover:bg-background hover:text-text"
+              )}
+            >
+              {option.label}
+            </button>
+          );
+        })}
       </div>
       <Input
         type="search"
@@ -243,23 +293,53 @@ export function TrailPanel({ sessions }: Props) {
       <HistorySortSelect value={sort} onChange={setSort} className="mt-3" id="trail-sort" />
       {bookPage.total === 0 ? (
         <p className="mt-4 text-center text-sm text-text-muted">No books match your search.</p>
-      ) : (
-        <ul className="mt-4 space-y-2" role="list">
+      ) : booksView === "grid" ? (
+        <ul className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5" role="list">
           {bookPage.pageItems.map((group) => (
             <li key={group.key}>
               <button
                 type="button"
                 onClick={() => openBook(group)}
-                className="w-full rounded-lg border border-border bg-background/50 px-4 py-3 text-left text-sm font-medium text-text transition hover:border-primary"
+                className="w-full rounded-lg text-left transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
               >
-                {group.bookTitle}
-                <span className="ml-2 text-xs font-normal text-text-muted">
-                  ({group.sessions.length} session
+                <BookCover
+                  title={group.bookTitle}
+                  author={group.bookAuthor}
+                  coverUrl={group.bookCoverUrl}
+                  className="aspect-[2/3] w-full rounded shadow-sm"
+                  sizes="(max-width: 640px) 30vw, 140px"
+                />
+                <span className="sr-only">
+                  {group.bookTitle} ({group.sessions.length} session
                   {group.sessions.length === 1 ? "" : "s"})
                 </span>
               </button>
             </li>
           ))}
+        </ul>
+      ) : (
+        <ul className="mt-4 space-y-2" role="list">
+          {bookPage.pageItems.map((group) => {
+            const latest = group.sessions[0];
+            return (
+              <li key={group.key}>
+                <button
+                  type="button"
+                  onClick={() => openBook(group)}
+                  className="w-full rounded-lg border border-border bg-background/50 px-4 py-3 text-left text-sm font-medium text-text transition hover:border-primary"
+                >
+                  <span className="block">{group.bookTitle}</span>
+                  <span className="mt-1 block text-xs font-normal text-text-muted">
+                    {group.sessions.length} session
+                    {group.sessions.length === 1 ? "" : "s"}
+                    {latest
+                      ? ` · ${formatSessionDate(latest.created_at)} · ${sessionSummary(latest)}`
+                      : ""}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
       <BookListPagination

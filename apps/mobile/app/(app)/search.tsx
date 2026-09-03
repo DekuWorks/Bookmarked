@@ -1,7 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ActivityIndicator, Alert, Modal, Pressable, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Pressable,
+  Text,
+  TextInput,
+  View,
+  type FlatList,
+} from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Avatar } from "../../src/components/Avatar";
@@ -45,6 +54,11 @@ import {
   tryBeginCurrentlyReadingAddFromSearch,
 } from "../../../../packages/utils/currentlyReadingAdd";
 import { CURRENTLY_READING_ADD_COPY } from "../../../../packages/utils/overviewCopy";
+import { withOriginQuery } from "../../../../packages/utils/navigationOrigin";
+import {
+  ALREADY_IN_LIBRARY_COPY,
+  formatLibraryMemberships,
+} from "../../../../packages/utils/shelfMove";
 
 type Mode = "books" | "people" | "clubs";
 
@@ -73,19 +87,39 @@ function membershipKeyFor(doc: Pick<CatalogDoc, "isbn" | "key">): string {
   return doc.isbn?.[0]?.trim() || doc.key;
 }
 
+function firstParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function parseSearchMode(value: string | undefined): Mode {
+  if (value === "people" || value === "clubs") return value;
+  return "books";
+}
+
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { origin: originParam } = useLocalSearchParams<{ origin?: string }>();
-  const origin = Array.isArray(originParam) ? originParam[0] : originParam;
+  const params = useLocalSearchParams<{
+    origin?: string;
+    cat?: string;
+    q?: string;
+    scroll?: string;
+  }>();
+  const origin = firstParam(params.origin);
   const addFromOverview = isCurrentlyReadingAddFromOverview({ origin });
   const userId = useAuthStore((s) => s.user?.id);
   const { onScroll } = useTabBarScroll();
+  const inputRef = useRef<TextInput>(null);
+  const listRef = useRef<FlatList<CatalogDoc>>(null);
+  const peopleListRef = useRef<FlatList>(null);
+  const clubsListRef = useRef<FlatList>(null);
+  const restoredScroll = useRef(false);
+  const scrollY = useRef(0);
 
-  const [mode, setMode] = useState<Mode>("books");
-  const [query, setQuery] = useState("");
-  const [submitted, setSubmitted] = useState("");
+  const [mode, setMode] = useState<Mode>(() => parseSearchMode(firstParam(params.cat)));
+  const [query, setQuery] = useState(() => firstParam(params.q) ?? "");
+  const [submitted, setSubmitted] = useState(() => firstParam(params.q) ?? "");
   const [target, setTarget] = useState<CatalogDoc | null>(null);
   const [pendingShelf, setPendingShelf] = useState<ShelfStatus | null>(null);
   const [pageCountInput, setPageCountInput] = useState("");
@@ -103,11 +137,14 @@ export default function SearchScreen() {
   }, [addFromOverview]);
 
   useEffect(() => {
-    if (!target || !userId) return;
+    if (!userId) {
+      setCustomShelves([]);
+      return;
+    }
     void listUserCustomShelves(userId)
       .then(setCustomShelves)
       .catch(() => setCustomShelves([]));
-  }, [target, userId]);
+  }, [userId]);
 
   useEffect(() => {
     if (!userId) {
@@ -143,6 +180,23 @@ export default function SearchScreen() {
     queryFn: () => searchClubs(userId as string, query),
     enabled: mode === "clubs" && Boolean(userId) && query.trim().length >= 2,
   });
+
+  useEffect(() => {
+    if (restoredScroll.current) return;
+    const offset = Number(firstParam(params.scroll));
+    if (!Number.isFinite(offset) || offset <= 0) return;
+    const ready =
+      (mode === "books" && (books.data?.length ?? 0) > 0) ||
+      (mode === "people" && (people.data?.length ?? 0) > 0) ||
+      (mode === "clubs" && (clubs.data?.length ?? 0) > 0);
+    if (!ready) return;
+    restoredScroll.current = true;
+    requestAnimationFrame(() => {
+      const targetList =
+        mode === "people" ? peopleListRef.current : mode === "clubs" ? clubsListRef.current : listRef.current;
+      targetList?.scrollToOffset({ offset, animated: false });
+    });
+  }, [books.data, clubs.data, mode, params.scroll, people.data]);
 
   async function addToShelf(
     shelf: ShelfStatus,
@@ -259,6 +313,69 @@ export default function SearchScreen() {
     }
   }
 
+  function rememberScroll(offset: number) {
+    scrollY.current = offset;
+  }
+
+  function switchMode(next: Mode) {
+    if (next === mode) return;
+    setMode(next);
+    setQuery("");
+    setSubmitted("");
+    setTarget(null);
+    requestAnimationFrame(() => inputRef.current?.focus());
+  }
+
+  async function openBookDetails(doc: CatalogDoc) {
+    const result = await ensureCatalogBook(doc);
+    if (result.error || !result.bookId) {
+      Alert.alert("Couldn't open book", result.error ?? "Please try again.");
+      return;
+    }
+    router.push(
+      withOriginQuery(`/book/${result.bookId}`, {
+        origin: "search_books",
+        query: submitted || query,
+        scroll: Math.round(scrollY.current),
+      }) as never
+    );
+  }
+
+  async function requestAddToShelf(doc: CatalogDoc) {
+    const membership = memberships.get(membershipKeyFor(doc));
+    if (!membership) {
+      setTarget(doc);
+      return;
+    }
+
+    let customNames: string[] = [];
+    if (userId && membership.bookId) {
+      try {
+        const ids = await listCustomShelfIdsForBook(userId, membership.bookId);
+        customNames = customShelves
+          .filter((shelf) => ids.includes(shelf.id))
+          .map((shelf) => shelf.name);
+      } catch {
+        customNames = [];
+      }
+    }
+
+    const currentlyOn = formatLibraryMemberships(
+      membership.shelfStatus ? SHELF_LABEL_BY_STATUS[membership.shelfStatus] : null,
+      customNames
+    );
+    Alert.alert(
+      ALREADY_IN_LIBRARY_COPY.title,
+      currentlyOn
+        ? `${ALREADY_IN_LIBRARY_COPY.message}\n\n${currentlyOn}`
+        : ALREADY_IN_LIBRARY_COPY.message,
+      [
+        { text: ALREADY_IN_LIBRARY_COPY.cancel, style: "cancel" },
+        { text: ALREADY_IN_LIBRARY_COPY.continue, onPress: () => setTarget(doc) },
+      ]
+    );
+  }
+
   async function openDm(personId: string) {
     const result = await createDirectConversation(personId);
     if (result.error || !result.conversationId) {
@@ -292,6 +409,7 @@ export default function SearchScreen() {
           </View>
         ) : null}
         <Input
+          ref={inputRef}
           placeholder={
             mode === "books"
               ? "Title, author, or ISBN"
@@ -306,7 +424,7 @@ export default function SearchScreen() {
           onChangeText={setQuery}
           onSubmitEditing={() => setSubmitted(query)}
         />
-        <SegmentedTabs options={MODE_TABS} value={mode} onChange={setMode} />
+        <SegmentedTabs options={MODE_TABS} value={mode} onChange={switchMode} />
       </View>
 
       {mode === "books" ? (
@@ -316,40 +434,62 @@ export default function SearchScreen() {
           </View>
         ) : submitted.trim().length >= 2 ? (
           <Animated.FlatList
+            ref={listRef}
             data={books.data ?? []}
             keyExtractor={(item) => item.key}
             onScroll={onScroll}
+            onScrollEndDrag={(event) => rememberScroll(event.nativeEvent.contentOffset.y)}
+            onMomentumScrollEnd={(event) => rememberScroll(event.nativeEvent.contentOffset.y)}
             scrollEventThrottle={16}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={listPadding}
             renderItem={({ item }) => {
               const membership = memberships.get(membershipKeyFor(item));
               return (
-                <BookCard
-                  title={item.title}
-                  author={item.author_name?.join(", ")}
-                  coverUrl={item.cover_url}
-                  subtitle={
-                    item.first_publish_year
-                      ? `${item.first_publish_year}`
-                      : addFromOverview
-                        ? "Tap to add to Currently Reading"
-                        : "Tap to add to a shelf"
-                  }
-                  disabled={addFromOverview && saving}
-                  onPress={() => {
-                    if (addFromOverview) {
-                      void addToShelf("currently_reading", { doc: item });
-                      return;
+                <View className="mb-3">
+                  <BookCard
+                    title={item.title}
+                    author={item.author_name?.join(", ")}
+                    coverUrl={item.cover_url}
+                    saved={Boolean(membership)}
+                    subtitle={
+                      item.first_publish_year
+                        ? `${item.first_publish_year}`
+                        : addFromOverview
+                          ? "Tap to add to Currently Reading"
+                          : undefined
                     }
-                    setTarget(item);
-                  }}
-                  rightAccessory={
-                    membership?.shelfStatus ? (
-                      <ShelfBadge label={SHELF_LABEL_BY_STATUS[membership.shelfStatus]} />
-                    ) : undefined
-                  }
-                />
+                    disabled={addFromOverview && saving}
+                    onPress={() => {
+                      if (addFromOverview) {
+                        void addToShelf("currently_reading", { doc: item });
+                        return;
+                      }
+                      void openBookDetails(item);
+                    }}
+                    rightAccessory={
+                      membership?.shelfStatus ? (
+                        <ShelfBadge label={SHELF_LABEL_BY_STATUS[membership.shelfStatus]} />
+                      ) : undefined
+                    }
+                  />
+                  {!addFromOverview ? (
+                    <View className="-mt-1 mb-1 flex-row gap-2 px-1">
+                      <Pressable
+                        onPress={() => void openBookDetails(item)}
+                        className="min-h-[40px] flex-1 items-center justify-center rounded-xl border border-brand-border bg-surface"
+                      >
+                        <Text className="text-sm font-semibold text-puce-red">Details</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => void requestAddToShelf(item)}
+                        className="min-h-[40px] flex-1 items-center justify-center rounded-xl bg-primary/15"
+                      >
+                        <Text className="text-sm font-semibold text-puce-red">Add to Shelf</Text>
+                      </Pressable>
+                    </View>
+                  ) : null}
+                </View>
               );
             }}
             ListEmptyComponent={
@@ -390,9 +530,12 @@ export default function SearchScreen() {
         )
       ) : mode === "people" ? (
         <Animated.FlatList
+          ref={peopleListRef}
           data={people.data ?? []}
           keyExtractor={(item) => item.id}
           onScroll={onScroll}
+          onScrollEndDrag={(event) => rememberScroll(event.nativeEvent.contentOffset.y)}
+          onMomentumScrollEnd={(event) => rememberScroll(event.nativeEvent.contentOffset.y)}
           scrollEventThrottle={16}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={listPadding}
@@ -401,7 +544,15 @@ export default function SearchScreen() {
               <Pressable
                 onPress={() => {
                   const username = item.username?.trim();
-                  if (username) router.push(`/reader/${username}`);
+                  if (username) {
+                    router.push(
+                      withOriginQuery(`/reader/${username}`, {
+                        origin: "search_people",
+                        query,
+                        scroll: Math.round(scrollY.current),
+                      }) as never
+                    );
+                  }
                 }}
                 disabled={!item.username?.trim()}
                 className="flex-row items-center gap-3 flex-1 active:opacity-80"
@@ -431,15 +582,26 @@ export default function SearchScreen() {
         />
       ) : (
         <Animated.FlatList
+          ref={clubsListRef}
           data={clubs.data ?? []}
           keyExtractor={(item) => item.id}
           onScroll={onScroll}
+          onScrollEndDrag={(event) => rememberScroll(event.nativeEvent.contentOffset.y)}
+          onMomentumScrollEnd={(event) => rememberScroll(event.nativeEvent.contentOffset.y)}
           scrollEventThrottle={16}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={listPadding}
           renderItem={({ item }) => (
             <Pressable
-              onPress={() => router.push(`/clubs/${item.id}`)}
+              onPress={() =>
+                router.push(
+                  withOriginQuery(`/clubs/${item.id}`, {
+                    origin: "search_clubs",
+                    query,
+                    scroll: Math.round(scrollY.current),
+                  }) as never
+                )
+              }
               className="mb-2 rounded-2xl border border-brand-border bg-surface p-4 active:opacity-80"
             >
               <Text className="font-bold text-ink" numberOfLines={1}>
@@ -518,7 +680,7 @@ export default function SearchScreen() {
                         isMember ? "border-primary bg-primary/10" : "border-brand-border bg-background"
                       }`}
                     >
-                      <Text className="text-lg">📚</Text>
+                      <ShelfIcon id="want_to_read" size="small" />
                       <Text className="flex-1 font-medium text-puce-red">{shelf.name}</Text>
                       {isMember ? <Text className="font-bold text-puce-red">✓</Text> : null}
                     </Pressable>

@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { originBackHref, parseNavOrigin } from "../../../../../packages/utils/navigationOrigin";
 import { Alert, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { BookCoverAmbience } from "../../../src/components/BookCoverAmbience";
 import { BookCover } from "../../../src/components/BookCover";
@@ -26,12 +27,21 @@ import {
   addAnotherRead,
   markFinished,
   setDnf,
-  setExpectedReadDate,
   setShelfStatus,
   updateBookFormat,
   updateBookTotalPages,
   updateReadingProgress,
 } from "../../../src/services/library";
+import {
+  addBookToCustomShelf,
+  listCustomShelfIdsForBook,
+  listUserCustomShelves,
+} from "../../../src/services/customShelves";
+import type { UserShelf } from "../../../src/types";
+import {
+  resolveUserEditionTotalPages,
+  validatePageProgress,
+} from "../../../../../packages/utils/pageProgress";
 import { needsMissingPageCountPrompt } from "../../../src/services/completeReadingSession";
 import { TAB_BAR_SPACE } from "../../../src/navigation/TabBarScroll";
 import { useAuthStore } from "../../../src/store/authStore";
@@ -96,12 +106,20 @@ function ReviewItem({ review }: { review: Review }) {
 }
 
 export default function BookScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, origin: originParam, section } = useLocalSearchParams<{
+    id: string;
+    origin?: string;
+    section?: string;
+  }>();
   const bookId = String(id);
+  const origin = parseNavOrigin(typeof originParam === "string" ? originParam : null);
+  const backHref = originBackHref(origin, "mobile") ?? "/search";
   const userId = useAuthStore((s) => s.user?.id);
   const queryClient = useQueryClient();
   const router = useRouter();
 
+  const scrollRef = useRef<ScrollView>(null);
+  const reviewsY = useRef(0);
   const [rateOpen, setRateOpen] = useState(false);
   const [finishOpen, setFinishOpen] = useState(false);
   const [ratePromptOpen, setRatePromptOpen] = useState(false);
@@ -109,19 +127,42 @@ export default function BookScreen() {
   const [finishLoading, setFinishLoading] = useState(false);
   const [progressOpen, setProgressOpen] = useState(false);
   const [progressValue, setProgressValue] = useState("");
+  const [totalPagesValue, setTotalPagesValue] = useState("");
   const [totalListeningValue, setTotalListeningValue] = useState("");
   const [totalPagesOpen, setTotalPagesOpen] = useState(false);
-  const [totalPagesValue, setTotalPagesValue] = useState("");
   const [formatPending, setFormatPending] = useState(false);
-  const [dateOpen, setDateOpen] = useState(false);
-  const [dateValue, setDateValue] = useState("");
   const [sessionOverrides, setSessionOverrides] = useState<Record<string, ReadingSession>>({});
+  const [customShelves, setCustomShelves] = useState<UserShelf[]>([]);
+  const [memberShelfIds, setMemberShelfIds] = useState<string[]>([]);
 
   const details = useQuery({
     queryKey: ["book-details", bookId, userId],
     queryFn: () => getBookDetails(bookId, userId as string),
     enabled: Boolean(userId) && Boolean(bookId),
   });
+
+  useEffect(() => {
+    if (!userId) return;
+    void listUserCustomShelves(userId)
+      .then(setCustomShelves)
+      .catch((error) => console.error("[custom-shelf] list failed:", error));
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId || !bookId) return;
+    void listCustomShelfIdsForBook(userId, bookId)
+      .then(setMemberShelfIds)
+      .catch((error) => console.error("[custom-shelf] membership load failed:", error));
+  }, [userId, bookId, details.data?.userBook?.id]);
+
+  useEffect(() => {
+    if (section !== "reviews" || !details.data) return;
+    setRateOpen(true);
+    const handle = setTimeout(() => {
+      scrollRef.current?.scrollTo({ y: Math.max(0, reviewsY.current - 16), animated: true });
+    }, 250);
+    return () => clearTimeout(handle);
+  }, [section, details.data]);
 
   async function invalidate() {
     await queryClient.invalidateQueries({ queryKey: ["book-details", bookId, userId] });
@@ -225,6 +266,17 @@ export default function BookScreen() {
     await applyShelf(shelf);
   }
 
+  async function addToCustomCollection(shelf: UserShelf) {
+    if (!userId || !book) return;
+    const result = await addBookToCustomShelf(shelf.id, userId, book.id);
+    if (result.error) {
+      Alert.alert("Error", result.error);
+      return;
+    }
+    setMemberShelfIds((prev) => (prev.includes(shelf.id) ? prev : [...prev, shelf.id]));
+    await invalidate();
+  }
+
   async function finish() {
     setFinishOpen(true);
   }
@@ -249,24 +301,40 @@ export default function BookScreen() {
   async function saveProgress() {
     if (!userId || !book) return;
     const isAudiobook = book.format === "audiobook";
-    const percent = Math.max(0, Math.min(100, Number(progressValue) || 0));
-    const result = await updateReadingProgress(
-      userId,
-      book,
-      isAudiobook
-        ? {
-            progressPercent: 0,
-            format: "audiobook",
-            listeningProgressSeconds: Math.max(0, Number(progressValue) || 0),
-            totalListeningSeconds: Math.max(
-              0,
-              Number(totalListeningValue) || book.audiobook_duration_seconds || 0
-            ),
-          }
-        : { progressPercent: percent }
-    );
+    if (isAudiobook) {
+      const result = await updateReadingProgress(userId, book, {
+        progressPercent: 0,
+        format: "audiobook",
+        listeningProgressSeconds: Math.max(0, Number(progressValue) || 0),
+        totalListeningSeconds: Math.max(
+          0,
+          Number(totalListeningValue) || book.audiobook_duration_seconds || 0
+        ),
+      });
+      setProgressOpen(false);
+      setProgressValue("");
+      setTotalListeningValue("");
+      if (result.error) Alert.alert("Error", result.error);
+      invalidate();
+      return;
+    }
+
+    const validated = validatePageProgress({
+      currentPage: progressValue,
+      totalPages: totalPagesValue,
+    });
+    if (!validated.ok) {
+      Alert.alert("Invalid progress", validated.error);
+      return;
+    }
+    const result = await updateReadingProgress(userId, book, {
+      progressPages: validated.currentPage,
+      progressPercent: validated.percent,
+      totalPages: validated.totalPages,
+    });
     setProgressOpen(false);
     setProgressValue("");
+    setTotalPagesValue("");
     setTotalListeningValue("");
     if (result.error) Alert.alert("Error", result.error);
     invalidate();
@@ -285,9 +353,10 @@ export default function BookScreen() {
   }
 
   async function saveTotalPages() {
-    if (!book) return;
+    if (!book || !userId) return;
     const totalPages = Number.parseInt(totalPagesValue.trim(), 10);
-    const result = await updateBookTotalPages(book.id, totalPages);
+    const currentPage = Number(data?.userBook?.progress_pages) || 0;
+    const result = await updateBookTotalPages(userId, book.id, totalPages, currentPage);
     if (result.error) {
       Alert.alert("Couldn't update total pages", result.error);
       return;
@@ -345,23 +414,10 @@ export default function BookScreen() {
     );
   }
 
-  async function saveExpectedDate() {
-    if (!userId || !book) return;
-    const trimmed = dateValue.trim();
-    if (trimmed && !/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-      Alert.alert("Invalid date", "Use the format YYYY-MM-DD (e.g. 2026-08-15).");
-      return;
-    }
-    const result = await setExpectedReadDate(userId, book.id, trimmed || null);
-    setDateOpen(false);
-    if (result.error) Alert.alert("Error", result.error);
-    invalidate();
-  }
-
   if (details.isLoading) {
     return (
       <View className="flex-1 bg-background">
-        <ScreenHeader title="Book" />
+        <ScreenHeader title="Book" fallbackHref={backHref} />
         <LoadingState message="Loading book…" />
       </View>
     );
@@ -370,7 +426,7 @@ export default function BookScreen() {
   if (!book) {
     return (
       <View className="flex-1 bg-background">
-        <ScreenHeader title="Book" />
+        <ScreenHeader title="Book" fallbackHref={backHref} />
         <EmptyState title="Book not found" description="This book may have been removed." />
       </View>
     );
@@ -384,8 +440,11 @@ export default function BookScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <ScreenHeader title={book.title} fallbackHref="/(app)/search" />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: TAB_BAR_SPACE, gap: 16 }}>
+      <ScreenHeader title={book.title} fallbackHref={backHref} />
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: TAB_BAR_SPACE, gap: 16 }}
+      >
         <BookCoverAmbience>
           <View className="items-center">
             <BookCover
@@ -463,16 +522,29 @@ export default function BookScreen() {
           </View>
         </View>
 
-        {book.format !== "audiobook" ? (
+        {book.format !== "audiobook" && userBook ? (
           <Pressable
             onPress={() => {
-              setTotalPagesValue(book.page_count ? String(book.page_count) : "");
+              const editionTotal = resolveUserEditionTotalPages({
+                userTotalPages: userBook.total_pages,
+                catalogPageCount: book.page_count,
+              });
+              setTotalPagesValue(editionTotal ? String(editionTotal) : "");
               setTotalPagesOpen(true);
             }}
             className="self-center rounded-full border border-brand-border bg-surface px-3 py-1.5 active:opacity-70"
           >
             <Text className="text-xs font-semibold text-primary-dark">
-              {book.page_count ? `${book.page_count} pages · Edit` : "Add total pages"}
+              {(() => {
+                const editionTotal = resolveUserEditionTotalPages({
+                  userTotalPages: userBook.total_pages,
+                  catalogPageCount: book.page_count,
+                });
+                const current = userBook.progress_pages ?? 0;
+                return editionTotal
+                  ? `Page ${current} of ${editionTotal} · Edit`
+                  : "Add current page + total pages";
+              })()}
             </Text>
           </Pressable>
         ) : null}
@@ -505,33 +577,45 @@ export default function BookScreen() {
         </View>
 
         {userBook ? (
-          <View className="flex-row gap-2">
-            <Pressable
-              onPress={toggleDnf}
-              className={`min-h-[44px] flex-1 flex-row items-center justify-center gap-2 rounded-xl py-2.5 ${
-                userBook.dnf ? "bg-rust" : "bg-primary/15"
-              }`}
+          <Pressable
+            onPress={toggleDnf}
+            className={`min-h-[44px] flex-row items-center justify-center gap-2 rounded-xl py-2.5 ${
+              userBook.dnf ? "bg-rust" : "bg-primary/15"
+            }`}
+          >
+            <ShelfIcon id="dnf" size="small" />
+            <Text
+              className={`text-sm font-semibold leading-tight ${userBook.dnf ? "text-white" : "text-puce-red"}`}
             >
-              <ShelfIcon id="dnf" size="small" />
-              <Text
-                className={`text-sm font-semibold leading-tight ${userBook.dnf ? "text-white" : "text-puce-red"}`}
-              >
-                {userBook.dnf ? "Did not finish" : "Mark did not finish"}
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                setDateValue(userBook.expected_read_date ?? "");
-                setDateOpen(true);
-              }}
-              className="flex-1 flex-row items-center justify-center gap-1.5 rounded-xl bg-primary/15 py-2.5"
-            >
-              <Text className="text-sm font-semibold text-puce-red" numberOfLines={1}>
-                {userBook.expected_read_date
-                  ? `📅 ${new Date(userBook.expected_read_date).toLocaleDateString()}`
-                  : "Set date to read"}
-              </Text>
-            </Pressable>
+              {userBook.dnf ? "Did not finish" : "Mark did not finish"}
+            </Text>
+          </Pressable>
+        ) : null}
+
+        {customShelves.length ? (
+          <View className="gap-2">
+            <Text className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+              Custom shelves
+            </Text>
+            {customShelves.map((shelf) => {
+              const isMember = memberShelfIds.includes(shelf.id);
+              return (
+                <Pressable
+                  key={shelf.id}
+                  disabled={isMember}
+                  onPress={() => void addToCustomCollection(shelf)}
+                  className={`min-h-[44px] flex-row items-center gap-2 rounded-xl border px-4 py-2.5 ${
+                    isMember ? "border-primary bg-primary/10" : "border-brand-border bg-surface"
+                  }`}
+                >
+                  <ShelfIcon id="want_to_read" size="small" />
+                  <Text className="flex-1 font-semibold text-puce-red">{shelf.name}</Text>
+                  {isMember ? (
+                    <Text className="text-xs font-semibold text-primary-dark">On shelf</Text>
+                  ) : null}
+                </Pressable>
+              );
+            })}
           </View>
         ) : null}
 
@@ -541,7 +625,19 @@ export default function BookScreen() {
               {book.format === "audiobook" ? "Listening progress" : "Reading progress"}
             </Text>
             <ProgressBar percent={userBook.progress_percent ?? 0} />
-            <Text className="mt-1 text-xs text-ink-muted">{userBook.progress_percent ?? 0}%</Text>
+            <Text className="mt-1 text-xs text-ink-muted">
+              {book.format === "audiobook"
+                ? `${userBook.progress_percent ?? 0}%`
+                : (() => {
+                    const total = resolveUserEditionTotalPages({
+                      userTotalPages: userBook.total_pages,
+                      catalogPageCount: book.page_count,
+                    });
+                    return total
+                      ? `Page ${userBook.progress_pages ?? 0} of ${total} · ${userBook.progress_percent ?? 0}%`
+                      : `${userBook.progress_percent ?? 0}%`;
+                  })()}
+            </Text>
             <View className="mt-3 flex-row gap-2">
               <View className="flex-1">
                 <Button
@@ -552,7 +648,15 @@ export default function BookScreen() {
                       String(
                         book.format === "audiobook"
                           ? userBook.listening_progress_seconds ?? 0
-                          : userBook.progress_percent ?? 0
+                          : userBook.progress_pages ?? 0
+                      )
+                    );
+                    setTotalPagesValue(
+                      String(
+                        resolveUserEditionTotalPages({
+                          userTotalPages: userBook.total_pages,
+                          catalogPageCount: book.page_count,
+                        }) || ""
                       )
                     );
                     setTotalListeningValue(String(book.audiobook_duration_seconds ?? ""));
@@ -567,11 +671,17 @@ export default function BookScreen() {
           </View>
         ) : null}
 
-        <Button
-          title={ownReview ? "Edit your review" : "Rate & review"}
-          variant="secondary"
-          onPress={() => setRateOpen(true)}
-        />
+        <View
+          onLayout={(event) => {
+            reviewsY.current = event.nativeEvent.layout.y;
+          }}
+        >
+          <Button
+            title={ownReview ? "Edit your review" : "Rate & review"}
+            variant="secondary"
+            onPress={() => setRateOpen(true)}
+          />
+        </View>
 
         {userBook ? (
           <Pressable
@@ -675,7 +785,7 @@ export default function BookScreen() {
               value={progressValue}
               onChangeText={setProgressValue}
               keyboardType="number-pad"
-              placeholder={book.format === "audiobook" ? "Current listening time (seconds)" : "Percent (0–100)"}
+              placeholder={book.format === "audiobook" ? "Current listening time (seconds)" : "Current page"}
               placeholderTextColor="#A99DAE"
               className="rounded-xl border border-brand-border bg-background px-3 py-3 text-base text-ink"
             />
@@ -688,32 +798,18 @@ export default function BookScreen() {
                 placeholderTextColor="#A99DAE"
                 className="mt-3 rounded-xl border border-brand-border bg-background px-3 py-3 text-base text-ink"
               />
-            ) : null}
+            ) : (
+              <TextInput
+                value={totalPagesValue}
+                onChangeText={setTotalPagesValue}
+                keyboardType="number-pad"
+                placeholder="Total pages"
+                placeholderTextColor="#A99DAE"
+                className="mt-3 rounded-xl border border-brand-border bg-background px-3 py-3 text-base text-ink"
+              />
+            )}
             <View className="mt-4">
               <Button title="Save" onPress={saveProgress} />
-            </View>
-          </View>
-        </Pressable>
-      </Modal>
-
-      {/* Date to read modal */}
-      <Modal transparent visible={dateOpen} animationType="fade" onRequestClose={() => setDateOpen(false)}>
-        <Pressable className="flex-1 items-center justify-center bg-black/30" onPress={() => setDateOpen(false)}>
-          <View className="w-72 rounded-2xl bg-surface p-5">
-            <Text className="mb-1 text-lg font-bold text-puce-red">Date to read</Text>
-            <Text className="mb-3 text-xs text-ink-muted">
-              When do you plan to read this? Leave blank to clear.
-            </Text>
-            <TextInput
-              value={dateValue}
-              onChangeText={setDateValue}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor="#A99DAE"
-              autoCapitalize="none"
-              className="rounded-xl border border-brand-border bg-background px-3 py-3 text-base text-ink"
-            />
-            <View className="mt-4">
-              <Button title="Save" onPress={saveExpectedDate} />
             </View>
           </View>
         </Pressable>
@@ -724,7 +820,7 @@ export default function BookScreen() {
           <View className="w-72 rounded-2xl bg-surface p-5">
             <Text className="mb-1 text-lg font-bold text-puce-red">Total pages</Text>
             <Text className="mb-3 text-xs text-ink-muted">
-              Correct the catalog total so reading progress and stats stay accurate.
+              Your edition page count. This does not change the catalog listing.
             </Text>
             <TextInput
               value={totalPagesValue}

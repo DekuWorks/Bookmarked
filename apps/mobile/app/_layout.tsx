@@ -1,6 +1,6 @@
 import "../global.css";
 import "react-native-gesture-handler";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Appearance, View } from "react-native";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -23,6 +23,7 @@ import { useAuthBootstrap } from "../src/hooks/useAuth";
 import { useDeepLinkRouting } from "../src/hooks/useDeepLinkRouting";
 import { useThemeStore } from "../src/store/themeStore";
 import { BACKGROUND_TINT } from "../src/constants/theme";
+import { hasPlayedLaunchIntro, LaunchIntro } from "../src/components/LaunchIntro";
 
 SplashScreen.preventAutoHideAsync().catch(() => {
   /* no-op: splash may already be hidden */
@@ -52,6 +53,7 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
+  const [introDone, setIntroDone] = useState(() => hasPlayedLaunchIntro());
   const [fontsLoaded, fontError] = useFonts({
     Geist_400Regular,
     Geist_500Medium,
@@ -78,7 +80,10 @@ export default function RootLayout() {
           {!fontsLoaded && !fontError ? (
             <View style={{ flex: 1, backgroundColor: BACKGROUND_TINT }} />
           ) : (
-            <RootLayoutNav />
+            <View style={{ flex: 1 }}>
+              <RootLayoutNav />
+              {!introDone ? <LaunchIntro onFinished={() => setIntroDone(true)} /> : null}
+            </View>
           )}
         </QueryClientProvider>
       </SafeAreaProvider>

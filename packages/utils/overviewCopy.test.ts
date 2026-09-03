@@ -24,7 +24,7 @@ describe("overviewCopy", () => {
   });
 
   it("keeps Recent Activity link copy and Add Book a11y labels", () => {
-    expect(OVERVIEW_ACTIVITY_VIEW_ALL).toBe("View all activity");
+    expect(OVERVIEW_ACTIVITY_VIEW_ALL).toBe("View All Activity");
     expect(CURRENTLY_READING_ADD_COPY.cardLabel).toBe("Add Book to Currently Reading");
     expect(CURRENTLY_READING_ADD_COPY.chooseFromTbr).toBe("Choose from TBR");
     expect(CURRENTLY_READING_ADD_COPY.searchForABook).toBe("Search for a Book");

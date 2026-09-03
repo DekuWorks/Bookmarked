@@ -25,8 +25,12 @@ export function FeedScreen() {
   const { width } = useWindowDimensions();
   const pagerRef = useRef<ScrollView>(null);
   const userId = useAuthStore((s) => s.user?.id);
-  const params = useLocalSearchParams<{ post?: string }>();
+  const params = useLocalSearchParams<{ post?: string; scroll?: string }>();
   const highlightedPostId = typeof params.post === "string" ? params.post.trim() : "";
+  const restoreScroll =
+    typeof params.scroll === "string" && Number.isFinite(Number(params.scroll))
+      ? Number(params.scroll)
+      : undefined;
   const [tab, setTab] = useState<FeedTab>("for-you");
   const [headerHeight, setHeaderHeight] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
@@ -139,6 +143,7 @@ export function FeedScreen() {
             width={width}
             onScroll={onScroll}
             highlightedPostId={option.id === "for-you" ? highlightedPostId || undefined : undefined}
+            restoreScroll={restoreScroll}
           />
         ))}
       </ScrollView>

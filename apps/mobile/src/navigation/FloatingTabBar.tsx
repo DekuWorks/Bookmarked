@@ -14,8 +14,7 @@ type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
 /**
  * The five primary destinations, in order (final mapping from IMG_5471).
- * Icons use @expo/vector-icons Ionicons outline set (filled when focused)
- * for a consistent, native look.
+ * waiting-on-assets: Leighton final purple chrome set. Ionicons until then.
  */
 const PRIMARY_TABS: {
   name: string;
