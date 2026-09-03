@@ -210,6 +210,24 @@ export {
 } from "./noteLocation";
 
 export {
+  NOTES_BOOK_FILTER_COPY,
+  NOTES_BOOK_QUERY_PARAM,
+  NOTES_BOOK_SEARCH_THRESHOLD,
+  buildNotesBookFilterOptions,
+  filterNotesBookOptionsByQuery,
+  filterNotesByUserBookId,
+  formatNotesBookCount,
+  matchNotesBookFilter,
+  notesBookFilterLabel,
+  notesEmptyMessage,
+  parseNotesBookQueryParam,
+  selectNotesForBookFilter,
+  sortNotesForBookFilter,
+  type NotesBookFilterNote,
+  type NotesBookFilterOption,
+} from "./notesBookFilter";
+
+export {
   readingNoteTagTone,
   type ReadingNoteTagTone,
 } from "./readingNoteTags";

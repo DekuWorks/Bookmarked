@@ -1,22 +1,34 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { BookCover } from "../../src/components/BookCover";
+import { Button } from "../../src/components/Button";
 import { EmptyState } from "../../src/components/EmptyState";
 import { Input } from "../../src/components/Input";
 import { LoadingState } from "../../src/components/LoadingState";
 import { NoteTag } from "../../src/components/NoteTag";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import {
+  NotesBookFilterButton,
+  NotesBookFilterSheet,
+} from "../../src/components/reading-room/NotesBookFilterSheet";
+import {
   READING_NOTE_CATEGORIES,
+  listNotedBooksForUser,
   searchNotesWithBooks,
 } from "../../src/services/readingNotes";
 import { TAB_BAR_SPACE, useTabBarScroll } from "../../src/navigation/TabBarScroll";
 import { useAuthStore } from "../../src/store/authStore";
 import type { ReadingNoteCategory } from "../../src/types";
 import { formatNoteLocation } from "../../../../packages/utils/noteLocation";
+import {
+  NOTES_BOOK_FILTER_COPY,
+  matchNotesBookFilter,
+  notesEmptyMessage,
+  sortNotesForBookFilter,
+} from "../../../../packages/utils/notesBookFilter";
 
 function categoryMeta(value: ReadingNoteCategory) {
   return READING_NOTE_CATEGORIES.find((c) => c.value === value);
@@ -24,21 +36,40 @@ function categoryMeta(value: ReadingNoteCategory) {
 
 export default function NotesScreen() {
   const router = useRouter();
+  const { book: bookParam } = useLocalSearchParams<{ book?: string }>();
   const userId = useAuthStore((s) => s.user?.id);
   const { onScroll } = useTabBarScroll();
   const [keyword, setKeyword] = useState("");
   const [category, setCategory] = useState<ReadingNoteCategory | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const bookOptions = useQuery({
+    queryKey: ["noted-books", userId],
+    queryFn: () => listNotedBooksForUser(userId as string),
+    enabled: Boolean(userId),
+  });
+  const selectedUserBookId = useMemo(
+    () => matchNotesBookFilter(Array.isArray(bookParam) ? bookParam[0] : bookParam, bookOptions.data?.options ?? []),
+    [bookParam, bookOptions.data?.options]
+  );
 
   const notes = useQuery({
-    queryKey: ["notes", userId, keyword, category],
+    queryKey: ["notes", userId, keyword, category, selectedUserBookId],
     queryFn: () =>
       searchNotesWithBooks({
         userId,
         keyword: keyword.trim() || undefined,
         category: category ?? undefined,
+        userBookId: selectedUserBookId ?? undefined,
+        limit: 100,
       }),
     enabled: Boolean(userId),
   });
+  const noteRows = useMemo(
+    () => sortNotesForBookFilter(notes.data?.notes ?? [], selectedUserBookId),
+    [notes.data?.notes, selectedUserBookId]
+  );
+  const notesError = notes.data?.error ?? bookOptions.data?.error ?? null;
 
   return (
     <View className="flex-1 bg-background">
@@ -50,6 +81,13 @@ export default function NotesScreen() {
         >
           <Text className="text-sm font-semibold text-puce-red">Create quote graphic →</Text>
         </Pressable>
+        <View className="mb-3">
+          <NotesBookFilterButton
+            options={bookOptions.data?.options ?? []}
+            selectedUserBookId={selectedUserBookId}
+            onPress={() => setPickerOpen(true)}
+          />
+        </View>
         <Input
           placeholder="Search your notes and quotes"
           autoCapitalize="none"
@@ -82,11 +120,25 @@ export default function NotesScreen() {
         </Animated.ScrollView>
       </View>
 
-      {notes.isLoading ? (
+      {notes.isLoading || bookOptions.isLoading ? (
         <LoadingState message="Loading notes…" />
+      ) : notesError ? (
+        <View className="flex-1 items-center justify-center gap-3 px-6">
+          <Text className="text-center text-sm text-ink-muted">
+            {NOTES_BOOK_FILTER_COPY.error}
+          </Text>
+          <Button
+            title={NOTES_BOOK_FILTER_COPY.retry}
+            variant="ghost"
+            onPress={() => {
+              void notes.refetch();
+              void bookOptions.refetch();
+            }}
+          />
+        </View>
       ) : (
         <Animated.FlatList
-          data={notes.data ?? []}
+          data={noteRows}
           keyExtractor={(item) => item.id}
           onScroll={onScroll}
           scrollEventThrottle={16}
@@ -128,6 +180,7 @@ export default function NotesScreen() {
                   {item.book ? (
                     <Text className="text-xs text-ink-muted" numberOfLines={1}>
                       {item.book.title}
+                      {item.book.author ? ` · ${item.book.author}` : ""}
                     </Text>
                   ) : null}
                 </View>
@@ -136,8 +189,8 @@ export default function NotesScreen() {
           }}
           ListEmptyComponent={
             <EmptyState
-              title="No notes yet"
-              description="Save favorite quotes and thoughts from a book's page."
+              title={selectedUserBookId ? "No notes for this book" : "No notes yet"}
+              description={notesEmptyMessage(selectedUserBookId)}
             />
           }
           ListFooterComponent={
@@ -152,6 +205,16 @@ export default function NotesScreen() {
           }
         />
       )}
+
+      <NotesBookFilterSheet
+        visible={pickerOpen}
+        options={bookOptions.data?.options ?? []}
+        selectedUserBookId={selectedUserBookId}
+        onClose={() => setPickerOpen(false)}
+        onSelect={(userBookId) => {
+          router.setParams({ book: userBookId ?? "" });
+        }}
+      />
     </View>
   );
 }

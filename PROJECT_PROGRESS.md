@@ -444,6 +444,36 @@ Shipped actions (same order, web + iOS):
 
 ---
 
+## Sprint — Notes Tab – Filter by Book ✅
+
+| Item | Status | Notes / references |
+|------|--------|--------------------|
+| Remove page number as primary Notes filter | ✅ | Page input remains on Full Notes Search only, inside **Advanced filters**. Note `page_number` / `chapter` fields are unchanged. |
+| Book Title filter (web + iOS) | ✅ | Home Notes + Full Notes. Web: `NotesBookFilter` modal (existing `Modal` + `Input`). iOS: `NotesBookFilterSheet` (TBR picker pattern). No new dropdown library. |
+| Shared filter/sort | ✅ | `packages/utils/notesBookFilter.ts` — filter key is `user_book_id`; catalog `book_id` matches only when unique. Titles are never DB keys. |
+| Sort | ✅ | All Books stays newest → oldest. Selected book is oldest → newest. Home All Books still caps at `HOME_NOTES_PREVIEW_LIMIT` (5). |
+| Book list | ✅ | `listNotedBooksForUser` reads the signed-in user's `reading_notes.user_book_id` values (not the full library), then one `user_books` + `books` join. A→Z title, search title+author. |
+| Query / deep link | ✅ | `book=` on `/reading-room/?tab=notes&book=` and `/notes/?book=` (web); iOS `/?tab=notes&book=` and `/notes?book=`. Clearing returns All Books. |
+| Empty / error | ✅ | “You haven't saved any notes yet.” / “No notes saved for this book yet.” Friendly error + Retry. No raw backend errors. |
+| Note cards | ✅ | Location still via `formatNoteLocation` (page/chapter). Audiobook `chapter` timestamps like `1:23:45` display as time, not “Chapter …”. Author shown when enriched. Privacy/RLS/edit/delete paths unchanged. |
+
+### Components / query
+
+- Shared: `packages/utils/notesBookFilter.ts` (+ tests). Exports also from `packages/utils/index.ts`.
+- Web: `NotesBookFilter`, `reading-room/NotesPanel`, `NotesSearchFilters` (book primary, page advanced), `NotesSearchResults` (`userBookId` + sort), `listNotedBooksForUser` in `readingNotes.ts`.
+- iOS: `NotesBookFilterSheet`, Home `NotesPanel`, Full Notes `notes.tsx`, same service helpers.
+- RPC `search_reading_notes` already accepted `p_user_book_id`; no schema/RLS migration.
+
+### Testing
+
+- Unit: `packages/utils/notesBookFilter.test.ts`, `noteLocation.test.ts` (timestamp); web `notesBookFilter.test.ts`; iOS `notesBookFilter.test.ts`
+- Web `tsc` + production `next build` passed. iOS tests + `tsc` passed except pre-existing `quote-graphics.tsx` `"outline"` Button variant.
+- Browser: Notes / Reading Room are auth-gated — verification stops at sign-in unless a session is present.
+
+**Last updated:** 3 September 2026 (Notes Tab – Filter by Book)
+
+---
+
 ## Free / Plus / Reading DNA (master phases)
 
 Tracking against the Free/Plus/Reading DNA master spec (Phases 1–42). Distinct from historical Phase 1–10 above.
@@ -476,7 +506,7 @@ Tracking against the Free/Plus/Reading DNA master spec (Phases 1–42). Distinct
 | Reading DNA algorithm | `docs/READING_DNA_ALGORITHM.md` |
 | Sprint 6 polish / DNF QA | `docs/SPRINT_6_POLISH.md` |
 
-**Last updated:** 2 September 2026 (Home / Overview polish: centered Recent Activity header, Currently Reading Add Book full-card size)
+**Last updated:** 3 September 2026 (Notes Tab – Filter by Book on Home Notes + Full Notes, web + iOS)
 
 ---
 

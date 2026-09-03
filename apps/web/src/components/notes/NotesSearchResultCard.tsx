@@ -58,7 +58,12 @@ export function NotesSearchResultCard({ note }: Props) {
               bookmarkBadgeSize="small"
             />
           </div>
-          <p className="line-clamp-2 text-sm font-semibold text-puce-red">{note.book.title}</p>
+          <div className="min-w-0">
+            <p className="line-clamp-2 text-sm font-semibold text-puce-red">{note.book.title}</p>
+            {note.book.author ? (
+              <p className="mt-0.5 line-clamp-1 text-xs text-text-muted">{note.book.author}</p>
+            ) : null}
+          </div>
         </Link>
       ) : null}
 

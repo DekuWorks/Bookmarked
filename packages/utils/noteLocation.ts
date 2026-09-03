@@ -28,6 +28,16 @@ function formatPagePart(pageNumber: number | null | undefined): string | null {
   return `Page ${pageNumber}`;
 }
 
+/** Audiobook timestamps stored in `chapter` (e.g. 1:23:45 or 12:34). */
+function formatTimestampPart(
+  chapterNumber: number | string | null | undefined
+): string | null {
+  if (typeof chapterNumber !== "string") return null;
+  const text = chapterNumber.trim();
+  if (!/^\d{1,2}:\d{2}(:\d{2})?$/.test(text)) return null;
+  return text;
+}
+
 function formatChapterPart(
   chapterNumber: number | string | null | undefined
 ): string | null {
@@ -60,6 +70,9 @@ export function formatNoteLocation({
   pageNumber,
   chapterNumber,
 }: FormatNoteLocationInput): string | null {
+  const timestamp = formatTimestampPart(chapterNumber);
+  if (timestamp) return timestamp;
+
   const page = formatPagePart(pageNumber);
   const chapter = formatChapterPart(chapterNumber);
 
