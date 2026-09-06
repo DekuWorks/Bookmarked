@@ -10,7 +10,7 @@ import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { getFollowCounts, isFollowing } from "@/lib/services/follows";
 import { getProfileByUsername } from "@/lib/services/profile";
-import { buildFullShelves, getReaderLibraryBooks } from "@/lib/services/publicLibrary";
+import { buildFullShelves, filterReaderLibraryBooks, getReaderLibraryBooks } from "@/lib/services/publicLibrary";
 import { readerProfilePath } from "@/lib/routes/reader";
 import type { ShelfGroup } from "@/lib/services/library";
 import type { Profile } from "@/types";
@@ -50,7 +50,9 @@ function ReaderLibraryContent() {
 
       setData({
         profile,
-        shelves: buildFullShelves(books),
+        shelves: buildFullShelves(
+          filterReaderLibraryBooks(books, profile, user.id, following)
+        ),
         counts,
         following,
       });

@@ -490,15 +490,15 @@ Tracking against the Free/Plus/Reading DNA master spec (Phases 1–42). Distinct
 
 | Master phase | Status | Notes |
 |--------------|--------|-------|
-| 1 — Audit docs | ✅ | `docs/BASIC_FEATURE_AUDIT.md`, `PLUS_FEATURE_AUDIT.md`, `SUBSCRIPTION_ARCHITECTURE.md`, `READING_DNA_DATA_AUDIT.md`, `READING_DNA_ALGORITHM.md`, `HIGGSFIELD_READING_DNA_DESIGN.md`, `FEATURE_GATING_MATRIX.md` |
-| 2 — Entitlements | 🔄 | FeatureKey + ENTITLEMENTS; shelves/quotes/clubs/challenges/graphics limits wired in service layer |
+| 1 — Audit docs | ✅ | `docs/BASIC_FEATURE_AUDIT.md`, `PLUS_FEATURE_AUDIT.md`, `SUBSCRIPTION_ARCHITECTURE.md`, `READING_DNA_DATA_AUDIT.md`, `READING_DNA_ALGORITHM.md`, `HIGGSFIELD_READING_DNA_DESIGN.md`, `FEATURE_GATING_MATRIX.md`, `feature-entitlements.md` |
+| 2 — Entitlements | ✅ | FeatureKey + ENTITLEMENTS; structured `check*Limit`; server triggers for shelf/club/quote; usage_counters for graphics + challenges |
 | 3 — Billing foundation | 🔄 | Migration `20260801190000_…`; webhook idempotency; checkout intervals — **operator Stripe/ASC catalog cutover still open** |
-| 4 — Paywall UX | 🔄 | Paywall kit + FeatureLimitModal on shelves, quotes, clubs |
-| 5–8 — Free library basics | ⏳ | Calendar / permanent shelves polish |
+| 4 — Paywall UX | ✅ | FeatureLimitModal / IosSubscribePanel at caps only; no hardcoded prices |
+| 5–8 — Free library basics | ✅ | Calendar, yearly goal `(user_id, year)`, rereads, Finished vs Read documented |
 | 20–24 / 27–28 / 35 — Reading DNA core | 🔄 | DNA pages; snapshot RPC; persist on profile/DNA load **and** `completeReadingSession` (soft fail); Higgsfield blocked |
-| Quote graphics Free UX | 🔄 | Remaining count + consume slot + FeatureLimitModal; AI render flag off |
+| Quote graphics Free UX | 🔄 | Remaining count + consume-on-success + favorite picker; AI render flag off |
 | Challenges browse/join | ✅ | Engine + Featured / Your / Completed on web + iOS. Create Challenge is Plus, subscribe on iOS only |
-| Remaining (Wrapped, AI graphics, snapshot QA) | ⏳ | Ship as capacity allows |
+| Yearly Wrapped | ✅ | Free yearly recap from real activity dates; monthly Wrapped stays Plus |
 
 ---
 
@@ -512,11 +512,12 @@ Tracking against the Free/Plus/Reading DNA master spec (Phases 1–42). Distinct
 | Database schema | `docs/DATABASE_SCHEMA.md` |
 | Master task list (MVP) | `docs/project/MASTER_TASK_LIST.md` |
 | Feature gating matrix | `docs/FEATURE_GATING_MATRIX.md` |
+| Feature entitlements (Free contract) | `docs/feature-entitlements.md` |
 | Subscription architecture | `docs/SUBSCRIPTION_ARCHITECTURE.md` |
 | Reading DNA algorithm | `docs/READING_DNA_ALGORITHM.md` |
 | Sprint 6 polish / DNF QA | `docs/SPRINT_6_POLISH.md` |
 
-**Last updated:** 6 September 2026 (Reading Challenges + iOS-only subscribe)
+**Last updated:** 6 September 2026 (BASIC / FREE tier)
 
 ---
 
@@ -965,7 +966,74 @@ No staff dashboard. Featured flag, `challenge_curated_lists`, and `books.trusted
 - Confirmed: no Android; celebration intact; private friend challenges stay off Feed; no identity guessing
 - No `expo run:ios`. No TestFlight
 
-**Last updated:** 6 September 2026 (Reading Challenges + iOS-only subscribe)
+**Last updated:** 6 September 2026 (BASIC / FREE tier)
+
+---
+
+## Sixteenth Sprint — BASIC / FREE tier ✅
+
+Official Free-tier product on **web + iOS (iPhone/iPad)**. Android not in scope. No `expo run:ios`. No TestFlight. No commit in this pass. Stopped after Free — Plus features were not started.
+
+**Product rule — subscribe only on iOS.** Web never starts Stripe Checkout. Once Plus is on `user_subscriptions`, bookmarked.online unlocks automatically. Locked UX uses `IOS_SUBSCRIBE_COPY` / `IosSubscribePanel`. No hardcoded prices in Free/Plus UX.
+
+### Audit table
+
+| Area | Status | Pointers |
+|------|--------|----------|
+| Entitlement layer | Already implemented → modified | `packages/utils/subscription.ts` (`ENTITLEMENTS`, structured `check*Limit`) |
+| Custom shelves (1) + icons + privacy | Implemented + server Free cap | `canCreateCustomShelf` / `enforce_custom_shelf_limit`; `icon_key`; RLS |
+| Audiobook HH:MM + progress | Already implemented | `packages/utils/listeningTime.ts` |
+| Rereads without duplicating books | Already implemented | `read_count` / `read_number`; `AddAnotherReadButton` |
+| Notes (Free) + no web quote title | Already implemented | `readingNotes`; title field stays off web |
+| Favorite quotes (25) | Implemented + server Free cap | `checkSavedQuoteLimit` + `enforce_saved_quote_limit` |
+| Quote PDF (own quotes) | Implemented (web PDF; iOS share text) | `packages/utils/quotePdf.ts` |
+| AI quote graphics (3/month) | Implemented but needs AI | usage_counters consume-on-success; favorite picker; Higgsfield flag off |
+| Clubs (3 create or join) | Implemented + server cap | Owner-create **does** consume a slot; leave/delete frees it |
+| Challenges: create Plus / join 3/year | Implemented + server cap | Official/featured are free extras; user/community/club/friend consume |
+| Reviews (half-star, mood, spoilers) | Already implemented | Free is not gated by `advanced_reviews` |
+| Yearly books-read goal | Implemented but modified | `yearly_reading_goals` unique `(user_id, year)`; count by completion `session_date` |
+| Basic Reading Calendar | Missing → implemented | `packages/utils/readingCalendar.ts`; Progress tab web + iOS |
+| Yearly Wrapped | Missing → implemented | `/wrapped/` + iOS `wrapped`; monthly Wrapped stays Plus |
+| Social (follow, Feed, profiles) | Already implemented | Public reader shelves now client-filtered |
+| Mood / vibe discovery | Implemented but needed Free limits → wired | `moodDiscovery` + Feed mood chips / tag IDs |
+| Affiliate links | Missing → implemented | ISBN Bookshop search + disclosure; no partner IDs |
+| Event calendar | Already implemented | `/events/` — no new external integrations |
+| iPad 4-col library | Already implemented | `libraryGridColumnCount` |
+| Finished vs Read | Documented | UI **Finished**; DB `shelf_status = read` |
+
+### What shipped
+
+- Structured entitlement results + club/challenge kind helpers
+- Server triggers: 2nd custom shelf, 4th club membership (create or join), 26th favorite quote, 4th consuming challenge join
+- Yearly goal table + completion-date counting
+- Reading Calendar (month nav, covers, most-recent + count)
+- Yearly Wrapped (real activity dates, share opt-in, Reduce Motion)
+- Quote PDF (web) / share text (iOS)
+- Mood discovery on Feed; public-library privacy filter; affiliate disclosure
+- Prices removed from comparison UX
+
+### Product decisions (resolved)
+
+1. **Club create vs join:** create-as-owner **does** consume the 3-club cap, same as join. Leave/delete frees a slot.
+2. **Challenge join kinds:** official / featured are free extras. `user` / `community` / `club` / `friend` consume a yearly slot. Rejoin of the same challenge does not consume a second slot (`abandoned` is not a join kind).
+3. **Finished vs Read:** one shelf; UI Finished, DB `read`.
+4. **Calendar same-day books:** most-recent qualifying cover + `+N`.
+5. **Yearly goal count:** completion `session_date` + `read_number`; library `finished_at` fallback only.
+6. **Reviews dates:** tied via `read_number` + completion / `user_books` dates — no extra review date columns.
+7. **Yearly Wrapped is Free;** `monthly_wrapped` stays Plus.
+
+### Docs
+
+- `docs/feature-entitlements.md` (new)
+- `docs/FEATURE_GATING_MATRIX.md` kept in sync
+- `docs/BASIC_FEATURE_AUDIT.md` points here
+
+### Tests / verification
+
+- Shared unit tests: entitlements (club create consumes; official challenges free extra), calendar, yearly goal, quote PDF, wrapped, affiliate, mood discovery, public library visibility
+- Web `tsc --noEmit` and iOS `tsc --noEmit` after the two product-rule fixes
+- Migrations `20260907050000_free_tier_server_limits.sql` + `20260907060000_club_create_and_challenge_slots.sql` dry-run then applied (`db push --yes --linked`). No reset, no data loss
+- No `expo run:ios`. No TestFlight
 
 ---
 
@@ -973,7 +1041,7 @@ No staff dashboard. Featured flag, `challenge_curated_lists`, and `books.trusted
 
 | Priority | Item | Notes |
 |----------|------|-------|
-| P0 | Apply migrations + deploy RPC | `…190000`, `…200000`, `…210000` upsert DNA, `…220000` challenge seeds |
+| P0 | Apply remaining DNA/challenge migrations if any | `…190000`, `…200000`, `…210000` upsert DNA, `…220000` challenge seeds. Free-tier `…050000` + club/challenge slot `…060000` |
 | P1 | Enable AI quote graphics flag | When Higgsfield/AI ready; keep Free monthly consume semantics |
 | P1 | Higgsfield assets | Re-auth MCP — see `docs/higgsfield/BLOCKER.md` |
 | P1 | Stripe/ASC catalog cutover | Operator-only; leave documented |

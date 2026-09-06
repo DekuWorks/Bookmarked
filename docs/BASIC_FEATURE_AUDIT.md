@@ -1,5 +1,7 @@
 # Basic (Free) Feature Audit
 
+Superseded for the official Free-tier contract by [`feature-entitlements.md`](./feature-entitlements.md) and the **Sixteenth Sprint — BASIC / FREE tier** section in `PROJECT_PROGRESS.md`. Keep this file as the Phase 1 snapshot.
+
 Audit of Free-tier product surfaces for Bookmarked (web + native iOS). Status as of Free/Plus/Reading DNA Phase 1.
 
 ## Legend

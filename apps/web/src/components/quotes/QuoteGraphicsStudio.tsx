@@ -8,7 +8,9 @@ import { useToast } from "@/components/ui/Toast";
 import {
   consumeQuoteGraphicSlot,
   getQuoteGraphicsRemaining,
+  refundQuoteGraphicSlot,
 } from "@/lib/services/usageCounters";
+import { searchNotes } from "@/lib/services/readingNotes";
 import { isEntitlementLimitError } from "@/lib/utils/subscription";
 import { cn } from "@/lib/utils/cn";
 
@@ -27,6 +29,7 @@ export function QuoteGraphicsStudio({ userId }: Props) {
   const toast = useToast();
   const [quote, setQuote] = useState("");
   const [attribution, setAttribution] = useState("");
+  const [favorites, setFavorites] = useState<Array<{ id: string; quote: string }>>([]);
   const [remaining, setRemaining] = useState<number | null>(null);
   const [preview, setPreview] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -39,7 +42,14 @@ export function QuoteGraphicsStudio({ userId }: Props) {
 
   useEffect(() => {
     void refreshRemaining();
-  }, [refreshRemaining]);
+    void searchNotes({ userId, category: "favorite_quote", limit: 25 }).then((notes) => {
+      setFavorites(
+        notes
+          .filter((note) => note.quote?.trim())
+          .map((note) => ({ id: note.id, quote: note.quote!.trim() }))
+      );
+    });
+  }, [refreshRemaining, userId]);
 
   async function handlePreview() {
     if (!quote.trim()) {
@@ -61,6 +71,7 @@ export function QuoteGraphicsStudio({ userId }: Props) {
     }
 
     setSaving(true);
+    let consumed = false;
     try {
       if (FEATURE_FLAG_AI_GRAPHICS) {
         // Reserved for Higgsfield / AI render path.
@@ -76,6 +87,7 @@ export function QuoteGraphicsStudio({ userId }: Props) {
         }
         return;
       }
+      consumed = true;
 
       setRemaining(result.remaining);
       setPreview(true);
@@ -83,7 +95,10 @@ export function QuoteGraphicsStudio({ userId }: Props) {
         `Graphic saved to your vault preview. ${result.remaining} remaining this month.`
       );
     } catch (error) {
-      // Do not consume quota on clear local/AI failures before consume succeeds.
+      if (consumed) {
+        await refundQuoteGraphicSlot(userId);
+        await refreshRemaining();
+      }
       toast.error(error instanceof Error ? error.message : "Could not create graphic.");
     } finally {
       setSaving(false);
@@ -113,16 +128,37 @@ export function QuoteGraphicsStudio({ userId }: Props) {
 
       {!FEATURE_FLAG_AI_GRAPHICS ? (
         <p className="rounded-xl border border-dashed border-border bg-background/60 px-3 py-2 text-xs text-text-muted">
-          AI rendering is feature-flagged off. Preview is local; confirming a graphic still uses one
-          Free monthly slot so limits stay accurate.
+          Graphics are generated from your favorite quotes. A Free monthly slot is used only after a
+          graphic saves successfully.
         </p>
+      ) : null}
+
+      {favorites.length > 0 ? (
+        <label className="block text-sm font-medium text-text">
+          Favorite quote
+          <select
+            className="mt-1.5 w-full min-h-[44px] rounded-lg border border-border bg-surface px-3 py-2"
+            value=""
+            onChange={(event) => {
+              const selected = favorites.find((item) => item.id === event.target.value);
+              if (selected) setQuote(selected.quote);
+            }}
+          >
+            <option value="">Choose a saved favorite…</option>
+            {favorites.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.quote.slice(0, 80)}
+              </option>
+            ))}
+          </select>
+        </label>
       ) : null}
 
       <Textarea
         label="Quote"
         value={quote}
         onChange={(e) => setQuote(e.target.value)}
-        placeholder="Paste a passage you want to remember…"
+        placeholder="Pick a favorite quote or paste a line…"
         className="min-h-[96px]"
       />
       <Textarea

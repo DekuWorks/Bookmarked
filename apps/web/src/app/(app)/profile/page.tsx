@@ -163,6 +163,9 @@ export default function ProfilePage() {
             <SettingsIcon />
             Account settings
           </ButtonLink>
+          <ButtonLink href="/wrapped/" variant="outline" size="sm">
+            Year in books
+          </ButtonLink>
           <ButtonLink href="/challenges/" variant="outline" size="sm">
             Challenges
           </ButtonLink>

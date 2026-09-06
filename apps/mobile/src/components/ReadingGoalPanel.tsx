@@ -5,7 +5,7 @@ import { validateReadingGoal } from "../../../../packages/utils/profileValidatio
 import { Button } from "./Button";
 import { Input } from "./Input";
 import { ProgressBar } from "./ProgressBar";
-import { updateProfile } from "../services/profile";
+import { upsertYearlyReadingGoal } from "../services/yearlyGoals";
 import type { ReadingGoalStatus } from "../services/readingGoal";
 import { useAuthStore } from "../store/authStore";
 
@@ -59,7 +59,7 @@ export function ReadingGoalPanel({ status }: Props) {
     }
     setSaving(true);
     setError(null);
-    const result = await updateProfile(userId, { yearly_reading_goal: goal });
+    const result = await upsertYearlyReadingGoal(userId, localStatus.year, goal);
     setSaving(false);
     if (result.error) {
       setError(result.error);

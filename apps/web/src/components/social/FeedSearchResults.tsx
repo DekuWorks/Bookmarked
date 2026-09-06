@@ -31,14 +31,15 @@ export function FeedSearchResults({ query, results, loading, error }: Props) {
 
   if (!results) return null;
 
-  const total = results.readers.length + results.books.length + results.posts.length;
+  const total =
+    results.readers.length + results.books.length + results.posts.length + (results.moods?.length ?? 0);
 
   if (total === 0) {
     return (
       <div className="rounded-xl border border-dashed border-border bg-background px-6 py-10 text-center">
         <p className="font-medium text-puce-red">No results for &ldquo;{query}&rdquo;</p>
         <p className="mt-2 text-sm text-text-muted">
-          Try a reader username, book title, or author name.
+          Try a reader username, book title, author, or a mood like #Cozy.
         </p>
         <div className="mt-4">
           <ButtonLink href={`/search?q=${encodeURIComponent(query)}`} variant="outline" size="sm">
@@ -104,6 +105,28 @@ export function FeedSearchResults({ query, results, loading, error }: Props) {
                       </p>
                     ) : null}
                   </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {(results.moods?.length ?? 0) > 0 ? (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">
+            Mood / vibe
+          </h2>
+          <ul className="space-y-2">
+            {(results.moods ?? []).map((hit) => (
+              <li key={hit.id}>
+                <Link
+                  href={bookDetailsPath(hit.bookId)}
+                  className="block rounded-xl border border-border bg-surface px-4 py-3"
+                >
+                  <p className="font-semibold text-text">{hit.bookTitle}</p>
+                  {hit.author ? <p className="text-sm text-text-muted">{hit.author}</p> : null}
+                  <p className="mt-1 text-xs text-text-muted">{hit.feelings.join(" · ")}</p>
                 </Link>
               </li>
             ))}

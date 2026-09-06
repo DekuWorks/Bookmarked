@@ -108,6 +108,7 @@ export default function ProfileRoute() {
         ) : null}
         <ProfileLink shelfIconId="want_to_read" label="Library" tone="surface" onPress={() => router.push("/library")} />
         <ProfileLink chromeIcon="notes" label="Reading Notes" tone="primary" onPress={() => router.push("/notes")} />
+        <ProfileLink icon="📖" label="Year in books" tone="orange" onPress={() => router.push("/wrapped")} />
         <ProfileLink icon="🏁" label="Challenges" tone="orange" onPress={() => router.push("/challenges")} />
         <ProfileLink chromeIcon="clubs" label="Book Clubs" tone="surface" onPress={() => router.push("/clubs")} />
       </View>

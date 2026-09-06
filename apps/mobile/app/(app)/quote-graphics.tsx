@@ -7,7 +7,9 @@ import { ScreenHeader } from "../../src/components/ScreenHeader";
 import {
   consumeQuoteGraphicSlot,
   getQuoteGraphicsRemaining,
+  refundQuoteGraphicSlot,
 } from "../../src/services/usageCounters";
+import { searchNotesWithBooks } from "../../src/services/readingNotes";
 import { useAuthStore } from "../../src/store/authStore";
 import { isEntitlementLimitError } from "../../src/utils/subscription";
 import { SANS_FONT, SANS_FONT_BOLD, SERIF_DISPLAY_FONT } from "../../src/constants/theme";
@@ -22,6 +24,7 @@ export default function QuoteGraphicsRoute() {
   const userId = useAuthStore((s) => s.user?.id);
   const [quote, setQuote] = useState("");
   const [attribution, setAttribution] = useState("");
+  const [favorites, setFavorites] = useState<Array<{ id: string; quote: string }>>([]);
   const [remaining, setRemaining] = useState<number | null>(null);
   const [preview, setPreview] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -35,7 +38,15 @@ export default function QuoteGraphicsRoute() {
 
   useEffect(() => {
     void refreshRemaining();
-  }, [refreshRemaining]);
+    if (!userId) return;
+    void searchNotesWithBooks({ userId, category: "favorite_quote", limit: 25 }).then(({ notes }) => {
+      setFavorites(
+        notes
+          .filter((note) => note.quote?.trim())
+          .map((note) => ({ id: note.id, quote: note.quote!.trim() }))
+      );
+    });
+  }, [refreshRemaining, userId]);
 
   async function handleSave() {
     if (!userId) return;
@@ -50,6 +61,7 @@ export default function QuoteGraphicsRoute() {
 
     setSaving(true);
     setMessage(null);
+    let consumed = false;
     try {
       if (FEATURE_FLAG_AI_GRAPHICS) {
         throw new Error("AI quote graphics are not enabled yet.");
@@ -63,10 +75,15 @@ export default function QuoteGraphicsRoute() {
         }
         return;
       }
+      consumed = true;
       setRemaining(result.remaining);
       setPreview(true);
       setMessage(`Saved. ${result.remaining} left this month.`);
     } catch (error) {
+      if (consumed) {
+        await refundQuoteGraphicSlot(userId);
+        await refreshRemaining();
+      }
       setMessage(error instanceof Error ? error.message : "Could not create graphic.");
     } finally {
       setSaving(false);
@@ -84,11 +101,26 @@ export default function QuoteGraphicsRoute() {
       />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: TAB_BAR_SPACE }} keyboardShouldPersistTaps="handled">
         <Text style={{ fontFamily: SANS_FONT, color: colors.inkMuted }}>
-          Free members get 3 quote graphics per month.
+          Graphics start from your favorite quotes. A Free monthly slot is used only after a graphic
+          saves successfully.
         </Text>
         <Text className="mt-2 text-xs font-semibold text-puce-red" style={{ fontFamily: SANS_FONT_BOLD }}>
           {remaining == null ? "…" : `${remaining} left this month`}
         </Text>
+
+        {favorites.length > 0 ? (
+          <View className="mt-5">
+            <Text className="mb-2 text-sm font-medium text-ink">Favorite quote</Text>
+            {favorites.map((item) => (
+              <Button
+                key={item.id}
+                title={item.quote.slice(0, 80)}
+                variant="ghost"
+                onPress={() => setQuote(item.quote)}
+              />
+            ))}
+          </View>
+        ) : null}
 
         <Text className="mt-5 mb-2 text-sm font-medium text-ink">Quote</Text>
         <TextInput

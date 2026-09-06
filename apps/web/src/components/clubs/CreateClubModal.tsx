@@ -10,9 +10,11 @@ import { BookPickerModal } from "@/components/clubs/BookPickerModal";
 import { InviteMembersModal } from "@/components/clubs/InviteMembersModal";
 import { CircleAvatarUpload } from "@/components/ui/CircleAvatarUpload";
 import { useToast } from "@/components/ui/Toast";
+import { FeatureLimitModal } from "@/components/premium/FeatureLimitModal";
 import { createClub, shareClubToFeed } from "@/lib/services/bookClubs";
 import { uploadClubAvatar } from "@/lib/services/entityAvatar";
 import { clubDetailPath } from "@/lib/routes/clubs";
+import { ENTITLEMENT_LIMIT_MESSAGES, isEntitlementLimitError } from "@/lib/utils/subscription";
 import {
   CLUB_GENRE_OPTIONS,
   canShareClubToFeed,
@@ -93,6 +95,7 @@ export function CreateClubModal({ open, onClose, currentUserId }: Props) {
   const [shareToFeed, setShareToFeed] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [limitOpen, setLimitOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -110,6 +113,7 @@ export function CreateClubModal({ open, onClose, currentUserId }: Props) {
     setShareToFeed(true);
     setInviteOpen(false);
     setError(null);
+    setLimitOpen(false);
   }, [open]);
 
   function handleVisibilityChange(next: BookClubVisibility) {
@@ -155,6 +159,10 @@ export function CreateClubModal({ open, onClose, currentUserId }: Props) {
 
     if (result.error || !result.clubId) {
       setSubmitting(false);
+      if (result.error && isEntitlementLimitError(result.error)) {
+        setLimitOpen(true);
+        return;
+      }
       setError(result.error ?? "Could not create club.");
       toast.error(result.error ?? "Could not create club.");
       return;
@@ -492,6 +500,13 @@ export function CreateClubModal({ open, onClose, currentUserId }: Props) {
           clubName={name.trim() || undefined}
         />
       ) : null}
+
+      <FeatureLimitModal
+        open={limitOpen}
+        onClose={() => setLimitOpen(false)}
+        featureLabel="Book clubs"
+        limitMessage={ENTITLEMENT_LIMIT_MESSAGES.joined_book_clubs}
+      />
     </>
   );
 }

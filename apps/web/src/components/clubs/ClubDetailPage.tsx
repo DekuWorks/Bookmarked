@@ -21,7 +21,7 @@ import { ClubInviteModal } from "@/components/clubs/ClubInviteModal";
 import { ClubSettingsModal } from "@/components/clubs/ClubSettingsModal";
 import { ContentActionsMenu } from "@/components/moderation/ContentActionsMenu";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
-import { isEntitlementLimitError } from "@/lib/utils/subscription";
+import { ENTITLEMENT_LIMIT_MESSAGES, isEntitlementLimitError } from "@/lib/utils/subscription";
 import {
   deleteClub,
   ensureClubGroupConversation,
@@ -257,7 +257,7 @@ function ClubDetailContent() {
         open={limitOpen}
         onClose={() => setLimitOpen(false)}
         featureLabel="Book clubs"
-        limitMessage="Free members can join 3 book clubs. Upgrade to Bookmarked Plus for unlimited clubs."
+        limitMessage={ENTITLEMENT_LIMIT_MESSAGES.joined_book_clubs}
       />
 
       <ClubInviteModal

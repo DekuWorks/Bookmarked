@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { QuotePdfExportButton } from "@/components/quotes/QuotePdfExportButton";
 import { NotesSearchForm } from "@/components/notes/NotesSearchForm";
 import { NotesSearchFilters } from "@/components/notes/NotesSearchFilters";
 import { NotesSearchResults } from "@/components/notes/NotesSearchResults";
@@ -54,6 +55,9 @@ function NotesSearchContent() {
           >
             Quote Graphics
           </Link>
+          <div className="mt-3">
+            <QuotePdfExportButton userId={user.id} />
+          </div>
         </p>
       </header>
 

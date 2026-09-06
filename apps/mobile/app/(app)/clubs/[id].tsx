@@ -30,7 +30,7 @@ import { FeatureLimitModal } from "../../../src/components/FeatureLimitModal";
 import { Input } from "../../../src/components/Input";
 import { InviteMembersSheet } from "../../../src/components/InviteMembersSheet";
 import { LoadingState } from "../../../src/components/LoadingState";
-import { isEntitlementLimitError } from "../../../src/utils/subscription";
+import { ENTITLEMENT_LIMIT_MESSAGES, isEntitlementLimitError } from "../../../src/utils/subscription";
 import { shareExternally } from "../../../src/services/externalShare";
 import { buildClubShareComposerPayload } from "../../../../../packages/utils/sharePreview";
 import {
@@ -673,7 +673,7 @@ export default function ClubDetailRoute() {
         open={limitOpen}
         onClose={() => setLimitOpen(false)}
         featureLabel="Book clubs"
-        limitMessage="Free members can join 3 book clubs. Upgrade to Bookmarked Plus for unlimited clubs."
+        limitMessage={ENTITLEMENT_LIMIT_MESSAGES.joined_book_clubs}
       />
 
       <View className="overflow-hidden rounded-2xl border border-brand-border bg-surface">

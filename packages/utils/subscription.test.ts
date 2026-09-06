@@ -7,6 +7,12 @@ import {
   canCreateCustomShelf,
   canJoinBookClub,
   canSaveQuote,
+  challengeJoinConsumesYearlySlot,
+  challengeRecordConsumesYearlySlot,
+  checkCustomShelfLimit,
+  checkSavedQuoteLimit,
+  clubMembershipConsumesJoinSlot,
+  resolveChallengeJoinKind,
   getEntitlements,
   getReadingDnaAccess,
   subscriptionIsActive,
@@ -62,6 +68,37 @@ describe("ENTITLEMENTS + canAccessFeature", () => {
     expect(canSaveQuote(25, null)).toBe(false);
     expect(canJoinBookClub(2, null)).toBe(true);
     expect(canCreateCustomShelf(5, activePlus)).toBe(true);
+  });
+
+  it("returns structured limit results and never applies Free caps to Plus", () => {
+    const blocked = checkCustomShelfLimit(1, null);
+    expect(blocked).toMatchObject({ allowed: false, currentUsage: 1, limit: 1 });
+    expect(blocked.reason).toMatch(/1 custom shelf/i);
+    expect(checkSavedQuoteLimit(25, activePlus)).toMatchObject({
+      allowed: true,
+      currentUsage: 25,
+      limit: Infinity,
+    });
+    expect(clubMembershipConsumesJoinSlot("create_owner")).toBe(true);
+    expect(clubMembershipConsumesJoinSlot("join")).toBe(true);
+    expect(clubMembershipConsumesJoinSlot("invite_accept")).toBe(true);
+    expect(clubMembershipConsumesJoinSlot("request_approve")).toBe(true);
+    expect(challengeJoinConsumesYearlySlot("official")).toBe(false);
+    expect(challengeJoinConsumesYearlySlot("user")).toBe(true);
+    expect(challengeJoinConsumesYearlySlot("community")).toBe(true);
+    expect(challengeJoinConsumesYearlySlot("club")).toBe(true);
+    expect(challengeJoinConsumesYearlySlot("friend")).toBe(true);
+    expect(challengeJoinConsumesYearlySlot("abandoned")).toBe(false);
+    expect(resolveChallengeJoinKind({ ownerKind: "official" })).toBe("official");
+    expect(resolveChallengeJoinKind({ ownerKind: "user", featured: true })).toBe("official");
+    expect(resolveChallengeJoinKind({ ownerKind: "user", visibility: "friend" })).toBe("friend");
+    expect(resolveChallengeJoinKind({ ownerKind: "user", visibility: "public" })).toBe("community");
+    expect(resolveChallengeJoinKind({ ownerKind: "user", visibility: "private" })).toBe("user");
+    expect(resolveChallengeJoinKind({ ownerKind: "user", isRejoin: true })).toBe("abandoned");
+    expect(challengeRecordConsumesYearlySlot({ ownerKind: "official" })).toBe(false);
+    expect(challengeRecordConsumesYearlySlot({ ownerKind: "user", featured: true })).toBe(false);
+    expect(challengeRecordConsumesYearlySlot({ ownerKind: "user", visibility: "public" })).toBe(true);
+    expect(challengeRecordConsumesYearlySlot({ ownerKind: "user", isRejoin: true })).toBe(false);
   });
 
   it("keeps access during grace_period and canceled-until-expiry", () => {

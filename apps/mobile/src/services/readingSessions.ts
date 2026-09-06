@@ -85,6 +85,42 @@ export async function listUserReadingSessions(
   });
 }
 
+export async function listSessionsForCalendar(
+  userId: string,
+  startDate: string,
+  endDate: string
+): Promise<UserReadingSession[]> {
+  const { data, error } = await supabase
+    .from("reading_sessions")
+    .select("id, user_id, user_book_id, session_date, activity_kind, pages_read, listening_seconds, listening_start_seconds, listening_end_seconds, created_at, user_books(book_id, books(title, author, cover_url))")
+    .eq("user_id", userId)
+    .gte("session_date", startDate)
+    .lt("session_date", endDate)
+    .order("session_date", { ascending: true })
+    .limit(2000);
+
+  if (error) {
+    console.error("[readingSessions] calendar list failed:", error);
+    return [];
+  }
+
+  return (data ?? []).map((row) => {
+    const { user_books: userBook, ...session } = row as ReadingSession & {
+      user_books: UserBookJoinRow | UserBookJoinRow[] | null;
+    };
+    const join = Array.isArray(userBook) ? userBook[0] : userBook;
+    const books = join?.books;
+    const book = Array.isArray(books) ? books[0] : books;
+    return {
+      ...(session as ReadingSession),
+      bookTitle: book?.title ?? null,
+      bookAuthor: book?.author ?? null,
+      bookId: join?.book_id ?? null,
+      bookCoverUrl: book?.cover_url ?? null,
+    };
+  });
+}
+
 export async function createReadingSession(
   input: CreateReadingSessionInput
 ): Promise<{ error?: string; session?: ReadingSession }> {

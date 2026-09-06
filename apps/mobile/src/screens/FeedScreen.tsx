@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ScrollView, useWindowDimensions, View, type LayoutChangeEvent } from "react-native";
+import { Pressable, ScrollView, Text, useWindowDimensions, View, type LayoutChangeEvent } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { BrandTopHeader } from "../components/BrandTopHeader";
 import { FeedSearchBar } from "../components/FeedSearchBar";
@@ -70,7 +70,7 @@ export function FeedScreen() {
       .then(setSearchResults)
       .catch((err) => {
         setSearchError(err instanceof Error ? err.message : "Search failed.");
-        setSearchResults({ readers: [], books: [], posts: [] });
+        setSearchResults({ readers: [], books: [], posts: [], moods: [] });
       })
       .finally(() => setSearchLoading(false));
   }, [userId, debouncedQuery, isSearching]);
@@ -99,6 +99,17 @@ export function FeedScreen() {
         <BrandTopHeader>
           <View className="mt-4 w-full">
             <FeedSearchBar value={searchQuery} onChange={setSearchQuery} />
+            <View className="mt-2 flex-row flex-wrap gap-2">
+              {["#Cozy", "#Dark", "#Funny", "#Romantic"].map((mood) => (
+                <Pressable
+                  key={mood}
+                  onPress={() => setSearchQuery(mood)}
+                  className="rounded-full border border-brand-border bg-surface px-3 py-1"
+                >
+                  <Text className="text-xs font-semibold text-puce-red">{mood}</Text>
+                </Pressable>
+              ))}
+            </View>
           </View>
           {!isSearching ? (
             <SegmentedTabs

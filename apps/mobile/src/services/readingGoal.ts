@@ -13,9 +13,9 @@ export type ReadingGoalStatus = {
 };
 
 function isBookCountedForYear(ub: LibraryBookRow, year: number): boolean {
-  // DNF never counts toward reading goals.
+  // DNF never counts. Use canonical finished_at only — never updated_at.
   if (!countsTowardFinishedStats(ub)) return false;
-  const dateStr = ub.finished_at ?? ub.updated_at;
+  const dateStr = ub.finished_at;
   if (!dateStr) return false;
   return new Date(dateStr).getFullYear() === year;
 }

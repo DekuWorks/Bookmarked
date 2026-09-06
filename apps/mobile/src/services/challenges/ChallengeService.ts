@@ -9,6 +9,7 @@ import {
   ENTITLEMENT_LIMIT_MESSAGES,
   canCreateReadingChallenge,
   canJoinReadingChallenge,
+  challengeRecordConsumesYearlySlot,
   getEntitlements,
   toSubscriptionAccessFromRow,
 } from "../../utils/subscription";
@@ -406,12 +407,22 @@ export async function joinChallenge(challengeId: string): Promise<{ error?: stri
   if (existing && existing.status !== "left") return {};
 
   const year = new Date().getUTCFullYear();
-  const [{ count, error: countError }, { data: subscription }] = await Promise.all([
+  const [{ data: challengeRow }, { count, error: countError }, { data: subscription }] = await Promise.all([
+    supabase
+      .from("reading_challenges")
+      .select("owner_kind, featured, visibility")
+      .eq("id", challengeId)
+      .maybeSingle(),
     supabase
       .from("reading_challenge_members")
-      .select("challenge_id, reading_challenges!inner(year)", { count: "exact", head: true })
+      .select("challenge_id, reading_challenges!inner(year, owner_kind, featured)", {
+        count: "exact",
+        head: true,
+      })
       .eq("user_id", user.id)
-      .eq("reading_challenges.year", year),
+      .eq("reading_challenges.year", year)
+      .neq("reading_challenges.owner_kind", "official")
+      .eq("reading_challenges.featured", false),
     supabase
       .from("user_subscriptions")
       .select("subscription_tier, subscription_status, subscription_expires_at")
@@ -419,29 +430,38 @@ export async function joinChallenge(challengeId: string): Promise<{ error?: stri
       .maybeSingle(),
   ]);
 
-  if (countError) {
-    console.warn("[ChallengeService] count query:", countError.message);
-  }
-
-  const access = toSubscriptionAccessFromRow(subscription);
-  if (!canJoinReadingChallenge(count ?? 0, access)) {
-    return { error: ENTITLEMENT_LIMIT_MESSAGES.reading_challenges };
-  }
-
-  const entitlements = getEntitlements(access);
-  const limit = entitlements.readingChallengesPerYear;
-  const periodKey = periodKeyForCounter(USAGE_COUNTER_KEYS.readingChallenges);
-  const rpcLimit = Number.isFinite(limit) ? limit : 1_000_000;
-
-  const { data: usageResult, error: usageError } = await supabase.rpc("try_increment_usage_counter", {
-    p_counter_key: USAGE_COUNTER_KEYS.readingChallenges,
-    p_period_key: periodKey,
-    p_limit: rpcLimit,
+  const consumesSlot = challengeRecordConsumesYearlySlot({
+    ownerKind: challengeRow?.owner_kind,
+    featured: Boolean(challengeRow?.featured),
+    visibility: challengeRow?.visibility,
+    isRejoin: Boolean(existing),
   });
 
-  if (usageError) return { error: usageError.message };
-  if (!(usageResult as { ok?: boolean } | null)?.ok) {
-    return { error: ENTITLEMENT_LIMIT_MESSAGES.reading_challenges };
+  if (consumesSlot) {
+    if (countError) {
+      console.warn("[ChallengeService] count query:", countError.message);
+    }
+
+    const access = toSubscriptionAccessFromRow(subscription);
+    if (!canJoinReadingChallenge(count ?? 0, access)) {
+      return { error: ENTITLEMENT_LIMIT_MESSAGES.reading_challenges };
+    }
+
+    const entitlements = getEntitlements(access);
+    const limit = entitlements.readingChallengesPerYear;
+    const periodKey = periodKeyForCounter(USAGE_COUNTER_KEYS.readingChallenges);
+    const rpcLimit = Number.isFinite(limit) ? limit : 1_000_000;
+
+    const { data: usageResult, error: usageError } = await supabase.rpc("try_increment_usage_counter", {
+      p_counter_key: USAGE_COUNTER_KEYS.readingChallenges,
+      p_period_key: periodKey,
+      p_limit: rpcLimit,
+    });
+
+    if (usageError) return { error: usageError.message };
+    if (!(usageResult as { ok?: boolean } | null)?.ok) {
+      return { error: ENTITLEMENT_LIMIT_MESSAGES.reading_challenges };
+    }
   }
 
   if (existing) {

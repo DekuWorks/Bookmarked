@@ -61,6 +61,7 @@ export default function AppTabsLayout() {
         <Tabs.Screen name="reading-dna" options={{ href: null }} />
         <Tabs.Screen name="challenges" options={{ href: null }} />
         <Tabs.Screen name="quote-graphics" options={{ href: null }} />
+        <Tabs.Screen name="wrapped" options={{ href: null }} />
       </Tabs>
     </TabBarScrollProvider>
   );

@@ -32,7 +32,8 @@ export function FeedSearchResults({ query, results, loading, error }: Props) {
 
   if (!results) return null;
 
-  const total = results.readers.length + results.books.length + results.posts.length;
+  const total =
+    results.readers.length + results.books.length + results.posts.length + (results.moods?.length ?? 0);
 
   if (total === 0) {
     return (
@@ -102,6 +103,27 @@ export function FeedSearchResults({ query, results, loading, error }: Props) {
                     </Text>
                   ) : null}
                 </View>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      ) : null}
+
+      {(results.moods?.length ?? 0) > 0 ? (
+        <View>
+          <Text className="mb-3 text-xs font-semibold uppercase tracking-wide text-ink-muted">
+            Mood / vibe
+          </Text>
+          <View className="gap-2">
+            {(results.moods ?? []).map((hit) => (
+              <Pressable
+                key={hit.id}
+                onPress={() => router.push(`/book/${hit.bookId}`)}
+                className="rounded-2xl border border-brand-border bg-surface p-3"
+              >
+                <Text className="font-semibold text-ink">{hit.bookTitle}</Text>
+                {hit.author ? <Text className="text-sm text-ink-muted">{hit.author}</Text> : null}
+                <Text className="mt-1 text-xs text-ink-muted">{hit.feelings.join(" · ")}</Text>
               </Pressable>
             ))}
           </View>

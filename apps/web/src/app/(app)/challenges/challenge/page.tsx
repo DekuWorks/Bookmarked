@@ -23,7 +23,7 @@ import { formatChallengeAmount, formatChallengeListeningTime } from "@bookmarked
 import { checklistItemAnnouncement, challengeProgressAnnouncement } from "@bookmarked/utils/challengeDisplay";
 import { visibilityLabel as challengeVisibilityLabel } from "@bookmarked/utils/challengeDisplay";
 import { originBackLink } from "@bookmarked/utils/navigationOrigin";
-import { isEntitlementLimitError } from "@bookmarked/utils/subscription";
+import { ENTITLEMENT_LIMIT_MESSAGES, isEntitlementLimitError } from "@bookmarked/utils/subscription";
 
 export default function ChallengeDetailPage() {
   const user = useAuthUser();
@@ -151,7 +151,7 @@ export default function ChallengeDetailPage() {
         open={limitOpen}
         onClose={() => setLimitOpen(false)}
         featureLabel="Reading challenges"
-        limitMessage="Free members can join 3 reading challenges per year. Subscribe in the Bookmarked iOS app for unlimited challenges."
+        limitMessage={ENTITLEMENT_LIMIT_MESSAGES.reading_challenges}
       />
 
       <Link href={back.href} className="text-sm font-medium text-primary hover:underline">

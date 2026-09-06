@@ -79,6 +79,16 @@ export {
   canJoinReadingChallenge,
   canCreateReadingChallenge,
   canSaveQuote,
+  checkCountLimit,
+  checkCustomShelfLimit,
+  checkSavedQuoteLimit,
+  checkQuoteGraphicLimit,
+  checkBookClubJoinLimit,
+  checkReadingChallengeJoinLimit,
+  clubMembershipConsumesJoinSlot,
+  challengeJoinConsumesYearlySlot,
+  challengeRecordConsumesYearlySlot,
+  resolveChallengeJoinKind,
   getEntitlements,
   getReadingDnaAccess,
   isPremiumSubscriber,
@@ -88,6 +98,9 @@ export {
   ENTITLEMENT_LIMIT_MESSAGES,
   IOS_SUBSCRIBE_COPY,
   isEntitlementLimitError,
+  type ChallengeJoinKind,
+  type ClubMembershipKind,
+  type EntitlementCheckResult,
   type EntitlementLimitFeature,
   type ReadingDnaAccess,
   type SubscriptionAccess,
@@ -786,3 +799,64 @@ export {
 } from "./challengeDisplay";
 
 export { POST_NOTIFICATION_COPY, postNotificationTitle } from "./postNotifications";
+
+export {
+  READING_CALENDAR_COPY,
+  READING_CALENDAR_WEEKDAYS,
+  addCalendarMonths,
+  buildReadingCalendarMonth,
+  calendarMonthLabel,
+  type CalendarDay,
+  type CalendarMonthCursor,
+  type CalendarSessionInput,
+  type ReadingCalendarMonth,
+} from "./readingCalendar";
+
+export {
+  YEARLY_GOAL_MAX,
+  YEARLY_GOAL_MIN,
+  canonicalFinishDateKey,
+  computeYearlyReadingGoal,
+  countBooksFinishedInYear,
+  finishEventsFromLibraryBooks,
+  finishedAtCountsForYear,
+  yearFromDateKey,
+  type YearlyGoalFinishEvent,
+  type YearlyGoalStatus,
+} from "./yearlyReadingGoal";
+
+export {
+  QUOTE_PDF_BRAND,
+  buildQuotePdfDocument,
+  isOwnQuoteExport,
+  quotePdfFilename,
+  wrapQuotePdfText,
+  type QuotePdfItem,
+} from "./quotePdf";
+
+export {
+  YEARLY_WRAPPED_COPY,
+  availableWrappedYears,
+  computeYearlyWrapped,
+  type YearlyWrappedInput,
+  type YearlyWrappedRecap,
+} from "./yearlyWrapped";
+
+export {
+  AFFILIATE_DISCLOSURE,
+  isbnSearchUrl,
+  validateAffiliateUrl,
+} from "./affiliateLinks";
+
+export {
+  DISCOVERY_MOOD_OPTIONS,
+  MOOD_SEARCH_PREFIX,
+  moodLabelMatches,
+  parseMoodSearchQuery,
+} from "./moodDiscovery";
+
+export {
+  canViewerSeeShelf,
+  filterPublicLibraryBooks,
+  visibilityForBuiltInShelf,
+} from "./publicLibraryVisibility";

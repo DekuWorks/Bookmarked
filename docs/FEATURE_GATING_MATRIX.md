@@ -5,7 +5,8 @@ Canonical entitlements for Bookmarked membership (web + native iOS).
 - **Tiers:** `SubscriptionTier = "free" | "plus" | "home"`
 - **Keys:** `FeatureKey` in [`packages/types/index.ts`](../packages/types/index.ts)
 - **Limits:** `ENTITLEMENTS` in [`packages/utils/subscription.ts`](../packages/utils/subscription.ts)
-- **API:** `canAccessFeature`, `getEntitlements`, `canCreateCustomShelf`, `canSaveQuote`, `canCreateQuoteGraphic`, `canJoinBookClub`, `canJoinReadingChallenge`, `getReadingDnaAccess`
+- **API:** `canAccessFeature`, `getEntitlements`, structured `check*Limit` helpers (`{ allowed, reason, currentUsage, limit }`), boolean `canCreate*` wrappers, `getReadingDnaAccess`
+- **Contract:** [`feature-entitlements.md`](./feature-entitlements.md)
 
 ## Status legend
 
@@ -15,11 +16,11 @@ Complete · Partially complete · Missing · Bugged · Requires DB · Requires U
 
 | FeatureKey | Free | Plus | Home | Enforcement today | Product status |
 |---|---|---|---|---|---|
-| `custom_shelves` | limit 1 | unlimited | unlimited | Create + FeatureLimitModal (web + iOS) | Partially complete |
-| `saved_quotes` | limit 25 | unlimited | unlimited | `createReadingNote` counts quotes; FeatureLimitModal wired | Partially complete · Requires quote-vault polish |
-| `quote_graphics` | 3 / month | unlimited | unlimited | `usage_counters` + `consumeQuoteGraphicSlot`; generator UI stub | Partially complete · Requires UI |
-| `joined_book_clubs` | limit 3 | unlimited | unlimited | `joinClub` enforces + FeatureLimitModal | Partially complete |
-| `reading_challenges` | 3 / year join; Create is Plus | unlimited | unlimited | Join yearly cap + `create_user_reading_challenge` / `user_has_paid_entitlement`. Web locked copy → iOS App Store only (no web checkout) | Complete (web + iOS) |
+| `custom_shelves` | limit 1 | unlimited | unlimited | Client `checkCustomShelfLimit` + SQL `enforce_custom_shelf_limit` + FeatureLimitModal | Complete (Free cap) |
+| `saved_quotes` | limit 25 | unlimited | unlimited | Client `checkSavedQuoteLimit` + SQL `enforce_saved_quote_limit` + FeatureLimitModal | Complete (Free cap) |
+| `quote_graphics` | 3 / month | unlimited | unlimited | `usage_counters` consume-on-success; favorite-quote picker; Higgsfield AI still flagged off | Partially complete · Requires AI |
+| `joined_book_clubs` | limit 3 create or join | unlimited | unlimited | `checkBookClubJoinLimit` + SQL `enforce_book_club_join_limit` (owner + member) + FeatureLimitModal | Complete (Free cap) |
+| `reading_challenges` | 3 / year user/community/club/friend; official/featured free extra; Create is Plus | unlimited | unlimited | Join yearly cap + `enforce_reading_challenge_join_limit` + `create_user_reading_challenge` / `user_has_paid_entitlement`. Official/featured skip the slot. Web locked copy → iOS App Store only (no web checkout) | Complete (web + iOS) |
 | `advanced_reading_insights` | no | yes | yes | Insights panels gated via aliases | Partially complete · Requires UI polish |
 | `reading_speed` | no | yes | yes | Partial analytics | Partially complete |
 | `reading_time` | no | yes | yes | Partial analytics | Partially complete |
@@ -29,9 +30,9 @@ Complete · Partially complete · Missing · Bugged · Requires DB · Requires U
 | `favorite_authors` | no | yes | yes | Missing dedicated vault | Missing · Requires UI · Requires DB |
 | `mood_analytics` | no | yes | yes | Feelings exist; analytics incomplete | Partially complete |
 | `year_over_year_comparison` | no | yes | yes | Missing | Missing · Requires UI |
-| `advanced_reading_goals` | no | yes | yes | Yearly goal exists; extras missing | Partially complete · Requires DB |
+| `advanced_reading_goals` | no | yes | yes | Free yearly goal is `yearly_reading_goals` `(user_id, year)`. Plus extras (multi-goal, pages, etc.) not built | Partially complete · Free yearly shipped |
 | `reading_heatmaps` | no | yes | yes | Mobile heatmap present; web parity uneven | Partially complete |
-| `monthly_wrapped` | no | yes | yes | Missing productized Wrapped | Missing · Requires Higgsfield design · Requires UI |
+| `monthly_wrapped` | no | yes | yes | Yearly recap is Free (`/wrapped/`). Monthly Wrapped stays Plus and is not built | Partially complete · Yearly Free shipped |
 | `ai_reading_companion` | no | yes | yes | Edge fn exists; companion UX incomplete | Partially complete · Requires AI |
 | `quote_scanner` | no | yes | yes | Missing | Missing · Requires AI · Requires UI |
 | `advanced_reviews` | no | yes | yes | Base reviews exist; chapter/character ratings missing | Partially complete · Requires DB · Requires UI |
@@ -56,8 +57,8 @@ Complete · Partially complete · Missing · Bugged · Requires DB · Requires U
 
 | Plan | Brief | Current upgrade UI |
 |---|---|---|
-| Plus | $5.99 / mo · $59.99 / yr | Purchase is App Store IAP only. Web `/upgrade/` explains iOS subscribe; existing Stripe rows still unlock both platforms. |
-| Home | $9.99 / mo · $99.99 / yr | Not sold as separate checkout SKU yet |
+| Plus | App Store localized price only | Purchase is App Store IAP only. Web `/upgrade/` explains iOS subscribe; no hardcoded prices in Free/Plus UX. Existing Stripe rows still unlock both platforms. |
+| Home | App Store localized price only | Not sold as separate checkout SKU yet |
 
 ## Downgrade policy
 
