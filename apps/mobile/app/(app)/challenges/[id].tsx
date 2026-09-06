@@ -17,7 +17,7 @@ import { searchReaders } from "../../../src/services/feedSearch";
 import { useAuthStore } from "../../../src/store/authStore";
 import { formatChallengeAmount, formatChallengeListeningTime } from "../../../../../packages/utils/challengeDisplay";
 import { challengeVisibilityLabel } from "../../../../../packages/utils";
-import { isEntitlementLimitError } from "../../../../../packages/utils/subscription";
+import { ENTITLEMENT_LIMIT_MESSAGES, isEntitlementLimitError } from "../../../../../packages/utils/subscription";
 import { originBackHref } from "../../../../../packages/utils/navigationOrigin";
 
 export default function ChallengeDetailRoute() {
@@ -79,7 +79,7 @@ export default function ChallengeDetailRoute() {
         open={limitOpen}
         onClose={() => setLimitOpen(false)}
         featureLabel="Reading challenges"
-        limitMessage="Free members can join 3 reading challenges per year. Subscribe in this app for unlimited challenges."
+        limitMessage={ENTITLEMENT_LIMIT_MESSAGES.reading_challenges}
       />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 48 }}>
         <Text className="text-xs uppercase text-ink-muted">

@@ -23,6 +23,7 @@ import { TAB_BAR_SPACE, useTabBarScroll } from "../../src/navigation/TabBarScrol
 import { useAuthStore } from "../../src/store/authStore";
 import type { ReadingNoteCategory } from "../../src/types";
 import { formatNoteLocation } from "../../../../packages/utils/noteLocation";
+import { QuotePdfExportButton } from "../../src/components/QuotePdfExportButton";
 import { ShareNoteButton } from "../../src/components/ShareNoteButton";
 import {
   NOTES_BOOK_FILTER_COPY,
@@ -82,6 +83,7 @@ export default function NotesScreen() {
         >
           <Text className="text-base font-bold text-on-primary">Quote Graphics</Text>
         </Pressable>
+        {userId ? <QuotePdfExportButton userId={userId} /> : null}
         <View className="mb-3">
           <NotesBookFilterButton
             options={bookOptions.data?.options ?? []}

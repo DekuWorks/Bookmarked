@@ -5,8 +5,10 @@ import { BookCover } from "../../../src/components/BookCover";
 import { BookPicker } from "../../../src/components/BookPicker";
 import { Button } from "../../../src/components/Button";
 import { CircleAvatarPicker } from "../../../src/components/CircleAvatarPicker";
+import { FeatureLimitModal } from "../../../src/components/FeatureLimitModal";
 import { Input } from "../../../src/components/Input";
 import { InviteMembersSheet } from "../../../src/components/InviteMembersSheet";
+import { ENTITLEMENT_LIMIT_MESSAGES, isEntitlementLimitError } from "../../../src/utils/subscription";
 import {
   useCreateClub,
   useShareClubToFeed,
@@ -69,6 +71,7 @@ export default function CreateClubRoute() {
   const [submitting, setSubmitting] = useState(false);
   const [createdClubId, setCreatedClubId] = useState<string | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [limitOpen, setLimitOpen] = useState(false);
   const shareToFeed = useShareClubToFeed(createdClubId ?? "");
 
   const joinPolicyOptions = useMemo(() => {
@@ -153,6 +156,10 @@ export default function CreateClubRoute() {
     setSubmitting(false);
 
     if (result.error || !result.clubId) {
+      if (result.error && isEntitlementLimitError(result.error)) {
+        setLimitOpen(true);
+        return;
+      }
       Alert.alert("Couldn't create club", result.error ?? "Please try again.");
       return;
     }
@@ -450,6 +457,13 @@ export default function CreateClubRoute() {
           onClose={() => setInviteOpen(false)}
         />
       ) : null}
+
+      <FeatureLimitModal
+        open={limitOpen}
+        onClose={() => setLimitOpen(false)}
+        featureLabel="Book clubs"
+        limitMessage={ENTITLEMENT_LIMIT_MESSAGES.joined_book_clubs}
+      />
     </View>
   );
 }

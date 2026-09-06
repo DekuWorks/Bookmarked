@@ -6,7 +6,7 @@ const ROWS = [
   { label: "Saved quotes", free: "25", plus: "Unlimited", home: "Unlimited" },
   { label: "Book clubs", free: "3", plus: "Unlimited", home: "Unlimited" },
   { label: "Reading DNA", free: "Top 3", plus: "Full", home: "Advanced" },
-  { label: "Insights & Wrapped", free: "—", plus: "Yes", home: "Yes" },
+  { label: "Insights & Wrapped", free: "Yearly", plus: "Monthly + yearly", home: "Monthly + yearly" },
   { label: "Book / Reader Map", free: "—", plus: "—", home: "Yes" },
 ] as const;
 
@@ -42,7 +42,7 @@ export function SubscriptionComparison({ showHome = true }: Props) {
         </View>
       ))}
       <Text className="border-t border-brand-border px-3 py-2 text-xs text-ink-muted">
-        Plus: $5.99/month or $59.99/year.
+        Subscribe in this app. Prices come from the App Store.
       </Text>
     </View>
   );

@@ -187,7 +187,7 @@ function FeedContent() {
       .then(setSearchResults)
       .catch((err) => {
         setSearchError(err instanceof Error ? err.message : "Search failed.");
-        setSearchResults({ readers: [], books: [], posts: [] });
+        setSearchResults({ readers: [], books: [], posts: [], moods: [] });
       })
       .finally(() => setSearchLoading(false));
   }, [user, debouncedQuery, isSearching]);
@@ -272,6 +272,18 @@ function FeedContent() {
           </header>
 
           <FeedSearchBar value={searchQuery} onChange={setSearchQuery} />
+          <div className="flex flex-wrap gap-2" aria-label="Search by mood">
+            {["#Cozy", "#Dark", "#Funny", "#Romantic"].map((mood) => (
+              <button
+                key={mood}
+                type="button"
+                className="rounded-full border border-border bg-surface px-3 py-1 text-xs font-semibold text-puce-red"
+                onClick={() => setSearchQuery(mood)}
+              >
+                {mood}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

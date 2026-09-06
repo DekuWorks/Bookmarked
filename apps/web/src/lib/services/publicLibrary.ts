@@ -4,6 +4,8 @@ import {
   type LibraryBookRow,
   type ShelfGroup,
 } from "@/lib/services/library";
+import { filterPublicLibraryBooks } from "@bookmarked/utils/publicLibraryVisibility";
+import type { Profile } from "@/types";
 
 const LIBRARY_SELECT =
   "id, shelf_status, progress_percent, progress_pages, rating, is_favorite, finished_at, started_at, created_at, updated_at, books(id, title, author, cover_url, page_count, subjects)";
@@ -34,4 +36,18 @@ export function buildShelfPreview(
 
 export function buildFullShelves(books: LibraryBookRow[]): ShelfGroup[] {
   return groupBooksByShelf(books);
+}
+
+export function filterReaderLibraryBooks(
+  books: LibraryBookRow[],
+  profile: Profile,
+  viewerId: string | null | undefined,
+  viewerFollowsOwner: boolean
+): LibraryBookRow[] {
+  return filterPublicLibraryBooks(books, {
+    ownerId: profile.id,
+    viewerId,
+    viewerFollowsOwner,
+    profile,
+  });
 }

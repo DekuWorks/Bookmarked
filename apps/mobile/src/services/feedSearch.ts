@@ -7,6 +7,7 @@ import {
 import { hydrateActivityRows, type FeedItem } from "./feed";
 import { getFollowingIds } from "./follows";
 import { supabase } from "./supabase";
+import { moodLabelMatches, parseMoodSearchQuery } from "../../../../packages/utils/moodDiscovery";
 
 export type ReaderSearchResult = Profile & {
   isFollowing: boolean;
@@ -21,10 +22,19 @@ export type BookSearchResult = {
   onShelf?: boolean;
 };
 
+export type MoodDiscoveryHit = {
+  id: string;
+  bookId: string;
+  bookTitle: string;
+  author: string | null;
+  feelings: string[];
+};
+
 export type FeedSearchResults = {
   readers: ReaderSearchResult[];
   books: BookSearchResult[];
   posts: FeedItem[];
+  moods?: MoodDiscoveryHit[];
 };
 
 type ActivityRow = {
@@ -165,20 +175,72 @@ export async function searchFeedPosts(
   return hydrateActivityRows(filtered);
 }
 
+export async function searchPublicReviewsByMood(
+  query: string,
+  viewerId: string,
+  limit = 12
+): Promise<MoodDiscoveryHit[]> {
+  const parsed = parseMoodSearchQuery(query);
+  if (parsed.moodIds.length === 0 && parsed.moodLabels.length === 0 && !parsed.text) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("reviews")
+    .select("id, book_id, feelings, books(title, author)")
+    .neq("visibility", "private")
+    .neq("user_id", viewerId)
+    .limit(80);
+
+  if (error) {
+    console.warn("[feedSearch] mood search failed:", error.message);
+    return [];
+  }
+
+  const labels = [
+    ...parsed.moodLabels,
+    ...parsed.moodIds.map((id) => id.replace(/-/g, " ")),
+    ...(parsed.text ? [parsed.text] : []),
+  ];
+
+  return ((data ?? []) as Array<{
+    id: string;
+    book_id: string;
+    feelings: string[] | null;
+    books: { title: string; author: string | null } | { title: string; author: string | null }[] | null;
+  }>)
+    .filter((row) => moodLabelMatches(row.feelings ?? [], labels))
+    .slice(0, limit)
+    .map((row) => {
+      const book = Array.isArray(row.books) ? row.books[0] : row.books;
+      return {
+        id: row.id,
+        bookId: row.book_id,
+        bookTitle: book?.title ?? "Untitled",
+        author: book?.author ?? null,
+        feelings: row.feelings ?? [],
+      };
+    });
+}
+
 export async function searchFeed(
   query: string,
   viewerId: string
 ): Promise<FeedSearchResults> {
   const trimmed = query.trim();
   if (!trimmed) {
-    return { readers: [], books: [], posts: [] };
+    return { readers: [], books: [], posts: [], moods: [] };
   }
 
-  const [readers, books, posts] = await Promise.all([
-    searchReaders(trimmed, viewerId),
-    searchCatalogBooks(trimmed, viewerId),
-    searchFeedPosts(trimmed, viewerId),
+  const parsed = parseMoodSearchQuery(trimmed);
+  const textQuery = parsed.text || trimmed;
+
+  const [readers, books, posts, moods] = await Promise.all([
+    searchReaders(textQuery, viewerId),
+    searchCatalogBooks(textQuery, viewerId),
+    searchFeedPosts(textQuery, viewerId),
+    searchPublicReviewsByMood(trimmed, viewerId),
   ]);
 
-  return { readers, books, posts };
+  return { readers, books, posts, moods };
 }

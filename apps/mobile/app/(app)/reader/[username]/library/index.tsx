@@ -16,6 +16,9 @@ import {
   buildFullShelves,
   getUserLibraryBooks,
 } from "../../../../../src/services/library";
+import { filterPublicLibraryBooks } from "../../../../../../../packages/utils/publicLibraryVisibility";
+import { useAuthStore } from "../../../../../src/store/authStore";
+import { useIsFollowing } from "../../../../../src/hooks/useFollows";
 import { getProfileByUsername } from "../../../../../src/services/profile";
 
 export default function ReaderLibraryScreen() {
@@ -30,10 +33,22 @@ export default function ReaderLibraryScreen() {
   });
   const profile = profileQuery.data;
   const profilePath = readerProfilePath(profile?.username ?? handle);
+  const viewerId = useAuthStore((s) => s.user?.id);
+  const followingQuery = useIsFollowing(profile?.id, Boolean(profile?.id) && profile?.id !== viewerId);
 
   const shelvesQuery = useQuery({
-    queryKey: ["reader-library-full", profile?.id],
-    queryFn: async () => buildFullShelves(await getUserLibraryBooks(profile!.id)),
+    queryKey: ["reader-library-full", profile?.id, viewerId, followingQuery.data],
+    queryFn: async () => {
+      const books = await getUserLibraryBooks(profile!.id);
+      return buildFullShelves(
+        filterPublicLibraryBooks(books, {
+          ownerId: profile!.id,
+          viewerId,
+          viewerFollowsOwner: Boolean(followingQuery.data),
+          profile: profile ?? null,
+        })
+      );
+    },
     enabled: Boolean(profile?.id),
   });
 

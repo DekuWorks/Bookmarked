@@ -91,6 +91,17 @@ export async function consumeQuoteGraphicSlot(
   return { ok: true, remaining: result.remaining ?? 0 };
 }
 
+export async function refundQuoteGraphicSlot(userId: string): Promise<void> {
+  const periodKey = periodKeyForCounter(USAGE_COUNTER_KEYS.quoteGraphics);
+  const { error } = await supabase.rpc("try_decrement_usage_counter", {
+    p_counter_key: USAGE_COUNTER_KEYS.quoteGraphics,
+    p_period_key: periodKey,
+  });
+  if (error) {
+    console.warn("[usageCounters] refund failed for", userId, error.message);
+  }
+}
+
 export async function getQuoteGraphicsRemaining(userId: string): Promise<number> {
   const snapshot = await getUsageSnapshot(userId, USAGE_COUNTER_KEYS.quoteGraphics);
   return snapshot.remaining;

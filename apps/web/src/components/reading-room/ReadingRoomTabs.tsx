@@ -10,6 +10,7 @@ import { AiInsightsPanel } from "@/components/premium/AiInsightsPanel";
 import { PremiumFeatureLock } from "@/components/premium/PremiumFeatureLock";
 import { NotesPanel } from "@/components/reading-room/NotesPanel";
 import { OverviewTab } from "@/components/reading-room/OverviewTab";
+import { ReadingCalendar } from "@/components/calendar/ReadingCalendar";
 import { ReadingGoalPanel } from "@/components/reading-goal/ReadingGoalPanel";
 import { TrailPanel } from "@/components/reading-room/TrailPanel";
 import type { ReadingRoomData } from "@/lib/services/readingRoom";
@@ -145,6 +146,15 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
                   onSaved={() => void onRefresh()}
                 />
               </div>
+              <p className="mt-4 text-center">
+                <Link href="/wrapped/" className="text-sm font-semibold text-primary hover:underline">
+                  Your year in books
+                </Link>
+              </p>
+            </section>
+
+            <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
+              <ReadingCalendar userId={userId} />
             </section>
 
             <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">

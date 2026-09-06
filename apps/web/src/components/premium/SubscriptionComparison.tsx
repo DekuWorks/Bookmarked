@@ -15,7 +15,7 @@ const ROWS: Row[] = [
   { label: "Saved quotes", free: "25", plus: "Unlimited", home: "Unlimited" },
   { label: "Book clubs", free: "3", plus: "Unlimited", home: "Unlimited" },
   { label: "Reading DNA", free: "Top 3 traits", plus: "Full dashboard", home: "Advanced" },
-  { label: "Insights & Wrapped", free: "—", plus: "Included", home: "Included" },
+  { label: "Insights & Wrapped", free: "Yearly recap", plus: "Monthly + yearly", home: "Monthly + yearly" },
   { label: "Book Map / Reader Map", free: "—", plus: "—", home: "Included" },
 ];
 
@@ -71,7 +71,7 @@ export function SubscriptionComparison({ className, showHome = true }: Props) {
         </tbody>
       </table>
       <p className="border-t border-border px-3 py-2 text-xs text-text-muted sm:px-4">
-        Plus: $5.99/month or $59.99/year. Home pricing ships with Home checkout.
+        Subscribe in the Bookmarked iOS app. Prices come from the App Store.
       </p>
     </div>
   );

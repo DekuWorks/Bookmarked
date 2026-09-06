@@ -1,5 +1,6 @@
 import { validateReadingGoal } from "@/lib/utils/profileValidation";
 import { createClient } from "@/lib/supabase/client";
+import { upsertYearlyReadingGoal } from "@/lib/services/yearlyGoals";
 
 export type ProfileActionState = {
   error?: string;
@@ -21,29 +22,22 @@ export async function updateYearlyReadingGoal(
 
   const action = String(formData.get("action") ?? "set");
 
+  const year = new Date().getFullYear();
+
   if (action === "clear") {
-    const { error } = await supabase
-      .from("profiles")
-      .update({ yearly_reading_goal: null })
-      .eq("id", user.id);
-
-    if (error) return { error: "Could not clear your reading goal." };
-
+    const result = await upsertYearlyReadingGoal(user.id, year, null);
+    if (result.error) return { error: "Could not clear your reading goal." };
     return { success: "Reading goal cleared.", goal: null };
   }
 
   const goalResult = validateReadingGoal(formData.get("goal"));
   if (!goalResult.ok) return { error: goalResult.error };
 
-  const { error } = await supabase
-    .from("profiles")
-    .update({ yearly_reading_goal: goalResult.value })
-    .eq("id", user.id);
-
-  if (error) return { error: "Could not save your reading goal." };
+  const result = await upsertYearlyReadingGoal(user.id, year, goalResult.value);
+  if (result.error) return { error: "Could not save your reading goal." };
 
   return {
-    success: `Goal set: ${goalResult.value} books in ${new Date().getFullYear()}.`,
+    success: `Goal set: ${goalResult.value} books in ${year}.`,
     goal: goalResult.value,
   };
 }

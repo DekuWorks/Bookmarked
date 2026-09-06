@@ -586,6 +586,24 @@ export async function createClub(
     const visibility = input.visibility ?? "public";
     const joinPolicy = input.joinPolicy ?? defaultJoinPolicy(visibility);
 
+    const [{ count, error: countError }, { data: subscription }] = await Promise.all([
+      supabase
+        .from("book_club_members")
+        .select("club_id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("membership_status", "active"),
+      supabase
+        .from("user_subscriptions")
+        .select("subscription_tier, subscription_status, subscription_expires_at")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+    ]);
+
+    if (countError) return { error: countError.message };
+    if (!canJoinBookClub(count ?? 0, toSubscriptionAccessFromRow(subscription))) {
+      return { error: ENTITLEMENT_LIMIT_MESSAGES.joined_book_clubs };
+    }
+
     const { data: club, error: clubError } = await supabase
       .from("book_clubs")
       .insert({
@@ -615,7 +633,10 @@ export async function createClub(
       membership_status: "active",
     });
 
-    if (memberError) return { error: memberError.message };
+    if (memberError) {
+      await supabase.from("book_clubs").delete().eq("id", club.id);
+      return { error: memberError.message };
+    }
 
     const { error: settingsError } = await supabase.from("book_club_settings").insert({
       club_id: club.id,

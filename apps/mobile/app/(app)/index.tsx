@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useLocalSearchParams } from "expo-router";
-import { RefreshControl, Text, View } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { Pressable, RefreshControl, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { parseReadingRoomTab } from "../../../../packages/utils/readingRoomTabs";
 import { BrandTopHeader } from "../../src/components/BrandTopHeader";
 import { ScreenGradientWash } from "../../src/components/ScreenGradientWash";
 import { LoadingState } from "../../src/components/LoadingState";
 import { AnalyticsGrid } from "../../src/components/AnalyticsGrid";
+import { ReadingCalendar } from "../../src/components/ReadingCalendar";
 import { ReadingGoalPanel } from "../../src/components/ReadingGoalPanel";
 import { ReadingInsightsSection } from "../../src/components/ReadingInsightsSection";
 import { SectionCard } from "../../src/components/SectionCard";
@@ -38,6 +39,7 @@ function parseReadingRoomTabParam(value: string | string[] | undefined): Reading
 }
 
 export default function HomeReadingRoom() {
+  const router = useRouter();
   const { tab: tabParam, book: bookParam } = useLocalSearchParams<{
     tab?: string;
     book?: string;
@@ -178,6 +180,18 @@ export default function HomeReadingRoom() {
             <SectionCard title="Reading Goal">
               <ReadingGoalPanel status={goal} />
             </SectionCard>
+            <Pressable
+              onPress={() => router.push("/wrapped")}
+              accessibilityRole="button"
+              className="self-start"
+            >
+              <Text className="text-sm font-semibold text-primary-dark">Your year in books ›</Text>
+            </Pressable>
+            {userId ? (
+              <SectionCard title="Reading calendar">
+                <ReadingCalendar userId={userId} />
+              </SectionCard>
+            ) : null}
             <SectionCard title="Reading Statistics">
               {analytics.isLoading ? (
                 <LoadingState message="Loading statistics…" />

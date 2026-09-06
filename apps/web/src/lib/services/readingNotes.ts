@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
 import {
   ENTITLEMENT_LIMIT_MESSAGES,
-  canSaveQuote,
+  checkSavedQuoteLimit,
   toSubscriptionAccessFromRow,
 } from "@/lib/utils/subscription";
 import {
@@ -97,8 +97,9 @@ export async function createReadingNote(
 
     if (countError) return { error: countError.message };
 
-    if (!canSaveQuote(count ?? 0, toSubscriptionAccessFromRow(subscription))) {
-      return { error: ENTITLEMENT_LIMIT_MESSAGES.saved_quotes };
+    const check = checkSavedQuoteLimit(count ?? 0, toSubscriptionAccessFromRow(subscription));
+    if (!check.allowed) {
+      return { error: check.reason ?? ENTITLEMENT_LIMIT_MESSAGES.saved_quotes };
     }
   }
 

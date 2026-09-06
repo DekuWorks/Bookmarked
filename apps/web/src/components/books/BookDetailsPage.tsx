@@ -19,6 +19,7 @@ import { CommunityContentTags } from "@/components/books/CommunityContentTags";
 import { BookTrendBadge } from "@/components/books/BookTrendBadge";
 import { CommunityRatingDisplay } from "@/components/books/CommunityRatingDisplay";
 import { AddAnotherReadButton } from "@/components/books/AddAnotherReadButton";
+import { AFFILIATE_DISCLOSURE, isbnSearchUrl } from "@bookmarked/utils/affiliateLinks";
 import { ShelfBadge } from "@/components/shelves/ShelfBadge";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { Button } from "@/components/ui/Button";
@@ -258,6 +259,19 @@ function BookDetailsContent() {
             <div>
               <dt className="font-medium text-text-muted">ISBN</dt>
               <dd className="break-all text-text">{book.isbn}</dd>
+              {isbnSearchUrl(book.isbn) ? (
+                <dd className="mt-2">
+                  <a
+                    href={isbnSearchUrl(book.isbn)!}
+                    target="_blank"
+                    rel="noopener noreferrer sponsored"
+                    className="text-sm font-semibold text-primary hover:underline"
+                  >
+                    Find this edition
+                  </a>
+                  <p className="mt-1 text-xs text-text-muted">{AFFILIATE_DISCLOSURE}</p>
+                </dd>
+              ) : null}
             </div>
           ) : null}
           {book.publisher ? (

@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { originBackHref, parseNavOrigin } from "../../../../../packages/utils/navigationOrigin";
-import { Alert, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Alert, Linking, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { AFFILIATE_DISCLOSURE, isbnSearchUrl } from "../../../../../packages/utils/affiliateLinks";
 import { BookCoverAmbience } from "../../../src/components/BookCoverAmbience";
 import { BookCover } from "../../../src/components/BookCover";
 import { Button } from "../../../src/components/Button";
@@ -575,6 +576,18 @@ export default function BookScreen() {
               <Pressable onPress={() => router.push(`/author/${encodeURIComponent(book.author!)}`)}>
                 <Text className="mt-0.5 text-center text-ink-muted underline">{book.author}</Text>
               </Pressable>
+            ) : null}
+            {isbnSearchUrl(book.isbn) ? (
+              <View className="mt-3 items-center px-4">
+                <Pressable
+                  onPress={() => void Linking.openURL(isbnSearchUrl(book.isbn)!)}
+                  accessibilityRole="link"
+                  accessibilityLabel="Find this edition at Bookshop"
+                >
+                  <Text className="text-sm font-semibold text-puce-red underline">Find this edition</Text>
+                </Pressable>
+                <Text className="mt-1 text-center text-xs text-ink-muted">{AFFILIATE_DISCLOSURE}</Text>
+              </View>
             ) : null}
             {data?.communityRating ? (
               <View className="mt-3 items-center gap-1">

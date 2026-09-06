@@ -280,39 +280,184 @@ export function isPremiumSubscriber(
   return subscriptionIsActive(access);
 }
 
+export const ENTITLEMENT_LIMIT_MESSAGES = {
+  custom_shelves:
+    "Free members can create 1 custom shelf. Upgrade to Bookmarked Plus for unlimited shelves.",
+  saved_quotes:
+    "Free members can save 25 quotes. Upgrade to Bookmarked Plus for unlimited quote vault space.",
+  quote_graphics:
+    "Free members can create 3 quote graphics per month. Upgrade to Bookmarked Plus for unlimited graphics.",
+  joined_book_clubs:
+    "Free members can be in 3 book clubs. Creating or joining both count. Upgrade to Bookmarked Plus for unlimited clubs.",
+  reading_challenges:
+    "Free members can join 3 community, club, or friend challenges per year. Official Bookmarked challenges do not use a slot. Upgrade to Bookmarked Plus for unlimited challenges.",
+  create_reading_challenge:
+    "Creating reading challenges is a Bookmarked Plus feature. Subscribe in the Bookmarked iOS app — Plus then unlocks here automatically.",
+} as const;
+
+export type EntitlementCheckResult = {
+  allowed: boolean;
+  reason: string | null;
+  currentUsage: number;
+  limit: number;
+};
+
+export function checkCountLimit(
+  currentUsage: number,
+  limit: number,
+  reason: string
+): EntitlementCheckResult {
+  const allowed = currentUsage < limit;
+  return {
+    allowed,
+    reason: allowed ? null : reason,
+    currentUsage,
+    limit,
+  };
+}
+
+export function checkCustomShelfLimit(
+  currentCount: number,
+  access: SubscriptionAccess | null | undefined
+): EntitlementCheckResult {
+  return checkCountLimit(
+    currentCount,
+    getEntitlements(access).customShelves,
+    ENTITLEMENT_LIMIT_MESSAGES.custom_shelves
+  );
+}
+
+export function checkSavedQuoteLimit(
+  currentCount: number,
+  access: SubscriptionAccess | null | undefined
+): EntitlementCheckResult {
+  return checkCountLimit(
+    currentCount,
+    getEntitlements(access).savedQuotes,
+    ENTITLEMENT_LIMIT_MESSAGES.saved_quotes
+  );
+}
+
+export function checkQuoteGraphicLimit(
+  createdThisMonth: number,
+  access: SubscriptionAccess | null | undefined
+): EntitlementCheckResult {
+  return checkCountLimit(
+    createdThisMonth,
+    getEntitlements(access).quoteGraphicsPerMonth,
+    ENTITLEMENT_LIMIT_MESSAGES.quote_graphics
+  );
+}
+
+export function checkBookClubJoinLimit(
+  joinedCount: number,
+  access: SubscriptionAccess | null | undefined
+): EntitlementCheckResult {
+  return checkCountLimit(
+    joinedCount,
+    getEntitlements(access).joinedBookClubs,
+    ENTITLEMENT_LIMIT_MESSAGES.joined_book_clubs
+  );
+}
+
+export function checkReadingChallengeJoinLimit(
+  joinedThisYear: number,
+  access: SubscriptionAccess | null | undefined
+): EntitlementCheckResult {
+  return checkCountLimit(
+    joinedThisYear,
+    getEntitlements(access).readingChallengesPerYear,
+    ENTITLEMENT_LIMIT_MESSAGES.reading_challenges
+  );
+}
+
 export function canCreateCustomShelf(
   currentCount: number,
   access: SubscriptionAccess | null | undefined
 ): boolean {
-  return currentCount < getEntitlements(access).customShelves;
+  return checkCustomShelfLimit(currentCount, access).allowed;
 }
 
 export function canSaveQuote(
   currentCount: number,
   access: SubscriptionAccess | null | undefined
 ): boolean {
-  return currentCount < getEntitlements(access).savedQuotes;
+  return checkSavedQuoteLimit(currentCount, access).allowed;
 }
 
 export function canCreateQuoteGraphic(
   createdThisMonth: number,
   access: SubscriptionAccess | null | undefined
 ): boolean {
-  return createdThisMonth < getEntitlements(access).quoteGraphicsPerMonth;
+  return checkQuoteGraphicLimit(createdThisMonth, access).allowed;
 }
 
 export function canJoinBookClub(
   joinedCount: number,
   access: SubscriptionAccess | null | undefined
 ): boolean {
-  return joinedCount < getEntitlements(access).joinedBookClubs;
+  return checkBookClubJoinLimit(joinedCount, access).allowed;
 }
 
 export function canJoinReadingChallenge(
   joinedThisYear: number,
   access: SubscriptionAccess | null | undefined
 ): boolean {
-  return joinedThisYear < getEntitlements(access).readingChallengesPerYear;
+  return checkReadingChallengeJoinLimit(joinedThisYear, access).allowed;
+}
+
+/**
+ * Every active club membership consumes the Free 3-club cap,
+ * including create-as-owner. Leave / delete frees the slot.
+ */
+export type ClubMembershipKind = "create_owner" | "join" | "invite_accept" | "request_approve";
+
+export function clubMembershipConsumesJoinSlot(_kind: ClubMembershipKind): boolean {
+  return true;
+}
+
+/**
+ * Yearly Free challenge slots.
+ * Official / Bookmarked featured (curated list) joins are free extras.
+ * user / community / club / friend joins consume a slot.
+ * `abandoned` is not a join kind in the engine (member status is
+ * active / completed / left). Passing it means rejoin of the same
+ * challenge — do not consume a second slot.
+ */
+export type ChallengeJoinKind =
+  | "official"
+  | "user"
+  | "community"
+  | "club"
+  | "friend"
+  | "abandoned";
+
+export function challengeJoinConsumesYearlySlot(kind: ChallengeJoinKind): boolean {
+  return kind !== "official" && kind !== "abandoned";
+}
+
+/** Map a challenge row (and optional rejoin) onto the join-kind taxonomy. */
+export function resolveChallengeJoinKind(input: {
+  ownerKind?: string | null;
+  featured?: boolean;
+  visibility?: string | null;
+  isRejoin?: boolean;
+}): ChallengeJoinKind {
+  if (input.isRejoin) return "abandoned";
+  if (input.ownerKind === "official" || input.featured) return "official";
+  if (input.visibility === "friend") return "friend";
+  if (input.visibility === "followers" || input.visibility === "public") return "community";
+  return "user";
+}
+
+/** Whether this join should increment the yearly Free counter. */
+export function challengeRecordConsumesYearlySlot(input: {
+  ownerKind?: string | null;
+  featured?: boolean;
+  visibility?: string | null;
+  isRejoin?: boolean;
+}): boolean {
+  return challengeJoinConsumesYearlySlot(resolveChallengeJoinKind(input));
 }
 
 /** Create Challenge is Plus/Home only. Join limits stay on the yearly cap. */
@@ -353,21 +498,6 @@ export function toSubscriptionAccessFromRow(
     subscription_expires_at: row?.subscription_expires_at ?? null,
   };
 }
-
-export const ENTITLEMENT_LIMIT_MESSAGES = {
-  custom_shelves:
-    "Free members can create 1 custom shelf. Upgrade to Bookmarked Plus for unlimited shelves.",
-  saved_quotes:
-    "Free members can save 25 quotes. Upgrade to Bookmarked Plus for unlimited quote vault space.",
-  quote_graphics:
-    "Free members can create 3 quote graphics per month. Upgrade to Bookmarked Plus for unlimited graphics.",
-  joined_book_clubs:
-    "Free members can join 3 book clubs. Upgrade to Bookmarked Plus for unlimited clubs.",
-  reading_challenges:
-    "Free members can join 3 reading challenges per year. Upgrade to Bookmarked Plus for unlimited challenges.",
-  create_reading_challenge:
-    "Creating reading challenges is a Bookmarked Plus feature. Subscribe in the Bookmarked iOS app — Plus then unlocks here automatically.",
-} as const;
 
 /** Subscribe only on iOS. Web never starts checkout. */
 export const IOS_SUBSCRIBE_COPY = {
