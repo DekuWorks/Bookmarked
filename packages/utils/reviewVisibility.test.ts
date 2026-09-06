@@ -37,6 +37,10 @@ describe("review visibility helpers", () => {
       "private",
     ]);
     expect(PRIVATE_REVIEW_BADGE.ariaLabel).toBe("Private Review");
+    expect(REVIEW_VISIBILITY_OPTIONS[0]?.helper).toBe(
+      "Visible on your profile, book pages, and the Feed."
+    );
+    expect(REVIEW_VISIBILITY_OPTIONS[1]?.helper).toBe("Visible only to you.");
     expect(PRIVATE_REVIEWS_EMPTY_COPY.title).toBe(
       "You don't have any private reviews yet."
     );
