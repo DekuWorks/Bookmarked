@@ -120,11 +120,15 @@ export function FeedTabPanel({ tab, width, onScroll, highlightedPostId, restoreS
         /* deep-linked post may not be in the first page */
       }}
       contentContainerStyle={{ padding: 16, paddingBottom: TAB_BAR_SPACE, flexGrow: 1 }}
-      renderItem={({ item }) =>
+      renderItem={({ item, index }) =>
         item.kind === "discovery" ? (
           <FeedDiscoveryCard sectionId={item.id} getScrollOffset={() => scrollOffsetRef.current} />
         ) : (
-          <FeedPostCard entry={item.item} getScrollOffset={() => scrollOffsetRef.current} />
+          <FeedPostCard
+            entry={item.item}
+            priority={index === 0 || (index === 1 && rows[0]?.kind === "discovery")}
+            getScrollOffset={() => scrollOffsetRef.current}
+          />
         )
       }
       refreshControl={

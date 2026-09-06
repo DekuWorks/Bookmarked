@@ -52,6 +52,7 @@ export function CurrentlyReadingRow({ userId, items, onRefresh }: Props) {
                 progressPercent={item.progress_percent}
                 frameStyle={{ width: cardSize.widthPx }}
                 coverSizeStyle={coverSize}
+                priority
               />
             </View>
           ))}

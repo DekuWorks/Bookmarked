@@ -8,6 +8,10 @@ import {
 } from "@/lib/services/recommendations";
 import { getProfile } from "@/lib/services/profile";
 import { LoadingState } from "@/components/ui/LoadingState";
+import {
+  COVER_IMAGE_REFERRER_POLICY,
+  resolveCoverDisplayUrl,
+} from "@bookmarked/utils/mediaDisplayUrl";
 
 type Props = {
   userId: string;
@@ -68,10 +72,11 @@ export function BecauseYouReadPanel({ userId, className, limit = 8 }: Props) {
           >
             {item.coverUrl ? (
               <img
-                src={item.coverUrl}
+                src={resolveCoverDisplayUrl(item.coverUrl, "thumb") ?? item.coverUrl}
                 alt=""
                 className="h-20 w-14 shrink-0 rounded object-cover"
                 loading="lazy"
+                referrerPolicy={COVER_IMAGE_REFERRER_POLICY}
               />
             ) : (
               <div className="flex h-20 w-14 shrink-0 items-center justify-center rounded bg-border text-xs text-text-muted">

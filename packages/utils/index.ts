@@ -561,6 +561,17 @@ export {
 } from "./feedImageMedia";
 
 export {
+  COVER_IMAGE_REFERRER_POLICY,
+  resolveCoverDisplaySource,
+  resolveCoverDisplayUrl,
+  resolveFeedImageLoading,
+  resolveFeedInlineImageSource,
+  resolveGiphyInlineSource,
+  type CoverDisplaySize,
+  type MediaDisplaySource,
+} from "./mediaDisplayUrl";
+
+export {
   CUSTOM_SHELF_A11Y_LABEL,
   CUSTOM_SHELF_ICON_ASSETS_READY,
   CUSTOM_SHELF_ICON_FALLBACK_FILE,

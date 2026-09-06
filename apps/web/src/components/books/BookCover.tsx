@@ -4,6 +4,10 @@ import { useState } from "react";
 import Image from "next/image";
 import { SavedBookBadge } from "@/components/books/SavedBookBadge";
 import { cn } from "@/lib/utils/cn";
+import {
+  COVER_IMAGE_REFERRER_POLICY,
+  resolveCoverDisplaySource,
+} from "@bookmarked/utils/mediaDisplayUrl";
 
 import type { SavedBookBadgeSize } from "@/lib/constants/brandAssets";
 
@@ -64,8 +68,25 @@ export function BookCover({
   onToggleSave,
   bookmarkBadgeSize = "medium",
 }: Props) {
+  const source = coverUrl?.trim()
+    ? resolveCoverDisplaySource(coverUrl.trim(), priority ? "detail" : "thumb")
+    : null;
+  const sourceKey = `${coverUrl ?? ""}:${priority ? "detail" : "thumb"}`;
+  const [activeKey, setActiveKey] = useState(sourceKey);
+  const [usedFallback, setUsedFallback] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const showImage = coverUrl && !imageError;
+
+  if (sourceKey !== activeKey) {
+    setActiveKey(sourceKey);
+    setUsedFallback(false);
+    setImageError(false);
+  }
+
+  const src =
+    source && usedFallback && source.fallbackUrl
+      ? source.fallbackUrl
+      : source?.displayUrl ?? null;
+  const showImage = Boolean(src) && !imageError;
   const saved = isSaved ?? bookmarked;
 
   return (
@@ -77,9 +98,9 @@ export function BookCover({
           saved ? "rounded-none" : "rounded-xl"
         )}
       >
-        {showImage ? (
+        {showImage && src ? (
           <Image
-            src={coverUrl}
+            src={src}
             alt={`Cover of ${title}`}
             fill
             className={objectFit === "contain" ? "object-contain" : "object-cover"}
@@ -87,7 +108,14 @@ export function BookCover({
             unoptimized
             priority={priority}
             loading={priority ? undefined : "lazy"}
-            onError={() => setImageError(true)}
+            referrerPolicy={COVER_IMAGE_REFERRER_POLICY}
+            onError={() => {
+              if (source?.fallbackUrl && !usedFallback) {
+                setUsedFallback(true);
+                return;
+              }
+              setImageError(true);
+            }}
           />
         ) : (
           <CoverPlaceholder title={title} author={author} />

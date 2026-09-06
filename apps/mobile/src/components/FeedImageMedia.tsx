@@ -12,6 +12,7 @@ import {
   resolveFeedImageMaxHeight,
   type FeedImageCrop,
 } from "../../../../packages/utils/feedImageMedia";
+import { resolveFeedInlineImageSource } from "../../../../packages/utils/mediaDisplayUrl";
 import { useThemeColors } from "../store/themeStore";
 import { isGiphyImageUrl } from "../utils/giphy";
 import { FeedImageViewer } from "./FeedImageViewer";
@@ -26,6 +27,7 @@ type Props = {
   compact?: boolean;
   crop?: FeedImageCrop | null;
   rounded?: boolean;
+  priority?: boolean;
   onOpen?: () => void;
 };
 
@@ -37,6 +39,7 @@ export function FeedImageMedia({
   compact = false,
   crop = null,
   rounded = true,
+  priority: _priority = false,
   onOpen,
 }: Props) {
   const { height: viewportHeight } = useWindowDimensions();
@@ -46,33 +49,17 @@ export function FeedImageMedia({
   const [naturalHeight, setNaturalHeight] = useState<number | null>(originalHeight ?? null);
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [viewerOpen, setViewerOpen] = useState(false);
+  const source = resolveFeedInlineImageSource(url, isGiphyImageUrl(url));
+  const [displayUrl, setDisplayUrl] = useState(source.displayUrl);
 
   const resolvedAlt = alt ?? (isGiphyImageUrl(url) ? "Post GIF" : "Post image");
 
   useEffect(() => {
+    const next = resolveFeedInlineImageSource(url, isGiphyImageUrl(url));
     setNaturalWidth(originalWidth ?? null);
     setNaturalHeight(originalHeight ?? null);
     setLoadState("loading");
-
-    if (originalWidth && originalHeight && originalWidth > 0 && originalHeight > 0) {
-      return;
-    }
-
-    let active = true;
-    Image.getSize(
-      url,
-      (width, height) => {
-        if (!active || width <= 0 || height <= 0) return;
-        setNaturalWidth(width);
-        setNaturalHeight(height);
-      },
-      () => {
-        // onLoad / onError on the Image handle the visible state.
-      }
-    );
-    return () => {
-      active = false;
-    };
+    setDisplayUrl(next.displayUrl);
   }, [url, originalWidth, originalHeight]);
 
   const onLayout = useCallback((event: LayoutChangeEvent) => {
@@ -123,25 +110,35 @@ export function FeedImageMedia({
           }}
         >
           {loadState === "loading" ? (
-            <View className="h-full w-full bg-primary/10" accessibilityElementsHidden />
+            <View
+              className="absolute inset-0 bg-primary/10"
+              accessibilityElementsHidden
+            />
           ) : null}
           <Image
-            source={{ uri: url }}
+            source={{ uri: displayUrl }}
             resizeMode={layout.fit}
             accessibilityLabel={resolvedAlt}
             onLoad={(event) => {
-              const source = event.nativeEvent.source;
-              if (source.width > 0 && source.height > 0) {
-                setNaturalWidth(source.width);
-                setNaturalHeight(source.height);
+              const imageSource = event.nativeEvent.source;
+              if (imageSource.width > 0 && imageSource.height > 0) {
+                setNaturalWidth(imageSource.width);
+                setNaturalHeight(imageSource.height);
               }
               setLoadState("ready");
             }}
-            onError={() => setLoadState("error")}
+            onError={() => {
+              const next = resolveFeedInlineImageSource(url, isGiphyImageUrl(url));
+              if (next.fallbackUrl && displayUrl !== next.fallbackUrl) {
+                setDisplayUrl(next.fallbackUrl);
+                setLoadState("loading");
+                return;
+              }
+              setLoadState("error");
+            }}
             style={{
               width: "100%",
               height: "100%",
-              opacity: loadState === "ready" ? 1 : 0,
             }}
           />
         </Pressable>

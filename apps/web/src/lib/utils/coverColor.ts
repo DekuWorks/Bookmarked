@@ -21,6 +21,7 @@ export async function extractCoverPalette(coverUrl: string): Promise<CoverPalett
   return new Promise((resolve) => {
     const image = new Image();
     image.crossOrigin = "anonymous";
+    image.referrerPolicy = "no-referrer";
     image.decoding = "async";
 
     image.onload = () => {

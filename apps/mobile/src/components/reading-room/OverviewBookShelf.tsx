@@ -57,7 +57,7 @@ export function OverviewBookShelf({
         <Text className="text-sm text-ink-muted">{emptyMessage}</Text>
       ) : (
         <View className="gap-3">
-          {items.map((item) => {
+          {items.map((item, index) => {
             const book = item.books;
             const finishedLabel = showFinishedDate ? formatFinishedDate(item.finished_at) : null;
 
@@ -77,6 +77,7 @@ export function OverviewBookShelf({
                     sizeStyle={overviewShelfCoverBoxStyle()}
                     resizeMode={OVERVIEW_SHELF_COVER.fit}
                     saved
+                    priority={index < 2}
                   />
                 </View>
                 <View className="min-w-0 flex-1 overflow-hidden">

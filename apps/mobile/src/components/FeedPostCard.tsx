@@ -330,10 +330,12 @@ function PostCard({
   entry,
   viewerId,
   getScrollOffset,
+  priority = false,
 }: {
   entry: PostEntry;
   viewerId?: string;
   getScrollOffset?: () => number;
+  priority?: boolean;
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -434,7 +436,7 @@ function PostCard({
 
       {post.image_url ? (
         <View className="mt-3">
-          <AttachmentImage url={post.image_url} />
+          <AttachmentImage url={post.image_url} priority={priority} />
         </View>
       ) : null}
 
@@ -609,16 +611,25 @@ function DiscussionCard({
 export function FeedPostCard({
   entry,
   getScrollOffset,
+  priority = false,
 }: {
   entry: FeedEntry;
   getScrollOffset?: () => number;
+  priority?: boolean;
 }) {
   const viewerId = useAuthStore((s) => s.user?.id);
   if (entry.kind === "review") {
     return <ReviewCard entry={entry} viewerId={viewerId} getScrollOffset={getScrollOffset} />;
   }
   if (entry.kind === "post") {
-    return <PostCard entry={entry} viewerId={viewerId} getScrollOffset={getScrollOffset} />;
+    return (
+      <PostCard
+        entry={entry}
+        viewerId={viewerId}
+        getScrollOffset={getScrollOffset}
+        priority={priority}
+      />
+    );
   }
   return <DiscussionCard entry={entry} getScrollOffset={getScrollOffset} />;
 }

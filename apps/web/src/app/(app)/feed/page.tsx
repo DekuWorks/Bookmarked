@@ -196,6 +196,7 @@ function FeedContent() {
     () => (posts ? interleaveFeedWithDiscovery(posts) : null),
     [posts]
   );
+  const firstPostId = interleavedPosts?.find((row) => row.kind === "item")?.item.id;
   const interleavedActivity = useMemo<ActivityFeedRow[] | null>(
     () => (activityItems ? interleaveFeedWithDiscovery(activityItems) : null),
     [activityItems]
@@ -383,6 +384,7 @@ function FeedContent() {
                           post={row.item}
                           viewerId={user.id}
                           highlighted={row.item.id === highlightedPostId}
+                          priority={row.item.id === firstPostId}
                           onPostChange={() => {
                             void loadPosts().catch((reloadError) => {
                               console.warn("[feed] posts reload failed:", reloadError);
