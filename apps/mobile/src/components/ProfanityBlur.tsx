@@ -1,66 +1,70 @@
-import { useState, type ReactNode } from "react";
-import { Pressable, Text, View } from "react-native";
-import { containsProfanity } from "../utils/profanity";
+import { useMemo, useState, type ReactNode } from "react";
+import { Text, View } from "react-native";
+import {
+  parseModerationMeta,
+  resolveWarnSpans,
+  splitTextBySpans,
+  type ModerationMeta,
+} from "../../../../packages/utils/contentModeration";
 
 type Props = {
-  /** Raw text used for detection (not necessarily what is rendered). */
   text: string;
-  children: ReactNode;
+  children?: ReactNode;
   className?: string;
+  meta?: ModerationMeta | import("../../../../packages/types").ModerationMeta | null;
 };
 
-/**
- * Frosted overlay when `text` contains curated profanity.
- * Tap to reveal; optional re-hide. Spoiler gate stays separate.
- */
-export function ProfanityBlur({ text, children, className }: Props) {
-  const flagged = containsProfanity(text);
+function FlaggedSpan({ word }: { word: string }) {
   const [revealed, setRevealed] = useState(false);
 
-  if (!flagged) {
-    return <View className={className}>{children}</View>;
+  return (
+    <Text>
+      {revealed ? (
+        <Text
+          onPress={() => setRevealed(false)}
+          accessibilityRole="button"
+          accessibilityLabel="Hide vulgar language"
+          accessibilityState={{ expanded: true }}
+          className="font-semibold text-puce-red"
+        >
+          {word}
+        </Text>
+      ) : (
+        <Text
+          onPress={() => setRevealed(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Vulgar Language. Tap to reveal."
+          accessibilityState={{ expanded: false }}
+          className="font-semibold text-puce-red"
+        >
+          Vulgar Language – Tap to View.
+        </Text>
+      )}
+    </Text>
+  );
+}
+
+export function ProfanityBlur({ text, children, className, meta }: Props) {
+  const parsed = parseModerationMeta(meta);
+  const spans = useMemo(() => resolveWarnSpans(text, parsed), [text, parsed]);
+
+  if (spans.length === 0) {
+    return <View className={className}>{children ?? <Text className="text-ink">{text}</Text>}</View>;
   }
 
-  const hidden = !revealed;
+  const parts = splitTextBySpans(text, spans);
 
   return (
     <View className={className}>
-      <View className="relative">
-        <View
-          pointerEvents={hidden ? "none" : "auto"}
-          style={hidden ? { opacity: 0.2 } : undefined}
-          accessibilityElementsHidden={hidden}
-          importantForAccessibility={hidden ? "no-hide-descendants" : "auto"}
-        >
-          {children}
-        </View>
-
-        {hidden ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Show content that may contain strong language"
-            accessibilityState={{ expanded: false }}
-            onPress={() => setRevealed(true)}
-            className="absolute inset-0 items-center justify-center rounded-xl bg-surface/85 px-3 active:opacity-90"
-          >
-            <View className="rounded-full border border-brand-border bg-primary/15 px-4 py-2">
-              <Text className="text-xs font-semibold text-puce-red">Show content</Text>
-            </View>
-          </Pressable>
-        ) : null}
-      </View>
-
-      {!hidden ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Hide content with strong language"
-          accessibilityState={{ expanded: true }}
-          onPress={() => setRevealed(false)}
-          className="mt-1.5 self-start active:opacity-70"
-        >
-          <Text className="text-xs font-medium text-ink-muted">Hide content</Text>
-        </Pressable>
-      ) : null}
+      <Text className="text-left leading-6 text-ink">
+        {parts.map((part, index) =>
+          part.span ? (
+            <FlaggedSpan key={`${part.span.start}-${index}`} word={part.text} />
+          ) : (
+            <Text key={`plain-${index}`}>{part.text}</Text>
+          )
+        )}
+      </Text>
     </View>
   );
 }

@@ -5,6 +5,69 @@ export {
 } from "./profanity";
 
 export {
+  MODERATION_BLOCK_MESSAGE,
+  MODERATION_CATEGORIES,
+  MODERATION_CONTENT_TYPES,
+  MODERATION_STATUSES,
+  MODERATION_UNAVAILABLE_MESSAGE,
+  MODERATION_VERSION,
+  blockMessageWithOptionalCategory,
+  categoryLabel,
+  classifyLocalContent,
+  combineModerationResults,
+  isModerationContentType,
+  moderateContent,
+  normalizeForMatching,
+  normalizeForModeration,
+  parseModerationMeta,
+  resolveWarnSpans,
+  splitTextBySpans,
+  toModerationMeta,
+  type ModerationCategory,
+  type ModerationContentType,
+  type ModerationMeta,
+  type ModerationProvider,
+  type ModerationReasonCode,
+  type ModerationResult,
+  type ModerationSpan,
+  type ModerationStatus,
+  type ModerateContentInput,
+  type ProviderModerationResult,
+} from "./contentModeration";
+
+export {
+  CLUB_REPLY_SORTS,
+  CLUB_REPLY_SORT_STORAGE_KEY,
+  mergeClubReplies,
+  parseClubReplySort,
+  removeClubReply,
+  sortClubReplies,
+  type ClubReplySort,
+  type ClubReplySortable,
+} from "./clubReplyThread";
+
+export {
+  dedupeAsync,
+  moderationRequestKey,
+} from "./moderateUgcClient";
+
+export {
+  CONTENT_REPORT_REASONS,
+  CONTENT_REPORT_REASON_LABELS,
+  CONTENT_REPORT_STATUSES,
+  REPORTABLE_CONTENT_TYPES,
+  canInsertContentReport,
+  canSelectContentReport,
+  canUpdateContentReport,
+  isContentReportReason,
+  isDuplicateReport,
+  isReportableContentType,
+  type ContentReportReason as SharedContentReportReason,
+  type ContentReportStatus as SharedContentReportStatus,
+  type ReportableContentType as SharedReportableContentType,
+} from "./contentReports";
+
+export {
   ENTITLEMENTS,
   PLUS_FEATURE_KEYS,
   HOME_ONLY_FEATURES,

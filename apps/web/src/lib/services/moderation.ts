@@ -40,7 +40,12 @@ export async function reportContent(input: ReportContentInput): Promise<ServiceR
     .select("id")
     .single();
 
-  if (error) return { error: error.message };
+  if (error) {
+    if (error.code === "23505") {
+      return { error: "You’ve already reported this." };
+    }
+    return { error: error.message };
+  }
   return { reportId: data.id as string };
 }
 
@@ -61,7 +66,7 @@ export async function blockUser(
       contentType: "profile",
       contentId: blockedId,
       reportedUserId: blockedId,
-      reason: options?.reason ?? "harassment",
+      reason: options?.reason ?? "harassment_bullying",
       details: options?.details ?? "User blocked — auto-reported for review.",
     });
     if (report.error) return { error: report.error };

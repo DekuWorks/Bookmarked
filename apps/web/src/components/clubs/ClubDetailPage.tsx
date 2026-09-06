@@ -19,6 +19,7 @@ import { ClubMembersPanel } from "@/components/clubs/ClubMembersPanel";
 import { ClubStatsPanel } from "@/components/clubs/ClubStatsPanel";
 import { ClubInviteModal } from "@/components/clubs/ClubInviteModal";
 import { ClubSettingsModal } from "@/components/clubs/ClubSettingsModal";
+import { ContentActionsMenu } from "@/components/moderation/ContentActionsMenu";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { isEntitlementLimitError } from "@/lib/utils/subscription";
 import {
@@ -321,6 +322,15 @@ function ClubDetailContent() {
             <div className="min-w-0 flex-1 pb-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-2xl font-bold text-puce-red sm:text-3xl">{club.name}</h1>
+                {user && user.id !== club.owner_id ? (
+                  <ContentActionsMenu
+                    contentType="club"
+                    contentId={club.id}
+                    reportedUserId={club.owner_id}
+                    reportedUserName={club.name}
+                    hideBlock
+                  />
+                ) : null}
                 <span className="rounded-full bg-border/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-text-muted">
                   {visibilityLabel(club.visibility)}
                 </span>

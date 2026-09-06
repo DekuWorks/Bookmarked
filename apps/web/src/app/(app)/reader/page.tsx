@@ -14,6 +14,7 @@ import type { Profile } from "@/types";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { ProfileShelfPreview } from "@/components/profile/ProfileShelfPreview";
 import { ProfanityBlur } from "@/components/social/ProfanityBlur";
+import { ContentActionsMenu } from "@/components/moderation/ContentActionsMenu";
 import { FollowStats } from "@/components/social/FollowStats";
 import {
   computeReadingStreak,
@@ -129,12 +130,22 @@ function ReaderProfileContent() {
                 initialFollowing={following}
                 onChange={setFollowing}
               />
+              <ContentActionsMenu
+                contentType="profile"
+                contentId={profile.id}
+                reportedUserId={profile.id}
+                reportedUserName={displayName}
+              />
             </div>
           )}
         </div>
 
         {profile.bio ? (
-          <ProfanityBlur text={profile.bio} className="mt-4">
+          <ProfanityBlur
+            text={profile.bio}
+            meta={profile.moderation_meta ?? null}
+            className="mt-4"
+          >
             <p className="leading-relaxed text-text">{profile.bio}</p>
           </ProfanityBlur>
         ) : null}

@@ -12,6 +12,7 @@ import {
 import { ContentReactionBar } from "@/components/social/ContentReactionBar";
 import { MentionComposer } from "@/components/social/MentionComposer";
 import { MentionText } from "@/components/social/MentionText";
+import { ContentActionsMenu } from "@/components/moderation/ContentActionsMenu";
 import { ReplyThread } from "@/components/social/ReplyThread";
 import { useToast } from "@/components/ui/Toast";
 import { readerProfilePath } from "@/lib/routes/reader";
@@ -159,6 +160,16 @@ function CommentItem({
         ) : (
           <span className="text-sm font-semibold text-puce-red">{authorLabel(comment.author)}</span>
         )}
+        {!isOwn ? (
+          <span className="ml-auto">
+            <ContentActionsMenu
+              contentType="comment"
+              contentId={comment.id}
+              reportedUserId={comment.user_id}
+              reportedUserName={authorLabel(comment.author)}
+            />
+          </span>
+        ) : null}
         {isOwn && !isEditing ? (
           <span className="ml-auto flex gap-1">
             <Button type="button" variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
@@ -208,7 +219,7 @@ function CommentItem({
           ) : null}
           {comment.body.trim() ? (
             <div className="text-sm leading-relaxed text-text">
-              <MentionText body={comment.body} />
+              <MentionText body={comment.body} meta={comment.moderation_meta ?? null} />
             </div>
           ) : null}
         </div>

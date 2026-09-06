@@ -198,6 +198,16 @@ export async function saveProfile(
   const bioResult = validateBio(String(formData.get("bio") ?? ""));
   if (!bioResult.ok) return { error: bioResult.error };
 
+  if (bioResult.value) {
+    const { requireModeration } = await import("@/lib/services/moderateUgc");
+    const gate = await requireModeration({
+      text: bioResult.value,
+      contentType: "PROFILE_BIO",
+      contentId: user.id,
+    });
+    if (gate.error) return { error: gate.error };
+  }
+
   const favorite_genres = parseFavoriteGenres(String(formData.get("favorite_genres") ?? ""));
   const preferred_language = parsePreferredLanguage(
     String(formData.get("preferred_language") ?? "")

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -17,6 +17,7 @@ import { Avatar } from "./Avatar";
 import { Button } from "./Button";
 import { LoadingState } from "./LoadingState";
 import { ProfanityBlur } from "./ProfanityBlur";
+import { showContentActions } from "./ContentActions";
 import { SpoilerReveal } from "./SpoilerReveal";
 import {
   useClubDiscussionReplies,
@@ -25,6 +26,17 @@ import {
   useSetDiscussionLocked,
   useSetDiscussionPinned,
 } from "../hooks/useClubs";
+import { useClubDiscussionRepliesRealtime } from "../hooks/useClubDiscussionRepliesRealtime";
+import { getReply, listReplies } from "../services/bookClubs";
+import {
+  CLUB_REPLY_SORT_STORAGE_KEY,
+  mergeClubReplies,
+  parseClubReplySort,
+  removeClubReply,
+  sortClubReplies,
+  type ClubReplySort,
+} from "../../../../packages/utils/clubReplyThread";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { timeAgo } from "../utils";
 import type {
   BookClubDiscussionWithAuthor,
@@ -75,6 +87,51 @@ export function ClubDiscussionThreadSheet({
 
   const [body, setBody] = useState("");
   const [spoilers, setSpoilers] = useState(false);
+  const [replySort, setReplySort] = useState<ClubReplySort>("newest");
+  const [liveReplies, setLiveReplies] = useState(replies.data ?? []);
+
+  useEffect(() => {
+    setLiveReplies(replies.data ?? []);
+  }, [replies.data]);
+
+  useEffect(() => {
+    void AsyncStorage.getItem(CLUB_REPLY_SORT_STORAGE_KEY).then((value) => {
+      setReplySort(parseClubReplySort(value));
+    });
+  }, []);
+
+  const sortedReplies = useMemo(
+    () => sortClubReplies(liveReplies, replySort),
+    [liveReplies, replySort]
+  );
+
+  const handleRealtime = useCallback(
+    async (change: { type: "insert" | "update" | "delete"; id: string }) => {
+      if (!discussionId) return;
+      if (change.type === "delete" && change.id) {
+        setLiveReplies((current) => removeClubReply(current, change.id));
+        return;
+      }
+      if (!change.id) {
+        const rows = await listReplies(discussionId);
+        setLiveReplies((current) => mergeClubReplies(current, rows, replySort));
+        return;
+      }
+      const row = await getReply(change.id);
+      if (!row || row.discussion_id !== discussionId) return;
+      setLiveReplies((current) => mergeClubReplies(current, row, replySort));
+    },
+    [discussionId, replySort]
+  );
+
+  useClubDiscussionRepliesRealtime(visible ? discussionId : undefined, (change) => {
+    void handleRealtime(change);
+  });
+
+  async function changeReplySort(next: ClubReplySort) {
+    setReplySort(next);
+    await AsyncStorage.setItem(CLUB_REPLY_SORT_STORAGE_KEY, next);
+  }
 
   const canPin = canPinDiscussions(viewerRole);
   const canModerate = canModerateDiscussions(viewerRole);
@@ -100,6 +157,12 @@ export function ClubDiscussionThreadSheet({
     }
     setBody("");
     setSpoilers(false);
+    if (result.replyId) {
+      const row = await getReply(result.replyId);
+      if (row) {
+        setLiveReplies((current) => mergeClubReplies(current, row, replySort));
+      }
+    }
   }
 
   function confirmDeleteReply(replyId: string) {
@@ -111,6 +174,7 @@ export function ClubDiscussionThreadSheet({
         onPress: () => {
           void deleteReply.mutateAsync(replyId).then((result) => {
             if (result.error) Alert.alert("Couldn't delete", result.error);
+            else setLiveReplies((current) => removeClubReply(current, replyId));
           });
         },
       },
@@ -136,14 +200,32 @@ export function ClubDiscussionThreadSheet({
           <Text className="flex-1 text-lg font-bold text-puce-red" numberOfLines={1}>
             {discussion?.title?.trim() || "Discussion"}
           </Text>
-          <View className="w-11" />
+          {discussion && discussion.user_id !== viewerId ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Report discussion"
+              onPress={() =>
+                showContentActions({
+                  contentType: "club_discussion",
+                  contentId: discussion.id,
+                  reportedUserId: discussion.user_id,
+                  reportedUserName: authorName(discussion.author),
+                })
+              }
+              className="min-h-[44px] justify-center px-2"
+            >
+              <Text className="text-xs font-semibold text-ink-muted">Report</Text>
+            </Pressable>
+          ) : (
+            <View className="w-11" />
+          )}
         </View>
 
         {!discussion ? (
           <LoadingState message="Loading discussion…" />
         ) : (
           <FlatList
-            data={replies.data ?? []}
+            data={sortedReplies}
             keyExtractor={(item) => item.id}
             contentContainerStyle={{ padding: 16, paddingTop: 20, paddingBottom: 24 }}
             keyboardShouldPersistTaps="handled"
@@ -173,7 +255,10 @@ export function ClubDiscussionThreadSheet({
                   enabled={discussion.contains_spoilers}
                   className="mt-3"
                 >
-                  <ProfanityBlur text={discussion.body}>
+                  <ProfanityBlur
+                    text={discussion.body}
+                    meta={discussion.moderation_meta ?? null}
+                  >
                     <Text className="text-left leading-6 text-ink">{discussion.body}</Text>
                   </ProfanityBlur>
                 </SpoilerReveal>
@@ -221,9 +306,41 @@ export function ClubDiscussionThreadSheet({
                   </View>
                 ) : null}
 
-                <Text className="mt-4 text-sm font-semibold text-puce-red">
-                  Replies ({discussion.reply_count})
-                </Text>
+                <View className="mt-4 flex-row items-center justify-between">
+                  <Text className="text-sm font-semibold text-puce-red">
+                    Replies ({sortedReplies.length})
+                  </Text>
+                  <View className="flex-row gap-2">
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: replySort === "newest" }}
+                      onPress={() => void changeReplySort("newest")}
+                      className="min-h-[44px] justify-center px-1"
+                    >
+                      <Text
+                        className={`text-xs font-semibold ${
+                          replySort === "newest" ? "text-puce-red" : "text-ink-muted"
+                        }`}
+                      >
+                        Newest First
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: replySort === "oldest" }}
+                      onPress={() => void changeReplySort("oldest")}
+                      className="min-h-[44px] justify-center px-1"
+                    >
+                      <Text
+                        className={`text-xs font-semibold ${
+                          replySort === "oldest" ? "text-puce-red" : "text-ink-muted"
+                        }`}
+                      >
+                        Oldest First
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
               </View>
             }
             renderItem={({ item }) => (
@@ -242,6 +359,23 @@ export function ClubDiscussionThreadSheet({
                       {timeAgo(item.created_at)}
                     </Text>
                   </View>
+                  {item.user_id !== viewerId ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Report reply"
+                      onPress={() =>
+                        showContentActions({
+                          contentType: "club_reply",
+                          contentId: item.id,
+                          reportedUserId: item.user_id,
+                          reportedUserName: authorName(item.author),
+                        })
+                      }
+                      className="min-h-[44px] justify-center px-2"
+                    >
+                      <Text className="text-xs font-semibold text-ink-muted">Report</Text>
+                    </Pressable>
+                  ) : null}
                   {item.user_id === viewerId ? (
                     <Pressable
                       accessibilityRole="button"
@@ -258,7 +392,7 @@ export function ClubDiscussionThreadSheet({
                   ) : null}
                 </View>
                 <SpoilerReveal enabled={item.contains_spoilers} className="mt-2">
-                  <ProfanityBlur text={item.body}>
+                  <ProfanityBlur text={item.body} meta={item.moderation_meta ?? null}>
                     <Text className="leading-5 text-ink">{item.body}</Text>
                   </ProfanityBlur>
                 </SpoilerReveal>
@@ -304,7 +438,7 @@ export function ClubDiscussionThreadSheet({
                 <Text className="text-sm text-ink">Spoilers</Text>
               </Pressable>
               <Button
-                title="Reply"
+                title={createReply.isPending ? "Checking…" : "Reply"}
                 variant="primary"
                 loading={createReply.isPending}
                 disabled={!body.trim()}

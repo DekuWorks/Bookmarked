@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import { postFeedPath } from "@/lib/routes/posts";
+import { requireModeration } from "@/lib/services/moderateUgc";
 import { uploadPostImage, validatePostImageFile } from "@/lib/services/posts";
 import {
   createMentionNotification,
@@ -265,6 +266,11 @@ export async function addPostCommentReply(
     return { error: "Attachment URL is not allowed." };
   }
   if (!trimmed && !attachment) return { error: "Write a reply or attach an image or GIF." };
+
+  if (trimmed) {
+    const gate = await requireModeration({ text: trimmed, contentType: "COMMENT" });
+    if (gate.error) return { error: gate.error };
+  }
 
   const supabase = createClient();
 

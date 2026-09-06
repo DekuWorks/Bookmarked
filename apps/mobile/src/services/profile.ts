@@ -90,6 +90,15 @@ export async function updateProfile(
     const bioResult = validateBio(patch.bio ?? "");
     if (!bioResult.ok) return { error: bioResult.error };
     patch = { ...patch, bio: bioResult.value };
+    if (bioResult.value) {
+      const { requireModeration } = await import("./moderateUgc");
+      const gate = await requireModeration({
+        text: bioResult.value,
+        contentType: "PROFILE_BIO",
+        contentId: userId,
+      });
+      if (gate.error) return { error: gate.error };
+    }
   }
 
   const { error } = await supabase
@@ -104,6 +113,16 @@ export async function upsertProfile(
   userId: string,
   patch: ProfileUpdate
 ): Promise<{ error?: string }> {
+  if (patch.bio) {
+    const { requireModeration } = await import("./moderateUgc");
+    const gate = await requireModeration({
+      text: patch.bio,
+      contentType: "PROFILE_BIO",
+      contentId: userId,
+    });
+    if (gate.error) return { error: gate.error };
+  }
+
   const { error } = await supabase.from("profiles").upsert(
     {
       id: userId,
