@@ -1,10 +1,10 @@
 import { useRouter } from "expo-router";
-import { Pressable, ScrollView, Text, useWindowDimensions, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { customShelfPath } from "../../lib/libraryRoutes";
 import type { CustomShelfGroup } from "../../services/customShelves";
-import { CoverTile } from "../CoverTile";
 import { ShelfTitleRow } from "../ShelfTitleRow";
 import { BookSpine } from "./BookSpine";
+import { LibraryCoverGrid } from "./LibraryCoverGrid";
 
 type Props = {
   shelf: CustomShelfGroup;
@@ -13,8 +13,6 @@ type Props = {
 
 export function CustomShelfSection({ shelf, view }: Props) {
   const router = useRouter();
-  const { width } = useWindowDimensions();
-  const tileWidth = width >= 768 ? "w-[23%]" : "w-[31%]";
 
   return (
     <View className="overflow-hidden rounded-2xl border border-brand-border bg-surface shadow-md">
@@ -58,18 +56,16 @@ export function CustomShelfSection({ shelf, view }: Props) {
           <View className="h-3 rounded-b-2xl bg-puce-red/20" />
         </View>
       ) : (
-        <View className="flex-row flex-wrap gap-2 p-4">
-          {shelf.items.map((item) => (
-            <CoverTile
-              key={item.id}
-              bookId={item.books?.id}
-              title={item.books?.title}
-              author={item.books?.author}
-              coverUrl={item.books?.cover_url}
-              widthClassName={tileWidth}
-              coverSizeClassName="w-full aspect-[2/3]"
-            />
-          ))}
+        <View className="p-4">
+          <LibraryCoverGrid
+            items={shelf.items.map((item) => ({
+              id: item.id,
+              bookId: item.books?.id,
+              title: item.books?.title,
+              author: item.books?.author,
+              coverUrl: item.books?.cover_url,
+            }))}
+          />
         </View>
       )}
     </View>

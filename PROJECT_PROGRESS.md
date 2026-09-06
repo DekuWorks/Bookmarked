@@ -868,6 +868,41 @@ Remaining product polish on **web + iOS (iPhone/iPad)**. Android not in scope. N
 
 ---
 
+## Fourteenth Sprint — Search clear + spine + iPad grid ✅
+
+Search X on **web + iOS**. Spine title off: **iOS only**. Grid 4-col: **iPad only**. Android not in scope. No `expo run:ios`. No TestFlight. No commit in this pass.
+
+| # | Item | Status | Notes |
+|---|------|--------|-------|
+| 1 | Search clear X | ✅ | X inside the field when `query.length > 0`. Label “Clear search”. Clears query + results, same category, refocus. Empty hides X. |
+| 2 | Stale-query guard | ✅ | Request ids + invalidate on clear. iOS also `cancelQueries` + AbortSignal on book search. “Fourth Wing” then X cannot refill empty search. |
+| 3 | App spine titles off | ✅ | Native `BookSpine` only. Cover + overlay/shadow kept. VoiceOver still “Title by Author”. Web spine untouched. |
+| 4 | iPad Grid 4 columns | ✅ | Scene width `>= 768` → 4 equal columns. Phone stays 3. Split View / phone-like pane drops to 3. Pixel tiles (NativeWind `w-[23%]` never applied, so iPad still showed 3). |
+
+### Why iPad was still 3-col
+
+Twelfth Sprint set `w-[23%]` at `width >= 768`, but NativeWind arbitrary percentages did not size the tiles. Covers used intrinsic width, so three fit. Column count now uses **scene/pane** width (`useWindowDimensions`, which shrinks in Split View). Tile width is measured from the grid row so a padded card on a full iPad still gets 4.
+
+### Files
+
+- SearchBar: `apps/web/src/components/search/SearchBar.tsx`, `apps/mobile/src/components/SearchBar.tsx`
+- Shared: `packages/utils/searchClear.ts`, `packages/utils/libraryFilters.ts` (`libraryGridLayout`)
+- Native spine: `apps/mobile/src/components/library/BookSpine.tsx` (web `BookSpine.tsx` unchanged)
+- Grid: `LibraryCoverGrid.tsx` used by Library / shelf / custom / All Books
+
+### Tests / verification
+
+- Unit: search clear visibility + href + stale Fourth Wing ignore; phone 3-col vs iPad 4-col vs Split View 3-col
+- Web `tsc --noEmit`: pass
+- Web `vitest`: 53 files, 317 tests pass
+- Web `eslint` on `SearchBar.tsx`: pass. `SearchForm` / `SearchResults` still have pre-existing `react-hooks/set-state-in-effect`
+- Web production `next build`: pass
+- iOS `tsc --noEmit`: pass
+- iOS `vitest`: 59 files, 301 tests pass
+- Phone grid still 3. Web spine titles still render. No `expo run:ios`. Android not in scope.
+
+---
+
 ## Next up (recommended)
 
 | Priority | Item | Notes |

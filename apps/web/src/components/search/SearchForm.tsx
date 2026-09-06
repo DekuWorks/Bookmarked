@@ -3,8 +3,9 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { SearchBar } from "@/components/search/SearchBar";
 import type { SearchMode } from "@/components/search/SearchModeTabs";
+import { clearedSearchHref } from "@bookmarked/utils/searchClear";
 import { isIsbnQuery } from "@/lib/utils/isbn";
 
 type Props = {
@@ -38,6 +39,18 @@ export function SearchForm({ mode = "books" }: Props) {
     router.push(`/search/?${params.toString()}`);
   }
 
+  function onClear() {
+    setQ("");
+    router.push(
+      clearedSearchHref({
+        mode,
+        origin: searchParams.get("origin"),
+        shelf: searchParams.get("shelf"),
+      })
+    );
+    requestAnimationFrame(() => inputRef.current?.focus());
+  }
+
   const isbnHint = mode === "books" && isIsbnQuery(q);
   const placeholder =
     mode === "people"
@@ -54,15 +67,14 @@ export function SearchForm({ mode = "books" }: Props) {
       className="mx-auto flex w-full max-w-xl flex-col items-center gap-3 sm:flex-row sm:items-end sm:justify-center"
     >
       <div className="min-w-0 w-full flex-1 sm:max-w-md">
-        <Input
+        <SearchBar
           ref={inputRef}
           label={label}
-          variant="search"
-          hideLabel
           name="q"
           placeholder={placeholder}
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={setQ}
+          onClear={onClear}
         />
         {isbnHint ? (
           <p className="-mt-2 text-xs text-primary">ISBN detected — searching by ISBN</p>

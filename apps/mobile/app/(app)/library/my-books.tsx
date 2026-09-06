@@ -1,6 +1,14 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "expo-router";
-import { Modal, Pressable, ScrollView, Text, useWindowDimensions, View } from "react-native";
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  useWindowDimensions,
+  View,
+  type LayoutChangeEvent,
+} from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BookCover } from "../../../src/components/BookCover";
@@ -13,7 +21,8 @@ import { TAB_BAR_SPACE, useTabBarScroll } from "../../../src/navigation/TabBarSc
 import type { LibraryBookRow } from "../../../src/services/library";
 import {
   LIBRARY_FILTER_OPTIONS,
-  libraryGridColumnCount,
+  LIBRARY_GRID_GAP,
+  libraryGridLayout,
   parseLibraryFilter,
   type LibraryFilterId,
 } from "../../../../../packages/utils/libraryFilters";
@@ -138,16 +147,24 @@ function BookRow({ row }: { row: LibraryBookRow }) {
   );
 }
 
-function BookGridTile({ row, columns }: { row: LibraryBookRow; columns: number }) {
+function BookGridTile({ row, tileWidth }: { row: LibraryBookRow; tileWidth: number }) {
   const router = useRouter();
   const book = row.books;
   if (!book) return null;
+  const coverHeight = Math.round(tileWidth * 1.5);
   return (
     <Pressable
       onPress={() => router.push(`/book/${book.id}?origin=library_all_books`)}
-      className={`mb-4 items-center px-1 active:opacity-80 ${columns >= 4 ? "w-1/4" : "w-1/3"}`}
+      className="mb-4 items-center active:opacity-80"
+      style={{ width: tileWidth }}
     >
-      <BookCover url={book.cover_url} title={book.title} sizeClassName="w-24 h-36" saved badgeSize="medium" />
+      <BookCover
+        url={book.cover_url}
+        title={book.title}
+        sizeStyle={{ width: tileWidth, height: coverHeight }}
+        saved
+        badgeSize="medium"
+      />
       <Text className="mt-1 w-full text-center text-xs font-medium text-ink" numberOfLines={2}>
         {book.title}
       </Text>
@@ -158,14 +175,24 @@ function BookGridTile({ row, columns }: { row: LibraryBookRow; columns: number }
 export default function MyBooksScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { width } = useWindowDimensions();
   const { onScroll } = useTabBarScroll();
   const { data: books, isLoading, isError, error } = useLibraryBooks();
   const [tab, setTab] = useState<LibraryFilterId>("all");
   const [sort, setSort] = useState<SortKey>("date_added");
   const [grid, setGrid] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
-  const columns = libraryGridColumnCount(width, grid);
+  const { width: sceneWidth } = useWindowDimensions();
+  const [listWidth, setListWidth] = useState(0);
+  const innerWidth = Math.max(0, (listWidth || sceneWidth) - 32);
+  const { columns, tileWidth, gap } = libraryGridLayout(innerWidth, grid, {
+    gap: LIBRARY_GRID_GAP,
+    columnWidth: sceneWidth,
+  });
+
+  function onListLayout(event: LayoutChangeEvent) {
+    const next = Math.round(event.nativeEvent.layout.width);
+    setListWidth((prev) => (prev === next ? prev : next));
+  }
 
   const rows = useMemo(() => {
     const filtered = (books ?? []).filter((b) => matchesTab(b, tab));
@@ -248,11 +275,13 @@ export default function MyBooksScreen() {
           data={rows}
           keyExtractor={(item) => item.id}
           numColumns={columns}
+          onLayout={onListLayout}
           onScroll={onScroll}
           scrollEventThrottle={16}
+          columnWrapperStyle={columns > 1 ? { gap } : undefined}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: TAB_BAR_SPACE }}
           renderItem={({ item }) =>
-            grid ? <BookGridTile row={item} columns={columns} /> : <BookRow row={item} />
+            grid ? <BookGridTile row={item} tileWidth={tileWidth} /> : <BookRow row={item} />
           }
           ListEmptyComponent={
             <EmptyState

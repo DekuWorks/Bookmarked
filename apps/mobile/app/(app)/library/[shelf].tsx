@@ -2,11 +2,11 @@ import { useMemo } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { originBackHref, originBackLink, parseNavOrigin } from "../../../../../packages/utils/navigationOrigin";
 import { useQueryClient } from "@tanstack/react-query";
-import { Alert, Pressable, ScrollView, Text, useWindowDimensions, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { Button } from "../../../src/components/Button";
 import { BookSpine } from "../../../src/components/library/BookSpine";
+import { LibraryCoverGrid } from "../../../src/components/library/LibraryCoverGrid";
 import { LibraryViewToggle } from "../../../src/components/library/LibraryViewToggle";
-import { CoverTile } from "../../../src/components/CoverTile";
 import { EmptyState } from "../../../src/components/EmptyState";
 import { LoadingState } from "../../../src/components/LoadingState";
 import { ScreenHeader } from "../../../src/components/ScreenHeader";
@@ -17,7 +17,6 @@ import { useLibrary } from "../../../src/hooks/useLibrary";
 import { useLibraryViewMode } from "../../../src/hooks/useLibraryViewMode";
 import { clearBuiltInShelf } from "../../../src/services/library";
 import { useAuthStore } from "../../../src/store/authStore";
-import { LIBRARY_TABLET_MIN_WIDTH } from "../../../../../packages/utils/libraryFilters";
 
 export default function LibraryShelfScreen() {
   const { shelf: shelfSlugParam, origin: originParam } = useLocalSearchParams<{
@@ -37,8 +36,6 @@ export default function LibraryShelfScreen() {
   const queryClient = useQueryClient();
   const { data: shelves, isLoading, isError } = useLibrary();
   const { view, setView, isPending } = useLibraryViewMode();
-  const { width } = useWindowDimensions();
-  const tabletGrid = width >= LIBRARY_TABLET_MIN_WIDTH;
 
   const shelf = useMemo(
     () => (config ? (shelves ?? []).find((entry) => entry.status === config.status) : null),
@@ -148,20 +145,16 @@ export default function LibraryShelfScreen() {
             </View>
           </ScrollView>
         ) : (
-          <View className="flex-row flex-wrap gap-3">
-            {shelf.items.map((item) => (
-              <CoverTile
-                key={item.id}
-                bookId={item.books?.id}
-                title={item.books?.title}
-                author={item.books?.author}
-                coverUrl={item.books?.cover_url}
-                saved
-                widthClassName={tabletGrid ? "w-[23%]" : "w-[30%]"}
-                coverSizeClassName="w-full aspect-[2/3]"
-              />
-            ))}
-          </View>
+          <LibraryCoverGrid
+            items={shelf.items.map((item) => ({
+              id: item.id,
+              bookId: item.books?.id,
+              title: item.books?.title,
+              author: item.books?.author,
+              coverUrl: item.books?.cover_url,
+              saved: true,
+            }))}
+          />
         )}
       </ScrollView>
     </View>

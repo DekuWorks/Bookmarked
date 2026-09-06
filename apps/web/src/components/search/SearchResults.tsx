@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { SearchResultCard } from "@/components/search/SearchResultCard";
 import { Button } from "@/components/ui/Button";
+import { createSearchRequestGuard } from "@bookmarked/utils/searchClear";
 import {
   catalogExternalId,
   searchIsbndb,
@@ -52,6 +53,7 @@ export function SearchResults({ query }: Props) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [memberships, setMemberships] = useState<Map<string, BookShelfMembership>>(new Map());
+  const requestGuard = useRef(createSearchRequestGuard());
 
   useEffect(() => {
     if (!user) {
@@ -75,11 +77,14 @@ export function SearchResults({ query }: Props) {
 
   const runSearch = useCallback(
     async (offset: number, append: boolean) => {
+      const requestId = requestGuard.current.next();
       if (append) {
         setLoadingMore(true);
       } else {
         setLoading(true);
         setErrorMessage(null);
+        setDocs([]);
+        setNumFound(0);
       }
 
       try {
@@ -89,24 +94,33 @@ export function SearchResults({ query }: Props) {
           offset,
         });
 
+        if (!requestGuard.current.isCurrent(requestId)) return;
+
         setNumFound(result.numFound);
         setDocs((prev) => (append ? [...prev, ...result.docs] : result.docs));
       } catch (e) {
+        if (!requestGuard.current.isCurrent(requestId)) return;
         if (!append) {
           setDocs([]);
           setNumFound(0);
         }
         setErrorMessage(e instanceof Error ? e.message : "Search failed.");
       } finally {
-        setLoading(false);
-        setLoadingMore(false);
+        if (requestGuard.current.isCurrent(requestId)) {
+          setLoading(false);
+          setLoadingMore(false);
+        }
       }
     },
     [query, searchOptions]
   );
 
   useEffect(() => {
+    const guard = requestGuard.current;
     void runSearch(0, false);
+    return () => {
+      guard.invalidate();
+    };
   }, [query, filterKey, runSearch]);
 
   if (loading) {

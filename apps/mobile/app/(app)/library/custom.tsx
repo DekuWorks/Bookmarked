@@ -4,8 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Button } from "../../../src/components/Button";
 import { BookSpine } from "../../../src/components/library/BookSpine";
+import { LibraryCoverGrid } from "../../../src/components/library/LibraryCoverGrid";
 import { LibraryViewToggle } from "../../../src/components/library/LibraryViewToggle";
-import { CoverTile } from "../../../src/components/CoverTile";
 import { EmptyState } from "../../../src/components/EmptyState";
 import { LoadingState } from "../../../src/components/LoadingState";
 import { ScreenHeader } from "../../../src/components/ScreenHeader";
@@ -144,19 +144,15 @@ export default function CustomShelfScreen() {
             </View>
           </ScrollView>
         ) : (
-          <View className="flex-row flex-wrap gap-2">
-            {shelf.items.map((item) => (
-              <CoverTile
-                key={item.id}
-                bookId={item.books?.id}
-                title={item.books?.title}
-                author={item.books?.author}
-                coverUrl={item.books?.cover_url}
-                widthClassName="w-[23%]"
-                coverSizeClassName="w-full aspect-[2/3]"
-              />
-            ))}
-          </View>
+          <LibraryCoverGrid
+            items={shelf.items.map((item) => ({
+              id: item.id,
+              bookId: item.books?.id,
+              title: item.books?.title,
+              author: item.books?.author,
+              coverUrl: item.books?.cover_url,
+            }))}
+          />
         )}
       </ScrollView>
       <EditCustomShelfSheet

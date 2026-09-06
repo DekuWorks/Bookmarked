@@ -84,9 +84,14 @@ function bookToDoc(book: IsbndbBook): CatalogDoc | null {
   };
 }
 
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
+}
+
 async function isbndbFetch<T>(
   path: string,
-  query: Record<string, string | number | undefined> = {}
+  query: Record<string, string | number | undefined> = {},
+  signal?: AbortSignal
 ): Promise<T> {
   const base = env.supabaseUrl.trim();
   const anon = env.supabaseAnonKey.trim();
@@ -113,8 +118,10 @@ async function isbndbFetch<T>(
         apikey: anon,
         Accept: "application/json",
       },
+      signal,
     });
-  } catch {
+  } catch (error) {
+    if (isAbortError(error)) throw error;
     throw new Error("Could not reach the book catalog. Check your connection.");
   }
 
@@ -132,24 +139,34 @@ async function isbndbFetch<T>(
   return (await res.json()) as T;
 }
 
-export async function searchIsbndb(query: string, limit = 20): Promise<CatalogDoc[]> {
+export async function searchIsbndb(
+  query: string,
+  limit = 20,
+  signal?: AbortSignal
+): Promise<CatalogDoc[]> {
   const trimmed = query.trim();
   if (!trimmed) return [];
 
   if (isIsbnQuery(trimmed)) {
     const isbn = normalizeIsbn(trimmed);
     try {
-      const json = await isbndbFetch<IsbndbBookResponse>(`book/${encodeURIComponent(isbn)}`);
+      const json = await isbndbFetch<IsbndbBookResponse>(
+        `book/${encodeURIComponent(isbn)}`,
+        {},
+        signal
+      );
       const doc = json.book ? bookToDoc(json.book) : null;
       return doc ? [doc] : [];
-    } catch {
+    } catch (error) {
+      if (isAbortError(error)) throw error;
       // fall through to text search
     }
   }
 
   const json = await isbndbFetch<IsbndbBooksResponse>(
     `books/${encodeURIComponent(trimmed)}`,
-    { page: 1, pageSize: limit }
+    { page: 1, pageSize: limit },
+    signal
   );
 
   const seen = new Set<string>();

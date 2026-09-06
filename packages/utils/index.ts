@@ -540,11 +540,24 @@ export {
 export {
   LIBRARY_FILTER_OPTIONS,
   LIBRARY_FILTER_ORDER,
+  LIBRARY_GRID_GAP,
   LIBRARY_TABLET_MIN_WIDTH,
   libraryGridColumnCount,
+  libraryGridLayout,
   parseLibraryFilter,
   type LibraryFilterId,
+  type LibraryGridLayout,
+  type LibraryGridLayoutOptions,
 } from "./libraryFilters";
+
+export {
+  clearedSearchHref,
+  createSearchRequestGuard,
+  shouldShowSearchClear,
+  type ClearedSearchHrefOptions,
+  type SearchClearMode,
+  type SearchRequestGuard,
+} from "./searchClear";
 
 export {
   ALREADY_IN_LIBRARY_COPY,

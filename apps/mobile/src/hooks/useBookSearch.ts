@@ -6,7 +6,7 @@ export function useBookSearch(query: string) {
 
   return useQuery({
     queryKey: ["book-search", trimmed],
-    queryFn: () => searchIsbndb(trimmed),
+    queryFn: ({ signal }) => searchIsbndb(trimmed, 20, signal),
     enabled: trimmed.length >= 2,
     staleTime: 5 * 60 * 1000,
   });
