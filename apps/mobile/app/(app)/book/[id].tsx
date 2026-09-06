@@ -17,7 +17,14 @@ import { MarkFinishedSheet } from "../../../src/components/MarkFinishedSheet";
 import { RateBookPromptSheet } from "../../../src/components/RateBookPromptSheet";
 import { RateReviewSheet } from "../../../src/components/RateReviewSheet";
 import { PrivateReviewBadge } from "../../../src/components/PrivateReviewBadge";
-import { isPrivateReview } from "../../../../../packages/utils/reviewVisibility";
+import { ReviewVisibilityControl } from "../../../src/components/ReviewVisibilityControl";
+import { updateReviewVisibility } from "../../../src/services/reviews";
+import {
+  isPrivateReview,
+  isPublicReview,
+  parseReviewAudience,
+  type ReviewAudience,
+} from "../../../../../packages/utils/reviewVisibility";
 import { ReadingJournalSection } from "../../../src/components/ReadingJournalSection";
 import { ReadingNotesSection } from "../../../src/components/ReadingNotesSection";
 import { SavedPill } from "../../../src/components/SavedPill";
@@ -55,12 +62,44 @@ const SHELVES: { status: ShelfStatus; label: string }[] = [
   { status: "read", label: "Finished" },
 ];
 
-function ReviewItem({ review, isOwn = false }: { review: Review; isOwn?: boolean }) {
+function ReviewItem({
+  review,
+  isOwn = false,
+  onVisibilityChange,
+}: {
+  review: Review;
+  isOwn?: boolean;
+  onVisibilityChange?: () => void;
+}) {
   const router = useRouter();
   const [revealed, setRevealed] = useState(false);
+  const [visibility, setVisibility] = useState<ReviewAudience>(
+    parseReviewAudience(review.visibility)
+  );
+  const [saving, setSaving] = useState(false);
+  const [prevReviewVisibility, setPrevReviewVisibility] = useState(review.visibility);
+  if (review.visibility !== prevReviewVisibility) {
+    setPrevReviewVisibility(review.visibility);
+    setVisibility(parseReviewAudience(review.visibility));
+  }
   const name = review.profiles?.display_name?.trim() || review.profiles?.username?.trim() || "Reader";
   const username = review.profiles?.username?.trim();
   const hidden = review.has_spoilers && !revealed;
+
+  async function persistVisibility(next: ReviewAudience) {
+    if (next === visibility) return;
+    setVisibility(next);
+    setSaving(true);
+    const result = await updateReviewVisibility(review.id, next);
+    setSaving(false);
+    if (result.error) {
+      setVisibility(parseReviewAudience(review.visibility));
+      Alert.alert("Couldn't update visibility", result.error);
+      return;
+    }
+    onVisibilityChange?.();
+  }
+
   return (
     <View className="mb-3 rounded-2xl border border-brand-border bg-surface p-3">
       <View className="flex-row items-center justify-between">
@@ -72,7 +111,7 @@ function ReviewItem({ review, isOwn = false }: { review: Review; isOwn?: boolean
           <Text className="font-semibold text-ink">{name}</Text>
         </Pressable>
         <View className="flex-row items-center gap-2">
-          {isOwn && isPrivateReview(review.visibility) ? <PrivateReviewBadge compact /> : null}
+          {isOwn && isPrivateReview(visibility) ? <PrivateReviewBadge compact /> : null}
           {review.read_number > 1 ? (
             <Text className="text-xs text-primary-dark">Read #{review.read_number}</Text>
           ) : null}
@@ -104,6 +143,15 @@ function ReviewItem({ review, isOwn = false }: { review: Review; isOwn?: boolean
           {review.feelings.map((f, i) => (
             <FeelingChip key={f} label={f} index={i} />
           ))}
+        </View>
+      ) : null}
+      {isOwn ? (
+        <View className="mt-3">
+          <ReviewVisibilityControl
+            value={visibility}
+            disabled={saving}
+            onChange={(next) => void persistVisibility(next)}
+          />
         </View>
       ) : null}
     </View>
@@ -442,7 +490,7 @@ export default function BookScreen() {
   const ownReview = ownReviews[0] ?? null;
   const readCount = userBook?.read_count ?? 1;
   const otherReviews = (data?.reviews ?? []).filter(
-    (r) => r.user_id !== userId && r.visibility === "public"
+    (r) => r.user_id !== userId && isPublicReview(r.visibility)
   );
 
   return (
@@ -705,7 +753,12 @@ export default function BookScreen() {
               {ownReviews.length > 1 ? `Your reading history (${ownReviews.length})` : "Your review"}
             </Text>
             {ownReviews.map((review) => (
-              <ReviewItem key={review.id} review={review} isOwn />
+              <ReviewItem
+                key={review.id}
+                review={review}
+                isOwn
+                onVisibilityChange={invalidate}
+              />
             ))}
           </View>
         ) : null}

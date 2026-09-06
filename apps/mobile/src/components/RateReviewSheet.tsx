@@ -91,6 +91,29 @@ export function RateReviewSheet({
     emotionalImpact: existingReview?.emotional_impact ?? 0,
   });
   const [saving, setSaving] = useState(false);
+  const [wasOpen, setWasOpen] = useState(visible);
+  const [hydratedId, setHydratedId] = useState(existingReview?.id ?? null);
+  if (visible && (!wasOpen || (existingReview?.id ?? null) !== hydratedId)) {
+    setWasOpen(true);
+    setHydratedId(existingReview?.id ?? null);
+    setRating(existingReview?.rating ?? 0);
+    setEmoji(existingReview?.rating_emoji ?? null);
+    setFeelings(existingReview?.feelings ?? []);
+    setBody(existingReview?.review_body ?? "");
+    setHasSpoilers(existingReview?.has_spoilers ?? false);
+    setVisibility(parseReviewAudience(existingReview?.visibility));
+    setCategories({
+      plot: existingReview?.plot ?? 0,
+      characters: existingReview?.characters ?? 0,
+      writingStyle: existingReview?.writing_style ?? 0,
+      worldBuilding: existingReview?.world_building ?? 0,
+      pacing: existingReview?.pacing ?? 0,
+      emotionalImpact: existingReview?.emotional_impact ?? 0,
+    });
+  }
+  if (!visible && wasOpen) {
+    setWasOpen(false);
+  }
 
   function toggleFeeling(feeling: string) {
     setFeelings((prev) =>

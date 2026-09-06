@@ -77,7 +77,8 @@ export function ReviewsPanel({ reviews, onReviewsChange }: Props) {
                   key={option.id}
                   onPress={() => setFilter(option.id)}
                   accessibilityRole="radio"
-                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={option.label}
+                  accessibilityState={{ selected: active, checked: active }}
                   className={`h-8 shrink-0 items-center justify-center rounded-full border px-3 ${
                     active ? "border-puce-red bg-puce-red" : "border-brand-border bg-background"
                   }`}

@@ -33,7 +33,9 @@ export function ReviewVisibilityControl({ value, onChange, disabled = false }: P
               onPress={() => onChange(option.value)}
               disabled={disabled}
               accessibilityRole="radio"
-              accessibilityState={{ selected, disabled }}
+              accessibilityLabel={option.label}
+              accessibilityHint={option.helper}
+              accessibilityState={{ selected, checked: selected, disabled }}
               className={`min-h-[40px] flex-1 items-center justify-center rounded-lg px-3 ${
                 selected ? "bg-puce-red" : "bg-transparent"
               } ${disabled ? "opacity-60" : "active:opacity-80"}`}
@@ -45,7 +47,12 @@ export function ReviewVisibilityControl({ value, onChange, disabled = false }: P
           );
         })}
       </View>
-      <Text className="mt-2 text-xs text-ink-muted">{helper}</Text>
+      <Text
+        accessibilityLiveRegion="polite"
+        className="mt-2 text-xs text-ink-muted"
+      >
+        {helper}
+      </Text>
     </View>
   );
 }

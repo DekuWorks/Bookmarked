@@ -3,6 +3,7 @@ import { getBookReviews } from "./reviews";
 import { listReadingSessions } from "./readingSessions";
 import { listNotesByBook } from "./readingNotes";
 import { computeAverageRating, type CommunityRating } from "../../../../packages/utils";
+import { isPublicReview } from "../../../../packages/utils/reviewVisibility";
 import type { Book, ReadingNote, ReadingSession, Review, UserBook } from "../types";
 
 /**
@@ -70,7 +71,7 @@ export async function getBookDetails(
   return {
     book: book as Book,
     userBook: typedUserBook,
-    reviews: reviews.filter((r) => r.visibility === "public"),
+    reviews: reviews.filter((r) => isPublicReview(r.visibility)),
     ownReviews: reviews.filter((r) => r.user_id === userId),
     communityRating,
     readingSessions,

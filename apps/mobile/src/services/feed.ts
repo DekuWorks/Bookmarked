@@ -6,6 +6,7 @@ import {
   isFeedEligibleEvent,
   type ActivityVisibility,
 } from "./activity";
+import { isPublicReview } from "../../../../packages/utils/reviewVisibility";
 
 /**
  * Mobile social feed. Mirrors apps/web/src/lib/services/socialFeed.ts: reads
@@ -134,7 +135,7 @@ async function buildItems(
       .select("id, book_id, visibility")
       .in("id", reviewIds);
     for (const rv of data ?? []) {
-      if (rv.visibility !== "public") continue;
+      if (!isPublicReview(rv.visibility)) continue;
       publicReviewIds.add(rv.id as string);
       for (const row of rows) {
         if (row.entity_type === "review" && row.entity_id === rv.id) {

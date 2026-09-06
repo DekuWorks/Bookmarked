@@ -10,12 +10,12 @@ export const REVIEW_VISIBILITY_OPTIONS: {
   {
     value: "public",
     label: "Public",
-    helper: "Public: Visible on your profile, book pages, and the Feed.",
+    helper: "Visible on your profile, book pages, and the Feed.",
   },
   {
     value: "private",
     label: "Private",
-    helper: "Private: Visible only to you.",
+    helper: "Visible only to you.",
   },
 ];
 
