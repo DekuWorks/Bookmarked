@@ -2,9 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getProfile } from "@/lib/services/profile";
-import { getReadingRoomData } from "@/lib/services/readingRoom";
+import {
+  emptyReadingRoomData,
+  getReadingRoomData,
+  type ReadingRoomData,
+} from "@/lib/services/readingRoom";
 import { backfillReadingSessionsForUser } from "@/lib/services/readingSessionBackfill";
-import type { ReadingRoomData } from "@/lib/services/readingRoom";
 import { ReadingRoomTabs } from "@/components/reading-room/ReadingRoomTabs";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
@@ -19,15 +22,20 @@ export default function ReadingRoomPage() {
   const loadReadingRoom = useCallback(async () => {
     if (!user) return;
 
-    const profile = await getProfile(user.id);
-    setDisplayName(profile?.display_name || profile?.username || "Reader");
-    void backfillReadingSessionsForUser(user.id);
-    const room = await getReadingRoomData(
-      user.id,
-      profile?.yearly_reading_goal ?? null,
-      profile?.favorite_genres
-    );
-    setData(room);
+    try {
+      const profile = await getProfile(user.id);
+      setDisplayName(profile?.display_name || profile?.username || "Reader");
+      void backfillReadingSessionsForUser(user.id);
+      const room = await getReadingRoomData(
+        user.id,
+        profile?.yearly_reading_goal ?? null,
+        profile?.favorite_genres
+      );
+      setData(room);
+    } catch (error) {
+      console.error("[reading-room] load failed:", error);
+      setData((current) => current ?? emptyReadingRoomData());
+    }
   }, [user]);
 
   useEffect(() => {

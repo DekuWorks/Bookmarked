@@ -54,25 +54,30 @@ function ReaderProfileContent() {
     if (!user) return;
 
     void (async () => {
-      const profile = await getProfileByUsername(username);
-      if (!profile) {
+      try {
+        const profile = await getProfileByUsername(username);
+        if (!profile) {
+          setData(null);
+          return;
+        }
+
+        const [counts, isFollowingUser, streakTimestamps] = await Promise.all([
+          getFollowCounts(profile.id),
+          user.id === profile.id ? Promise.resolve(false) : isFollowing(user.id, profile.id),
+          fetchReadingStreakTimestamps(profile.id),
+        ]);
+
+        setData({
+          profile,
+          counts,
+          following: isFollowingUser,
+          readingStreak: computeReadingStreak(streakTimestamps),
+        });
+        setFollowing(isFollowingUser);
+      } catch (error) {
+        console.error("[reader] load failed:", error);
         setData(null);
-        return;
       }
-
-      const [counts, isFollowingUser, streakTimestamps] = await Promise.all([
-        getFollowCounts(profile.id),
-        user.id === profile.id ? Promise.resolve(false) : isFollowing(user.id, profile.id),
-        fetchReadingStreakTimestamps(profile.id),
-      ]);
-
-      setData({
-        profile,
-        counts,
-        following: isFollowingUser,
-        readingStreak: computeReadingStreak(streakTimestamps),
-      });
-      setFollowing(isFollowingUser);
     })();
   }, [username, user]);
 
