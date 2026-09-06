@@ -145,6 +145,7 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Delete own activity | ✅ | `deleteOwnActivity` + confirmation on web FeedCard; activity row only |
 | Share → Feed / Message | ✅ | `ShareContentModal` / `ShareContentSheet` with search, followers, recent, optional note, delivery toast |
 | Left-aligned text | ✅ | Feed posts/activity + Reading Room activity rows |
+| Feed image consistent sizing | ✅ | Shared `layoutFeedImageMedia` — contain, original ratio, max-height narrow + center. Web + iOS `FeedImageMedia` + new Full Image View |
 
 ---
 
@@ -656,6 +657,67 @@ No `aria-label` / `accessibilityLabel` duplicated the subtitle. Visible copy is 
 - Web production `next build`: pass (`/dashboard` and `/reading-room` unchanged)
 - Web `eslint`: repo already has 130 pre-existing `react-hooks/set-state-in-effect` errors (including Reading Room load effect). Copy change did not add any. Layout file is clean.
 - No `expo run:ios`. Android not in scope.
+
+---
+
+## Feed Images — Consistent Sizing ✅
+
+Display-only. Same source image keeps the same proportional shape on 320–wide desktop, iPhone, and iPad. No upload, storage, or schema changes.
+
+### Root cause
+
+Feed renderers **cropped** user photos to a fake box:
+
+- Web `PostCard` / `RepostPreview` / `CommentAttachment`: `object-cover` + `max-h-*` (GIFs already used contain)
+- iOS `AttachmentImage`: clamped aspect ratio (0.6–1.9) + `resizeMode="cover"`
+
+Portrait was cropped, landscape/square were forced toward a mid ratio, and iPad used the same cover box instead of the post column width.
+
+### Shared rules (`packages/utils/feedImageMedia.ts`)
+
+| Token | Value |
+|-------|--------|
+| Fit | `contain` (cover only if future crop metadata says so — none stored today) |
+| Max height | 480px default, 280px compact; also capped at 70% of viewport |
+| Max media width | 640px inside a very wide column (iPad landscape / large desktop). Web Feed column stays `max-w-3xl` |
+| Fallback reserve | 4:3 until `onLoad` / `Image.getSize` (no new DB columns) |
+| Tiny images | Natural width ≤ 240px is not stretched to the column |
+
+Portrait taller than the max height is **narrowed and centered**, not cropped. Tap opens Full Image View.
+
+### Full Image View
+
+**New** on both platforms (nothing existed — web opened the file in a new tab).
+
+- Web: `FeedImageViewer` lightbox — dark backdrop, contain, Close, Escape, backdrop click, focus trap
+- iOS/iPad: full-screen modal, Close, VoiceOver. No pinch-zoom (no existing viewer)
+
+### Multi-image / crop
+
+Posts have a single `image_url`. No crop metadata. Share-card thumbnails (48×64) may still crop; Full View and Feed cards show the original with contain.
+
+### Surfaces
+
+| Surface | Change |
+|---------|--------|
+| Main Feed / post detail / profile posts | Web `PostCard` → `FeedImageMedia` |
+| Repost embed | Web + iOS compact `FeedImageMedia` |
+| Comments / message attachments | Same renderer (`CommentAttachment` / `AttachmentImage` wrap) |
+| Share preview cards | Left as cropped 48×64 thumbnails (preview, not Feed) |
+| Notifications / club posts | No Feed image cards |
+| Composer / edit previews | Unchanged (upload UI) |
+
+### Tests / verification
+
+- Shared: ratio, portrait narrow + center, landscape, square, panoramic, tiny, wide-column cap
+- Web `tsc --noEmit`: pass
+- Web `vitest`: 41 files, 231 tests pass (14 new in `feedImageMedia.test.ts`)
+- Web `eslint` on new Feed image files: pass. Repo still has pre-existing `react-hooks/set-state-in-effect` errors (including `PostCard`)
+- Web production `next build`: pass
+- iOS `tsc --noEmit`: pass
+- iOS `vitest`: 11 files, 27 tests pass
+- Browser QA: Feed is auth-gated. Cursor browser tools could not keep a tab open. Local `/feed/` serves and redirects unauthenticated users to login.
+- No `expo run:ios`. Android not in scope. No storage/upload/data changes.
 
 ---
 

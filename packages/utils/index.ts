@@ -481,3 +481,18 @@ export {
   type BuiltinMoodTag,
   type CustomMoodTag,
 } from "./customMoodTags";
+
+export {
+  FEED_IMAGE_MEDIA,
+  feedImageOrientation,
+  layoutFeedImageMedia,
+  resolveFeedImageAspectRatio,
+  resolveFeedImageMaxHeight,
+  resolveFeedImageMaxWidth,
+  type FeedImageCrop,
+  type FeedImageCropMode,
+  type FeedImageFit,
+  type FeedImageLayout,
+  type FeedImageLayoutInput,
+  type FeedImageOrientation,
+} from "./feedImageMedia";
