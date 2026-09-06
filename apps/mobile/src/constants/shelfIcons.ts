@@ -1,8 +1,38 @@
 import type { ImageSourcePropType } from "react-native";
 import type { ShelfStatus } from "../types";
+import {
+  CUSTOM_SHELF_ICON_ASSETS_READY,
+  CUSTOM_SHELF_ICON_KEYS,
+  DEFAULT_CUSTOM_SHELF_ICON_KEY,
+  DEFAULT_SHELF_A11Y_LABEL,
+  DEFAULT_SHELF_ICON_KEY,
+  DEFAULT_SHELF_ICON_LABEL,
+  DEFAULT_SHELF_ICON_ORDER,
+  getCustomShelfA11yLabel,
+  parseCustomShelfIconWrite,
+  resolveCustomShelfIconKey,
+  sortDefaultShelfIconIds,
+  type CustomShelfIconKey,
+  type DefaultShelfIconId,
+} from "../../../../packages/utils/shelfIcons";
 
-/** Built-in shelf icon keys — matches DB shelf_status values plus DNF flag. */
-export type ShelfIconId = ShelfStatus | "dnf";
+export type ShelfIconId = DefaultShelfIconId;
+export type {
+  CustomShelfIconKey,
+  DefaultShelfIconId,
+  DefaultShelfIconKey,
+} from "../../../../packages/utils/shelfIcons";
+
+export {
+  CUSTOM_SHELF_ICON_ASSETS_READY,
+  CUSTOM_SHELF_ICON_KEYS,
+  DEFAULT_CUSTOM_SHELF_ICON_KEY,
+  DEFAULT_SHELF_ICON_ORDER,
+  getCustomShelfA11yLabel,
+  parseCustomShelfIconWrite,
+  resolveCustomShelfIconKey,
+  sortDefaultShelfIconIds,
+};
 
 export type ShelfIconSize = "small" | "medium" | "large";
 
@@ -25,6 +55,7 @@ export const SHELF_ICON_FRAME_PX: Record<ShelfIconSize, number> = {
 
 export type ShelfIconConfig = {
   id: ShelfIconId;
+  iconKey: string;
   source: ImageSourcePropType;
   label: string;
   accessibilityLabel: string;
@@ -32,43 +63,76 @@ export type ShelfIconConfig = {
 };
 
 /** Product order: TBR → Currently Reading → Finished → DNF */
-export const SHELF_ICON_ORDER: ShelfIconId[] = [
-  "want_to_read",
-  "currently_reading",
-  "read",
-  "dnf",
-];
+export const SHELF_ICON_ORDER: ShelfIconId[] = [...DEFAULT_SHELF_ICON_ORDER];
+
+const DEFAULT_SOURCES: Record<ShelfIconId, ImageSourcePropType> = {
+  want_to_read: require("../../assets/shelves/want-to-read.png"),
+  currently_reading: require("../../assets/shelves/currently-reading.png"),
+  read: require("../../assets/shelves/finished.png"),
+  dnf: require("../../assets/shelves/did-not-finish.png"),
+};
+
+/** waiting-on-assets: Leighton custom-icon-N.png — use approved stack-of-books until then. */
+const CUSTOM_FALLBACK_SOURCE = DEFAULT_SOURCES.want_to_read;
 
 export const SHELF_ICONS: Record<ShelfIconId, ShelfIconConfig> = {
   want_to_read: {
     id: "want_to_read",
-    source: require("../../assets/shelves/want-to-read.png"),
-    label: "TBR",
-    accessibilityLabel: "Want to Read shelf",
+    iconKey: DEFAULT_SHELF_ICON_KEY.want_to_read,
+    source: DEFAULT_SOURCES.want_to_read,
+    label: DEFAULT_SHELF_ICON_LABEL.want_to_read,
+    accessibilityLabel: DEFAULT_SHELF_A11Y_LABEL.want_to_read,
     sortOrder: 1,
   },
   currently_reading: {
     id: "currently_reading",
-    source: require("../../assets/shelves/currently-reading.png"),
-    label: "Currently Reading",
-    accessibilityLabel: "Currently Reading shelf",
+    iconKey: DEFAULT_SHELF_ICON_KEY.currently_reading,
+    source: DEFAULT_SOURCES.currently_reading,
+    label: DEFAULT_SHELF_ICON_LABEL.currently_reading,
+    accessibilityLabel: DEFAULT_SHELF_A11Y_LABEL.currently_reading,
     sortOrder: 2,
   },
   read: {
     id: "read",
-    source: require("../../assets/shelves/finished.png"),
-    label: "Finished",
-    accessibilityLabel: "Finished shelf",
+    iconKey: DEFAULT_SHELF_ICON_KEY.read,
+    source: DEFAULT_SOURCES.read,
+    label: DEFAULT_SHELF_ICON_LABEL.read,
+    accessibilityLabel: DEFAULT_SHELF_A11Y_LABEL.read,
     sortOrder: 3,
   },
   dnf: {
     id: "dnf",
-    source: require("../../assets/shelves/did-not-finish.png"),
-    label: "Did Not Finish",
-    accessibilityLabel: "Did Not Finish shelf",
+    iconKey: DEFAULT_SHELF_ICON_KEY.dnf,
+    source: DEFAULT_SOURCES.dnf,
+    label: DEFAULT_SHELF_ICON_LABEL.dnf,
+    accessibilityLabel: DEFAULT_SHELF_A11Y_LABEL.dnf,
     sortOrder: 4,
   },
 };
+
+export type CustomShelfIconConfig = {
+  key: CustomShelfIconKey;
+  source: ImageSourcePropType;
+  accessibilityLabel: string;
+};
+
+export function getCustomShelfIconSource(
+  _iconKey?: string | null
+): ImageSourcePropType {
+  void _iconKey;
+  if (!CUSTOM_SHELF_ICON_ASSETS_READY) {
+    return CUSTOM_FALLBACK_SOURCE;
+  }
+  return CUSTOM_FALLBACK_SOURCE;
+}
+
+export function getCustomShelfIconCatalog(): CustomShelfIconConfig[] {
+  return CUSTOM_SHELF_ICON_KEYS.map((key) => ({
+    key,
+    source: getCustomShelfIconSource(key),
+    accessibilityLabel: getCustomShelfA11yLabel(key),
+  }));
+}
 
 export function getShelfIconId(status: ShelfStatus): ShelfIconId {
   return status;
@@ -87,6 +151,5 @@ export function getShelfIconsInOrder(): ShelfIconConfig[] {
 }
 
 export function sortShelfIconIds(ids: ShelfIconId[]): ShelfIconId[] {
-  const order = new Map(SHELF_ICON_ORDER.map((id, index) => [id, index]));
-  return [...ids].sort((a, b) => (order.get(a) ?? 99) - (order.get(b) ?? 99));
+  return sortDefaultShelfIconIds(ids);
 }

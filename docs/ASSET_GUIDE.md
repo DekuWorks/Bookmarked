@@ -22,6 +22,18 @@ Web URLs are served at `/assets/shelves/<name>.png`.
 
 Do **not** use `read.png` or `dnf.png` as filenames.
 
+### Custom shelf icons — waiting on Leighton
+
+| Logical key | Expected file | Status |
+|-------------|---------------|--------|
+| `custom_icon_1` | `custom-icon-1.png` | Blocked — not in repo |
+| `custom_icon_2` | `custom-icon-2.png` | Blocked — not in repo |
+| `custom_icon_3` | `custom-icon-3.png` | Blocked — not in repo |
+| `custom_icon_4` | `custom-icon-4.png` | Blocked — not in repo |
+| `custom_icon_5` | `custom-icon-5.png` | Blocked — not in repo |
+
+Until those files land, clients persist the key and render `want-to-read.png` (approved stack of books). Fallback for a missing `icon_key` is `custom_icon_1`, not a random pick. Do not ship emoji.
+
 ## Branding assets
 
 ### Locations

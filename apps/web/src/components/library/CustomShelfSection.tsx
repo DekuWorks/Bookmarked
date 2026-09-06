@@ -2,25 +2,34 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { BrandChromeIcon } from "@/components/icons/BrandChromeIcon";
 import { BookSpine } from "@/components/library/BookSpine";
 import { EmptyShelfMessage } from "@/components/library/EmptyShelfMessage";
 import { DeleteCustomShelfModal } from "@/components/shelves/DeleteCustomShelfModal";
+import { EditCustomShelfModal } from "@/components/shelves/EditCustomShelfModal";
+import { ShelfTitleRow } from "@/components/shelves/ShelfTitleRow";
 import { customShelfPath } from "@/lib/routes/customShelf";
 import { bookDetailsPath } from "@/lib/routes/book";
 import { Z_CLASS } from "@/lib/constants/zIndex";
 import { cn } from "@/lib/utils/cn";
 import type { CustomShelfGroup } from "@/lib/services/customShelves";
+import type { UserShelf } from "@/types";
 
 type Props = {
   shelf: CustomShelfGroup;
   showHeaderLink?: boolean;
   onDeleted?: (shelfId: string) => void;
+  onUpdated?: (shelf: UserShelf) => void;
 };
 
-export function CustomShelfSection({ shelf, showHeaderLink = true, onDeleted }: Props) {
+export function CustomShelfSection({
+  shelf,
+  showHeaderLink = true,
+  onDeleted,
+  onUpdated,
+}: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,6 +50,11 @@ export function CustomShelfSection({ shelf, showHeaderLink = true, onDeleted }: 
     setDeleteOpen(true);
   }
 
+  function openEditDialog() {
+    setMenuOpen(false);
+    setEditOpen(true);
+  }
+
   return (
     <>
       {/* No `overflow-hidden` on the section itself — the header's "⋯" dropdown is
@@ -50,8 +64,12 @@ export function CustomShelfSection({ shelf, showHeaderLink = true, onDeleted }: 
         <div className="flex flex-col items-center justify-center gap-2 border-b border-border px-4 py-3 text-center sm:flex-row sm:justify-between">
           <div>
             <h2 className="flex flex-wrap items-center justify-center gap-2 text-lg font-semibold text-puce-red sm:justify-start">
-              <BrandChromeIcon name="library" />
-              {shelf.name}
+              <ShelfTitleRow
+                iconKey={shelf.icon_key}
+                title={shelf.name}
+                size="small"
+                titleClassName="text-lg font-semibold text-puce-red"
+              />
               <span className="text-sm font-normal text-text-muted">({shelf.items.length})</span>
             </h2>
             {shelf.genre ? (
@@ -67,7 +85,7 @@ export function CustomShelfSection({ shelf, showHeaderLink = true, onDeleted }: 
                 View Shelf
               </Link>
             ) : null}
-            {onDeleted ? (
+            {onDeleted || onUpdated ? (
               <div ref={menuRef} className="relative">
                 <button
                   type="button"
@@ -87,14 +105,26 @@ export function CustomShelfSection({ shelf, showHeaderLink = true, onDeleted }: 
                       Z_CLASS.dropdown
                     )}
                   >
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={openDeleteDialog}
-                      className="block w-full px-4 py-2 text-left text-sm text-rust hover:bg-background"
-                    >
-                      Delete shelf
-                    </button>
+                    {onUpdated ? (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={openEditDialog}
+                        className="block w-full px-4 py-2 text-left text-sm text-text hover:bg-background"
+                      >
+                        Edit shelf
+                      </button>
+                    ) : null}
+                    {onDeleted ? (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={openDeleteDialog}
+                        className="block w-full px-4 py-2 text-left text-sm text-rust hover:bg-background"
+                      >
+                        Delete shelf
+                      </button>
+                    ) : null}
                   </div>
                 ) : null}
               </div>
@@ -127,6 +157,13 @@ export function CustomShelfSection({ shelf, showHeaderLink = true, onDeleted }: 
           <div className="bookshelf-board h-5 rounded-b-xl" aria-hidden />
         </div>
       </section>
+
+      <EditCustomShelfModal
+        open={editOpen}
+        shelf={shelf}
+        onClose={() => setEditOpen(false)}
+        onSaved={(updated) => onUpdated?.(updated)}
+      />
 
       {onDeleted ? (
         <DeleteCustomShelfModal

@@ -1,14 +1,25 @@
 # Shelf Icon Audit
 
-Custom PNG shelf icons replace emoji for the four built-in shelf states. Mapping (product order, DB IDs unchanged):
+Canonical mapping lives in `packages/utils/shelfIcons.ts`. Platform files only attach web URLs / iOS `require()` sources. Product order, DB IDs unchanged:
 
-| Shelf | DB / icon ID | Asset | Old emoji |
-|-------|----------------|-------|-----------|
-| Want to Read | `want_to_read` | `want-to-read.png` (source `8.png`) | 📚 |
-| Currently Reading | `currently_reading` | `currently-reading.png` (source `5.png`) | 📖 |
-| Finished | `read` | `finished.png` (source `7.png`) | ✅ |
-| Did Not Finish | `dnf` | `did-not-finish.png` (source `6.png`) | — |
+| Shelf | Canonical ID | Logical key | Asset | Users can change? |
+|-------|--------------|-------------|-------|-------------------|
+| TBR | `want_to_read` | `stack_of_books` | `want-to-read.png` | No |
+| Currently Reading | `currently_reading` | `open_book` | `currently-reading.png` | No |
+| Finished | `read` | `book_with_sparkle` | `finished.png` | No |
+| DNF | `dnf` | `closed_book` | `did-not-finish.png` | No |
 
+A11y: “TBR Shelf”, “Currently Reading Shelf”, “Finished Shelf”, “DNF Shelf”.
+
+## Custom shelves
+
+`user_shelves.icon_key` stores `custom_icon_1` … `custom_icon_5` only (never paths, blobs, or emoji). Missing/invalid keys fall back to `custom_icon_1`.
+
+**BLOCKED ASSET ITEM — Leighton final files.** Expected drop-ins: `custom-icon-1.png` … `custom-icon-5.png` in `apps/web/public/assets/shelves/` and `apps/mobile/assets/shelves/`. Until those exist, `CUSTOM_SHELF_ICON_ASSETS_READY` is `false` and every custom key renders the approved stack-of-books PNG (`want-to-read.png`). Do not mark custom visuals complete.
+
+Create preselects `custom_icon_1`. Edit persists name, privacy, genre, and icon immediately. Default-shelf icons are not editable. Android is out of scope.
+
+**Shared:** `packages/utils/shelfIcons.ts`  
 **Config:** `apps/web/src/lib/constants/shelfIcons.ts` · `apps/mobile/src/constants/shelfIcons.ts`  
 **Assets:** `apps/web/public/assets/shelves/` · `apps/mobile/assets/shelves/` (source copies in `source/`)  
 **Components:** `ShelfIcon` · `ShelfTitleRow` (web + mobile)  
@@ -41,7 +52,7 @@ Custom PNG shelf icons replace emoji for the four built-in shelf states. Mapping
 | Library service | `apps/web/src/lib/services/library.ts` | ✅ |
 | Saved-book bookmark overlay hook | `apps/web/src/components/books/SavedBookBadge.tsx` | ✅ |
 | Unit tests | `apps/web/src/lib/constants/shelfIcons.test.ts` | ✅ |
-| Custom shelf collections (generic 📚) | `CustomShelfSection.tsx`, etc. | ⬜ N/A — custom shelves |
+| Custom shelf collections | `CustomShelfSection.tsx`, create/edit pickers | ✅ `icon_key` + fallback |
 | Book cover placeholder | `BookCover.tsx` | ⬜ N/A — not a shelf icon |
 | Message reaction emoji picker | `messageReactions.ts` | ⬜ N/A — unrelated emoji UI |
 
@@ -70,7 +81,7 @@ Custom PNG shelf icons replace emoji for the four built-in shelf states. Mapping
 | Library service | `apps/mobile/src/services/library.ts` | ✅ |
 | Saved-book bookmark overlay hook | `apps/mobile/src/components/SavedBookBadge.tsx` | ✅ |
 | Unit tests | `apps/mobile/src/constants/shelves.test.ts` | ✅ |
-| Custom shelf sections | `shelf-privacy.tsx` custom rows | ⬜ N/A — custom shelves |
+| Custom shelf sections | `CustomShelfSection.tsx`, `custom.tsx`, shelf-privacy | ✅ `icon_key` + fallback |
 | Club cards / feed | `ClubCard.tsx`, etc. | ⬜ N/A — not built-in shelf icons |
 
 ## Bookmark overlay ✅

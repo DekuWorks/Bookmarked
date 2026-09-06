@@ -3,6 +3,9 @@
 import Image from "next/image";
 import { useState } from "react";
 import {
+  getCustomShelfA11yLabel,
+  getCustomShelfIconFallbackSrc,
+  getCustomShelfIconSrc,
   getShelfIconConfig,
   SHELF_ICON_FRAME_PX,
   SHELF_ICON_SIZE_PX,
@@ -11,8 +14,17 @@ import {
 } from "@/lib/constants/shelfIcons";
 import { cn } from "@/lib/utils/cn";
 
-type Props = {
+type DefaultProps = {
   id: ShelfIconId;
+  iconKey?: never;
+};
+
+type CustomProps = {
+  id?: never;
+  iconKey?: string | null;
+};
+
+type Props = (DefaultProps | CustomProps) & {
   size?: ShelfIconSize;
   className?: string;
   /** When true, exposes the shelf name to assistive tech (default: decorative). */
@@ -23,6 +35,7 @@ type Props = {
 
 export function ShelfIcon({
   id,
+  iconKey,
   size = "small",
   className,
   labeled = false,
@@ -30,7 +43,16 @@ export function ShelfIcon({
 }: Props) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
-  const config = getShelfIconConfig(id);
+  const isCustom = id == null;
+  const defaultConfig = id ? getShelfIconConfig(id) : null;
+  const src = isCustom
+    ? error
+      ? getCustomShelfIconFallbackSrc()
+      : getCustomShelfIconSrc(iconKey)
+    : defaultConfig!.src;
+  const a11y = isCustom
+    ? getCustomShelfA11yLabel(iconKey)
+    : defaultConfig!.accessibilityLabel;
   const px = SHELF_ICON_SIZE_PX[size];
   const frame = SHELF_ICON_FRAME_PX[size];
 
@@ -44,7 +66,7 @@ export function ShelfIcon({
       )}
       style={{ width: frame, height: frame }}
       role={labeled ? "img" : undefined}
-      aria-label={labeled ? config.accessibilityLabel : undefined}
+      aria-label={labeled ? a11y : undefined}
       aria-hidden={!labeled}
     >
       {!loaded && !error ? (
@@ -54,12 +76,12 @@ export function ShelfIcon({
           aria-hidden
         />
       ) : null}
-      {error ? (
+      {error && !isCustom ? (
         <span className="block bg-transparent" style={{ width: px, height: px }} aria-hidden />
       ) : (
         <Image
-          src={config.src}
-          alt={labeled ? config.accessibilityLabel : ""}
+          src={src}
+          alt={labeled ? a11y : ""}
           width={px}
           height={px}
           className={cn(
@@ -67,7 +89,14 @@ export function ShelfIcon({
             !loaded && "absolute opacity-0"
           )}
           onLoad={() => setLoaded(true)}
-          onError={() => setError(true)}
+          onError={() => {
+            if (isCustom && src !== getCustomShelfIconFallbackSrc()) {
+              setError(true);
+              setLoaded(false);
+              return;
+            }
+            setError(true);
+          }}
           unoptimized
         />
       )}

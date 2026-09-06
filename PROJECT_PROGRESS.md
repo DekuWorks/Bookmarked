@@ -721,6 +721,48 @@ Posts have a single `image_url`. No crop metadata. Share-card thumbnails (48×64
 
 ---
 
+## Shelf Icon Assignments + Custom Shelf Icons 🔄
+
+Canonical IDs: `want_to_read` (TBR), `currently_reading`, `read` (Finished), `dnf`. Mapping is in `packages/utils/shelfIcons.ts` — not display labels, not per-screen maps.
+
+| Default shelf | Logical key | Purple asset |
+|---------------|-------------|--------------|
+| TBR | `stack_of_books` | `want-to-read.png` |
+| Currently Reading | `open_book` | `currently-reading.png` |
+| DNF | `closed_book` | `did-not-finish.png` |
+| Finished | `book_with_sparkle` | `finished.png` |
+
+Default icons are **not** user-editable. Same assets on web + iOS. Android not in scope.
+
+### Custom shelves — `icon_key`
+
+- **Field:** created `user_shelves.icon_key` (nullable text). Existing shelves stay valid. Migration `20260906140000_user_shelves_icon_key.sql`.
+- **Catalog:** `custom_icon_1` … `custom_icon_5`. Writes validate against that list; invalid keys are rejected. Null/missing → `custom_icon_1` (documented fallback, not a random assignment).
+- **Create:** Choose Icon picker; first approved key is preselected; user can change before save.
+- **Edit:** current icon selected; name + privacy + genre + icon; Save persists immediately and refreshes Library / Profile / Add-Move / cached cards (iOS query invalidation).
+- **Sync:** same `icon_key` on web and iOS.
+
+**BLOCKED ASSET ITEM — Leighton final files.** The 5 custom PNGs are **not** in the repo. Architecture and keys are shipped; visual fallback is the approved stack-of-books (`want-to-read.png`). Do **not** mark custom visuals complete until `custom-icon-1.png` … `custom-icon-5.png` are verified on web + iOS.
+
+### Surfaces
+
+Library (default + custom), Profile / shelf privacy, Home / Reading Room default sections, Book Details, Add/Move to shelf, Search, collections create/edit. No onboarding shelf-icon surface.
+
+### Tests / verification
+
+- Shared: default ID → key/file, custom key validation, existing-shelf fallback to `custom_icon_1`
+- Web `tsc --noEmit`: pass
+- Web `vitest`: 42 files, 245 tests pass
+- Web `eslint` on new icon files: pass. Repo still has pre-existing `react-hooks/set-state-in-effect` on CreateShelfModal / custom shelf page
+- Web production `next build`: pass
+- iOS `tsc --noEmit`: pass
+- iOS `vitest`: 12 files, 30 tests pass
+- Migration `20260906140000_user_shelves_icon_key.sql` dry-run then applied to production (`db push --yes --linked`). No reset, no backfill
+- Browser QA: Library/Profile are auth-gated. Cursor browser tools could not keep a tab open. Production `/library/` is live but this branch is not deployed; unauthenticated requests redirect. Icon picker was not exercised logged-in.
+- No `expo run:ios`. Android not in scope. Default-shelf icons cannot be user-edited
+
+---
+
 ## Next up (recommended)
 
 | Priority | Item | Notes |

@@ -88,8 +88,7 @@ export function ShelfSelectMenu({
                     : "border-border bg-background hover:border-primary hover:bg-primary/5"
                 )}
               >
-                {/* waiting-on-assets: Leighton custom-shelf chrome icon */}
-                <ShelfIcon id="want_to_read" size="medium" />
+                <ShelfIcon iconKey={shelf.icon_key} size="medium" />
                 <span className="flex-1 font-medium leading-tight text-text">{shelf.name}</span>
                 {isMember ? (
                   <span className="text-xs font-medium text-primary">On shelf</span>
@@ -110,7 +109,7 @@ export function ShelfSelectMenu({
                 "border-border bg-background hover:border-primary hover:bg-primary/5"
               )}
             >
-              <ShelfIcon id="want_to_read" size="medium" />
+              <ShelfIcon iconKey={null} size="medium" />
               <span className="flex-1 font-medium leading-tight text-text">Custom collections</span>
             </button>
           </li>

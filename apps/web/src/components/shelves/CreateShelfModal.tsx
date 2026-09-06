@@ -10,6 +10,9 @@ import {
   validateCustomShelfInput,
 } from "@/lib/services/customShelves";
 import { SHELF_VISIBILITY_OPTIONS } from "@/lib/services/shelfVisibility";
+import { CustomShelfIconPicker } from "@/components/shelves/CustomShelfIconPicker";
+import { DEFAULT_CUSTOM_SHELF_ICON_KEY } from "@/lib/constants/shelfIcons";
+import type { CustomShelfIconKey } from "@/lib/constants/shelfIcons";
 import type { ShelfVisibility, UserShelf } from "@/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -41,6 +44,7 @@ export function CreateShelfModal({
   const [name, setName] = useState(initialName);
   const [genre, setGenre] = useState(initialGenre);
   const [visibility, setVisibility] = useState<ShelfVisibility>("public");
+  const [iconKey, setIconKey] = useState<CustomShelfIconKey>(DEFAULT_CUSTOM_SHELF_ICON_KEY);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [limitOpen, setLimitOpen] = useState(false);
@@ -50,6 +54,7 @@ export function CreateShelfModal({
       setName(initialName);
       setGenre(initialGenre);
       setVisibility("public");
+      setIconKey(DEFAULT_CUSTOM_SHELF_ICON_KEY);
       setError(null);
     }
   }, [open, initialName, initialGenre]);
@@ -59,6 +64,7 @@ export function CreateShelfModal({
     setName("");
     setGenre("");
     setVisibility("public");
+    setIconKey(DEFAULT_CUSTOM_SHELF_ICON_KEY);
     setError(null);
     onClose();
   }
@@ -71,6 +77,7 @@ export function CreateShelfModal({
       name,
       genre: genre || null,
       visibility,
+      icon_key: iconKey,
     });
     if (!validated.ok) {
       setError(validated.error);
@@ -94,6 +101,7 @@ export function CreateShelfModal({
         setName("");
         setGenre("");
         setVisibility("public");
+        setIconKey(DEFAULT_CUSTOM_SHELF_ICON_KEY);
         setError(null);
         onClose();
         setLimitOpen(true);
@@ -108,6 +116,7 @@ export function CreateShelfModal({
       setName("");
       setGenre("");
       setVisibility("public");
+      setIconKey(DEFAULT_CUSTOM_SHELF_ICON_KEY);
       setError(null);
       onClose();
     }
@@ -144,6 +153,12 @@ export function CreateShelfModal({
           onChange={(e) => setGenre(e.target.value)}
           placeholder="e.g. Mystery, Romance"
           maxLength={80}
+        />
+
+        <CustomShelfIconPicker
+          value={iconKey}
+          onChange={setIconKey}
+          disabled={saving}
         />
 
         <label className="mb-4 block">

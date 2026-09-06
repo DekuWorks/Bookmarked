@@ -16,7 +16,7 @@ export const SHELF_CONFIG: {
     slug: "want-to-read",
     description: "Books waiting for you on the shelf.",
     sortOrder: 1,
-    accessibilityLabel: "Want to Read shelf",
+    accessibilityLabel: "TBR Shelf",
   },
   {
     status: "currently_reading",
@@ -24,7 +24,7 @@ export const SHELF_CONFIG: {
     slug: "reading",
     description: "Stories you're in the middle of right now.",
     sortOrder: 2,
-    accessibilityLabel: "Currently Reading shelf",
+    accessibilityLabel: "Currently Reading Shelf",
   },
   {
     status: "read",
@@ -32,7 +32,7 @@ export const SHELF_CONFIG: {
     slug: "read",
     description: "Books you've finished and shelved.",
     sortOrder: 3,
-    accessibilityLabel: "Finished shelf",
+    accessibilityLabel: "Finished Shelf",
   },
   {
     status: "dnf",
@@ -40,7 +40,7 @@ export const SHELF_CONFIG: {
     slug: "dnf",
     description: "Books you chose not to finish.",
     sortOrder: 4,
-    accessibilityLabel: "Did Not Finish shelf",
+    accessibilityLabel: "DNF Shelf",
   },
 ];
 

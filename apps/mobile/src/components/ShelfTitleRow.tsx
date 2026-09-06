@@ -4,7 +4,8 @@ import type { ShelfIconId, ShelfIconSize } from "../constants/shelfIcons";
 import { SERIF_DISPLAY_FONT } from "../constants/theme";
 
 type Props = {
-  id: ShelfIconId;
+  id?: ShelfIconId;
+  iconKey?: string | null;
   title: string;
   size?: ShelfIconSize;
   className?: string;
@@ -17,6 +18,7 @@ type Props = {
  */
 export function ShelfTitleRow({
   id,
+  iconKey,
   title,
   size = "medium",
   className,
@@ -24,7 +26,11 @@ export function ShelfTitleRow({
 }: Props) {
   return (
     <View className={`flex-row items-center gap-2 ${className ?? ""}`}>
-      <ShelfIcon id={id} size={size} labeled />
+      {id ? (
+        <ShelfIcon id={id} size={size} labeled />
+      ) : (
+        <ShelfIcon iconKey={iconKey} size={size} labeled />
+      )}
       <Text
         className={titleClassName}
         numberOfLines={2}
