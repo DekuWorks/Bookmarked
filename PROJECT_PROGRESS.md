@@ -602,6 +602,63 @@ Additive migrations:
 
 ---
 
+## Dashboard – Subtitle Capitalization ✅
+
+Copy-only. Dashboard remains merged into Reading Room (`/dashboard/` still redirects). No routes, navigation, layout, or user-data changes.
+
+### Exact subtitle
+
+| | Copy |
+|---|------|
+| **Old** | Your reading life in one place — progress, Trail, notes, reviews, and History. |
+| **New** | Your reading life in one place — Progress, Trail, Notes, Reviews, and History. |
+
+Same punctuation, em dash, and wording. Title Case only on the five Reading Room section names: Progress, Trail, Notes, Reviews, History.
+
+### Shared vs duplicated
+
+- No shared constant existed. None added (one sentence, web-only).
+- iOS Home (`apps/mobile/app/(app)/index.tsx`) does not use this subtitle. Header copy stays `Welcome back, {name}.` — not replaced or duplicated.
+
+### Files
+
+| File | Change |
+|------|--------|
+| `apps/web/src/app/(app)/reading-room/page.tsx` | Visible Reading Room / Home subtitle |
+| `apps/web/src/app/(app)/reading-room/layout.tsx` | Metadata description lists the same five sections |
+| `PROJECT_PROGRESS.md` | This section |
+
+No `aria-label` / `accessibilityLabel` duplicated the subtitle. Visible copy is the accessible text.
+
+### Related copy
+
+| Surface | Old | New | Why |
+|---------|-----|-----|-----|
+| Reading Room SEO `description` | progress, trail, notes, reviews, and history | Progress, Trail, Notes, Reviews, and History | Same five Bookmarked sections as the subtitle |
+
+### Left alone on purpose
+
+- iOS Home greeting (`Welcome back, {name}.`) — different sentence, not this subtitle
+- Ordinary English: “reading progress”, “write reviews”, “your trail” as session-path metaphor, “shelves and history” as account data
+- Transfer / import copy that lists data types (progress, sessions, notes, reviews), not Home tabs
+- User-generated reviews, notes, posts, comments, book descriptions, profiles, messages, DB text
+- App Store metadata, code comments, architecture docs
+- Landing “Reading progress” feature card
+- Android (out of scope)
+
+### Tests / verification
+
+- No snapshot / string / UI / a11y test asserted the old subtitle. None updated.
+- Web `tsc --noEmit`: pass
+- Web `vitest`: 40 files, 217 tests pass
+- iOS `tsc --noEmit`: pass
+- iOS `vitest`: 10 files, 26 tests pass
+- Web production `next build`: pass (`/dashboard` and `/reading-room` unchanged)
+- Web `eslint`: repo already has 130 pre-existing `react-hooks/set-state-in-effect` errors (including Reading Room load effect). Copy change did not add any. Layout file is clean.
+- No `expo run:ios`. Android not in scope.
+
+---
+
 ## Next up (recommended)
 
 | Priority | Item | Notes |
