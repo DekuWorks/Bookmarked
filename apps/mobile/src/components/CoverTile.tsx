@@ -21,6 +21,8 @@ type Props = {
   frameStyle?: { width: number };
   /** Pixel cover frame; when set, wins over `coverSizeClassName`. */
   coverSizeStyle?: { width: number; height: number };
+  /** Above-fold covers (Currently Reading). */
+  priority?: boolean;
 };
 
 /** Tappable book cover tile that deep-links to the book screen. */
@@ -38,6 +40,7 @@ export function CoverTile({
   coverSizeClassName = "w-24 h-36",
   frameStyle,
   coverSizeStyle,
+  priority = false,
 }: Props) {
   const router = useRouter();
   return (
@@ -59,6 +62,7 @@ export function CoverTile({
           sizeStyle={coverSizeStyle}
           saved={saved}
           badgeSize="small"
+          priority={priority}
         />
         {isFavorite ? (
           <View

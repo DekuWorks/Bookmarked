@@ -35,6 +35,8 @@ type Props = {
   post: PostWithAuthor;
   viewerId: string;
   highlighted?: boolean;
+  /** First visible Feed image — eager-load so it is not stuck behind lazy. */
+  priority?: boolean;
   onPostChange?: () => void;
 };
 
@@ -42,7 +44,7 @@ function authorLabel(author: PostWithAuthor["author"]): string {
   return author.display_name?.trim() || author.username?.trim() || "Reader";
 }
 
-export function PostCard({ post, viewerId, highlighted = false, onPostChange }: Props) {
+export function PostCard({ post, viewerId, highlighted = false, priority = false, onPostChange }: Props) {
   const toast = useToast();
   const locale = usePreferredLocale();
   const [expanded, setExpanded] = useState(false);
@@ -282,6 +284,7 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
                   url={localPost.image_url}
                   alt={isGiphyImageUrl(localPost.image_url) ? "Post GIF" : "Post image"}
                   className="mt-3"
+                  priority={priority}
                 />
               ) : null}
 

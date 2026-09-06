@@ -101,11 +101,12 @@ export function ProfilePostsSection({
       ) : (
         <>
           <ul className="space-y-4">
-            {(visiblePosts ?? []).map((post) => (
+            {(visiblePosts ?? []).map((post, index) => (
               <li key={post.id}>
                 <PostCard
                   post={post}
                   viewerId={viewerId}
+                  priority={index === 0}
                   onPostChange={() => {
                     void loadPosts().catch((loadError) => {
                       console.warn("[profile-posts] reload failed:", loadError);

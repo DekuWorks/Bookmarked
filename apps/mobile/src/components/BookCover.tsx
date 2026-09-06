@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { Image, Text, View } from "react-native";
+import { resolveCoverDisplaySource } from "../../../../packages/utils/mediaDisplayUrl";
 import { SavedBookBadge, SAVED_BOOK_BADGE_INSET, SAVED_BOOK_BADGE_Z } from "./SavedBookBadge";
 
 type Props = {
@@ -16,6 +18,8 @@ type Props = {
   onToggleSave?: () => void;
   /** Badge size token. */
   badgeSize?: "small" | "medium" | "large";
+  /** Book details / above-fold — request the larger cover variant. */
+  priority?: boolean;
 };
 
 export function BookCover({
@@ -27,19 +31,44 @@ export function BookCover({
   saved,
   onToggleSave,
   badgeSize = "medium",
+  priority = false,
 }: Props) {
+  const source = url?.trim()
+    ? resolveCoverDisplaySource(url.trim(), priority ? "detail" : "thumb")
+    : null;
+  const [displayUrl, setDisplayUrl] = useState(source?.displayUrl ?? null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    const next = url?.trim()
+      ? resolveCoverDisplaySource(url.trim(), priority ? "detail" : "thumb")
+      : null;
+    setDisplayUrl(next?.displayUrl ?? null);
+    setFailed(false);
+  }, [url, priority]);
+
   const showBadge = Boolean(saved) || Boolean(onToggleSave);
   // Square corners when the ribbon shows so it can sit flush on a straight edge.
   const radiusClass = showBadge ? "rounded-none" : "rounded-md";
   const dimensionClass = sizeStyle ? undefined : sizeClassName;
 
-  const cover = url ? (
+  const cover = displayUrl && !failed ? (
     <Image
-      source={{ uri: url }}
+      source={{ uri: displayUrl }}
       className={[dimensionClass, radiusClass, "bg-primary/20"].filter(Boolean).join(" ")}
       style={sizeStyle}
       resizeMode={resizeMode}
       accessibilityLabel={title?.trim() ? `Cover of ${title.trim()}` : "Book cover"}
+      onError={() => {
+        const next = url?.trim()
+          ? resolveCoverDisplaySource(url.trim(), priority ? "detail" : "thumb")
+          : null;
+        if (next?.fallbackUrl && displayUrl !== next.fallbackUrl) {
+          setDisplayUrl(next.fallbackUrl);
+          return;
+        }
+        setFailed(true);
+      }}
     />
   ) : (
     <View

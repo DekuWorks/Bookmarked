@@ -206,12 +206,13 @@ export function FeedPostsPanel({
       ) : (
         <>
           <ul className="space-y-4">
-            {(visiblePosts ?? []).map((post) => (
+            {(visiblePosts ?? []).map((post, index) => (
               <li key={post.id}>
                 <PostCard
                   post={post}
                   viewerId={userId}
                   highlighted={post.id === highlightedPostId}
+                  priority={index === 0}
                   onPostChange={() => {
                     void loadPosts().catch((error) => {
                       console.warn("[feed-posts] reload failed:", error);

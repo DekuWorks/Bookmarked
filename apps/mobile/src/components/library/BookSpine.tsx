@@ -1,5 +1,6 @@
 import { useRouter } from "expo-router";
 import { Image, Pressable, Text, View } from "react-native";
+import { resolveCoverDisplayUrl } from "../../../../../packages/utils/mediaDisplayUrl";
 import { SavedBookBadge, SAVED_BOOK_BADGE_INSET, SAVED_BOOK_BADGE_Z } from "../SavedBookBadge";
 
 const SPINE_COLORS = ["bg-puce-red", "bg-primary", "bg-primary/80", "bg-puce-red/80"];
@@ -46,7 +47,11 @@ export function BookSpine({ bookId, title, author, coverUrl, pageCount, saved }:
         style={{ width, height: 184 }}
       >
         {coverUrl ? (
-          <Image source={{ uri: coverUrl }} className="absolute inset-0" resizeMode="cover" />
+          <Image
+            source={{ uri: resolveCoverDisplayUrl(coverUrl, "thumb") ?? coverUrl }}
+            className="absolute inset-0"
+            resizeMode="cover"
+          />
         ) : (
           <View className={`absolute inset-0 ${spineColor}`} />
         )}

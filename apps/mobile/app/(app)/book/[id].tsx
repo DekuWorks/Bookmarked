@@ -508,6 +508,7 @@ export default function BookScreen() {
               sizeClassName="w-32 h-48"
               saved={Boolean(userBook)}
               badgeSize="large"
+              priority
             />
             <Text className="mt-4 text-center text-xl font-bold text-ink">{book.title}</Text>
             {book.author ? (

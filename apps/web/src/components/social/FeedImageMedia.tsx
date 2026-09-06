@@ -9,6 +9,10 @@ import {
   resolveFeedImageMaxHeight,
   type FeedImageCrop,
 } from "@bookmarked/utils/feedImageMedia";
+import {
+  resolveFeedImageLoading,
+  resolveFeedInlineImageSource,
+} from "@bookmarked/utils/mediaDisplayUrl";
 
 type LoadState = "loading" | "ready" | "error";
 
@@ -20,6 +24,8 @@ type Props = {
   compact?: boolean;
   crop?: FeedImageCrop | null;
   className?: string;
+  /** First / above-fold Feed image — skip lazy so the request starts immediately. */
+  priority?: boolean;
   onOpen?: () => void;
 };
 
@@ -31,6 +37,7 @@ export function FeedImageMedia({
   compact = false,
   crop = null,
   className,
+  priority = false,
   onOpen,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -46,8 +53,10 @@ export function FeedImageMedia({
   );
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [viewerOpen, setViewerOpen] = useState(false);
+  const source = resolveFeedInlineImageSource(url, isGiphyImageUrl(url));
   const sourceKey = `${url}:${originalWidth ?? ""}:${originalHeight ?? ""}`;
   const [activeSource, setActiveSource] = useState(sourceKey);
+  const [displayUrl, setDisplayUrl] = useState(source.displayUrl);
 
   if (sourceKey !== activeSource) {
     setActiveSource(sourceKey);
@@ -55,6 +64,7 @@ export function FeedImageMedia({
     setNaturalHeight(originalHeight ?? null);
     setLoadState("loading");
     setViewerOpen(false);
+    setDisplayUrl(source.displayUrl);
   }
 
   const resolvedAlt =
@@ -98,11 +108,22 @@ export function FeedImageMedia({
     setLoadState("ready");
   }, []);
 
+  const handleError = useCallback(() => {
+    if (source.fallbackUrl && displayUrl !== source.fallbackUrl) {
+      setDisplayUrl(source.fallbackUrl);
+      setLoadState("loading");
+      return;
+    }
+    setLoadState("error");
+  }, [displayUrl, source.fallbackUrl]);
+
   const handleOpen = useCallback(() => {
     if (loadState !== "ready") return;
     onOpen?.();
     setViewerOpen(true);
   }, [loadState, onOpen]);
+
+  const loading = resolveFeedImageLoading(priority);
 
   return (
     <div
@@ -120,7 +141,7 @@ export function FeedImageMedia({
         <button
           type="button"
           onClick={handleOpen}
-          className="mx-auto block max-w-full overflow-hidden rounded-lg border border-border bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
+          className="relative mx-auto block max-w-full overflow-hidden rounded-lg border border-border bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
           style={{
             width: measured ? layout.width : "100%",
             height: measured ? layout.height : undefined,
@@ -130,22 +151,22 @@ export function FeedImageMedia({
           aria-label={`View ${resolvedAlt}`}
         >
           {loadState === "loading" ? (
-            <span className="skeleton block h-full w-full" aria-hidden />
+            <span className="skeleton pointer-events-none absolute inset-0" aria-hidden />
           ) : null}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={url}
+            src={displayUrl}
             alt={resolvedAlt}
             width={naturalWidth ?? undefined}
             height={naturalHeight ?? undefined}
-            loading="lazy"
+            loading={loading}
+            fetchPriority={priority ? "high" : undefined}
             decoding="async"
             onLoad={handleLoad}
-            onError={() => setLoadState("error")}
+            onError={handleError}
             className={cn(
-              "h-full w-full object-center",
-              layout.fit === "cover" ? "object-cover" : "object-contain",
-              loadState !== "ready" && "sr-only"
+              "relative h-full w-full object-center",
+              layout.fit === "cover" ? "object-cover" : "object-contain"
             )}
           />
         </button>

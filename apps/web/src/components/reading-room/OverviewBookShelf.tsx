@@ -66,7 +66,7 @@ export function OverviewBookShelf({
         </p>
       ) : (
         <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {items.map((ub) => {
+          {items.map((ub, index) => {
             const book = ub.books;
             const href = book?.id ? bookDetailsPath(book.id) : undefined;
             const finishedLabel = showFinishedDate ? formatFinishedDate(ub.finished_at) : null;
@@ -82,6 +82,7 @@ export function OverviewBookShelf({
                     sizes={`${OVERVIEW_SHELF_COVER.widthPx}px`}
                     objectFit={OVERVIEW_SHELF_COVER.fit}
                     bookmarked
+                    priority={index < 2}
                   />
                 </div>
                 <div className="min-w-0 flex-1 overflow-hidden text-left">

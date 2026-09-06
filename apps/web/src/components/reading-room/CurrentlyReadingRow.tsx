@@ -107,6 +107,7 @@ export function CurrentlyReadingRow({ items, onItemsChange }: Props) {
                     className="shadow-sm"
                     sizes={`${cardSize.coverWidthPx}px`}
                     bookmarked
+                    priority
                   />
                 </div>
 

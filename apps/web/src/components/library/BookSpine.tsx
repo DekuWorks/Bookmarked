@@ -4,6 +4,10 @@ import Link from "next/link";
 import { SavedBookBadge } from "@/components/books/SavedBookBadge";
 import { cn } from "@/lib/utils/cn";
 import { authorPagePath } from "@/lib/routes/author";
+import {
+  COVER_IMAGE_REFERRER_POLICY,
+  resolveCoverDisplayUrl,
+} from "@bookmarked/utils/mediaDisplayUrl";
 
 type Props = {
   title: string;
@@ -67,11 +71,12 @@ export function BookSpine({
           {coverUrl ? (
             <div className="book-spine-cover absolute inset-0" aria-hidden>
               <img
-                src={coverUrl}
+                src={resolveCoverDisplayUrl(coverUrl, "thumb") ?? coverUrl}
                 alt=""
                 className="book-spine-cover-image"
                 loading="lazy"
                 decoding="async"
+                referrerPolicy={COVER_IMAGE_REFERRER_POLICY}
               />
             </div>
           ) : (

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useThemePreference } from "@/components/theme/ThemeProvider";
 import { extractCoverPalette, type CoverPalette } from "@/lib/utils/coverColor";
+import { resolveCoverDisplayUrl } from "@bookmarked/utils/mediaDisplayUrl";
 
 export function useCoverPalette(coverUrl: string | null | undefined) {
   const { resolved } = useThemePreference();
@@ -15,7 +16,8 @@ export function useCoverPalette(coverUrl: string | null | undefined) {
     }
 
     let cancelled = false;
-    void extractCoverPalette(coverUrl).then((result) => {
+    const sampleUrl = resolveCoverDisplayUrl(coverUrl, "thumb") ?? coverUrl;
+    void extractCoverPalette(sampleUrl).then((result) => {
       if (!cancelled) setPalette(result);
     });
 
