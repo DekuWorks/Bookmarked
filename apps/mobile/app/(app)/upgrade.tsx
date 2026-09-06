@@ -154,7 +154,8 @@ export default function UpgradeRoute() {
               Subscribe with Apple
             </Text>
             <Text className="mt-1 text-center text-sm text-ink-muted">
-              Price is shown by the App Store. Cancel anytime in iOS Settings.
+              Official display price: $5.99/month or $59.99/year (about $5.00/month; save $11.89,
+              ~16.5%). Subscribe buttons use the App Store price.
             </Text>
 
             <View className="mt-6">

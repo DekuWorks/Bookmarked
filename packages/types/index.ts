@@ -741,6 +741,11 @@ export interface Review {
   emotional_impact: number | null;
   rating_mode: ReviewRatingMode;
   rating_emoji: string | null;
+  would_recommend?: boolean | null;
+  reread_likelihood?: number | null;
+  reread_likelihood_scale?: string | null;
+  favorite_chapter_number?: number | null;
+  favorite_chapter_label?: string | null;
   created_at: string;
   updated_at: string;
   profiles?: { display_name: string | null; username: string | null };
@@ -806,6 +811,8 @@ export interface ReadingSession {
   edition_id: string | null;
   completed_at: string | null;
   session_format?: "book" | "audiobook";
+  /** Optional timed print-session duration. Never infer this from start/finish dates. */
+  duration_seconds?: number | null;
   listening_start_seconds?: number | null;
   listening_end_seconds?: number | null;
   listening_seconds?: number | null;

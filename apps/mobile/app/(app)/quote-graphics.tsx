@@ -12,6 +12,7 @@ import {
 import { searchNotesWithBooks } from "../../src/services/readingNotes";
 import { useAuthStore } from "../../src/store/authStore";
 import { isEntitlementLimitError } from "../../src/utils/subscription";
+import { PLUS_UNLIMITED_FAIR_USE_COPY } from "../../../../packages/utils/subscription";
 import { SANS_FONT, SANS_FONT_BOLD, SERIF_DISPLAY_FONT } from "../../src/constants/theme";
 import { useThemeColors } from "../../src/store/themeStore";
 import { TAB_BAR_SPACE } from "../../src/navigation/TabBarScroll";
@@ -102,7 +103,7 @@ export default function QuoteGraphicsRoute() {
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: TAB_BAR_SPACE }} keyboardShouldPersistTaps="handled">
         <Text style={{ fontFamily: SANS_FONT, color: colors.inkMuted }}>
           Graphics start from your favorite quotes. A Free monthly slot is used only after a graphic
-          saves successfully.
+          saves successfully. {PLUS_UNLIMITED_FAIR_USE_COPY}
         </Text>
         <Text className="mt-2 text-xs font-semibold text-puce-red" style={{ fontFamily: SANS_FONT_BOLD }}>
           {remaining == null ? "…" : `${remaining} left this month`}

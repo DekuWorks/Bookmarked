@@ -22,7 +22,7 @@ export const PREMIUM_FEATURE_LINKS: PremiumFeatureLink[] = [
     tier: "plus",
     title: "Bookmarked Plus",
     description:
-      "Reading Insights, Reading Speed, Mood Analytics, Heatmaps, AI Companion, Quote Vault, and unlimited quotes, clubs, and challenges.",
+      "Reading Insights, Monthly Wrapped, AI Companion, Quote Scanner, club polls, and unlimited quotes, clubs, and challenges. Unlimited still has abuse and rate protection.",
     webHref: "/reading-room/?tab=progress#reading-activity",
     mobileHref: "/?tab=progress",
   },

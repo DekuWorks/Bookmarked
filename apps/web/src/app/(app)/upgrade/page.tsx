@@ -167,6 +167,7 @@ export default function UpgradePage() {
             </p>
             <p className="mt-2 text-lg font-semibold text-puce-red">Subscribe in the iOS app</p>
             <p className="mt-2 text-sm text-text-muted">
+              Official display price: $5.99/month or $59.99/year (about $5.00/month; save $11.89, ~16.5%).
               Plus then unlocks here on the same account — no second purchase.
             </p>
           </div>

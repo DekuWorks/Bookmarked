@@ -1,12 +1,16 @@
 import { Text, View } from "react-native";
 import { PlusBadge } from "./PlusBadge";
+import { PLUS_ANNUAL_SAVINGS_COPY, PLUS_DISPLAY_PRICES } from "../../../../packages/utils/plusPricing";
+import { PLUS_UNLIMITED_FAIR_USE_COPY } from "../../../../packages/utils/subscription";
 
 const ROWS = [
   { label: "Custom shelves", free: "1", plus: "Unlimited", home: "Unlimited" },
   { label: "Saved quotes", free: "25", plus: "Unlimited", home: "Unlimited" },
+  { label: "Quote graphics", free: "3 / month", plus: "Unlimited", home: "Unlimited" },
   { label: "Book clubs", free: "3", plus: "Unlimited", home: "Unlimited" },
   { label: "Reading DNA", free: "Top 3", plus: "Full", home: "Advanced" },
   { label: "Insights & Wrapped", free: "Yearly", plus: "Monthly + yearly", home: "Monthly + yearly" },
+  { label: "Scanner / companion", free: "—", plus: "Included", home: "Included" },
   { label: "Book / Reader Map", free: "—", plus: "—", home: "Yes" },
 ] as const;
 
@@ -42,7 +46,9 @@ export function SubscriptionComparison({ showHome = true }: Props) {
         </View>
       ))}
       <Text className="border-t border-brand-border px-3 py-2 text-xs text-ink-muted">
-        Subscribe in this app. Prices come from the App Store.
+        Display price: {PLUS_DISPLAY_PRICES.monthlyLabel} or {PLUS_DISPLAY_PRICES.yearlyLabel} (
+        {PLUS_ANNUAL_SAVINGS_COPY.label}). Subscribe buttons use the App Store price.{" "}
+        {PLUS_UNLIMITED_FAIR_USE_COPY}
       </Text>
     </View>
   );

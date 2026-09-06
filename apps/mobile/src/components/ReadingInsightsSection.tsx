@@ -1,6 +1,8 @@
 import { Text, View } from "react-native";
+import { AiCompanionPanel } from "./AiCompanionPanel";
 import { AiInsightsPanel } from "./AiInsightsPanel";
 import { LoadingState } from "./LoadingState";
+import { PlusInsightsPanel } from "./PlusInsightsPanel";
 import { PremiumFeatureLock } from "./PremiumFeatureLock";
 import { ReadingActivityPanel } from "./ReadingActivityPanel";
 import { SectionCard } from "./SectionCard";
@@ -20,7 +22,10 @@ export function ReadingInsightsSection() {
           <LoadingState message="Checking subscription…" />
         ) : hasAdvancedAnalytics ? (
           userId ? (
-            <ReadingActivityPanel userId={userId} />
+            <View className="gap-6">
+              <ReadingActivityPanel userId={userId} />
+              <PlusInsightsPanel userId={userId} />
+            </View>
           ) : (
             <Text className="text-sm text-ink-muted">Sign in to view reading activity.</Text>
           )
@@ -28,7 +33,7 @@ export function ReadingInsightsSection() {
           <PremiumFeatureLock
             compact
             title="Advanced reading analytics"
-            description="Unlock reading heatmaps, pace trends, and weekly activity charts with Premium."
+            description="Unlock reading heatmaps, pace trends, and weekly activity charts with Bookmarked Plus."
           />
         )}
       </SectionCard>
@@ -38,7 +43,10 @@ export function ReadingInsightsSection() {
           <LoadingState message="Checking subscription…" />
         ) : hasAiInsights ? (
           userId ? (
-            <AiInsightsPanel userId={userId} />
+            <View className="gap-6">
+              <AiInsightsPanel userId={userId} />
+              <AiCompanionPanel />
+            </View>
           ) : (
             <Text className="text-sm text-ink-muted">Sign in to view AI insights.</Text>
           )
@@ -53,7 +61,7 @@ export function ReadingInsightsSection() {
 
       {isPremium ? null : (
         <Text className="text-center text-xs text-ink-muted">
-          Premium unlocks advanced analytics and AI insights on web and mobile.
+          Plus unlocks advanced analytics and AI insights on web and mobile.
         </Text>
       )}
     </View>

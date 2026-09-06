@@ -11,6 +11,10 @@ import { ensureCatalogBook } from "@/lib/services/books";
 import { transferUserBookHistory } from "@/lib/services/transferUserBook";
 import { getShelfLabel, isShelfStatus } from "@/lib/constants/shelfLabels";
 import { parseHalfStarRating } from "@/lib/utils/ratings";
+import {
+  parseRereadLikelihood,
+  validateCharacterName,
+} from "../../../../../packages/utils/plusReviews";
 import { sanitizeRatingEmoji } from "@/lib/constants/reviewEmojis";
 import { buildUserBookShelfPatch } from "../../../../../packages/utils/shelfStatus";
 import { validatePageProgress } from "../../../../../packages/utils/pageProgress";
@@ -814,6 +818,23 @@ export async function saveReview(
     visibility,
     updated_at: new Date().toISOString(),
     ...aspects,
+    would_recommend:
+      formData.get("would_recommend") === "yes"
+        ? true
+        : formData.get("would_recommend") === "no"
+          ? false
+          : null,
+    favorite_chapter_number: (() => {
+      const raw = Number(formData.get("favorite_chapter_number"));
+      return Number.isInteger(raw) && raw >= 1 ? raw : null;
+    })(),
+    ...(() => {
+      const reread = parseRereadLikelihood({ value: formData.get("reread_likelihood") });
+      return {
+        reread_likelihood: reread.value,
+        reread_likelihood_scale: reread.scaleKey,
+      };
+    })(),
   };
 
   let savedId: string;
@@ -846,6 +867,27 @@ export async function saveReview(
       return { error: error.message };
     }
     savedId = inserted.id;
+  }
+
+  const chapterBody = String(formData.get("chapter_review_body") ?? "").trim();
+  const chapterNumber = Number(formData.get("favorite_chapter_number"));
+  const characterName = String(formData.get("character_name") ?? "").trim();
+  if (chapterBody && Number.isInteger(chapterNumber) && chapterNumber >= 1) {
+    await supabase.from("review_chapter_notes").upsert({
+      review_id: savedId,
+      user_id: user.id,
+      chapter_number: chapterNumber,
+      body: chapterBody,
+    }, { onConflict: "review_id,chapter_number" });
+  }
+  const namedCharacter = validateCharacterName(characterName);
+  if (namedCharacter.ok) {
+    await supabase.from("review_character_ratings").upsert({
+      review_id: savedId,
+      user_id: user.id,
+      character_name: namedCharacter.name,
+      score: parseHalfStarRating(formData.get("character_score")),
+    }, { onConflict: "review_id,character_name" });
   }
 
   if (userBook) {

@@ -25,6 +25,8 @@ import { ClubDiscussionCard } from "../../../src/components/ClubDiscussionCard";
 import { ClubDiscussionThreadSheet } from "../../../src/components/ClubDiscussionThreadSheet";
 import { showContentActions } from "../../../src/components/ContentActions";
 import { ClubEventsSection } from "../../../src/components/ClubEventsSection";
+import { ClubPollsPanel } from "../../../src/components/ClubPollsPanel";
+import { PremiumFeatureLock } from "../../../src/components/PremiumFeatureLock";
 import { EmptyState } from "../../../src/components/EmptyState";
 import { FeatureLimitModal } from "../../../src/components/FeatureLimitModal";
 import { Input } from "../../../src/components/Input";
@@ -94,6 +96,8 @@ import {
   visibilityLabel,
 } from "../../../../../packages/utils/clubPermissions";
 import { originBackHref, parseNavOrigin } from "../../../../../packages/utils/navigationOrigin";
+import { canViewClubAnalytics } from "../../../../../packages/utils/clubAnalytics";
+import { useSubscription } from "../../../src/hooks/useSubscription";
 
 type HubTab =
   | "overview"
@@ -101,6 +105,7 @@ type HubTab =
   | "schedule"
   | "bookshelf"
   | "members"
+  | "polls"
   | "stats";
 
 const TABS: { id: HubTab; label: string }[] = [
@@ -109,6 +114,7 @@ const TABS: { id: HubTab; label: string }[] = [
   { id: "schedule", label: "Schedule" },
   { id: "bookshelf", label: "Bookshelf" },
   { id: "members", label: "Members" },
+  { id: "polls", label: "Polls" },
   { id: "stats", label: "Stats" },
 ];
 
@@ -164,6 +170,7 @@ export default function ClubDetailRoute() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const userId = useAuthStore((s) => s.user?.id);
+  const { canAccess } = useSubscription();
 
   const { data: club, isLoading, isError, error } = useClub(clubId);
   const discussions = useClubDiscussions(clubId);
@@ -250,7 +257,11 @@ export default function ClubDetailRoute() {
   const manageMembers = canManageMembers(viewerRole);
   const manageBooks = canManageBookshelf(viewerRole);
   const canAnnounce = canCreateAnnouncements(viewerRole);
-  const showDetailedStats = canViewDetailedStats(viewerRole);
+  const showDetailedStats = canViewClubAnalytics({
+    hasPlus: canAccess("club_analytics"),
+    role: viewerRole,
+  });
+  const hostOrOwner = canViewDetailedStats(viewerRole);
 
   const pendingRequests = useMemo(
     () => (joinRequests.data ?? []).filter((row) => row.status === "pending"),
@@ -1398,6 +1409,10 @@ export default function ClubDetailRoute() {
         </View>
       ) : null}
 
+      {activeTab === "polls" && userId ? (
+        <ClubPollsPanel clubId={clubId} userId={userId} />
+      ) : null}
+
       {activeTab === "stats" ? (
         <View className="rounded-2xl border border-brand-border bg-surface p-4">
           <Text className="text-lg font-semibold text-puce-red">Club stats</Text>
@@ -1432,6 +1447,15 @@ export default function ClubDetailRoute() {
           ) : (
             <Text className="mt-3 text-sm text-ink-muted">Stats unavailable.</Text>
           )}
+          {hostOrOwner && !showDetailedStats ? (
+            <View className="mt-4">
+              <PremiumFeatureLock
+                compact
+                title="Club analytics"
+                description="Owner and host analytics are a Plus feature."
+              />
+            </View>
+          ) : null}
         </View>
       ) : null}
     </View>
