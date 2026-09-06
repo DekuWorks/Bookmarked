@@ -112,17 +112,71 @@ export {
 export {
   FREE_READING_DNA_TRAIT_COUNT,
   TOP_TRAITS_DICTIONARY,
+  canonicalizeTrope,
+  canonicalizeVibe,
+  classifyMoodTag,
   computeReadingDna,
   deriveReadingPersonality,
-  readingDnaMatchPercent,
+  largestRemainderPercents,
+  normalizeDnaTag,
+  readingDnaStructuredSummary,
   titleCaseDnaLabel,
   type ReadingDna,
+  type ReadingDnaBookSignal,
   type ReadingDnaCategoryBreakdown,
   type ReadingDnaConfidence,
+  type ReadingDnaHabit,
   type ReadingDnaInput,
+  type ReadingDnaMatchVector,
+  type ReadingDnaSessionSignal,
   type ReadingDnaTrait,
   type ReadingDnaTraitCategory,
 } from "./readingDna";
+
+export {
+  READING_DNA_CONFIG_STATUS,
+  READING_DNA_DEFAULT_VISIBILITY,
+  READING_DNA_EMPTY_EMOTION_COPY,
+  READING_DNA_FORMING_COPY,
+  READING_DNA_FREE_TRAIT_COUNT,
+  READING_DNA_HOME_BADGE_DEFS,
+  READING_DNA_MIN_DATA_POINTS,
+  READING_DNA_PRODUCT_FLAGS,
+  READING_DNA_VERSION,
+  type ReadingDnaVisibility,
+} from "./readingDnaConfig";
+
+export {
+  canExposeReadingDna,
+  canMatchReadingDna,
+  cosineReadingDnaMatch,
+  explainReadingDnaMatch,
+  friendSuggestionEligible,
+  readingDnaMatchPercent,
+  scoreReadingDnaCandidates,
+  sharesEnoughGenres,
+} from "./readingDnaMatch";
+
+export {
+  DEFAULT_READING_DNA_PRIVACY,
+  parseReadingDnaVisibility,
+  readingDnaFollowersTopThreeAllowed,
+  readingDnaMatchAllowed,
+  readingDnaPublicTopThreeAllowed,
+  readingDnaReaderMapFilterAllowed,
+  readingDnaShareCardAllowed,
+  type ReadingDnaPrivacyState,
+} from "./readingDnaPrivacy";
+
+export {
+  scoreBookDnaMatches,
+  scoreClubDnaMatches,
+  scoreFriendSuggestions,
+} from "./readingDnaRecs";
+
+export { compareReadingDnaSnapshots } from "./readingDnaCompare";
+
+export { evaluateReadingDnaHomeBadges } from "./readingDnaBadges";
 
 export {
   USAGE_COUNTER_KEYS,
@@ -135,7 +189,9 @@ export {
 export {
   READING_DNA_PERSIST_DEBOUNCE_MS,
   readingDnaFingerprint,
+  readingDnaFromCachedPayload,
   readingDnaPeriodKey,
+  readingDnaPeriodKeys,
   readingDnaSnapshotPayload,
   readingDnaTraitsPayload,
   type ReadingDnaTraitPayload,

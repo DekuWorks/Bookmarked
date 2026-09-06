@@ -272,10 +272,12 @@ Additive migration: `20260906180000_eighth_sprint_audiobook_user_edition.sql` ad
 
 | Item | Status | Notes / references |
 |------|--------|-------------------|
-| Shared DNA computation | ✅ | `packages/utils/readingDna.ts` derives genre, vibe, emotion, trope, and habit traits from reader data |
-| Free top three traits | ✅ | Profile Reading DNA section on web + iOS |
-| Plus DNA dashboard hooks | ✅ | Full dashboard state, AI insight, and book-match gates surfaced in profile UI |
-| Home DNA foundations | ✅ | Monthly DNA update, DNA Match %, and Reader Map filter copy/stubs gated for Home |
+| Shared DNA computation | ✅ | Central config + engine: `packages/utils/readingDnaConfig.ts`, `readingDna.ts` |
+| Free top three traits | ✅ | Profile Reading DNA section on web + iOS; full dashboard gated |
+| Plus DNA dashboard | ✅ | Genre/vibe/emotion/trope pies, habits (not %), book matches, YoY |
+| Home DNA | ✅ | Monthly snapshots, Match % (cosine), similar readers, Reader Map DNA consent, badge placeholders |
+| Cache + snapshots | ✅ | Profile loads cache; stale triggers; immutable monthly/yearly snapshots |
+| Privacy | ✅ | public / followers / private; private DNA cannot leak via Match or Reader Map |
 
 ---
 
@@ -1114,7 +1116,7 @@ Official Bookmarked Home on **web + iOS**. Android not in scope. No `expo run:io
 | Reader Map | Missing → implemented | opt-in default off; coarse RPC; age-gated |
 | Location / map SDKs | None wired | `MapProvider` OSM-tile default; no Amazon Location install |
 | Events / RSVP | Already working → extended | Home experiences + video join RPC |
-| Reading DNA | Already working → connected | Personality + Home gate; official names open |
+| Reading DNA | Already working → rebuilt engine + cache + Match + privacy | Official names / exact weights still flagged |
 | Concierge | Missing → implemented | Server-derived priority; no SLA |
 | Home Hub | Missing → implemented | Distinct from Overview/Home nav |
 | Age / minors | No birthdate in product | Architecture blocks unknown age; min age not invented |

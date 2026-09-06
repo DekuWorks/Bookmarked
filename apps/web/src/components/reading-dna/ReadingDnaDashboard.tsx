@@ -6,12 +6,20 @@ import {
   titleCaseDnaLabel,
   type ReadingDna,
   type ReadingDnaCategoryBreakdown,
+  type ReadingDnaHabit,
   type ReadingDnaTrait,
 } from "@bookmarked/utils/readingDna";
+import type { ReadingDnaPrivacyState } from "@bookmarked/utils/readingDnaPrivacy";
+import { readingDnaShareCardAllowed } from "@bookmarked/utils/readingDnaPrivacy";
+import type { ReadingDnaSnapshotCompareRow } from "@bookmarked/utils/readingDnaCompare";
+import type { ReadingDnaBookMatch } from "@bookmarked/utils/readingDnaRecs";
 import { LockedFeaturePreview } from "@/components/premium/LockedFeaturePreview";
 import { UpgradePrompt } from "@/components/premium/UpgradePrompt";
 import { ButtonLink } from "@/components/ui/ButtonLink";
+import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils/cn";
+import { ReadingDnaPrivacyPanel } from "@/components/reading-dna/ReadingDnaPrivacyPanel";
+import type { ReadingDnaSimilarReader } from "@/lib/services/readingDna";
 
 export type ReadingDnaMetrics = {
   booksRead?: number;
@@ -30,6 +38,13 @@ type Props = {
   metrics?: ReadingDnaMetrics;
   loading?: boolean;
   compact?: boolean;
+  privacy?: ReadingDnaPrivacyState;
+  onSavePrivacy?: (next: ReadingDnaPrivacyState) => Promise<{ ok: true } | { ok: false; error: string }>;
+  yoy?: ReadingDnaSnapshotCompareRow[];
+  mom?: ReadingDnaSnapshotCompareRow[];
+  bookMatches?: ReadingDnaBookMatch[];
+  similarReaders?: ReadingDnaSimilarReader[];
+  onShare?: () => void;
 };
 
 const DONUT_COLORS = [
@@ -104,14 +119,14 @@ function CategoryCard({
           </li>
         ))}
         {!breakdown.traits.length ? (
-          <li className="text-sm text-text-muted">Keep reading to shape this strand.</li>
+          <li className="text-sm text-text-muted">{breakdown.emptyCopy}</li>
         ) : null}
       </ul>
     </article>
   );
 }
 
-function HabitBars({ habits, locked }: { habits: ReadingDnaTrait[]; locked?: boolean }) {
+function HabitBars({ habits, locked }: { habits: ReadingDnaHabit[]; locked?: boolean }) {
   return (
     <div
       className={cn(
@@ -128,18 +143,20 @@ function HabitBars({ habits, locked }: { habits: ReadingDnaTrait[]; locked?: boo
               <span className="capitalize text-text">
                 {habit.emoji} {habit.persona ?? titleCaseDnaLabel(habit.label)}
               </span>
-              <span className="font-medium text-puce-red dark:text-primary">{habit.percent}%</span>
+              <span className="text-xs text-text-muted">
+                {habit.evidenceCount} logged signals
+              </span>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-primary/15">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-puce-red to-primary motion-reduce:transition-none"
-                style={{ width: `${Math.max(habit.percent, 4)}%` }}
+                style={{ width: `${Math.min(100, Math.max(habit.evidenceCount * 8, 8))}%` }}
               />
             </div>
           </li>
         ))}
         {!habits.length ? (
-          <li className="text-sm text-text-muted">Log sessions to unlock habit insights.</li>
+          <li className="text-sm text-text-muted">Log a handful of sessions before habit labels appear.</li>
         ) : null}
       </ul>
     </div>
@@ -155,6 +172,13 @@ export function ReadingDnaDashboard({
   metrics,
   loading,
   compact,
+  privacy,
+  onSavePrivacy,
+  yoy = [],
+  mom = [],
+  bookMatches = [],
+  similarReaders = [],
+  onShare,
 }: Props) {
   const heroTraits = hasPlus ? dna.personaTraits : dna.topTraits;
   const metricItems = [
@@ -283,14 +307,26 @@ export function ReadingDnaDashboard({
 
             <div className={cn("rounded-2xl border border-border bg-background/70 p-4", !hasMatches && "opacity-80")}>
               <h3 className="font-display text-lg text-puce-red dark:text-primary">Book Matches</h3>
-              <p className="mt-2 text-sm leading-relaxed text-text-muted">
-                {hasMatches
-                  ? "You're in a season shaped by your DNA. Browse Search for books that match your top vibes and tropes."
-                  : "Plus recommends books that match your Reading DNA."}
-              </p>
+              {hasMatches && bookMatches.length ? (
+                <ul className="mt-2 space-y-2 text-sm">
+                  {bookMatches.map((match) => (
+                    <li key={match.id}>
+                      <span className="font-medium text-text">{match.title}</span>
+                      <span className="ml-2 text-puce-red">{match.percent}%</span>
+                      <p className="text-text-muted">{match.explanation}</p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-2 text-sm leading-relaxed text-text-muted">
+                  {hasMatches
+                    ? "Add books to your TBR to see DNA-scored matches. Free trending is unchanged."
+                    : "Plus recommends books that match your Reading DNA."}
+                </p>
+              )}
               {hasMatches ? (
                 <ButtonLink href="/search/" variant="secondary" size="sm" className="mt-3">
-                  Find matches
+                  Browse more
                 </ButtonLink>
               ) : (
                 <ButtonLink href="/upgrade/" variant="outline" size="sm" className="mt-3">
@@ -298,6 +334,66 @@ export function ReadingDnaDashboard({
                 </ButtonLink>
               )}
             </div>
+
+            {hasPlus ? (
+              <div className="rounded-2xl border border-border bg-background/70 p-4">
+                <h3 className="font-display text-lg text-puce-red dark:text-primary">Year over year</h3>
+                {yoy.length ? (
+                  <ul className="mt-2 space-y-1 text-sm">
+                    {yoy.slice(0, 5).map((row) => (
+                      <li key={`${row.category}-${row.label}`}>
+                        {titleCaseDnaLabel(row.label)} {row.delta > 0 ? "+" : ""}
+                        {row.delta} pts
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-2 text-sm text-text-muted">
+                    Yearly snapshots stay frozen. A comparison appears after a second year is stored.
+                  </p>
+                )}
+              </div>
+            ) : null}
+
+            {hasHome ? (
+              <div className="rounded-2xl border border-border bg-background/70 p-4">
+                <h3 className="font-display text-lg text-puce-red dark:text-primary">This month</h3>
+                {mom.length ? (
+                  <ul className="mt-2 space-y-1 text-sm">
+                    {mom.slice(0, 5).map((row) => (
+                      <li key={`${row.category}-${row.label}`}>
+                        {titleCaseDnaLabel(row.label)} {row.delta > 0 ? "+" : ""}
+                        {row.delta} pts
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-2 text-sm text-text-muted">
+                    Monthly shifts only show when they clear the configured threshold.
+                  </p>
+                )}
+              </div>
+            ) : null}
+
+            {hasHome ? (
+              <div className="rounded-2xl border border-border bg-background/70 p-4">
+                <h3 className="font-display text-lg text-puce-red dark:text-primary">Similar readers</h3>
+                {similarReaders.length ? (
+                  <ul className="mt-2 space-y-1 text-sm">
+                    {similarReaders.map((reader) => (
+                      <li key={reader.userId}>
+                        {reader.displayName} · {reader.percent}%
+                        {reader.personalityLabel ? ` · ${reader.personalityLabel}` : ""}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-2 text-sm text-text-muted">
+                    Match only runs against readers who made their DNA visible.
+                  </p>
+                )}
+              </div>
+            ) : null}
 
             <div className={cn("rounded-2xl border border-primary/30 bg-primary/10 p-4", !hasHome && "opacity-90")}>
               <h3 className="font-display text-lg text-puce-red dark:text-primary">Reading Personality</h3>
@@ -324,6 +420,20 @@ export function ReadingDnaDashboard({
             </div>
           </div>
         </div>
+
+        {privacy && onSavePrivacy ? <ReadingDnaPrivacyPanel privacy={privacy} onSave={onSavePrivacy} /> : null}
+
+        {onShare && privacy && readingDnaShareCardAllowed(privacy) ? (
+          <div className="rounded-2xl border border-border bg-background/70 p-4">
+            <h3 className="font-display text-lg text-puce-red dark:text-primary">Share card</h3>
+            <p className="mt-2 text-sm text-text-muted">
+              Sharing is opt-in. Bookmarked never posts your DNA automatically.
+            </p>
+            <Button size="sm" className="mt-3" onClick={onShare}>
+              Share my Reading DNA
+            </Button>
+          </div>
+        ) : null}
       </div>
     </div>
   );

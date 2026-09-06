@@ -8,6 +8,8 @@ export async function requestAiCompanion(input: {
   shelfStatus?: string | null;
   progressPercent?: number | null;
   endingConfirmed?: boolean;
+  /** Structured DNA summary only — never a full library dump. */
+  dnaSummary?: Record<string, unknown> | null;
 }) {
   const supabase = createClient();
   const { data, error } = await supabase.functions.invoke<{

@@ -75,6 +75,9 @@ export default function ReaderMapScreen() {
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: TAB_BAR_SPACE, gap: 12 }}>
         <Text className="font-semibold text-puce-red">{READER_MAP_OPT_IN_COPY.title}</Text>
         <Text className="text-sm text-ink-muted">{READER_MAP_OPT_IN_COPY.body}</Text>
+        <Text className="text-xs text-ink-muted">
+          Personality on the map needs DNA visibility consent. Home is not consent.
+        </Text>
         {ageStatus !== "eligible" ? (
           <Text className="text-sm text-rust">
             Nearby readers stay off until age is known and meets the configured minimum. That minimum

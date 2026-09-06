@@ -38,10 +38,10 @@ Complete · Partially complete · Missing · Bugged · Requires DB · Requires U
 | `advanced_reviews` | no | yes | yes | Chapter notes, optional 5-star character ratings, Would Recommend, reread 5-star half-star | Complete |
 | `club_polls` | no | yes | yes | RPC create/vote; default one vote; creator can opt in to multi-select | Complete |
 | `club_analytics` | no | yes | yes | Owner/host + Plus aggregates RPC (`canViewDetailedStats`) | Complete |
-| `full_reading_dna` | top 3 only | full | advanced | Confidence-aware compute + profile dashboard; Higgsfield assets blocked | Partially complete · Requires Higgsfield design |
-| `reading_dna_ai_insights` | no | yes | yes | Stubbed in DNA section | Partially complete · Requires AI |
-| `reading_dna_book_matches` | no | yes | yes | Stubbed CTA | Partially complete |
-| `reading_dna_year_comparison` | no | yes | yes | Missing | Missing · Requires UI |
+| `full_reading_dna` | top 3 only | full | advanced | Cached compute + dashboard; Higgsfield assets blocked | Complete · Requires Higgsfield design for share art |
+| `reading_dna_ai_insights` | no | yes | yes | Deterministic insight from scored DNA; companion gets structured summary only | Complete · live model copy still optional |
+| `reading_dna_book_matches` | no | yes | yes | Deterministic DNA score of TBR / current books | Complete |
+| `reading_dna_year_comparison` | no | yes | yes | Immutable yearly snapshots; MoM is Home | Complete |
 
 ## Home-only (beyond FeatureKey)
 
@@ -49,7 +49,7 @@ Complete · Partially complete · Missing · Bugged · Requires DB · Requires U
 |---|---|---|---|---|
 | Book Map | no | no | yes | Implemented · OSM tiles + curated places; café qualification open |
 | Reader Map | no | no | yes | Implemented · opt-in default off; blocked until age minimum is set |
-| DNA Match % / personality | no | no | yes | Implemented · deterministic personality from existing labels; official names open |
+| DNA Match % / personality | no | no | yes | Cosine Match + similar readers; personality from existing labels; official names open |
 | Home experiences / meetups | no | no | yes | Implemented · access prices as data; video join hidden until RSVP |
 | Concierge / priority support | no | no | yes | Implemented · server-derived priority; no SLA |
 | Home Hub | no | no | yes | Implemented · distinct from Overview/Home nav |

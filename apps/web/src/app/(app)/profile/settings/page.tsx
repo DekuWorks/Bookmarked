@@ -10,6 +10,9 @@ import { LanguagePreferencePanel } from "@/components/profile/LanguagePreference
 import { LibraryImportPanel } from "@/components/profile/LibraryImportPanel";
 import { SeriesImportPanel } from "@/components/profile/SeriesImportPanel";
 import { ShelfPrivacyPanel } from "@/components/profile/ShelfPrivacyPanel";
+import { ReadingDnaPrivacyPanel } from "@/components/reading-dna/ReadingDnaPrivacyPanel";
+import { DEFAULT_READING_DNA_PRIVACY } from "@bookmarked/utils/readingDnaPrivacy";
+import { loadReadingDnaPrivacy, saveReadingDnaPrivacy } from "@/lib/services/readingDna";
 import { ThemePreferencePanel } from "@/components/theme/ThemePreferencePanel";
 import { NotificationPreferencesPanel } from "@/components/notifications/NotificationPreferencesPanel";
 import { DeleteAccountPanel } from "@/components/moderation/DeleteAccountPanel";
@@ -27,6 +30,7 @@ import { layout } from "@/lib/constants/layout";
 type SettingsData = {
   profile: Profile;
   readingGoal: ReadingGoalStatus;
+  dnaPrivacy: import("@bookmarked/utils/readingDnaPrivacy").ReadingDnaPrivacyState;
 };
 
 export default function ProfileSettingsPage() {
@@ -44,9 +48,11 @@ export default function ProfileSettingsPage() {
 
     if (!profile) return;
 
+    const dnaPrivacy = await loadReadingDnaPrivacy().catch(() => DEFAULT_READING_DNA_PRIVACY);
     setData({
       profile,
       readingGoal: computeReadingGoal(books, profile.yearly_reading_goal ?? null),
+      dnaPrivacy,
     });
   }, [user]);
 
@@ -63,7 +69,7 @@ export default function ProfileSettingsPage() {
 
   if (!user || !data) return null;
 
-  const { profile, readingGoal } = data;
+  const { profile, readingGoal, dnaPrivacy } = data;
 
   return (
     <div className={`${layout.pageStack} text-left`}>
@@ -140,6 +146,19 @@ export default function ProfileSettingsPage() {
 
         <section className="surface-card p-6">
           <ShelfPrivacyPanel profile={profile} />
+        </section>
+
+        <section className="surface-card p-6">
+          <ReadingDnaPrivacyPanel
+            privacy={dnaPrivacy}
+            onSave={async (next) => {
+              const result = await saveReadingDnaPrivacy(next);
+              if (result.ok) {
+                setData((current) => (current ? { ...current, dnaPrivacy: next } : current));
+              }
+              return result;
+            }}
+          />
         </section>
 
         <DeleteAccountPanel />

@@ -13,16 +13,21 @@ import {
   titleCaseDnaLabel,
   type ReadingDna,
   type ReadingDnaCategoryBreakdown,
-  type ReadingDnaTrait,
+  type ReadingDnaHabit,
 } from "../../../../packages/utils/readingDna";
+import { DEFAULT_READING_DNA_PRIVACY, type ReadingDnaPrivacyState } from "../../../../packages/utils/readingDnaPrivacy";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { UpgradePrompt } from "../../src/components/UpgradePrompt";
 import { useSubscription } from "../../src/hooks/useSubscription";
 import { useProfile } from "../../src/hooks/useProfile";
 import { TAB_BAR_SPACE } from "../../src/navigation/TabBarScroll";
 import {
-  loadComputedReadingDna,
+  loadDnaBookMatches,
+  loadReadingDnaBundle,
+  loadReadingDnaComparisons,
+  loadSimilarReaders,
   persistReadingDnaSnapshot,
+  saveReadingDnaPrivacy,
 } from "../../src/services/readingDna";
 import { getUserLibraryBooks } from "../../src/services/library";
 import { useAuthStore } from "../../src/store/authStore";
@@ -61,11 +66,16 @@ function CategoryCard({
               style={{ backgroundColor: DONUT_COLORS[index % DONUT_COLORS.length] }}
             />
             <Text className="flex-1 capitalize" style={{ fontFamily: SANS_FONT, color: colors.ink }}>
-              {trait.emoji} {titleCaseDnaLabel(trait.label)}
+              {titleCaseDnaLabel(trait.label)}
             </Text>
             <Text style={{ fontFamily: SANS_FONT_MEDIUM, color: colors.puceRed }}>{trait.percent}%</Text>
           </View>
         ))}
+        {!breakdown.traits.length ? (
+          <Text className="text-xs" style={{ fontFamily: SANS_FONT, color: colors.inkMuted }}>
+            {breakdown.emptyCopy}
+          </Text>
+        ) : null}
       </View>
     </View>
   );
@@ -76,7 +86,7 @@ function HabitBars({
   locked,
   colors,
 }: {
-  habits: ReadingDnaTrait[];
+  habits: ReadingDnaHabit[];
   locked: boolean;
   colors: ReturnType<typeof useThemeColors>;
 }) {
@@ -95,12 +105,14 @@ function HabitBars({
               <Text className="capitalize" style={{ fontFamily: SANS_FONT, color: colors.ink }}>
                 {habit.emoji} {habit.persona ?? titleCaseDnaLabel(habit.label)}
               </Text>
-              <Text style={{ fontFamily: SANS_FONT_MEDIUM, color: colors.puceRed }}>{habit.percent}%</Text>
+              <Text style={{ fontFamily: SANS_FONT, color: colors.inkMuted, fontSize: 12 }}>
+                {habit.evidenceCount} signals
+              </Text>
             </View>
             <View className="h-2 overflow-hidden rounded-full bg-primary/15">
               <View
                 className="h-full rounded-full bg-puce-red"
-                style={{ width: `${Math.max(habit.percent, 4)}%` }}
+                style={{ width: `${Math.min(100, Math.max(habit.evidenceCount * 8, 8))}%` }}
               />
             </View>
           </View>
@@ -117,7 +129,10 @@ export default function ReadingDnaRoute() {
   const { data: profile } = useProfile();
   const { canAccess } = useSubscription();
   const [dna, setDna] = useState<ReadingDna | null>(null);
+  const [privacy, setPrivacy] = useState<ReadingDnaPrivacyState>(DEFAULT_READING_DNA_PRIVACY);
   const [booksRead, setBooksRead] = useState(0);
+  const [yoyLabel, setYoyLabel] = useState<string | null>(null);
+  const [similarLabel, setSimilarLabel] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const hasPlus = canAccess("full_reading_dna");
@@ -129,14 +144,32 @@ export default function ReadingDnaRoute() {
     let cancelled = false;
     setLoading(true);
     void Promise.all([
-      loadComputedReadingDna(userId, favoriteGenres),
+      loadReadingDnaBundle(userId, favoriteGenres),
       getUserLibraryBooks(userId),
     ])
-      .then(([computed, books]) => {
+      .then(async ([bundle, books]) => {
         if (cancelled) return;
-        setDna(computed);
+        setDna(bundle.dna);
+        setPrivacy(bundle.privacy);
         setBooksRead(books.filter((row) => row.shelf_status === "read").length);
-        void persistReadingDnaSnapshot(userId, computed);
+        if (!bundle.fromCache) void persistReadingDnaSnapshot(userId, bundle.dna);
+        if (hasPlus) {
+          const compare = await loadReadingDnaComparisons(userId);
+          if (!cancelled && compare.yoy[0]) {
+            setYoyLabel(
+              `${compare.yoy[0].label} ${compare.yoy[0].delta > 0 ? "+" : ""}${compare.yoy[0].delta} pts`
+            );
+          }
+        }
+        if (hasHome) {
+          const similar = await loadSimilarReaders(bundle.dna);
+          if (!cancelled && similar[0]) {
+            setSimilarLabel(`${similar[0].displayName} · ${similar[0].percent}%`);
+          }
+        }
+        if (hasPlus) {
+          await loadDnaBookMatches(userId, bundle.dna);
+        }
       })
       .catch(() => {
         if (!cancelled) setDna(null);
@@ -147,7 +180,7 @@ export default function ReadingDnaRoute() {
     return () => {
       cancelled = true;
     };
-  }, [userId, favoriteGenres]);
+  }, [userId, favoriteGenres, hasPlus, hasHome]);
 
   const heroTraits = useMemo(() => {
     if (!dna) return [];
@@ -219,6 +252,55 @@ export default function ReadingDnaRoute() {
               ))}
 
               <HabitBars habits={dna.habits} locked={!hasPlus} colors={colors} />
+
+              {yoyLabel ? (
+                <View className="rounded-2xl border border-brand-border bg-background/70 p-4">
+                  <Text style={{ fontFamily: SERIF_DISPLAY_FONT, color: colors.puceRed, fontSize: 18 }}>
+                    Year over year
+                  </Text>
+                  <Text className="mt-2" style={{ fontFamily: SANS_FONT, color: colors.ink }}>
+                    {yoyLabel}
+                  </Text>
+                </View>
+              ) : null}
+
+              {hasHome && similarLabel ? (
+                <View className="rounded-2xl border border-brand-border bg-background/70 p-4">
+                  <Text style={{ fontFamily: SERIF_DISPLAY_FONT, color: colors.puceRed, fontSize: 18 }}>
+                    Similar readers
+                  </Text>
+                  <Text className="mt-2" style={{ fontFamily: SANS_FONT, color: colors.ink }}>
+                    {similarLabel}
+                  </Text>
+                </View>
+              ) : null}
+
+              <View className="rounded-2xl border border-brand-border bg-background/70 p-4">
+                <Text style={{ fontFamily: SERIF_DISPLAY_FONT, color: colors.puceRed, fontSize: 18 }}>
+                  DNA visibility
+                </Text>
+                <Text className="mt-2 text-sm" style={{ fontFamily: SANS_FONT, color: colors.inkMuted }}>
+                  Now {privacy.visibility}. Private DNA never appears on Match or Reader Map.
+                </Text>
+                <View className="mt-3 flex-row flex-wrap gap-2">
+                  {(["followers", "public", "private"] as const).map((value) => (
+                    <Pressable
+                      key={value}
+                      onPress={() => {
+                        const next = { ...privacy, visibility: value };
+                        setPrivacy(next);
+                        void saveReadingDnaPrivacy(next);
+                      }}
+                      className="rounded-full px-3 py-1.5"
+                      style={{ backgroundColor: privacy.visibility === value ? colors.puceRed : "#ffffff22" }}
+                    >
+                      <Text style={{ fontFamily: SANS_FONT_MEDIUM, color: privacy.visibility === value ? "#fff" : colors.ink }}>
+                        {value}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
 
               <Pressable
                 onPress={() => router.push(hasHome ? "/(app)/reader-map" : "/(app)/upgrade")}
