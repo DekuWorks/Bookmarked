@@ -1,6 +1,7 @@
 import { supabase } from "./supabase";
 import type { ReadingSession } from "../types";
 import { calculateAudiobookSessionDuration } from "../../../../packages/utils/listeningTime";
+import { localDateKey } from "../../../../packages/utils/readingStreak";
 
 /** Mobile reading sessions — mirrors apps/web/src/lib/services/readingSessions.ts. */
 
@@ -17,6 +18,8 @@ export type CreateReadingSessionInput = {
   sessionFormat?: "book" | "audiobook";
   listeningStartSeconds?: number;
   listeningEndSeconds?: number;
+  activityKind?: "session" | "progress" | "completion" | "import" | "backfill" | "correction";
+  sessionDate?: string;
 };
 
 export async function listReadingSessions(userBookId: string): Promise<ReadingSession[]> {
@@ -110,6 +113,10 @@ export async function createReadingSession(
             ),
           }
         : {}),
+      session_date:
+        input.sessionDate ??
+        localDateKey(input.createdAt ? new Date(input.createdAt) : new Date()),
+      activity_kind: input.activityKind ?? "session",
       ...(input.createdAt ? { created_at: input.createdAt } : {}),
     })
     .select("*")

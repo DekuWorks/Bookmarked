@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { ReadingSession } from "@/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { calculateAudiobookSessionDuration } from "../../../../../packages/utils/listeningTime";
+import { localDateKey } from "../../../../../packages/utils/readingStreak";
 
 export type CreateReadingSessionInput = {
   userId: string;
@@ -16,6 +17,8 @@ export type CreateReadingSessionInput = {
   sessionFormat?: "book" | "audiobook";
   listeningStartSeconds?: number;
   listeningEndSeconds?: number;
+  activityKind?: "session" | "progress" | "completion" | "import" | "backfill" | "correction";
+  sessionDate?: string;
 };
 
 export type ReadingStatsInRange = {
@@ -60,6 +63,10 @@ export async function createReadingSessionWithClient(
             ),
           }
         : {}),
+      session_date:
+        input.sessionDate ??
+        localDateKey(input.createdAt ? new Date(input.createdAt) : new Date()),
+      activity_kind: input.activityKind ?? "session",
       ...(input.createdAt ? { created_at: input.createdAt } : {}),
     })
     .select("*")

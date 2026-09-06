@@ -25,7 +25,11 @@ import { readerLibraryPath } from "@/lib/routes/readerLibrary";
 import { ShareHead } from "@/components/seo/ShareHead";
 import { OriginBackNav } from "@/components/navigation/OriginBackNav";
 import { PublicReviewsSection } from "@/components/profile/PublicReviewsSection";
+import { PublicPostsSection } from "@/components/profile/PublicPostsSection";
 import { ProfileClubsSection } from "@/components/profile/ProfileClubsSection";
+import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
+import { PostNotificationButton } from "@/components/social/PostNotificationButton";
+import { readerProfilePath } from "@/lib/routes/reader";
 
 type ReaderData = {
   profile: Profile;
@@ -119,9 +123,16 @@ function ReaderProfileContent() {
             ) : null}
           </div>
           {isSelf ? (
-            <ButtonLink href="/profile/setup" variant="outline" size="sm">
-              Edit profile
-            </ButtonLink>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <CopyLinkButton
+                path={readerProfilePath(profile.username ?? username)}
+                label="Copy profile link"
+                variant="outline"
+              />
+              <ButtonLink href="/profile/setup" variant="outline" size="sm">
+                Edit profile
+              </ButtonLink>
+            </div>
           ) : (
             <div className="flex flex-wrap items-center justify-center gap-2">
               <ProfileMessageButton targetUserId={profile.id} />
@@ -130,6 +141,9 @@ function ReaderProfileContent() {
                 initialFollowing={following}
                 onChange={setFollowing}
               />
+              {following ? (
+                <PostNotificationButton subscriberId={user.id} creatorId={profile.id} />
+              ) : null}
               <ContentActionsMenu
                 contentType="profile"
                 contentId={profile.id}
@@ -203,6 +217,7 @@ function ReaderProfileContent() {
         </div>
       </section>
 
+      <PublicPostsSection userId={profile.id} viewerId={user.id} />
       <PublicReviewsSection userId={profile.id} readerName={displayName} />
 
       <p className="text-center">

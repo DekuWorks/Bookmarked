@@ -51,12 +51,12 @@ const PREF_OPTIONS: { key: PrefKey; label: string; description: string }[] = [
   {
     key: "notify_feed",
     label: "Post notifications",
-    description: "When a reader whose posts you follow publishes a new post.",
+    description: "Master switch is unused for activity. Turn posts on per profile you follow.",
   },
   {
     key: "notify_likes",
     label: "Likes",
-    description: "When someone likes your post, review, or comment.",
+    description: "When someone likes your post.",
   },
   {
     key: "notify_comments",

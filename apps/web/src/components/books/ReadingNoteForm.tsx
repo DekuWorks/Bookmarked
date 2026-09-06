@@ -16,6 +16,7 @@ import {
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { isEntitlementLimitError } from "@/lib/utils/subscription";
 import type { ReadingNote, ReadingNoteCategory, ReadingNoteVisibility } from "@/types";
+import { noteContentIsValid } from "@bookmarked/utils/quoteTitle";
 
 const selectClassName =
   "w-full min-h-[44px] rounded-lg border border-border bg-surface px-4 py-2.5 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30";
@@ -42,7 +43,6 @@ export function ReadingNoteForm({ userBookId, initialNote, onSaved, onCancel }: 
     initialNote?.page_number != null ? String(initialNote.page_number) : ""
   );
   const [chapter, setChapter] = useState(initialNote?.chapter ?? "");
-  const [title, setTitle] = useState(initialNote?.title ?? "");
   const [category, setCategory] = useState<ReadingNoteCategory>(
     initialNote?.category ?? "general_note"
   );
@@ -68,12 +68,11 @@ export function ReadingNoteForm({ userBookId, initialNote, onSaved, onCancel }: 
       note: note.trim() || null,
       pageNumber: pageNumber.trim() ? Number(pageNumber) : null,
       chapter: chapter.trim() || null,
-      title: title.trim() || null,
       category,
       visibility,
     };
 
-    if (!payload.quote && !payload.note) {
+    if (!noteContentIsValid(payload)) {
       toast.error("Add a quote or a reflection.");
       return;
     }
@@ -99,7 +98,6 @@ export function ReadingNoteForm({ userBookId, initialNote, onSaved, onCancel }: 
       setNote("");
       setPageNumber("");
       setChapter("");
-      setTitle("");
       setCategory("general_note");
       setVisibility("private");
     }
@@ -148,13 +146,6 @@ export function ReadingNoteForm({ userBookId, initialNote, onSaved, onCancel }: 
             className="min-h-[44px]"
           />
         </div>
-        <Input
-          label="Title (optional)"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Short label for this note"
-          className="min-h-[44px]"
-        />
         <div>
           <label htmlFor="reading-note-category" className="mb-1.5 block text-sm font-medium text-text">
             Category

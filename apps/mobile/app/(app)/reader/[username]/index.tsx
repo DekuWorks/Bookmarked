@@ -8,6 +8,10 @@ import { LoadingState } from "../../../../src/components/LoadingState";
 import { ProfanityBlur } from "../../../../src/components/ProfanityBlur";
 import { ProfileShelfPreview } from "../../../../src/components/ProfileShelfPreview";
 import { PublicReviewsSection } from "../../../../src/components/PublicReviewsSection";
+import { PublicPostsSection } from "../../../../src/components/PublicPostsSection";
+import { PostNotificationButton } from "../../../../src/components/PostNotificationButton";
+import { copyShareLink } from "../../../../src/services/externalShare";
+import { env } from "../../../../src/constants/env";
 import { ReadingStreakCard } from "../../../../src/components/ReadingStreakCard";
 import { ScreenHeader } from "../../../../src/components/ScreenHeader";
 import { showProfileActions } from "../../../../src/components/ContentActions";
@@ -130,14 +134,24 @@ export default function ReaderScreen() {
           {reader.username ? <Text className="text-ink-muted">@{reader.username}</Text> : null}
 
           {isSelf ? (
-            <Pressable
-              onPress={() => router.push("/profile")}
-              className="mt-3 rounded-full border border-brand-border px-5 py-2 active:opacity-80"
-            >
-              <Text className="text-sm font-semibold text-puce-red">Edit profile</Text>
-            </Pressable>
+            <View className="mt-3 flex-row flex-wrap justify-center gap-2">
+              <Pressable
+                onPress={() =>
+                  void copyShareLink(`${env.siteUrl}/reader/?username=${encodeURIComponent(handle)}`)
+                }
+                className="rounded-full border border-brand-border px-5 py-2 active:opacity-80"
+              >
+                <Text className="text-sm font-semibold text-puce-red">Copy profile link</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => router.push("/profile-edit")}
+                className="rounded-full border border-brand-border px-5 py-2 active:opacity-80"
+              >
+                <Text className="text-sm font-semibold text-puce-red">Edit profile</Text>
+              </Pressable>
+            </View>
           ) : (
-            <View className="mt-3 flex-row gap-2">
+            <View className="mt-3 flex-row flex-wrap justify-center gap-2">
               <Pressable
                 onPress={toggleFollow}
                 className={`rounded-full px-5 py-2 ${
@@ -155,6 +169,9 @@ export default function ReaderScreen() {
               <Pressable onPress={message} className="rounded-full bg-primary/15 px-5 py-2">
                 <Text className="text-sm font-semibold text-puce-red">Message</Text>
               </Pressable>
+              {followingQuery.data && viewerId ? (
+                <PostNotificationButton subscriberId={viewerId} creatorId={reader.id} />
+              ) : null}
             </View>
           )}
 
@@ -215,6 +232,7 @@ export default function ReaderScreen() {
             previewLimit={3}
           />
         </View>
+        {viewerId ? <PublicPostsSection userId={reader.id} viewerId={viewerId} /> : null}
         <PublicReviewsSection userId={reader.id} readerName={name} />
       </ScrollView>
     </View>

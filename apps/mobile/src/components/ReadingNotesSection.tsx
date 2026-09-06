@@ -27,6 +27,7 @@ import {
 import { isEntitlementLimitError } from "../utils/subscription";
 import type { ReadingNote, ReadingNoteCategory, ReadingNoteVisibility } from "../types";
 import { formatNoteLocation } from "../../../../packages/utils/noteLocation";
+import { ShareNoteButton } from "./ShareNoteButton";
 
 type Props = {
   userId: string;
@@ -195,6 +196,7 @@ export function ReadingNotesSection({ userId, userBookId, initialNotes, onChange
                   isCustom={n.category.startsWith("custom:")}
                 />
                 <View className="flex-row gap-3">
+                  <ShareNoteButton note={n} />
                   <Pressable onPress={() => openEdit(n)}>
                     <Text className="text-xs font-medium text-primary-dark">Edit</Text>
                   </Pressable>

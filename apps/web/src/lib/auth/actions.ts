@@ -2,6 +2,7 @@ import { createClient, resetBrowserClient } from "@/lib/supabase/client";
 import {
   applyRememberMePreference,
   parseRememberMeFromForm,
+  persistRememberedEmail,
 } from "@/lib/auth/rememberMe";
 import { authRedirectUrl } from "@/lib/auth/siteUrl";
 import {
@@ -34,7 +35,8 @@ export async function login(
     return { error: "Email and password are required." };
   }
 
-  applyRememberMePreference(parseRememberMeFromForm(formData));
+  const remember = parseRememberMeFromForm(formData);
+  applyRememberMePreference(remember);
   resetBrowserClient();
 
   const supabase = createClient();
@@ -43,6 +45,8 @@ export async function login(
   if (error) {
     return { error: error.message };
   }
+
+  persistRememberedEmail(remember, email);
 
   const {
     data: { session },

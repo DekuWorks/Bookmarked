@@ -823,6 +823,51 @@ Feed posts + edits + comments + comment replies; profile bio; club create/rename
 
 ---
 
+## Thirteenth Sprint — Feature / polish ✅
+
+Remaining product polish on **web + iOS (iPhone/iPad)**. Android not in scope. No `expo run:ios`. No TestFlight. No commit in this pass.
+
+| # | Item | Status | Notes |
+|---|------|--------|-------|
+| 1 | Book Complete Dark Mode | ✅ | Same layout/sparkles/buttons. Light stays `#642F37` / white / `#F7C767`. Dark uses existing purple/lavender tokens. Reduce Motion keeps sparkles static. |
+| 2 | Notifications: social only | ✅ | Central `NOTIFIABLE_SOCIAL_EVENTS`: message, follow, post like/comment/reply, post published. Review/shelf/start/finish/progress stay on Feed. Existing notification rows not deleted. Auth/security emails untouched. |
+| 3 | Per-profile post notifications | ✅ | On followed public profiles (not own): Turn On/Off Post Notifications. Table `post_notification_preferences` (subscriber, creator, enabled). Copy: `{Name} posted something new.` Tap → that post. Visibility uses follow + block + `post_visible_to_viewer`. |
+| 4 | Streaks = actual reading | ✅ | Qualifies `session` / `progress` with pages or listening that day. Date = `session_date` (local day on new writes). Not shelf move, import, backdate, Finished-only, notes-only, rating/cover edits. Historical `session_date` backfilled from `created_at` UTC — not a streak-table rewrite. Pre-migration rows keep `activity_kind='session'` so old finish sessions with pages may still count until distinguished. |
+| 5 | Remember Me repair | ✅ | Repair of Twelfth Sprint store — no second token store. Checked: keep email + persist session (web localStorage / iOS Keychain). Unchecked: session-only; logout clears email. Never stores passwords. Logout always clears auth. |
+| 6 | Profile Posts | ✅ | Posts section near Reviews, `created_at` desc, Feed cards, empty “No posts yet.” RLS-enforced. |
+| 7 | Reviews Share to Feed | ✅ | After Publish, public + new only. Preview then Share / Skip. Dedup `source_type=review` + `source_id`. Private later deletes linked Feed posts. |
+| 8 | Notes Share to Feed | ✅ | Share to Feed on public notes/quotes. Preview + caption. `source_type=note`. Web + iPhone + iPad. |
+| 9 | Remove Quote Title (website) | ✅ | Create/edit UI no longer has Quote Title. Column kept. Validation is quote/note text only. |
+| 10 | Change email/password | ✅ | Account/Security (not public Profile). Re-auth with current password, then provider verify / password policy. Never logs passwords. |
+| 11 | Profile button cleanup | ✅ | Main Profile: Public Profile kept. Copy / Edit / Quote Graphics removed from main Profile. Public Profile (owner): Copy beside Edit. Quote Graphics: larger buttons on Full Notes + Notes dashboard. Remaining profile links alternate existing tokens. |
+| FLAG | Reading DNA nav | 🚩 | Route `/reading-dna` and profile `ReadingDnaSection` still exist. Main Profile action-row button removed. **Do not invent new nav.** Product decision needed if DNA should live only on the profile section. |
+
+### Shared / data
+
+- Utils: `notifiableEvents`, `readingStreak`, `rememberMeEmail`, `reviewSharePrompt`, `quoteTitle`, `feedShare`, `postNotifications`
+- Additive migration: `supabase/migrations/20260906220000_thirteenth_sprint_social_polish.sql`
+  - `reading_sessions.session_date`, `activity_kind`
+  - `posts.source_type` / `source_id` unique per user
+  - `post_notification_preferences` + RLS (subscriber CRUD; insert requires follow)
+  - `create_notification` social allowlist; `notify_followers_of_activity` no-op
+  - `notify_post_subscribers` on post insert
+  - Hide/delete Feed posts when review/note leaves `public`
+- No db reset. Existing notification history left in place.
+
+### Tests / verification
+
+- Unit: notifiable events, streak `session_date`, remember-me email-only, public-only share prompt, quote title not required
+- Web `tsc --noEmit`: pass
+- Web `vitest`: 52 files, 310 tests pass
+- Web `eslint`: pre-existing `react-hooks/set-state-in-effect` across older pages. Sprint share prompt is derived, not an effect.
+- Web production `next build`: pass
+- iOS `tsc --noEmit`: pass
+- iOS `vitest`: 58 files, 294 tests pass
+- Migration `20260906220000_thirteenth_sprint_social_polish.sql` dry-run then applied (`db push --yes --linked`). No reset, no data loss
+- Android: not in scope. No password storage. Private reviews do not prompt Share to Feed.
+
+---
+
 ## Next up (recommended)
 
 | Priority | Item | Notes |

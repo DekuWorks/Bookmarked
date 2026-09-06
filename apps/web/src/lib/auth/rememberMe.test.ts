@@ -3,8 +3,10 @@ import {
   applyRememberMePreference,
   clearSupabaseAuthStorage,
   getAuthStorage,
+  getRememberedEmail,
   isRememberMeEnabled,
   parseRememberMeFromForm,
+  persistRememberedEmail,
   supabaseAuthStorageKey,
 } from "./rememberMe";
 
@@ -79,6 +81,17 @@ describe("rememberMe", () => {
     data.set("email", "reader@example.com");
     data.set("password", "secret");
     expect(parseRememberMeFromForm(data)).toBe(false);
+    persistRememberedEmail(true, "reader@example.com");
+    expect(getRememberedEmail()).toBe("reader@example.com");
+    expect(window.localStorage.getItem("password")).toBeNull();
+    expect(JSON.stringify(window.localStorage)).not.toContain("secret");
+  });
+
+  it("keeps email when remember is on and clears it when off", () => {
+    persistRememberedEmail(true, "reader@example.com");
+    expect(getRememberedEmail()).toBe("reader@example.com");
+    persistRememberedEmail(false, "reader@example.com");
+    expect(getRememberedEmail()).toBe("");
   });
 
   it("logout clears persisted tokens from both storages", () => {

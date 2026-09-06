@@ -23,6 +23,7 @@ import { TAB_BAR_SPACE, useTabBarScroll } from "../../src/navigation/TabBarScrol
 import { useAuthStore } from "../../src/store/authStore";
 import type { ReadingNoteCategory } from "../../src/types";
 import { formatNoteLocation } from "../../../../packages/utils/noteLocation";
+import { ShareNoteButton } from "../../src/components/ShareNoteButton";
 import {
   NOTES_BOOK_FILTER_COPY,
   matchNotesBookFilter,
@@ -77,9 +78,9 @@ export default function NotesScreen() {
       <View className="bg-background px-4 pb-2">
         <Pressable
           onPress={() => router.push("/quote-graphics")}
-          className="mb-3 self-start rounded-full bg-primary/15 px-3 py-1.5"
+          className="mb-3 min-h-[52px] items-center justify-center self-stretch rounded-2xl bg-primary px-5 py-3"
         >
-          <Text className="text-sm font-semibold text-puce-red">Create quote graphic →</Text>
+          <Text className="text-base font-bold text-on-primary">Quote Graphics</Text>
         </Pressable>
         <View className="mb-3">
           <NotesBookFilterButton
@@ -150,9 +151,10 @@ export default function NotesScreen() {
               chapterNumber: item.chapter,
             });
             return (
+              <View className="mb-3 rounded-2xl border border-brand-border bg-surface p-3">
               <Pressable
                 onPress={() => item.book && router.push(`/book/${item.book.id}`)}
-                className="mb-3 flex-row gap-3 rounded-2xl border border-brand-border bg-surface p-3 active:opacity-80"
+                className="flex-row gap-3 active:opacity-80"
               >
                 {item.book ? (
                   <BookCover url={item.book.cover_url} title={item.book.title} sizeClassName="w-12 h-16" />
@@ -185,6 +187,10 @@ export default function NotesScreen() {
                   ) : null}
                 </View>
               </Pressable>
+              <View className="mt-2">
+                <ShareNoteButton note={item} book={item.book} />
+              </View>
+              </View>
             );
           }}
           ListEmptyComponent={

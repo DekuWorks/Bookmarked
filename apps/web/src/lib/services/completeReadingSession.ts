@@ -23,7 +23,8 @@ export type CompleteReadingSource =
   | "mark_finished"
   | "search_add"
   | "library"
-  | "reread";
+  | "reread"
+  | "import";
 
 export type CompleteReadingSessionInput = {
   supabase: SupabaseClient;
@@ -157,6 +158,8 @@ export async function completeReadingSession(
         user_book_id: userBookId,
         read_number: readNumber,
         created_at: finishedAt,
+        activity_kind: source === "import" ? "import" : "completion",
+        session_date: finishedAt.slice(0, 10),
         ...sessionPatch,
       })
       .select("id")

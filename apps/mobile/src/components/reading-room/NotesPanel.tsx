@@ -103,6 +103,14 @@ export function NotesPanel({ userId, bookParam = null, refreshId = 0 }: Props) {
       >
         <Text className="text-sm font-semibold text-puce-red">Open Notes Search</Text>
       </Pressable>
+      <Pressable
+        onPress={() => router.push("/quote-graphics")}
+        className="min-h-[52px] items-center justify-center self-stretch rounded-2xl bg-primary px-5 py-3 active:opacity-80"
+        accessibilityRole="button"
+        accessibilityLabel="Quote Graphics"
+      >
+        <Text className="text-base font-bold text-on-primary">Quote Graphics</Text>
+      </Pressable>
 
       <SectionCard title={selectedUserBookId ? "Notes" : HOME_RECENT_NOTES_COPY.title}>
         <View className="mb-3">

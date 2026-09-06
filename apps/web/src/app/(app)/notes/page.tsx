@@ -47,9 +47,12 @@ function NotesSearchContent() {
         <p className="mx-auto mt-1 max-w-2xl text-pretty text-text-muted">
           Find quotes and reflections across every book in your library.
         </p>
-        <p className="mt-3">
-          <Link href="/quote-graphics/" className="text-sm font-medium text-primary hover:underline">
-            Create a quote graphic →
+        <p className="mt-4">
+          <Link
+            href="/quote-graphics/"
+            className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-primary px-6 py-3 text-base font-bold text-on-primary"
+          >
+            Quote Graphics
           </Link>
         </p>
       </header>

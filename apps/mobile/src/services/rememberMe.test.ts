@@ -50,6 +50,17 @@ describe("rememberMe storage", () => {
     expect(asyncStore.has("sb-test-auth-token")).toBe(false);
   });
 
+  it("stores email only when remember is on and never stores a password", async () => {
+    const { persistRememberedEmail, getRememberedEmail, REMEMBERED_EMAIL_KEY } =
+      await import("./rememberMe");
+    await persistRememberedEmail(true, "Reader@Example.com");
+    await expect(getRememberedEmail()).resolves.toBe("reader@example.com");
+    expect(asyncStore.get("password")).toBeUndefined();
+    expect(asyncStore.get(REMEMBERED_EMAIL_KEY)).toBe("reader@example.com");
+    await persistRememberedEmail(false, "reader@example.com");
+    await expect(getRememberedEmail()).resolves.toBe("");
+  });
+
   it("logout clears persisted state", async () => {
     const { createRememberMeStorage, setRememberMe, clearPersistedAuthSession } =
       await import("./rememberMe");

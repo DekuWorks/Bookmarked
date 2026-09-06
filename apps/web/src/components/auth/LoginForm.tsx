@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { login, type AuthActionState } from "@/lib/auth/actions";
+import { getRememberedEmail, isRememberMeEnabled } from "@/lib/auth/rememberMe";
 import { staticRedirect } from "@/lib/navigation/staticRedirect";
 import { RememberMeField } from "@/components/auth/RememberMeField";
 import { Button } from "@/components/ui/Button";
@@ -17,6 +18,13 @@ type Props = {
 
 export function LoginForm({ redirect }: Props) {
   const [state, formAction, pending] = useActionState(login, initial);
+  const [rememberedEmail, setRememberedEmail] = useState("");
+  const [rememberDefault, setRememberDefault] = useState(true);
+
+  useEffect(() => {
+    setRememberDefault(isRememberMeEnabled());
+    setRememberedEmail(getRememberedEmail());
+  }, []);
 
   useEffect(() => {
     if (state.redirect) staticRedirect(state.redirect);
@@ -25,7 +33,15 @@ export function LoginForm({ redirect }: Props) {
   return (
     <form action={formAction} className={`${layout.formPanel} w-full`}>
       {redirect ? <input type="hidden" name="redirect" value={redirect} /> : null}
-      <Input label="Email" name="email" type="email" autoComplete="email" required />
+      <Input
+        key={rememberedEmail || "email"}
+        label="Email"
+        name="email"
+        type="email"
+        autoComplete="email"
+        required
+        defaultValue={rememberedEmail}
+      />
       <Input
         label="Password"
         name="password"
@@ -33,7 +49,7 @@ export function LoginForm({ redirect }: Props) {
         autoComplete="current-password"
         required
       />
-      <RememberMeField />
+      <RememberMeField defaultChecked={rememberDefault} />
       {state.error ? (
         <p className="mb-4 text-sm text-rust" role="alert">
           {state.error}

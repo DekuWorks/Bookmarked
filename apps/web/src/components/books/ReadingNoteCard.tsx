@@ -16,6 +16,7 @@ import { NoteTag } from "@/components/notes/NoteTag";
 import type { ReadingNote } from "@/types";
 import { cn } from "@/lib/utils/cn";
 import { formatNoteLocation } from "@bookmarked/utils/noteLocation";
+import { ShareNoteButton } from "@/components/notes/ShareNoteButton";
 import { isCustomReadingNoteCategory } from "@/lib/readingNotes/categories";
 
 function formatNoteDate(iso: string): string {
@@ -117,6 +118,7 @@ export function ReadingNoteCard({ note, userBookId, onChange }: Props) {
       ) : null}
 
       <div className="mt-4 flex flex-wrap gap-1">
+        <ShareNoteButton note={note} />
         <Button
           type="button"
           variant="ghost"
