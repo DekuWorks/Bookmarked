@@ -187,6 +187,9 @@ export default function BookScreen() {
   const [finishOpen, setFinishOpen] = useState(false);
   const [ratePromptOpen, setRatePromptOpen] = useState(false);
   const [celebrationOpen, setCelebrationOpen] = useState(false);
+  const [challengeUpdates, setChallengeUpdates] = useState<
+    import("../../../../../packages/utils/challengeTypes").ChallengeEvaluationSummary | null
+  >(null);
   const [finishLoading, setFinishLoading] = useState(false);
   const [progressOpen, setProgressOpen] = useState(false);
   const [sessionOpen, setSessionOpen] = useState(false);
@@ -372,6 +375,7 @@ export default function BookScreen() {
     }
     setFinishOpen(false);
     invalidate();
+    setChallengeUpdates(result.challengeUpdates ?? null);
     setCelebrationOpen(true);
     if (result.promptReview) {
       setRatePromptOpen(true);
@@ -958,6 +962,7 @@ export default function BookScreen() {
       <CompletionCelebration
         visible={celebrationOpen}
         bookTitle={book.title}
+        challengeUpdates={challengeUpdates}
         onClose={() => setCelebrationOpen(false)}
       />
 

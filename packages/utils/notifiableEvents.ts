@@ -7,6 +7,10 @@ export const NOTIFIABLE_SOCIAL_EVENTS = [
   "post_comment",
   "post_comment_reply",
   "post_published",
+  "challenge_invitation",
+  "challenge_accepted",
+  "challenge_completed",
+  "challenge_community_milestone",
 ] as const;
 
 export type NotifiableSocialEvent = (typeof NOTIFIABLE_SOCIAL_EVENTS)[number];
@@ -49,7 +53,7 @@ export function shouldCreateStandardNotification(input: {
   type: string;
   notificationKind?: string | null;
 }): boolean {
-  if (input.type === "club") return true;
+  if (input.type === "club" || input.type === "challenge") return true;
   const kind = resolveNotificationKind(input.type, input.notificationKind);
   return isNotifiableSocialEvent(kind);
 }

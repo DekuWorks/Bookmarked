@@ -20,6 +20,27 @@ import type { ShelfMoveDestination } from "../../../../packages/utils/shelfMove"
 import type { ShelfStatus, UserBook } from "../types";
 import { addBookToCustomShelf } from "./customShelves";
 
+async function evaluateProgressForChallenges(input: {
+  userId: string;
+  userBookId: string;
+  qualifyingEventId: string;
+  qualifyingDate: string;
+  pagesInEvent: number;
+  listeningSecondsInEvent: number;
+}): Promise<void> {
+  try {
+    const { evaluateQualifyingEventForChallenges } = await import(
+      "./challenges/ChallengeContributionService"
+    );
+    await evaluateQualifyingEventForChallenges({
+      ...input,
+      eventKind: "progress",
+    });
+  } catch (error) {
+    console.warn("[library] challenge progress evaluate skipped:", error);
+  }
+}
+
 export type LibraryBookRow = {
   id: string;
   shelf_status: ShelfStatus;
@@ -459,6 +480,16 @@ export async function updateReadingProgress(
       listeningEndSeconds: listeningProgressSeconds,
     });
     if (session.error) return { error: session.error };
+    if (session.session?.id) {
+      void evaluateProgressForChallenges({
+        userId,
+        userBookId: userBook.id,
+        qualifyingEventId: session.session.id,
+        qualifyingDate: new Date().toISOString(),
+        pagesInEvent: 0,
+        listeningSecondsInEvent: listeningProgressSeconds - previousListening,
+      });
+    }
   } else if (!isAudiobook && userBook?.id) {
     const previousPage = Number(existing?.progress_pages) || 0;
     const nextPage = input.progressPages ?? 0;
@@ -473,6 +504,16 @@ export async function updateReadingProgress(
         readNumber: Number(existing?.read_count) || 1,
       });
       if (session.error) return { error: session.error };
+      if (session.session?.id) {
+        void evaluateProgressForChallenges({
+          userId,
+          userBookId: userBook.id,
+          qualifyingEventId: session.session.id,
+          qualifyingDate: new Date().toISOString(),
+          pagesInEvent: nextPage - previousPage,
+          listeningSecondsInEvent: 0,
+        });
+      }
     }
   }
 
@@ -538,6 +579,16 @@ export async function logListeningSession(
     listeningEndSeconds: validated.endSeconds,
   });
   if (session.error) return { error: session.error };
+  if (session.session?.id) {
+    void evaluateProgressForChallenges({
+      userId,
+      userBookId: existing.id,
+      qualifyingEventId: session.session.id,
+      qualifyingDate: now,
+      pagesInEvent: 0,
+      listeningSecondsInEvent: validated.durationSeconds,
+    });
+  }
 
   if (nextCurrent !== currentSeconds) {
     const { error } = await supabase
@@ -575,7 +626,11 @@ export async function markFinished(
     isbn?: string | null;
   },
   options?: { finishedAt?: string }
-): Promise<{ error?: string; promptReview?: boolean }> {
+): Promise<{
+  error?: string;
+  promptReview?: boolean;
+  challengeUpdates?: import("../../../../packages/utils/challengeTypes").ChallengeEvaluationSummary;
+}> {
   const { data: userBook, error: fetchError } = await supabase
     .from("user_books")
     .select("id, progress_pages, started_at, read_count, is_favorite, rating, completion_tags")
@@ -631,7 +686,10 @@ export async function markFinished(
 
   if (completion.error) return { error: completion.error };
 
-  return { promptReview: completion.promptReview ?? true };
+  return {
+    promptReview: completion.promptReview ?? true,
+    challengeUpdates: completion.challengeUpdates,
+  };
 }
 
 /**

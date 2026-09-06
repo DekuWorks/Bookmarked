@@ -19,7 +19,7 @@ Complete · Partially complete · Missing · Bugged · Requires DB · Requires U
 | `saved_quotes` | limit 25 | unlimited | unlimited | `createReadingNote` counts quotes; FeatureLimitModal wired | Partially complete · Requires quote-vault polish |
 | `quote_graphics` | 3 / month | unlimited | unlimited | `usage_counters` + `consumeQuoteGraphicSlot`; generator UI stub | Partially complete · Requires UI |
 | `joined_book_clubs` | limit 3 | unlimited | unlimited | `joinClub` enforces + FeatureLimitModal | Partially complete |
-| `reading_challenges` | 3 / year | unlimited | unlimited | Tables + `joinReadingChallenge` enforce yearly cap; UI thin | Partially complete · Requires UI |
+| `reading_challenges` | 3 / year join; Create is Plus | unlimited | unlimited | Join yearly cap + `create_user_reading_challenge` / `user_has_paid_entitlement`. Web locked copy → iOS App Store only (no web checkout) | Complete (web + iOS) |
 | `advanced_reading_insights` | no | yes | yes | Insights panels gated via aliases | Partially complete · Requires UI polish |
 | `reading_speed` | no | yes | yes | Partial analytics | Partially complete |
 | `reading_time` | no | yes | yes | Partial analytics | Partially complete |
@@ -56,7 +56,7 @@ Complete · Partially complete · Missing · Bugged · Requires DB · Requires U
 
 | Plan | Brief | Current upgrade UI |
 |---|---|---|
-| Plus | $5.99 / mo · $59.99 / yr | UI + checkout interval wired; run `setup-stripe-catalog.sh` and set secrets (do not invent live IDs) |
+| Plus | $5.99 / mo · $59.99 / yr | Purchase is App Store IAP only. Web `/upgrade/` explains iOS subscribe; existing Stripe rows still unlock both platforms. |
 | Home | $9.99 / mo · $99.99 / yr | Not sold as separate checkout SKU yet |
 
 ## Downgrade policy

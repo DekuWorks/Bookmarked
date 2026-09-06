@@ -77,6 +77,7 @@ export {
   canCreateQuoteGraphic,
   canJoinBookClub,
   canJoinReadingChallenge,
+  canCreateReadingChallenge,
   canSaveQuote,
   getEntitlements,
   getReadingDnaAccess,
@@ -85,6 +86,7 @@ export {
   subscriptionIsActive,
   toSubscriptionAccessFromRow,
   ENTITLEMENT_LIMIT_MESSAGES,
+  IOS_SUBSCRIBE_COPY,
   isEntitlementLimitError,
   type EntitlementLimitFeature,
   type ReadingDnaAccess,
@@ -675,11 +677,112 @@ export { isQuoteTitleRequired, noteContentIsValid } from "./quoteTitle";
 
 export {
   FEED_SOURCE_TYPES,
+  CHALLENGE_FEED_SOURCE_TYPES,
   buildNoteSharePostBody,
+  buildChallengeSharePostBody,
+  challengeShareIsMajorMilestone,
   feedShareDedupKey,
+  isChallengeFeedSourceType,
   isFeedSourceType,
   noteIsShareableToFeed,
+  type ChallengeFeedSourceType,
   type FeedSourceType,
 } from "./feedShare";
+
+export {
+  CHALLENGE_RULE_TYPES,
+  CHALLENGE_VISIBILITIES,
+  CHALLENGE_GOAL_TYPES,
+  COMMUNITY_MILESTONE_THRESHOLDS,
+  emptyChallengeEvaluationSummary,
+  isChallengeGoalType,
+  isChallengeRuleType,
+  isChallengeVisibility,
+  type ChallengeBadgeAward,
+  type ChallengeBookContext,
+  type ChallengeContributionDraft,
+  type ChallengeEvaluationResult,
+  type ChallengeEvaluationSummary,
+  type ChallengeFinishItem,
+  type ChallengeGoalType,
+  type ChallengeInviteStatus,
+  type ChallengeMemberStatus,
+  type ChallengeObjective,
+  type ChallengeObjectiveParams,
+  type ChallengeObjectiveProgress,
+  type ChallengeOwnerKind,
+  type ChallengeProgressSnapshot,
+  type ChallengeProgressUnit,
+  type ChallengeRecord,
+  type ChallengeReward,
+  type ChallengeRuleType,
+  type ChallengeVisibility,
+} from "./challengeTypes";
+
+export {
+  STABLE_GENRE_IDS,
+  genreIdsOverlap,
+  isStableGenreId,
+  mapSubjectsToGenreIds,
+  normalizeSubjectToken,
+  representationTagsMatch,
+} from "./challengeGenres";
+
+export {
+  evaluateBookForChallenge,
+  evaluateBookForChallenges,
+  qualifyingDateIsEligible,
+} from "./challengeRuleEngine";
+
+export {
+  applyContributionAmount,
+  calculateChallengeProgress,
+  completedObjectiveCount,
+  isMonotonicRule,
+  objectiveIsComplete,
+  primaryProgressFromObjectives,
+  summarizeObjectiveProgress,
+  unitForGoalType,
+} from "./challengeProgress";
+
+export {
+  challengeContributionDedupKey,
+  communityIncrementForDraft,
+  filterNewContributions,
+  isDuplicateContribution,
+} from "./challengeContributions";
+
+export {
+  CHALLENGE_BADGE_DEFINITIONS,
+  CHALLENGE_BADGE_KEYS,
+  badgeA11yLabel,
+  canFeatureAnotherBadge,
+  evaluateChallengeBadges,
+  featuredBadgeLimit,
+  isChallengeBadgeKey,
+  shouldAwardOneTimeBadge,
+} from "./challengeBadges";
+
+export {
+  challengeCanShareToFeed,
+  challengeMembersVisibleToViewer,
+  challengeVisibleToViewer,
+  friendCompareTone,
+} from "./challengeVisibility";
+
+export {
+  challengeCardColumns,
+  challengePercent,
+  challengeProgressAnnouncement,
+  checklistItemAnnouncement,
+  crossedCommunityMilestones,
+  formatChallengeAmount,
+  formatChallengeListeningSpoken,
+  formatChallengeListeningTime,
+  formatCommunityMilestone,
+  nextCommunityMilestone,
+  timeRemainingLabel,
+  visibilityLabel as challengeVisibilityLabel,
+} from "./challengeDisplay";
 
 export { POST_NOTIFICATION_COPY, postNotificationTitle } from "./postNotifications";

@@ -27,7 +27,7 @@ export function UpgradeModal({
       </ul>
       <div className="mt-6 flex flex-col gap-2 sm:flex-row">
         <ButtonLink href="/upgrade/" variant="primary" className="flex-1 text-center">
-          View plans
+          How to subscribe on iOS
         </ButtonLink>
         <Button type="button" variant="outline" onClick={onClose} className="flex-1">
           Not now

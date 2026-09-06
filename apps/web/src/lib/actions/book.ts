@@ -24,12 +24,35 @@ import {
 import type { ReviewRatingMode, ShelfStatus } from "@/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+async function evaluateProgressForChallenges(input: {
+  supabase: SupabaseClient;
+  userId: string;
+  userBookId: string;
+  qualifyingEventId: string;
+  qualifyingDate: string;
+  pagesInEvent: number;
+  listeningSecondsInEvent: number;
+}): Promise<void> {
+  try {
+    const { evaluateQualifyingEventForChallenges } = await import(
+      "@/lib/services/challenges/ChallengeContributionService"
+    );
+    await evaluateQualifyingEventForChallenges({
+      ...input,
+      eventKind: "progress",
+    });
+  } catch (error) {
+    console.warn("[book] challenge progress evaluate skipped:", error);
+  }
+}
+
 export type BookActionState = {
   error?: string;
   success?: string;
   bookId?: string;
   /** Set after markBookFinished when the UI should offer a review prompt. */
   promptReview?: boolean;
+  challengeUpdates?: import("@bookmarked/utils/challengeTypes").ChallengeEvaluationSummary;
   promptShareToFeed?: boolean;
   reviewId?: string;
   reviewVisibility?: "public" | "private";
@@ -512,6 +535,19 @@ export async function updateReadingProgress(
     });
 
     if (sessionResult.error) return { error: sessionResult.error };
+    if (sessionResult.session?.id) {
+      void evaluateProgressForChallenges({
+        supabase,
+        userId: user.id,
+        userBookId: userBook.id,
+        qualifyingEventId: sessionResult.session.id,
+        qualifyingDate: now,
+        pagesInEvent: isAudiobook ? 0 : Math.max(0, finalPage - previousPage),
+        listeningSecondsInEvent: isAudiobook
+          ? Math.max(0, currentListeningSeconds - previousListening)
+          : 0,
+      });
+    }
   }
 
   await recordActivity(supabase, {
@@ -575,6 +611,17 @@ export async function logListeningSession(
     listeningEndSeconds: validated.endSeconds,
   });
   if (sessionResult.error) return { error: sessionResult.error };
+  if (sessionResult.session?.id) {
+    void evaluateProgressForChallenges({
+      supabase,
+      userId: user.id,
+      userBookId: userBook.id,
+      qualifyingEventId: sessionResult.session.id,
+      qualifyingDate: now,
+      pagesInEvent: 0,
+      listeningSecondsInEvent: validated.durationSeconds,
+    });
+  }
 
   if (nextCurrent !== currentSeconds) {
     const { error } = await supabase
@@ -681,7 +728,11 @@ export async function markBookFinished(
     });
   }
 
-  return { success: "Book Completed 🎉", promptReview: completion.promptReview ?? true };
+  return {
+    success: "Book Completed 🎉",
+    promptReview: completion.promptReview ?? true,
+    challengeUpdates: completion.challengeUpdates,
+  };
 }
 
 export async function removeFromShelf(

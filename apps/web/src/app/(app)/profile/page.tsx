@@ -25,6 +25,7 @@ import { useSubscription } from "@/lib/hooks/useSubscription";
 import { ReadingDnaSection } from "@/components/profile/ReadingDnaSection";
 import { PublicReviewsSection } from "@/components/profile/PublicReviewsSection";
 import { ProfileClubsSection } from "@/components/profile/ProfileClubsSection";
+import { ProfileBadgeCarousel } from "@/components/challenges/ProfileBadgeCarousel";
 
 import { layout } from "@/lib/constants/layout";
 
@@ -116,6 +117,7 @@ export default function ProfilePage() {
           </div>
         </div>
         <ReadingStreakCard streak={readingStreak} className="mt-6" />
+        <ProfileBadgeCarousel userId={user.id} isOwner />
         <ReadingDnaSection
           userId={user.id}
           favoriteGenres={profile?.favorite_genres ?? []}
@@ -157,7 +159,7 @@ export default function ProfilePage() {
             Challenges
           </ButtonLink>
           <ButtonLink href="/upgrade/" variant="secondary" size="sm">
-            {isPremium ? "Membership" : "Explore membership"}
+            {isPremium ? "Membership" : "How to subscribe"}
           </ButtonLink>
           <LogoutButton />
         </div>

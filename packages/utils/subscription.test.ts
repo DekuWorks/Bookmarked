@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   ENTITLEMENTS,
   canAccessFeature,
+  canCreateReadingChallenge,
+  IOS_SUBSCRIBE_COPY,
   canCreateCustomShelf,
   canJoinBookClub,
   canSaveQuote,
@@ -38,12 +40,20 @@ describe("ENTITLEMENTS + canAccessFeature", () => {
     expect(canAccessFeature("reader_map", activePlus)).toBe(false);
     expect(getReadingDnaAccess(activePlus)).toBe("full");
     expect(getEntitlements(activePlus).joinedBookClubs).toBe(Infinity);
+    expect(canCreateReadingChallenge(null)).toBe(false);
+    expect(canCreateReadingChallenge(activePlus)).toBe(true);
   });
 
   it("unlocks Home-only surfaces and advanced DNA", () => {
     expect(canAccessFeature("reading_dna_match", activeHome)).toBe(true);
     expect(getReadingDnaAccess(activeHome)).toBe("advanced");
     expect(ENTITLEMENTS.home.readingDNAAccess).toBe("advanced");
+  });
+
+  it("describes iOS-only subscribe with shared web unlock", () => {
+    expect(IOS_SUBSCRIBE_COPY.body).toMatch(/iOS app/i);
+    expect(IOS_SUBSCRIBE_COPY.body).toMatch(/bookmarked\.online/i);
+    expect(IOS_SUBSCRIBE_COPY.body).not.toMatch(/checkout|stripe/i);
   });
 
   it("enforces numeric Free limits via helpers", () => {

@@ -248,10 +248,10 @@ Additive migration: `20260906180000_eighth_sprint_audiobook_user_edition.sql` ad
 | Mobile subscription hook + gates | ✅ | `apps/mobile/src/hooks/useSubscription.ts` · `/(app)/upgrade` |
 | Premium features gated | ✅ | `advanced_analytics`, `ai_insights` |
 | AI reading insights (OpenAI) | ✅ | `packages/utils/aiInsights.ts` · `supabase/functions/ai-insights` · web + mobile `AiInsightsPanel` · see `docs/AI_INSIGHTS.md` |
-| Stripe checkout (web) | ✅ | `create-checkout-session` + `/upgrade/` Subscribe CTA; test keys active — live cutover in `docs/PRODUCTION_BILLING.md` |
+| Stripe checkout (web) | 🚫 | New purchases are iOS IAP only. `/upgrade/` no longer starts Stripe Checkout. Historical Stripe subscribers keep access + billing portal. |
 | App Store IAP (iOS) | ✅ | `expo-iap` + `useAppleIap` + `apple-iap-verify` — see `docs/APP_STORE_IAP.md` |
 | Google Play IAP | ⬜ | Android uses web Stripe link from upgrade screen |
-| Mobile web upgrade UX | ✅ | `/upgrade/` responsive layout; Stripe checkout works in mobile Safari |
+| Mobile web upgrade UX | ✅ | `/upgrade/` explains iOS-only subscribe; Plus from IAP unlocks on web automatically |
 | Webhook signature verification | 🔄 | Stripe HMAC; Apple ASN decodes JWS (full cert verification deferred) |
 | Admin grant UI | ⬜ | Manual SQL / service role |
 
@@ -497,7 +497,7 @@ Tracking against the Free/Plus/Reading DNA master spec (Phases 1–42). Distinct
 | 5–8 — Free library basics | ⏳ | Calendar / permanent shelves polish |
 | 20–24 / 27–28 / 35 — Reading DNA core | 🔄 | DNA pages; snapshot RPC; persist on profile/DNA load **and** `completeReadingSession` (soft fail); Higgsfield blocked |
 | Quote graphics Free UX | 🔄 | Remaining count + consume slot + FeatureLimitModal; AI render flag off |
-| Challenges browse/join | 🔄 | Thin UI + seed migration `20260801220000_seed_reading_challenges.sql` (5 public 2026 challenges) |
+| Challenges browse/join | ✅ | Engine + Featured / Your / Completed on web + iOS. Create Challenge is Plus, subscribe on iOS only |
 | Remaining (Wrapped, AI graphics, snapshot QA) | ⏳ | Ship as capacity allows |
 
 ---
@@ -516,7 +516,7 @@ Tracking against the Free/Plus/Reading DNA master spec (Phases 1–42). Distinct
 | Reading DNA algorithm | `docs/READING_DNA_ALGORITHM.md` |
 | Sprint 6 polish / DNF QA | `docs/SPRINT_6_POLISH.md` |
 
-**Last updated:** 5 September 2026 (History Tab — Private Reviews + 12-book grid)
+**Last updated:** 6 September 2026 (Reading Challenges + iOS-only subscribe)
 
 ---
 
@@ -900,6 +900,72 @@ Twelfth Sprint set `w-[23%]` at `width >= 768`, but NativeWind arbitrary percent
 - iOS `tsc --noEmit`: pass
 - iOS `vitest`: 59 files, 301 tests pass
 - Phone grid still 3. Web spine titles still render. No `expo run:ios`. Android not in scope.
+
+---
+
+## Fifteenth Sprint — Reading Challenges ✅
+
+Reading Challenges on **web + iOS (iPhone/iPad)**. Android not in scope. No `expo run:ios`. No TestFlight. No commit in this pass.
+
+**Product rule — subscribe only on iOS.** Do not add a web checkout, Stripe/web IAP, or “Subscribe on web” for Challenges or other Plus gates wired in this sprint. Purchase stays native App Store IAP. Once `user_subscriptions` is Plus, **bookmarked.online unlocks automatically**. Web locked copy sends people to the iOS app. Server entitlement is mandatory. Pricing is not hardcoded in challenge UI.
+
+### Schema reused vs new
+
+| Reused | New (additive, `20260907030000_reading_challenges_engine.sql`) |
+|--------|----------------------------------------------------------------|
+| `reading_challenges`, `reading_challenge_members` (DNA / 2026 seed) | `reading_challenge_objectives`, `rewards`, `progress`, `contributions` (unique dedup), `invites`, `milestones` |
+| `user_subscriptions` (IAP + Stripe history) | `challenge_badge_definitions`, `user_badges`, `challenge_curated_lists` |
+| Yearly Free join cap (`usage_counters`) | `books.trusted_metadata` (never infer identity from names) |
+| `create_notification` (keeps social-polish club/feed prefs) | RPCs: `create_user_reading_challenge`, `record_challenge_contribution`, `award_user_badge`, `respond_challenge_invite`, `user_has_paid_entitlement` |
+
+Official challenge objectives + badge defs are seeded in the same migration. No db reset.
+
+### Rule engine
+
+Shared in `packages/utils` — **no per-challenge screens**. `evaluateBookForChallenge` + progress / contribution / badge / display / visibility / genre helpers. Finish and progress sessions call the same evaluator.
+
+### Finish-event hook
+
+`completeReadingSession` (web + iOS) → History/activity → `evaluateQualifyingEventForChallenges` → `record_challenge_contribution` RPC → badge RPC → celebration. Progress page/listening sessions also evaluate (web `book.ts`, iOS `library.ts`). Dedup: membership + objective + user_book + qualifying_event. Qualifying date is the event/session/completion date, not `updated_at`. Soft-fail if evaluation errors.
+
+Book Completion celebration is **additive**: “N Challenges Updated” + optional Share to Feed for major milestones only. Existing sparkles / tags / rate prompt stay.
+
+### Entitlement sync (iOS → web)
+
+1. User buys or restores in the **iOS app** (`/upgrade` → StoreKit → `verifyApplePurchaseOnServer` → Edge `apple-iap-verify`).
+2. Service role writes `user_subscriptions` (`subscription_tier`, `status`, `expires_at`, Apple transaction id).
+3. Web and iOS both `SELECT` that row and map it with `toSubscriptionAccessFromRow` / `subscriptionIsActive` / `canCreateReadingChallenge`.
+4. `create_user_reading_challenge` re-checks `user_has_paid_entitlement()` — never a client boolean.
+5. Join still uses the yearly Free cap (3). Create Challenge is Plus/Home only.
+
+**No web subscribe path.** `/upgrade/` and Plus gates use `IosSubscribePanel` / iOS copy. They never start Stripe Checkout. iOS `/upgrade` is App Store IAP + Restore. Historical Stripe subscribers keep access on both platforms and can open the billing portal. New purchases are iOS-only.
+
+### Files
+
+- Shared: `packages/utils/challenge*.ts`, `subscription.ts` (`canCreateReadingChallenge`, `IOS_SUBSCRIBE_COPY`)
+- Migration: `supabase/migrations/20260907030000_reading_challenges_engine.sql`
+- Web: `/challenges/`, `/challenges/challenge/?id=`, `/challenges/create/`, `ChallengeService` / contribution / badge, `IosSubscribePanel`, `FeatureLimitModal`, `/upgrade/` iOS-only subscribe (no Stripe Checkout), finish + progress hooks, `ProfileBadgeCarousel`
+- iOS: `app/(app)/challenges/{index,[id],create}`, mirrored services, native IAP create gate, progress hook in `library.ts`
+
+### Admin / curation follow-up
+
+No staff dashboard. Featured flag, `challenge_curated_lists`, and `books.trusted_metadata` are the curation surfaces. Do not guess author identity or representation from names.
+
+### Tests / verification
+
+- Shared rule-engine + display + iOS-subscribe copy tests
+- Web `tsc --noEmit`: pass
+- Web `eslint` on challenge pages / celebration / FeatureLimitModal: pass
+- Web `vitest`: 56 files, 341 tests (prior sprint count; challenge engine tests included)
+- Web production `next build`: pass (`/challenges`, `/challenges/challenge`, `/challenges/create`)
+- iOS `tsc --noEmit`: pass
+- iOS `vitest`: 62 files, 325 tests pass
+- Migration dry-run then applied (`db push --yes --linked`). No reset, no data loss
+- Browser QA: Challenges are auth-gated. No web checkout was added
+- Confirmed: no Android; celebration intact; private friend challenges stay off Feed; no identity guessing
+- No `expo run:ios`. No TestFlight
+
+**Last updated:** 6 September 2026 (Reading Challenges + iOS-only subscribe)
 
 ---
 

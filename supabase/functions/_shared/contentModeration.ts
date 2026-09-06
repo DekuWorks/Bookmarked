@@ -10,6 +10,8 @@ export const MODERATION_CONTENT_TYPES = [
   "BOOK_CLUB_NAME",
   "BOOK_CLUB_DISCUSSION",
   "BOOK_CLUB_REPLY",
+  "CHALLENGE_TITLE",
+  "CHALLENGE_DESCRIPTION",
   "FUTURE",
 ] as const;
 
@@ -403,7 +405,7 @@ function unavailableResult(): ModerationResult {
 }
 
 function isStrictContentType(contentType: ModerationContentType): boolean {
-  return contentType === "BOOK_CLUB_NAME";
+  return contentType === "BOOK_CLUB_NAME" || contentType === "CHALLENGE_TITLE";
 }
 
 export function classifyLocalContent(

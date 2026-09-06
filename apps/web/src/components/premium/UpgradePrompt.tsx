@@ -17,7 +17,7 @@ type Props = {
 export function UpgradePrompt({
   title,
   description,
-  ctaLabel = "Explore Bookmarked Plus",
+  ctaLabel = "How to subscribe on iOS",
   href = "/upgrade/",
   className,
   compact,

@@ -26,6 +26,17 @@ function clubAvatarPath(clubId: string, mime: string): string {
   return `clubs/${clubId}/avatar.${extensionForMime(mime)}`;
 }
 
+function challengeCoverPath(mime: string): string {
+  const stamp = Date.now();
+  return `challenges/covers/${stamp}.${extensionForMime(mime)}`;
+}
+
+export async function uploadChallengeCover(
+  file: File
+): Promise<{ url?: string; error?: string }> {
+  return uploadEntityAvatar(challengeCoverPath(file.type), file);
+}
+
 async function uploadEntityAvatar(
   path: string,
   file: File

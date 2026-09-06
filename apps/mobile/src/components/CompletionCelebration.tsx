@@ -6,10 +6,11 @@ type Props = {
   visible: boolean;
   bookTitle: string;
   onClose: () => void;
+  challengeUpdates?: import("../../../../packages/utils/challengeTypes").ChallengeEvaluationSummary | null;
 };
 
 /** Full-screen acknowledgement shown immediately after a successful completion. */
-export function CompletionCelebration({ visible, bookTitle, onClose }: Props) {
+export function CompletionCelebration({ visible, bookTitle, onClose, challengeUpdates }: Props) {
   const colors = useThemeColors();
   const isDark = colors.background === "#1A1326";
   const [reduceMotion, setReduceMotion] = useState(false);
@@ -55,6 +56,13 @@ export function CompletionCelebration({ visible, bookTitle, onClose }: Props) {
           <Text className="mt-3 text-center text-base" style={{ color: body }}>
             Another story saved to your reading life.
           </Text>
+          {challengeUpdates && challengeUpdates.updatedCount > 0 ? (
+            <Text className="mt-4 text-center text-sm" style={{ color: body }}>
+              {challengeUpdates.updatedCount} Challenge
+              {challengeUpdates.updatedCount === 1 ? "" : "s"} Updated
+              {challengeUpdates.items[0] ? ` · ${challengeUpdates.items[0].title}` : ""}
+            </Text>
+          ) : null}
           <View className="mt-7 rounded-full px-5 py-3" style={{ backgroundColor: buttonBg }}>
             <Text className="font-bold" style={{ color: buttonText }}>
               Tap anywhere to celebrate

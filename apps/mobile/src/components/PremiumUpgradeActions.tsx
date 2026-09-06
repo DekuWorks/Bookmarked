@@ -1,12 +1,12 @@
 import Constants from "expo-constants";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Linking, Platform, Text, View } from "react-native";
+import { Platform, Text, View } from "react-native";
 import { ErrorCode, useIAP, type Purchase } from "expo-iap";
 import {
   IAP_PREMIUM_PRICE_LABEL,
 } from "../../../../packages/utils/iap";
 import { APPLE_PREMIUM_PRODUCT_ID } from "../constants/iap";
-import { env, webAuthRedirect } from "../constants/env";
+import { env } from "../constants/env";
 import { verifyApplePurchaseOnServer } from "../services/iap";
 import { Button } from "./Button";
 
@@ -14,8 +14,6 @@ type Props = {
   userId: string;
   onSubscriptionUpdated: () => void;
 };
-
-const WEB_UPGRADE_URL = webAuthRedirect("/upgrade");
 
 function isNativeIosStoreBuild(): boolean {
   return Platform.OS === "ios" && Constants.appOwnership !== "expo";
@@ -120,10 +118,6 @@ export function PremiumUpgradeActions({ userId, onSubscriptionUpdated }: Props) 
     }
   }, [iapEnabled, onSubscriptionUpdated, restorePurchases]);
 
-  const handleSubscribeOnWeb = useCallback(() => {
-    void Linking.openURL(WEB_UPGRADE_URL);
-  }, []);
-
   return (
     <View className="mt-6 gap-3">
       {iapEnabled ? (
@@ -148,18 +142,13 @@ export function PremiumUpgradeActions({ userId, onSubscriptionUpdated }: Props) 
         <Text className="text-center text-sm leading-5 text-ink-muted">
           {Platform.OS === "ios"
             ? "In-app purchases require a development or App Store build (not Expo Go)."
-            : "Android billing uses the web checkout for now."}
+            : "Subscribe in the Bookmarked iOS app. Plus then unlocks on the website automatically."}
         </Text>
       )}
 
-      <Button
-        title="Subscribe to Plus on web (Stripe)"
-        variant="secondary"
-        onPress={handleSubscribeOnWeb}
-      />
       <Text className="text-center text-xs leading-5 text-ink-muted">
-        One Bookmarked Plus membership works across {env.siteUrl.replace(/^https?:\/\//, "")} and the mobile
-        app.
+        Subscribe only in the iOS app. Once Plus is active, it unlocks on{" "}
+        {env.siteUrl.replace(/^https?:\/\//, "")} automatically — no second purchase.
       </Text>
 
       {error ? <Text className="text-center text-sm text-red-600">{error}</Text> : null}

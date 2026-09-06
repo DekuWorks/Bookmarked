@@ -15,8 +15,6 @@ import { createBillingPortalSession } from "../../src/services/stripePortal";
 import { useAuthStore } from "../../src/store/authStore";
 import { TAB_BAR_SPACE } from "../../src/navigation/TabBarScroll";
 
-const PLUS_PRICE = "$5.99 / month";
-const PLUS_YEARLY_PRICE = "$59.99 / year";
 const APPLE_SUBSCRIPTIONS_URL = "https://apps.apple.com/account/subscriptions";
 
 export default function UpgradeRoute() {
@@ -152,9 +150,12 @@ export default function UpgradeRoute() {
             <Text className="text-center text-sm font-medium uppercase tracking-wide text-primary">
               Bookmarked Plus
             </Text>
-            <Text className="mt-2 text-center text-3xl font-bold text-puce-red">{PLUS_PRICE}</Text>
-            <Text className="mt-1 text-center text-sm text-ink-muted">{PLUS_YEARLY_PRICE}</Text>
-            <Text className="mt-1 text-center text-sm text-ink-muted">Cancel anytime.</Text>
+            <Text className="mt-2 text-center text-lg font-semibold text-puce-red">
+              Subscribe with Apple
+            </Text>
+            <Text className="mt-1 text-center text-sm text-ink-muted">
+              Price is shown by the App Store. Cancel anytime in iOS Settings.
+            </Text>
 
             <View className="mt-6">
               <SubscriptionComparison />

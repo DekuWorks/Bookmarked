@@ -6,7 +6,7 @@ What is wired in code vs what still needs owner action (secrets, App Store appro
 
 | Surface | Implementation |
 |---------|----------------|
-| Web Stripe checkout | `/upgrade/` → `create-checkout-session` → Stripe Checkout → `subscription-webhook` |
+| Web Stripe checkout | Historical only. `/upgrade/` no longer starts Checkout. Existing Stripe subscribers keep access + billing portal. |
 | iOS App Store IAP | `PremiumUpgradeActions` → `apple-iap-verify` → `user_subscriptions` |
 | Premium gates | `canAccessFeature('advanced_analytics' \| 'ai_insights')` on web + mobile |
 | Shared product IDs | `packages/utils/iap.ts` — production + sandbox constants |
@@ -91,9 +91,9 @@ Details: `docs/AI_INSIGHTS.md`
 
 ## Removed test / placeholder UI
 
-- Web `/upgrade/` no longer shows “Coming soon” or “Billing is almost ready” when Stripe secrets are configured
-- Subscribe CTA appears after availability probe; test-mode Stripe shows a small footnote only
-- Mobile upgrade screen uses production IAP product ID by default (`PremiumUpgradeActions`)
+- Web `/upgrade/` no longer starts Stripe Checkout. Free users see iOS-app subscribe copy.
+- Historical Stripe subscribers can still open the billing portal from `/upgrade/` when subscribed.
+- Mobile upgrade screen uses App Store IAP + Restore (`PremiumUpgradeActions`)
 
 ## Demo accounts (unchanged)
 
