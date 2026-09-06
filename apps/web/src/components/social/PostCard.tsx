@@ -270,7 +270,10 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
 
               {localPost.body.trim() ? (
                 <div className="mt-2 text-left text-sm leading-relaxed text-text">
-                  <MentionText body={localPost.body} />
+                  <MentionText
+                    body={localPost.body}
+                    meta={localPost.moderation_meta ?? null}
+                  />
                 </div>
               ) : null}
 

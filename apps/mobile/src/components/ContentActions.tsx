@@ -1,14 +1,11 @@
 import { Alert, ActionSheetIOS, Platform } from "react-native";
 import type { ContentReportReason, ReportableContentType } from "../../../../packages/types";
+import { CONTENT_REPORT_REASON_LABELS } from "../../../../packages/utils/contentReports";
 import { blockUser, reportContent } from "../services/moderation";
 
-const REPORT_REASONS: { label: string; value: ContentReportReason }[] = [
-  { label: "Harassment or bullying", value: "harassment" },
-  { label: "Spam", value: "spam" },
-  { label: "Inappropriate content", value: "inappropriate" },
-  { label: "Hate speech", value: "hate_speech" },
-  { label: "Other", value: "other" },
-];
+const REPORT_REASONS: { label: string; value: ContentReportReason }[] = (
+  Object.entries(CONTENT_REPORT_REASON_LABELS) as Array<[ContentReportReason, string]>
+).map(([value, label]) => ({ value, label }));
 
 type ContentActionInput = {
   contentType: ReportableContentType;
@@ -17,17 +14,20 @@ type ContentActionInput = {
   reportedUserName?: string;
   onBlocked?: () => void;
   onReported?: () => void;
+  hideBlock?: boolean;
 };
 
 async function submitReport(
   input: ContentActionInput,
-  reason: ContentReportReason
+  reason: ContentReportReason,
+  details?: string
 ): Promise<void> {
   const result = await reportContent({
     contentType: input.contentType,
     contentId: input.contentId,
     reportedUserId: input.reportedUserId,
     reason,
+    details,
   });
   if (result.error) {
     Alert.alert("Couldn't submit report", result.error);
@@ -38,6 +38,25 @@ async function submitReport(
     "Report submitted",
     "Thanks for helping keep Bookmarked safe. We review reports within 24 hours."
   );
+}
+
+function promptOtherDetails(input: ContentActionInput): void {
+  Alert.prompt?.(
+    "Anything else?",
+    "Optional short details for reviewers.",
+    [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Submit",
+        onPress: (value?: string) => void submitReport(input, "other", value?.trim() || undefined),
+      },
+    ],
+    "plain-text"
+  ) ??
+    Alert.alert("Other", "We’ll send this as Other.", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Submit", onPress: () => void submitReport(input, "other") },
+    ]);
 }
 
 async function confirmBlock(input: ContentActionInput): Promise<void> {
@@ -52,7 +71,7 @@ async function confirmBlock(input: ContentActionInput): Promise<void> {
         style: "destructive",
         onPress: async () => {
           const result = await blockUser(input.reportedUserId, {
-            reason: "harassment",
+            reason: "harassment_bullying",
             details: `Blocked from ${input.contentType} ${input.contentId}`,
           });
           if (result.error) {
@@ -69,17 +88,20 @@ async function confirmBlock(input: ContentActionInput): Promise<void> {
 
 export function showContentActions(input: ContentActionInput): void {
   const name = input.reportedUserName?.trim() || "User";
+  const options = input.hideBlock
+    ? ["Cancel", "Report"]
+    : ["Cancel", "Report", `Block ${name}`];
 
   if (Platform.OS === "ios") {
     ActionSheetIOS.showActionSheetWithOptions(
       {
-        options: ["Cancel", "Report content", `Block ${name}`],
+        options,
         cancelButtonIndex: 0,
-        destructiveButtonIndex: 2,
+        destructiveButtonIndex: input.hideBlock ? undefined : 2,
       },
       (index) => {
         if (index === 1) showReportReasonPicker(input);
-        if (index === 2) void confirmBlock(input);
+        if (!input.hideBlock && index === 2) void confirmBlock(input);
       }
     );
     return;
@@ -87,8 +109,10 @@ export function showContentActions(input: ContentActionInput): void {
 
   Alert.alert("Content options", undefined, [
     { text: "Cancel", style: "cancel" },
-    { text: "Report content", onPress: () => showReportReasonPicker(input) },
-    { text: `Block ${name}`, style: "destructive", onPress: () => void confirmBlock(input) },
+    { text: "Report", onPress: () => showReportReasonPicker(input) },
+    ...(!input.hideBlock
+      ? [{ text: `Block ${name}`, style: "destructive" as const, onPress: () => void confirmBlock(input) }]
+      : []),
   ]);
 }
 
@@ -97,12 +121,16 @@ function showReportReasonPicker(input: ContentActionInput): void {
     ActionSheetIOS.showActionSheetWithOptions(
       {
         title: "Why are you reporting this?",
-        options: ["Cancel", ...REPORT_REASONS.map((r) => r.label)],
+        options: ["Cancel", ...REPORT_REASONS.map((item) => item.label)],
         cancelButtonIndex: 0,
       },
       (index) => {
         if (index <= 0) return;
         const reason = REPORT_REASONS[index - 1]?.value;
+        if (reason === "other") {
+          promptOtherDetails(input);
+          return;
+        }
         if (reason) void submitReport(input, reason);
       }
     );
@@ -111,9 +139,10 @@ function showReportReasonPicker(input: ContentActionInput): void {
 
   Alert.alert("Why are you reporting this?", undefined, [
     { text: "Cancel", style: "cancel" },
-    ...REPORT_REASONS.map((r) => ({
-      text: r.label,
-      onPress: () => void submitReport(input, r.value),
+    ...REPORT_REASONS.map((item) => ({
+      text: item.label,
+      onPress: () =>
+        item.value === "other" ? promptOtherDetails(input) : void submitReport(input, item.value),
     })),
   ]);
 }

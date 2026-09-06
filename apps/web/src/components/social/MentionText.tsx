@@ -11,9 +11,10 @@ type Props = {
   className?: string;
   /** When false, skip profanity blur (e.g. nested inside another gate). Default true. */
   blurProfanity?: boolean;
+  meta?: import("../../../../../packages/types").ModerationMeta | null;
 };
 
-export function MentionText({ body, className, blurProfanity = true }: Props) {
+export function MentionText({ body, className, blurProfanity = true, meta }: Props) {
   const segments = parseMentionSegments(body);
 
   const content = (
@@ -38,5 +39,9 @@ export function MentionText({ body, className, blurProfanity = true }: Props) {
 
   if (!blurProfanity) return content;
 
-  return <ProfanityBlur text={body}>{content}</ProfanityBlur>;
+  return (
+    <ProfanityBlur text={body} meta={meta}>
+      {content}
+    </ProfanityBlur>
+  );
 }

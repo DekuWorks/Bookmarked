@@ -2,17 +2,14 @@
 
 import { useState } from "react";
 import type { ContentReportReason, ReportableContentType } from "../../../../../packages/types";
+import { CONTENT_REPORT_REASON_LABELS } from "../../../../../packages/utils/contentReports";
 import { blockUser, reportContent } from "@/lib/services/moderation";
 import { useToast } from "@/components/ui/Toast";
 import { Button } from "@/components/ui/Button";
 
-const REPORT_REASONS: { label: string; value: ContentReportReason }[] = [
-  { label: "Harassment or bullying", value: "harassment" },
-  { label: "Spam", value: "spam" },
-  { label: "Inappropriate content", value: "inappropriate" },
-  { label: "Hate speech", value: "hate_speech" },
-  { label: "Other", value: "other" },
-];
+const REPORT_REASONS: { label: string; value: ContentReportReason }[] = (
+  Object.entries(CONTENT_REPORT_REASON_LABELS) as Array<[ContentReportReason, string]>
+).map(([value, label]) => ({ value, label }));
 
 type Props = {
   contentType: ReportableContentType;
@@ -22,6 +19,7 @@ type Props = {
   onBlocked?: () => void;
   onReported?: () => void;
   className?: string;
+  hideBlock?: boolean;
 };
 
 export function ContentActionsMenu({
@@ -32,25 +30,31 @@ export function ContentActionsMenu({
   onBlocked,
   onReported,
   className,
+  hideBlock,
 }: Props) {
   const toast = useToast();
   const [open, setOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [reason, setReason] = useState<ContentReportReason | null>(null);
+  const [details, setDetails] = useState("");
   const [busy, setBusy] = useState(false);
 
   const name = reportedUserName?.trim() || "this user";
 
-  async function handleReport(reason: ContentReportReason) {
+  async function handleReport(nextReason: ContentReportReason, nextDetails?: string) {
     setBusy(true);
     const result = await reportContent({
       contentType,
       contentId,
       reportedUserId,
-      reason,
+      reason: nextReason,
+      details: nextDetails,
     });
     setBusy(false);
     setReportOpen(false);
     setOpen(false);
+    setReason(null);
+    setDetails("");
 
     if (result.error) {
       toast.error(result.error);
@@ -68,7 +72,7 @@ export function ContentActionsMenu({
 
     setBusy(true);
     const result = await blockUser(reportedUserId, {
-      reason: "harassment",
+      reason: "harassment_bullying",
       details: `Blocked from ${contentType} ${contentId}`,
     });
     setBusy(false);
@@ -96,22 +100,57 @@ export function ContentActionsMenu({
     );
   }
 
+  if (reportOpen && reason === "other") {
+    return (
+      <div className="rounded-lg border border-border bg-surface p-3 shadow-md">
+        <p className="mb-2 text-sm font-medium text-text">Add optional details</p>
+        <textarea
+          value={details}
+          onChange={(event) => setDetails(event.target.value.slice(0, 280))}
+          rows={3}
+          className="mb-2 w-full rounded-md border border-border bg-background px-2 py-1 text-sm"
+          placeholder="What should reviewers know?"
+        />
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            loading={busy}
+            onClick={() => void handleReport("other", details)}
+          >
+            Submit
+          </Button>
+          <Button type="button" variant="ghost" size="sm" onClick={() => setReason(null)}>
+            Back
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   if (reportOpen) {
     return (
       <div className="rounded-lg border border-border bg-surface p-3 shadow-md">
         <p className="mb-2 text-sm font-medium text-text">Why are you reporting this?</p>
         <div className="flex flex-col gap-1">
-          {REPORT_REASONS.map((reason) => (
+          {REPORT_REASONS.map((item) => (
             <Button
-              key={reason.value}
+              key={item.value}
               type="button"
               variant="ghost"
               size="sm"
               className="justify-start"
               loading={busy}
-              onClick={() => void handleReport(reason.value)}
+              onClick={() => {
+                if (item.value === "other") {
+                  setReason("other");
+                  return;
+                }
+                void handleReport(item.value);
+              }}
             >
-              {reason.label}
+              {item.label}
             </Button>
           ))}
           <Button type="button" variant="ghost" size="sm" onClick={() => setReportOpen(false)}>
@@ -131,18 +170,20 @@ export function ContentActionsMenu({
         className="w-full justify-start"
         onClick={() => setReportOpen(true)}
       >
-        Report content
+        Report
       </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        className="w-full justify-start text-rust"
-        loading={busy}
-        onClick={() => void handleBlock()}
-      >
-        Block {name}
-      </Button>
+      {!hideBlock ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start text-rust"
+          loading={busy}
+          onClick={() => void handleBlock()}
+        >
+          Block {name}
+        </Button>
+      ) : null}
       <Button type="button" variant="ghost" size="sm" className="w-full justify-start" onClick={() => setOpen(false)}>
         Cancel
       </Button>

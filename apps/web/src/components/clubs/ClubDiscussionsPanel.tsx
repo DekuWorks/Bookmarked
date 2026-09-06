@@ -12,13 +12,24 @@ import { useToast } from "@/components/ui/Toast";
 import { ClubDiscussionCard } from "@/components/clubs/ClubDiscussionCard";
 import { ClubDiscussionComposer } from "@/components/clubs/ClubDiscussionComposer";
 import { ProfanityBlur } from "@/components/social/ProfanityBlur";
+import { ContentActionsMenu } from "@/components/moderation/ContentActionsMenu";
 import { useClubDiscussionsRealtime } from "@/lib/hooks/useClubDiscussionsRealtime";
+import { useClubDiscussionRepliesRealtime } from "@/lib/hooks/useClubDiscussionRepliesRealtime";
 import { usePreferredLocale } from "@/lib/hooks/usePreferredLocale";
+import {
+  CLUB_REPLY_SORT_STORAGE_KEY,
+  mergeClubReplies,
+  parseClubReplySort,
+  removeClubReply,
+  sortClubReplies,
+  type ClubReplySort,
+} from "../../../../../packages/utils/clubReplyThread";
 import {
   createReply,
   deleteDiscussion,
   deleteReply,
   getDiscussion,
+  getReply,
   listDiscussions,
   listReplies,
   setDiscussionLocked,
@@ -77,6 +88,23 @@ export function ClubDiscussionsPanel({
   const [replySpoilers, setReplySpoilers] = useState(false);
   const [pending, setPending] = useState(false);
   const [fromDeepLink, setFromDeepLink] = useState(Boolean(initialDiscussionId));
+  const [replySort, setReplySort] = useState<ClubReplySort>(() => {
+    if (typeof window === "undefined") return "newest";
+    try {
+      return parseClubReplySort(window.localStorage.getItem(CLUB_REPLY_SORT_STORAGE_KEY));
+    } catch {
+      return "newest";
+    }
+  });
+
+  function changeReplySort(next: ClubReplySort) {
+    setReplySort(next);
+    try {
+      window.localStorage.setItem(CLUB_REPLY_SORT_STORAGE_KEY, next);
+    } catch {
+      /* ignore */
+    }
+  }
 
   function clearActiveDiscussion() {
     setFromDeepLink(false);
@@ -107,9 +135,9 @@ export function ClubDiscussionsPanel({
         throw new Error("Discussion not found.");
       }
       setActiveDiscussion(discussion);
-      setReplies(replyRows);
+      setReplies((current) => mergeClubReplies(current ?? [], replyRows, replySort));
     },
-    [clubId]
+    [clubId, replySort]
   );
 
   useEffect(() => {
@@ -160,6 +188,31 @@ export function ClubDiscussionsPanel({
     });
   });
 
+  const handleReplyRealtime = useCallback(
+    async (change: { type: "insert" | "update" | "delete"; id: string }) => {
+      if (!activeId) return;
+      if (change.type === "delete" && change.id) {
+        setReplies((current) => removeClubReply(current ?? [], change.id));
+        return;
+      }
+      if (!change.id) {
+        const rows = await listReplies(activeId);
+        setReplies((current) => mergeClubReplies(current ?? [], rows, replySort));
+        return;
+      }
+      const row = await getReply(change.id);
+      if (!row || row.discussion_id !== activeId) return;
+      setReplies((current) => mergeClubReplies(current ?? [], row, replySort));
+    },
+    [activeId, replySort]
+  );
+
+  useClubDiscussionRepliesRealtime(activeId ?? undefined, (change) => {
+    void handleReplyRealtime(change).catch((err) => {
+      console.warn("[club-replies-realtime] hydrate failed:", err);
+    });
+  });
+
   const sorted = useMemo(() => {
     const rows = [...(discussions ?? [])];
     if (filter === "pinned") {
@@ -183,6 +236,11 @@ export function ClubDiscussionsPanel({
     });
   }, [discussions, filter]);
 
+  const sortedReplies = useMemo(
+    () => sortClubReplies(replies ?? [], replySort),
+    [replies, replySort]
+  );
+
   async function handleReply() {
     if (!activeId || !replyBody.trim()) return;
     setPending(true);
@@ -197,7 +255,12 @@ export function ClubDiscussionsPanel({
     setReplyBody("");
     setReplySpoilers(false);
     toast.success("Reply posted.");
-    await loadThread(activeId);
+    if (result.replyId) {
+      const row = await getReply(result.replyId);
+      if (row) {
+        setReplies((current) => mergeClubReplies(current ?? [], row, replySort));
+      }
+    }
     await loadList();
   }
 
@@ -224,7 +287,7 @@ export function ClubDiscussionsPanel({
       return;
     }
     toast.success("Reply deleted.");
-    if (activeId) await loadThread(activeId);
+    setReplies((current) => removeClubReply(current ?? [], replyId));
     await loadList();
   }
 
@@ -342,10 +405,22 @@ export function ClubDiscussionsPanel({
                   Delete
                 </Button>
               ) : null}
+              {!isOwn ? (
+                <ContentActionsMenu
+                  contentType="club_discussion"
+                  contentId={activeDiscussion.id}
+                  reportedUserId={activeDiscussion.user_id}
+                  reportedUserName={authorLabel(activeDiscussion.author)}
+                />
+              ) : null}
             </div>
           </div>
 
-          <ProfanityBlur text={activeDiscussion.body} className="mt-4 text-left">
+          <ProfanityBlur
+            text={activeDiscussion.body}
+            meta={activeDiscussion.moderation_meta ?? null}
+            className="mt-4 text-left"
+          >
             <p className="whitespace-pre-wrap text-left text-sm leading-relaxed text-text">
               {activeDiscussion.body}
             </p>
@@ -386,17 +461,42 @@ export function ClubDiscussionsPanel({
         </article>
 
         <div>
-          <h3 className="mb-3 text-sm font-semibold text-text-muted">
-            {activeDiscussion.reply_count}{" "}
-            {activeDiscussion.reply_count === 1 ? "reply" : "replies"}
-          </h3>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold text-text-muted">
+              {sortedReplies.length}{" "}
+              {sortedReplies.length === 1 ? "reply" : "replies"}
+            </h3>
+            <div className="flex gap-1" role="group" aria-label="Sort replies">
+              {(
+                [
+                  ["newest", "Newest First"],
+                  ["oldest", "Oldest First"],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => changeReplySort(id)}
+                  aria-pressed={replySort === id}
+                  className={cn(
+                    "rounded-full px-3 py-1 text-xs font-medium",
+                    replySort === id
+                      ? "bg-puce-red text-white"
+                      : "bg-surface text-text-muted hover:text-primary"
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
           {replies === null ? (
             <LoadingState message="Loading replies…" />
-          ) : replies.length === 0 ? (
+          ) : sortedReplies.length === 0 ? (
             <p className="text-sm text-text-muted">No replies yet.</p>
           ) : (
             <ul className="space-y-3">
-              {replies.map((reply) => {
+              {sortedReplies.map((reply) => {
                 const replyHref = reply.author.username
                   ? readerProfilePath(reply.author.username)
                   : null;
@@ -445,8 +545,20 @@ export function ClubDiscussionsPanel({
                           Delete
                         </button>
                       ) : null}
+                      {reply.user_id !== viewerId ? (
+                        <ContentActionsMenu
+                          contentType="club_reply"
+                          contentId={reply.id}
+                          reportedUserId={reply.user_id}
+                          reportedUserName={authorLabel(reply.author)}
+                        />
+                      ) : null}
                     </div>
-                    <ProfanityBlur text={reply.body} className="mt-2 text-left">
+                    <ProfanityBlur
+                      text={reply.body}
+                      meta={reply.moderation_meta ?? null}
+                      className="mt-2 text-left"
+                    >
                       <p className="whitespace-pre-wrap text-left text-sm text-text">{reply.body}</p>
                     </ProfanityBlur>
                   </li>
@@ -482,7 +594,7 @@ export function ClubDiscussionsPanel({
               disabled={!replyBody.trim()}
               onClick={() => void handleReply()}
             >
-              Post reply
+              {pending ? "Checking…" : "Post reply"}
             </Button>
           </div>
         ) : activeDiscussion.is_locked ? (

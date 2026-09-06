@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/client";
 import { postFeedPath } from "@/lib/routes/posts";
 import { getFollowingIds } from "@/lib/services/follows";
 import { getBlockedUserIds } from "@/lib/services/moderation";
+import { requireModeration } from "@/lib/services/moderateUgc";
 import {
   createMentionNotification,
   createPostCommentNotification,
@@ -18,7 +19,7 @@ import type {
 } from "@/types";
 
 const POST_SELECT =
-  "id, user_id, body, image_url, book_id, repost_of_post_id, created_at, updated_at";
+  "id, user_id, body, image_url, book_id, repost_of_post_id, moderation_meta, created_at, updated_at";
 
 const AUTHOR_SELECT = "id, username, display_name, avatar_url";
 
@@ -381,6 +382,11 @@ export async function createPost(input: CreatePostInput): Promise<{ post?: PostW
   const imageUrl = input.imageUrl?.trim() || null;
   if (!body && !imageUrl) return { error: "Post cannot be empty." };
 
+  if (body) {
+    const gate = await requireModeration({ text: body, contentType: "FEED_POST" });
+    if (gate.error) return { error: gate.error };
+  }
+
   const supabase = createClient();
   const { data, error } = await supabase
     .from("posts")
@@ -576,6 +582,11 @@ export async function addComment(
     return { error: "Attachment must be a Giphy link or an uploaded image." };
   }
 
+  if (trimmed) {
+    const gate = await requireModeration({ text: trimmed, contentType: "COMMENT" });
+    if (gate.error) return { error: gate.error };
+  }
+
   const supabase = createClient();
 
   const { data: post, error: postError } = await supabase
@@ -595,7 +606,7 @@ export async function addComment(
       body: trimmed,
       attachment_url: attachment,
     })
-    .select("id, post_id, user_id, body, attachment_url, created_at, updated_at")
+    .select("id, post_id, user_id, body, attachment_url, moderation_meta, created_at, updated_at")
     .single();
 
   if (error) return { error: error.message };
@@ -677,12 +688,21 @@ export async function updateComment(
   if (!existing) return { error: "Comment not found." };
   if (!trimmed && !existing.attachment_url) return { error: "Comment cannot be empty." };
 
+  if (trimmed) {
+    const gate = await requireModeration({
+      text: trimmed,
+      contentType: "COMMENT",
+      contentId: commentId,
+    });
+    if (gate.error) return { error: gate.error };
+  }
+
   const { data, error } = await supabase
     .from("post_comments")
     .update({ body: trimmed })
     .eq("id", commentId)
     .eq("user_id", viewerId)
-    .select("id, post_id, user_id, body, attachment_url, created_at, updated_at")
+    .select("id, post_id, user_id, body, attachment_url, moderation_meta, created_at, updated_at")
     .single();
 
   if (error) return { error: error.message };
@@ -725,6 +745,11 @@ export async function repostPost(
 
   const trimmed = trimBody(input.body ?? "");
   const imageUrl = input.image_url?.trim() || null;
+
+  if (trimmed) {
+    const gate = await requireModeration({ text: trimmed, contentType: "FEED_POST" });
+    if (gate.error) return { error: gate.error };
+  }
 
   const supabase = createClient();
 
@@ -835,6 +860,15 @@ export async function updatePost(
     }
   } else if (!nextBody.trim() && !nextImageUrl) {
     return { error: "Post cannot be empty." };
+  }
+
+  if (updates.body !== undefined && updates.body.trim()) {
+    const gate = await requireModeration({
+      text: updates.body,
+      contentType: "FEED_POST",
+      contentId: postId,
+    });
+    if (gate.error) return { error: gate.error };
   }
 
   if (!Object.keys(updates).length) {

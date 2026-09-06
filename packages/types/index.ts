@@ -23,11 +23,26 @@ export interface UserShelf {
   updated_at: string;
 }
 
+export type ModerationMeta = {
+  status: "allow" | "warn" | "block";
+  categories: string[];
+  spans: Array<{
+    start: number;
+    end: number;
+    category: string;
+    severity: "warn" | "block";
+    treatment: "blur_until_reveal";
+  }>;
+  reasonCode: string;
+  moderationVersion: string;
+};
+
 export interface Profile {
   id: string;
   username: string | null;
   display_name: string | null;
   bio: string | null;
+  moderation_meta?: ModerationMeta | null;
   avatar_url: string | null;
   favorite_genres: string[] | null;
   preferred_library_view: LibraryViewMode;
@@ -320,6 +335,7 @@ export interface Post {
   image_url: string | null;
   book_id: string | null;
   repost_of_post_id: string | null;
+  moderation_meta?: ModerationMeta | null;
   created_at: string;
   updated_at: string;
 }
@@ -340,6 +356,7 @@ export interface PostComment {
   user_id: string;
   body: string;
   attachment_url: string | null;
+  moderation_meta?: ModerationMeta | null;
   created_at: string;
   updated_at: string;
 }
@@ -432,6 +449,7 @@ export interface BookClub {
   owner_id: string;
   name: string;
   description: string | null;
+  moderation_meta?: ModerationMeta | null;
   image_url: string | null;
   banner_url: string | null;
   current_book_id: string | null;
@@ -478,6 +496,7 @@ export interface BookClubDiscussion {
   created_by: string;
   title: string;
   body: string;
+  moderation_meta?: ModerationMeta | null;
   book_id: string | null;
   related_book_id: string | null;
   chapter_reference: string | null;
@@ -508,6 +527,7 @@ export interface BookClubDiscussionReply {
   user_id: string;
   body: string;
   contains_spoilers: boolean;
+  moderation_meta?: ModerationMeta | null;
   created_at: string;
   updated_at: string;
 }
@@ -748,6 +768,7 @@ export type PostCommentReply = {
   parent_reply_id: string | null;
   body: string;
   attachment_url: string | null;
+  moderation_meta?: ModerationMeta | null;
   created_at: string;
   updated_at: string;
 };
@@ -825,16 +846,35 @@ export type ReportableContentType =
   | "message"
   | "review"
   | "club_post"
+  | "club_discussion"
+  | "club_reply"
+  | "club"
   | "profile";
 
 export type ContentReportReason =
-  | "harassment"
+  | "hate_discrimination"
+  | "harassment_bullying"
+  | "threats_violence"
+  | "sexual_inappropriate"
   | "spam"
+  | "impersonation"
+  | "other"
+  /** @deprecated Use harassment_bullying */
+  | "harassment"
+  /** @deprecated Use sexual_inappropriate */
   | "inappropriate"
-  | "hate_speech"
-  | "other";
+  /** @deprecated Use hate_discrimination */
+  | "hate_speech";
 
-export type ContentReportStatus = "pending" | "reviewed" | "actioned" | "dismissed";
+export type ContentReportStatus =
+  | "pending"
+  | "reviewing"
+  | "resolved"
+  | "dismissed"
+  /** @deprecated Use resolved */
+  | "reviewed"
+  /** @deprecated Use resolved */
+  | "actioned";
 
 export interface ContentReport {
   id: string;
@@ -847,6 +887,7 @@ export interface ContentReport {
   status: ContentReportStatus;
   created_at: string;
   reviewed_at: string | null;
+  reviewed_by: string | null;
 }
 
 export interface UserBlock {

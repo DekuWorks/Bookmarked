@@ -23,6 +23,7 @@ import { Button } from "../../../src/components/Button";
 import { CircleAvatarPicker } from "../../../src/components/CircleAvatarPicker";
 import { ClubDiscussionCard } from "../../../src/components/ClubDiscussionCard";
 import { ClubDiscussionThreadSheet } from "../../../src/components/ClubDiscussionThreadSheet";
+import { showContentActions } from "../../../src/components/ContentActions";
 import { ClubEventsSection } from "../../../src/components/ClubEventsSection";
 import { EmptyState } from "../../../src/components/EmptyState";
 import { FeatureLimitModal } from "../../../src/components/FeatureLimitModal";
@@ -690,6 +691,24 @@ export default function ClubDetailRoute() {
           <Avatar url={club.image_url} name={club.name} size={72} />
           <View className="mt-3 flex-row items-start gap-2">
             <Text className="flex-1 text-2xl font-bold text-puce-red">{club.name}</Text>
+            {userId && userId !== club.owner_id ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Report club"
+                onPress={() =>
+                  showContentActions({
+                    contentType: "club",
+                    contentId: club.id,
+                    reportedUserId: club.owner_id,
+                    reportedUserName: club.name,
+                    hideBlock: true,
+                  })
+                }
+                className="min-h-[44px] justify-center px-2"
+              >
+                <Text className="text-xs font-semibold text-ink-muted">Report</Text>
+              </Pressable>
+            ) : null}
             <Text className="mt-1 text-[10px] font-semibold uppercase text-ink-muted">
               {visibilityLabel(club.visibility)}
             </Text>

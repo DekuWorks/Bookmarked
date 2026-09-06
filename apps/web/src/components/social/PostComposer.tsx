@@ -21,7 +21,6 @@ import type { GiphySearchResult } from "@/lib/services/giphy";
 import { isAllowedPostImageUrl, resolveGiphyImageUrl } from "@/lib/utils/giphy";
 import { Z_CLASS } from "@/lib/constants/zIndex";
 import { cn } from "@/lib/utils/cn";
-import { containsProfanity } from "@/lib/utils/profanity";
 import { MAX_POST_BODY_LENGTH } from "@/lib/constants/validation";
 
 type Props = {
@@ -311,11 +310,6 @@ export function PostComposer({ userId, onPostCreated }: Props) {
       toast.error("Write something or attach an image or GIF before posting.");
       return;
     }
-    if (containsProfanity(trimmed)) {
-      toast.error("Please remove profanity before posting.");
-      return;
-    }
-
     setSubmitting(true);
 
     const imageResult = await resolveImageUrl();
@@ -573,7 +567,7 @@ export function PostComposer({ userId, onPostCreated }: Props) {
           disabled={!canSubmit || savingDraft}
           onClick={() => void handleSubmit()}
         >
-          Post
+          {submitting ? "Checking…" : "Post"}
         </Button>
       </div>
     </section>

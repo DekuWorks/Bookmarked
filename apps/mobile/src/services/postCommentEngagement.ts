@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { requireModeration } from "./moderateUgc";
 import {
   createMentionNotification,
   createPostCommentReactionNotification,
@@ -222,6 +223,11 @@ export async function addPostCommentReply(
     if (!attachment) return { error: "Attachment must be a Giphy link or an uploaded image." };
   }
   if (!trimmed && !attachment) return { error: "Reply cannot be empty." };
+
+  if (trimmed) {
+    const gate = await requireModeration({ text: trimmed, contentType: "COMMENT" });
+    if (gate.error) return { error: gate.error };
+  }
 
   const { data: comment } = await supabase
     .from("post_comments")

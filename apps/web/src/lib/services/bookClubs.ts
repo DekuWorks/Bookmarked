@@ -4,6 +4,7 @@ import {
   clubSharedMetadata,
   recordActivity,
 } from "@/lib/services/activity";
+import { requireModeration } from "@/lib/services/moderateUgc";
 import {
   ENTITLEMENT_LIMIT_MESSAGES,
   canJoinBookClub,
@@ -47,6 +48,7 @@ const DISCUSSION_SELECT = [
   "created_by",
   "title",
   "body",
+  "moderation_meta",
   "book_id",
   "related_book_id",
   "chapter_reference",
@@ -82,6 +84,7 @@ type DiscussionRow = {
   created_by: string;
   title: string;
   body: string;
+  moderation_meta?: BookClubDiscussionWithAuthor["moderation_meta"];
   book_id: string | null;
   related_book_id: string | null;
   chapter_reference: string | null;
@@ -121,6 +124,7 @@ function mapDiscussion(
     created_by: row.created_by,
     title: row.title,
     body: row.body,
+    moderation_meta: row.moderation_meta ?? null,
     book_id: bookId,
     related_book_id: row.related_book_id ?? row.book_id,
     chapter_reference: row.chapter_reference,
@@ -562,6 +566,9 @@ export async function createClub(
   const name = input.name.trim();
   if (!name) return { error: "Club name is required." };
 
+  const nameGate = await requireModeration({ text: name, contentType: "BOOK_CLUB_NAME" });
+  if (nameGate.error) return { error: nameGate.error };
+
   try {
     const { supabase, user } = await requireUser();
     const visibility = input.visibility ?? "public";
@@ -868,6 +875,12 @@ export async function updateClub(
     if (input.name !== undefined) {
       const name = input.name.trim();
       if (!name) return { error: "Club name is required." };
+      const nameGate = await requireModeration({
+        text: name,
+        contentType: "BOOK_CLUB_NAME",
+        contentId: clubId,
+      });
+      if (nameGate.error) return { error: nameGate.error };
       patch.name = name;
     }
     if (input.description !== undefined) patch.description = input.description?.trim() || null;
@@ -1058,6 +1071,13 @@ export async function createDiscussion(
     input.title?.trim() ||
     (trimmedBody.length > 80 ? `${trimmedBody.slice(0, 80)}…` : trimmedBody);
 
+  const gate = await requireModeration({
+    text: trimmedBody,
+    title,
+    contentType: "BOOK_CLUB_DISCUSSION",
+  });
+  if (gate.error) return { error: gate.error };
+
   try {
     const { supabase, user } = await requireUser();
     const relatedBookId = input.bookId ?? null;
@@ -1166,6 +1186,23 @@ export async function updateDiscussion(
       patch.contains_spoilers = input.containsSpoilers;
     }
 
+    if (input.title !== undefined || input.body !== undefined) {
+      const { data: existing } = await supabase
+        .from("book_club_discussions")
+        .select("title, body")
+        .eq("id", discussionId)
+        .maybeSingle();
+      const nextTitle = (patch.title as string | undefined) ?? existing?.title ?? "";
+      const nextBody = (patch.body as string | undefined) ?? existing?.body ?? "";
+      const gate = await requireModeration({
+        text: nextBody,
+        title: nextTitle,
+        contentType: "BOOK_CLUB_DISCUSSION",
+        contentId: discussionId,
+      });
+      if (gate.error) return { error: gate.error };
+    }
+
     const { error } = await supabase
       .from("book_club_discussions")
       .update(patch)
@@ -1236,7 +1273,7 @@ export async function listReplies(
   const { data, error } = await supabase
     .from("book_club_discussion_replies")
     .select(
-      `id, discussion_id, club_id, user_id, body, contains_spoilers, created_at, updated_at, profiles!book_club_discussion_replies_user_profiles_fkey (${PROFILE_SELECT})`
+      `id, discussion_id, club_id, user_id, body, contains_spoilers, moderation_meta, created_at, updated_at, profiles!book_club_discussion_replies_user_profiles_fkey (${PROFILE_SELECT})`
     )
     .eq("discussion_id", discussionId)
     .order("created_at", { ascending: true });
@@ -1250,6 +1287,7 @@ export async function listReplies(
     user_id: string;
     body: string;
     contains_spoilers: boolean;
+    moderation_meta?: BookClubDiscussionReplyWithAuthor["moderation_meta"];
     created_at: string;
     updated_at: string;
     profiles: PostAuthor | null;
@@ -1262,10 +1300,49 @@ export async function listReplies(
     user_id: row.user_id,
     body: row.body,
     contains_spoilers: row.contains_spoilers,
+    moderation_meta: row.moderation_meta ?? null,
     created_at: row.created_at,
     updated_at: row.updated_at,
     author: row.profiles ?? fallbackProfile(row.user_id),
   }));
+}
+
+export async function getReply(
+  replyId: string
+): Promise<BookClubDiscussionReplyWithAuthor | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("book_club_discussion_replies")
+    .select(
+      `id, discussion_id, club_id, user_id, body, contains_spoilers, moderation_meta, created_at, updated_at, profiles!book_club_discussion_replies_user_profiles_fkey (${PROFILE_SELECT})`
+    )
+    .eq("id", replyId)
+    .maybeSingle();
+  if (error || !data) return null;
+  const row = data as unknown as {
+    id: string;
+    discussion_id: string;
+    club_id: string;
+    user_id: string;
+    body: string;
+    contains_spoilers: boolean;
+    moderation_meta?: BookClubDiscussionReplyWithAuthor["moderation_meta"];
+    created_at: string;
+    updated_at: string;
+    profiles: PostAuthor | null;
+  };
+  return {
+    id: row.id,
+    discussion_id: row.discussion_id,
+    club_id: row.club_id,
+    user_id: row.user_id,
+    body: row.body,
+    contains_spoilers: row.contains_spoilers,
+    moderation_meta: row.moderation_meta ?? null,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    author: row.profiles ?? fallbackProfile(row.user_id),
+  };
 }
 
 export async function createReply(
@@ -1275,6 +1352,12 @@ export async function createReply(
 ): Promise<{ error?: string; replyId?: string }> {
   const trimmed = body.trim();
   if (!trimmed) return { error: "Write a reply." };
+
+  const gate = await requireModeration({
+    text: trimmed,
+    contentType: "BOOK_CLUB_REPLY",
+  });
+  if (gate.error) return { error: gate.error };
 
   try {
     const { supabase, user } = await requireUser();

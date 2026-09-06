@@ -1,83 +1,98 @@
 "use client";
 
-import { useId, useState, type ReactNode } from "react";
-import { containsProfanity } from "@/lib/utils/profanity";
+import { useId, useMemo, useState, type ReactNode } from "react";
+import {
+  parseModerationMeta,
+  resolveWarnSpans,
+  splitTextBySpans,
+  type ModerationMeta,
+} from "../../../../../packages/utils/contentModeration";
 import { cn } from "@/lib/utils/cn";
 
 type Props = {
-  /** Raw text used for detection (not necessarily what is rendered). */
   text: string;
-  children: ReactNode;
+  children?: ReactNode;
   className?: string;
-  /** Extra classes for the inner content wrapper. */
   contentClassName?: string;
+  meta?: ModerationMeta | import("../../../../../packages/types").ModerationMeta | null;
 };
 
+function FlaggedSpan({ word }: { word: string }) {
+  const [revealed, setRevealed] = useState(false);
+  const contentId = useId();
+
+  return (
+    <span className="inline">
+      {revealed ? (
+        <button
+          type="button"
+          id={contentId}
+          onClick={() => setRevealed(false)}
+          className={cn(
+            "rounded-sm bg-primary/15 px-0.5 font-medium text-puce-red",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
+          )}
+          aria-label="Hide vulgar language"
+          aria-expanded={true}
+        >
+          {word}
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setRevealed(true)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              setRevealed(true);
+            }
+          }}
+          className={cn(
+            "group/vulgar relative inline rounded-sm bg-primary/20 px-1 py-0.5 text-xs font-semibold text-puce-red",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
+          )}
+          aria-label="Vulgar Language. Hover or focus to reveal."
+          aria-expanded={false}
+        >
+          <span className="group-hover/vulgar:hidden group-focus:hidden group-focus-visible/vulgar:hidden">
+            Vulgar Language – Hover to View.
+          </span>
+          <span className="hidden group-hover/vulgar:inline group-focus:inline group-focus-visible/vulgar:inline">
+            {word}
+          </span>
+        </button>
+      )}
+    </span>
+  );
+}
+
 /**
- * Whole-block blur when `text` contains curated profanity.
- * Click/keyboard to reveal; optional re-hide. Spoiler UX stays separate.
+ * Blur only flagged spans. Hover, focus, or click reveals; click again hides.
  */
 export function ProfanityBlur({
   text,
   children,
   className,
   contentClassName,
+  meta,
 }: Props) {
-  const flagged = containsProfanity(text);
-  const [revealed, setRevealed] = useState(false);
-  const contentId = useId();
+  const parsed = parseModerationMeta(meta);
+  const spans = useMemo(() => resolveWarnSpans(text, parsed), [text, parsed]);
 
-  if (!flagged) {
-    return <div className={className}>{children}</div>;
+  if (spans.length === 0) {
+    return <div className={cn(className, contentClassName)}>{children ?? text}</div>;
   }
 
-  const hidden = !revealed;
+  const parts = splitTextBySpans(text, spans);
 
   return (
-    <div className={cn("relative", className)}>
-      <div
-        id={contentId}
-        className={cn(
-          "transition-[filter] duration-200",
-          hidden && "select-none blur-md pointer-events-none",
-          contentClassName
-        )}
-        aria-hidden={hidden}
-      >
-        {children}
-      </div>
-
-      {hidden ? (
-        <div className="absolute inset-0 flex items-center justify-center p-2">
-          <button
-            type="button"
-            onClick={() => setRevealed(true)}
-            className={cn(
-              "rounded-lg border border-border bg-surface/95 px-3 py-1.5 text-xs font-semibold text-puce-red shadow-sm",
-              "hover:bg-primary/15",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2"
-            )}
-            aria-controls={contentId}
-            aria-expanded={false}
-            aria-label="Show content that may contain strong language"
-          >
-            Show content
-          </button>
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() => setRevealed(false)}
-          className={cn(
-            "mt-1.5 text-xs font-medium text-text-muted hover:text-puce-red",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2 rounded-sm"
-          )}
-          aria-controls={contentId}
-          aria-expanded={true}
-          aria-label="Hide content with strong language"
-        >
-          Hide content
-        </button>
+    <div className={cn("whitespace-pre-wrap text-left", className, contentClassName)}>
+      {parts.map((part, index) =>
+        part.span ? (
+          <FlaggedSpan key={`${part.span.start}-${index}`} word={part.text} />
+        ) : (
+          <span key={`plain-${index}`}>{part.text}</span>
+        )
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { requireModeration } from "./moderateUgc";
 import {
   createMentionNotification,
   createPostCommentNotification,
@@ -24,10 +25,10 @@ import type {
  */
 
 const POST_SELECT =
-  "id, user_id, body, image_url, book_id, repost_of_post_id, created_at, updated_at";
+  "id, user_id, body, image_url, book_id, repost_of_post_id, moderation_meta, created_at, updated_at";
 const AUTHOR_SELECT = "id, username, display_name, avatar_url";
 const COMMENT_SELECT =
-  "id, post_id, user_id, body, attachment_url, created_at, updated_at";
+  "id, post_id, user_id, body, attachment_url, moderation_meta, created_at, updated_at";
 
 export type CreatePostInput = {
   body: string;
@@ -308,6 +309,11 @@ export async function createPost(
   const imageUrl = input.imageUrl?.trim() || null;
   if (!body && !imageUrl) return { error: "Post cannot be empty." };
 
+  if (body) {
+    const gate = await requireModeration({ text: body, contentType: "FEED_POST" });
+    if (gate.error) return { error: gate.error };
+  }
+
   const { data, error } = await supabase
     .from("posts")
     .insert({ user_id: viewerId, body, book_id: input.bookId ?? null, image_url: imageUrl })
@@ -340,6 +346,11 @@ export async function repostPost(
 
   const body = trimBody(input.body ?? "");
   const imageUrl = input.imageUrl?.trim() || null;
+
+  if (body) {
+    const gate = await requireModeration({ text: body, contentType: "FEED_POST" });
+    if (gate.error) return { error: gate.error };
+  }
 
   const { data, error } = await supabase
     .from("posts")
@@ -516,6 +527,11 @@ export async function addComment(
   }
   if (!trimmed && !attachment) return { error: "Comment cannot be empty." };
 
+  if (trimmed) {
+    const gate = await requireModeration({ text: trimmed, contentType: "COMMENT" });
+    if (gate.error) return { error: gate.error };
+  }
+
   const { data: post } = await supabase
     .from("posts")
     .select("id, user_id")
@@ -579,6 +595,15 @@ export async function updateComment(
     .maybeSingle();
   if (!existing) return { error: "Comment not found." };
   if (!trimmed && !existing.attachment_url) return { error: "Comment cannot be empty." };
+
+  if (trimmed) {
+    const gate = await requireModeration({
+      text: trimmed,
+      contentType: "COMMENT",
+      contentId: commentId,
+    });
+    if (gate.error) return { error: gate.error };
+  }
 
   const { error } = await supabase
     .from("post_comments")

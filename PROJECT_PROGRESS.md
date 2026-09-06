@@ -113,6 +113,8 @@ This tracker maps the **post-MVP refinement phases** (Phases 1–10) against the
 | Goodreads import | ✅ | `goodreadsImport.ts` — web profile settings + mobile account settings |
 | Events calendar | ✅ | `book_club_events` migration · `/events/` · club event panels (web + mobile) |
 | Notifications | ✅ | `notifications` table · bell + `/notifications/` |
+| UGC moderation + reports | ✅ | Edge `moderate-ugc` + decision trigger; warn/block/report on Feed, comments, bio, clubs, discussions, replies |
+| Club reply realtime | ✅ | Per-discussion channel; created_at sort; local sort preference; reconnect merge |
 
 ---
 
@@ -760,6 +762,57 @@ Library (default + custom), Profile / shelf privacy, Home / Reading Room default
 - Migration `20260906140000_user_shelves_icon_key.sql` dry-run then applied to production (`db push --yes --linked`). No reset, no backfill
 - Browser QA: Library/Profile are auth-gated. Cursor browser tools could not keep a tab open. Production `/library/` is live but this branch is not deployed; unauthenticated requests redirect. Icon picker was not exercised logged-in.
 - No `expo run:ios`. Android not in scope. Default-shelf icons cannot be user-edited
+
+---
+
+## Content Moderation & Flagging + Club realtime replies ✅
+
+Server-side gate is mandatory. Clients may preview; final save consumes a short-lived `moderation_decisions` row issued by Edge Function `moderate-ugc`. Postgres trigger rejects UGC text writes without a matching unused decision. RLS was not weakened.
+
+### Types / outcomes
+
+| Item | Notes |
+|------|--------|
+| Content types | `FEED_POST`, `COMMENT`, `PROFILE_BIO`, `BOOK_CLUB_NAME`, `BOOK_CLUB_DISCUSSION`, `BOOK_CLUB_REPLY`, `FUTURE` in `packages/utils/contentModeration.ts` — no scattered literals |
+| Outcomes | `allow` · `warn` (mild profanity) · `block` (hate, discrimination, harassment, threats, sexual exploitation, severe abuse, other guidelines) |
+| Club names | Stricter: warn is treated as block. Unicode / zero-width / whitespace tricks are normalised (`NFKC`) |
+| Provider | OpenAI Moderations (`omni-moderation-latest`) via `ModerationProvider.moderate(text)`. Reuses `OPENAI_API_KEY` |
+| Fail closed | Provider outage → “Content review is temporarily unavailable. Please try again.” Draft kept. Nothing published |
+| Warn render | Original text stored. Spans only. Web: “Vulgar Language – Hover to View.” (hover + keyboard/focus). iOS: “Vulgar Language – Tap to View.” Tap again hides. A11y label does not announce the word while hidden |
+| Block copy | “This content violates Bookmarked’s Community Guidelines and must be edited before it can be published.” Optional category. No scores |
+
+### Reports
+
+Reasons: Hate or discrimination; Harassment or bullying; Threats or violence; Sexual or inappropriate content; Spam; Impersonation; Other (+ optional details). Table `content_reports` gained `reviewed_by`, statuses `pending/reviewing/resolved/dismissed`, unique `(reporter, type, id)`. Users create + read own only; cannot alter resolution. Dedup returns “You’ve already reported this.”
+
+**Admin UI:** none exists (no staff role in app). Follow-up: staff review queue over `content_reports` + `moderation_logs`. Logs store type, content_id, user_id, decision, categories, version — no tokens/passwords.
+
+### Realtime club replies
+
+Subscribe to `book_club_discussion_replies` filtered by `discussion_id` only (insert/update/delete). Merge + dedup by reply id. Sort Newest/Oldest First by `created_at` (not `updated_at`). Preference: `bookmarked.clubReplySort` in localStorage / AsyncStorage. Reconnect: visibility / AppState / online → resubscribe + refetch + merge. Unsubscribe on leave. RLS membership / public-club / banned still gate events.
+
+### Surfaces wired
+
+Feed posts + edits + comments + comment replies; profile bio; club create/rename; club discussion title/body; club replies. Reports on posts, comments, profiles, clubs, discussions, replies. Android not in scope.
+
+### Migration / function
+
+- `supabase/migrations/20260906160000_ugc_moderation_pipeline.sql`
+- Edge Function `supabase/functions/moderate-ugc`
+- Apply: `./scripts/supabase-cli.sh db push --yes --linked` then `functions deploy moderate-ugc`
+
+### Tests / verification
+
+- Shared: allow/warn/block classify, span masking, report RLS predicates, reply sort + dedup
+- Web `tsc --noEmit`: pass
+- Web `vitest`: 45 files, 269 tests pass
+- Web `eslint` on new moderation files: pass. `ClubDiscussionsPanel` still has pre-existing `react-hooks/set-state-in-effect` on list/thread load
+- Web production `next build`: pass
+- iOS `tsc --noEmit`: pass
+- iOS `vitest`: 13 files, 31 tests pass
+- Migration `20260906160000_ugc_moderation_pipeline.sql` dry-run then applied to production (`db push --yes --linked`). Function `moderate-ugc` deployed. No reset, no data loss
+- Browser QA: Feed/clubs/profile are auth-gated. Logged-in realtime reply merge was not exercised in this session
+- No `expo run:ios`. Android not in scope. RLS not weakened. OpenAI key stays in Edge secrets, not the client bundle
 
 ---
 

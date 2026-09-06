@@ -25,6 +25,8 @@ async function deleteUserData(
   userId: string
 ): Promise<void> {
   const deletions: { table: string; column: string }[] = [
+    { table: "moderation_decisions", column: "user_id" },
+    { table: "moderation_logs", column: "user_id" },
     { table: "content_reports", column: "reporter_id" },
     { table: "user_blocks", column: "blocker_id" },
     { table: "user_blocks", column: "blocked_id" },
