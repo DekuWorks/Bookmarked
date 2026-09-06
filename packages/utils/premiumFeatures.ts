@@ -38,6 +38,8 @@ export const PREMIUM_FEATURE_LINKS: PremiumFeatureLink[] = [
     tier: "home",
     title: "Bookmarked Home",
     description:
-      "Book Map, Reader Map, Reading DNA Match, Premium Events, concierge help, and priority support.",
+      "Real-world community, Book Map, local Reader Map, experiences, Reading DNA identity, and concierge — not more analytics.",
+    webHref: "/home-hub/",
+    mobileHref: "/home-hub",
   },
 ];

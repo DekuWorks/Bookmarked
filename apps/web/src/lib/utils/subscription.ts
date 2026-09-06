@@ -6,6 +6,7 @@ export {
   MEMBERSHIP_FEATURES,
   ENTITLEMENT_LIMIT_MESSAGES,
   IOS_SUBSCRIBE_COPY,
+  IOS_HOME_SUBSCRIBE_COPY,
   canAccessFeature,
   canCreateCustomShelf,
   canCreateQuoteGraphic,

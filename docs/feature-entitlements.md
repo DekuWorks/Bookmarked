@@ -12,7 +12,9 @@ Subscribe **only on iOS**. Web never starts Stripe Checkout. After IAP writes `u
 | `plus` | Plus |
 | `home` | Home |
 
-Do not hardcode prices in Free/Plus UX. App Store localizes IAP prices.
+**Premium vs Plus:** the $5.99 plan code stays `plus`. “Premium” is a legacy alias in IAP SKUs (`*.premium.*`) and older docs. Do not create a third paid DB tier.
+
+Official Home display prices: $9.99/month, $99.99/year (≈ $8.33/month; save $19.89 / ~16.6%) from `homePricing`. iOS buttons prefer StoreKit `displayPrice`. Web never starts Stripe Checkout.
 
 ## Free allowances
 
@@ -42,7 +44,11 @@ Do not hardcode prices in Free/Plus UX. App Store localizes IAP prices.
 | Reviews (half-star, feelings, spoilers, categories) | yes | yes | `advanced_reviews` is Plus extras only; Free is not gated off reviews |
 | Reading calendar | yes | yes | Qualifying session/progress dates |
 | Feed / follow / public profiles | yes | yes | Private shelves/notes stay private |
-| Reading DNA | top 3 | full / advanced | existing DNA gates |
+| Reading DNA | top 3 | full / advanced | existing DNA gates; Home personality is derived, not invented |
+| Book Map | no | Home | `canAccessFeature("book_map")` + `book_map_places` |
+| Reader Map | no | Home | opt-in default off; age + Home RPCs |
+| Experiences / meetups | club events | Home extras | `event_access` data; video join RPC |
+| Concierge | no | Home | server-derived priority; no SLA |
 
 ## Finished vs Read
 
@@ -92,8 +98,12 @@ Recorded after the open-question pass. Do not reverse without a new product call
 7. **Fair-use copy:** yes. Quote Graphics and upgrade Plus copy show that “unlimited” still has abuse/rate protection. No invented Plus monthly graphic cap.
 8. **Reading time vs listening time:** keep separate. Do not combine into “Total Reading Time.”
 
+## Home product decisions still open
+
+See `HOME_PRODUCT_DECISIONS` in `packages/utils/homeEligibility.ts` (18 questions). Architecture uses feature flags, event_access prices, coarseness modes, and video_provider — product fills values later.
+
 ## Downgrade
 
-Preserve all user data. Block additional creation only. Do not delete over-limit items.
+Preserve all user data (including DNA history, meetup/event attendance, profile, feature requests, support tickets). Block additional creation only. Do not delete over-limit items. Losing Home disables Reader Map discoverability automatically.
 
-See also `FEATURE_GATING_MATRIX.md` and `SUBSCRIPTION_ARCHITECTURE.md`.
+See also `FEATURE_GATING_MATRIX.md`, `SUBSCRIPTION_ARCHITECTURE.md`, `BOOK_MAP.md`, `READER_MAP.md`, `HOME_EXPERIENCES.md`, `READING_DNA_HOME.md`, `CONCIERGE.md`.

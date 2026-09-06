@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeReadingDna, readingDnaMatchPercent } from "./readingDna";
+import { computeReadingDna, deriveReadingPersonality, readingDnaMatchPercent } from "./readingDna";
 
 describe("computeReadingDna", () => {
   it("normalizes each DNA category to 100% and keeps habits separate", () => {
@@ -86,5 +86,26 @@ describe("computeReadingDna", () => {
     });
     expect(readingDnaMatchPercent(a, b)).toBeGreaterThanOrEqual(0);
     expect(readingDnaMatchPercent(a, b)).toBeLessThanOrEqual(100);
+  });
+
+  it("derives an explainable personality from existing persona labels", () => {
+    const dna = computeReadingDna({
+      books: [
+        { subjects: ["Fantasy"], rating: 5, completion_tags: ["found family"], shelf_status: "read" },
+        { subjects: ["Fantasy"], rating: 5, completion_tags: ["found family"], shelf_status: "read" },
+        { subjects: ["Fantasy"], rating: 4, completion_tags: ["slow burn"], shelf_status: "read" },
+        { subjects: ["Fantasy"], rating: 5, shelf_status: "read" },
+      ],
+      reviews: [
+        { feelings: ["Hopeful"], rating: 5, review_body: "A cozy found family story." },
+        { feelings: ["Hopeful"], rating: 5, review_body: "Cozy magical night read." },
+      ],
+      shelves: [{ genre: "Fantasy", name: "Cozy favorites" }],
+    });
+    const personality = deriveReadingPersonality(dna);
+    expect(personality).not.toBeNull();
+    expect(personality?.label.length).toBeGreaterThan(0);
+    expect(personality?.explanation).toMatch(/scored from/i);
+    expect(personality?.sourceTraits.length).toBeGreaterThan(0);
   });
 });

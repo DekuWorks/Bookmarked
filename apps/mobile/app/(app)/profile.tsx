@@ -111,6 +111,8 @@ export default function ProfileRoute() {
         <ProfileLink icon="📖" label="Year in books" tone="orange" onPress={() => router.push("/wrapped")} />
         <ProfileLink icon="🏁" label="Challenges" tone="orange" onPress={() => router.push("/challenges")} />
         <ProfileLink chromeIcon="clubs" label="Book Clubs" tone="surface" onPress={() => router.push("/clubs")} />
+        <ProfileLink icon="🗺" label="Book Map" tone="surface" onPress={() => router.push("/book-map")} />
+        <ProfileLink icon="🏠" label="Home Hub" tone="orange" onPress={() => router.push("/home-hub")} />
       </View>
 
       <View className="h-24" />

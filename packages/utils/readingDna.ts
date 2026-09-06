@@ -401,3 +401,26 @@ export function readingDnaMatchPercent(a: ReadingDna, b: ReadingDna): number {
 export function titleCaseDnaLabel(label: string): string {
   return titleCase(label);
 }
+
+/**
+ * Deterministic Home personality from scored traits.
+ * Official taxonomy names are an open product decision — reuse existing persona labels.
+ */
+export type ReadingPersonality = {
+  label: string;
+  explanation: string;
+  sourceTraits: string[];
+};
+
+export function deriveReadingPersonality(dna: ReadingDna): ReadingPersonality | null {
+  const lead = dna.personaTraits[0] ?? dna.topTraits[0] ?? dna.traits[0];
+  if (!lead || dna.confidence === "none") return null;
+  const label = lead.persona ?? `${titleCase(lead.label)} Reader`;
+  const sources = (dna.personaTraits.length ? dna.personaTraits : dna.topTraits)
+    .slice(0, 3)
+    .map((trait) => trait.persona ?? titleCase(trait.label));
+  const explanation = sources.length
+    ? `Scored from your logged books, tags, and reviews — strongest signals: ${sources.join(", ")}.`
+    : "Scored from your logged books, tags, and reviews.";
+  return { label, explanation, sourceTraits: sources };
+}

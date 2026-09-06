@@ -2,15 +2,23 @@
 
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import { SPRINT_NO_STAY_ONLINE_COPY } from "@bookmarked/utils/eventAccess";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { formatEventDateTime, listUpcomingEvents } from "@/lib/services/clubEvents";
+import { listHomeExperiences } from "@/lib/services/homeExperiences";
 import { clubDetailPath, clubsPath } from "@/lib/routes/clubs";
-import type { BookClubEventWithClub } from "@/types";
+import type { BookClubEventWithClub, HomeExperience } from "@/types";
 import { layout } from "@/lib/constants/layout";
+import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { useSubscription } from "@/lib/hooks/useSubscription";
 
 function EventsPageContent() {
+  const user = useAuthUser();
+  const { canAccess } = useSubscription(user?.id);
+  const hasHome = canAccess("home_experiences");
   const [events, setEvents] = useState<BookClubEventWithClub[] | null>(null);
+  const [experiences, setExperiences] = useState<HomeExperience[]>([]);
 
   useEffect(() => {
     void listUpcomingEvents()
@@ -20,6 +28,13 @@ function EventsPageContent() {
         setEvents([]);
       });
   }, []);
+
+  useEffect(() => {
+    if (!hasHome) return;
+    void listHomeExperiences()
+      .then(setExperiences)
+      .catch(() => setExperiences([]));
+  }, [hasHome]);
 
   return (
     <div className={layout.pageStack}>
@@ -36,6 +51,37 @@ function EventsPageContent() {
           </ButtonLink>
         </div>
       </div>
+
+      {hasHome && experiences.length ? (
+        <section className="mx-auto max-w-2xl space-y-3">
+          <h2 className="text-lg font-semibold text-puce-red">Home experiences</h2>
+          <p className="text-sm text-text-muted">{SPRINT_NO_STAY_ONLINE_COPY}</p>
+          <ul className="space-y-3">
+            {experiences.map((item) => (
+              <li key={item.id} className="surface-card p-5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-xs uppercase tracking-wide text-text-muted">{item.kind}</p>
+                  {item.is_beta ? (
+                    <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-medium text-puce-red">
+                      Beta
+                    </span>
+                  ) : null}
+                </div>
+                <h3 className="mt-1 font-semibold text-puce-red">{item.title}</h3>
+                {item.description ? (
+                  <p className="mt-2 text-sm text-text">{item.description}</p>
+                ) : null}
+                {item.venue_kind === "arbitrary_address" ? (
+                  <p className="mt-2 text-xs text-rust">
+                    Prefer a public venue. Meeting at a private address is allowed only with a safety
+                    warning.
+                  </p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {events === null ? (
         <LoadingState message="Loading events…" />

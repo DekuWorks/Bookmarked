@@ -116,6 +116,12 @@ export const HOME_ONLY_FEATURES = [
   "premium_events",
   "concierge",
   "priority_support",
+  "home_hub",
+  "home_meetups",
+  "home_experiences",
+  "priority_feature_requests",
+  "merch_early_access",
+  "partner_benefits",
 ] as const;
 
 type HomeOnlyFeature = (typeof HOME_ONLY_FEATURES)[number];
@@ -148,6 +154,12 @@ const LEGACY_FEATURE_ALIASES: Record<string, FeatureKey | "free" | HomeOnlyFeatu
   premium_events: "premium_events",
   concierge: "concierge",
   priority_support: "priority_support",
+  home_hub: "home_hub",
+  home_meetups: "home_meetups",
+  home_experiences: "home_experiences",
+  priority_feature_requests: "priority_feature_requests",
+  merch_early_access: "merch_early_access",
+  partner_benefits: "partner_benefits",
 };
 
 const FEATURE_KEY_SET = new Set<string>(PLUS_FEATURE_KEYS);
@@ -501,6 +513,7 @@ export function toSubscriptionAccessFromRow(
 
 /** Official upgrade-page display prices. iOS buttons still prefer StoreKit displayPrice. */
 export { PLUS_ANNUAL_SAVINGS_COPY, PLUS_DISPLAY_PRICES } from "./plusPricing";
+export { HOME_ANNUAL_SAVINGS_COPY, HOME_DISPLAY_PRICES } from "./homePricing";
 
 /** Subscribe only on iOS. Web never starts checkout. */
 export const IOS_SUBSCRIBE_COPY = {
@@ -508,6 +521,13 @@ export const IOS_SUBSCRIBE_COPY = {
   body: "Bookmarked Plus is purchased in the iOS app. After you subscribe there, Plus unlocks automatically on bookmarked.online — no second purchase.",
   cta: "Open the Bookmarked iOS app",
   note: "Restore purchases in the iOS app if Plus does not appear after you subscribe.",
+} as const;
+
+export const IOS_HOME_SUBSCRIBE_COPY = {
+  headline: "Subscribe to Bookmarked Home on iPhone or iPad",
+  body: "Bookmarked Home is purchased in the iOS app. After you subscribe there, Home unlocks automatically on bookmarked.online — no second purchase.",
+  cta: "Open the Bookmarked iOS app",
+  note: "Restore purchases in the iOS app if Home does not appear after you subscribe.",
 } as const;
 
 /** Shown on Quote Graphics and Plus upgrade copy. No invented monthly Plus cap. */

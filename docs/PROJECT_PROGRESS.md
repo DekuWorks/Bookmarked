@@ -298,4 +298,4 @@ Auth, search, library, reviews, feed, follows, clubs, messaging, notifications, 
 | Shelf icon audit | `docs/SHELF_ICON_AUDIT.md` |
 | Master task list (MVP era) | `docs/project/MASTER_TASK_LIST.md` |
 
-**Last updated:** July 2026
+**Last updated:** September 2026 — Home tier sprint. See root `PROJECT_PROGRESS.md` Nineteenth Sprint.

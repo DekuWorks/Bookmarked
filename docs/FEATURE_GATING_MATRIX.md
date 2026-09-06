@@ -47,24 +47,26 @@ Complete · Partially complete · Missing · Bugged · Requires DB · Requires U
 
 | Surface | Free | Plus | Home | Status |
 |---|---|---|---|---|
-| Book Map | no | no | yes | Missing |
-| Reader Map | no | no | yes | Missing |
-| DNA Match % / badges | no | no | yes | Missing · Requires UI |
-| Premium events / concierge | no | no | yes | Missing |
-| Priority support | no | no | yes | Missing |
+| Book Map | no | no | yes | Implemented · OSM tiles + curated places; café qualification open |
+| Reader Map | no | no | yes | Implemented · opt-in default off; blocked until age minimum is set |
+| DNA Match % / personality | no | no | yes | Implemented · deterministic personality from existing labels; official names open |
+| Home experiences / meetups | no | no | yes | Implemented · access prices as data; video join hidden until RSVP |
+| Concierge / priority support | no | no | yes | Implemented · server-derived priority; no SLA |
+| Home Hub | no | no | yes | Implemented · distinct from Overview/Home nav |
 
 ## Pricing (meeting brief vs code)
 
 | Plan | Brief | Current upgrade UI |
 |---|---|---|
-| Plus | App Store localized price only | Purchase is App Store IAP only. Web `/upgrade/` explains iOS subscribe; no hardcoded prices in Free/Plus UX. Existing Stripe rows still unlock both platforms. |
-| Home | App Store localized price only | Not sold as separate checkout SKU yet |
+| Plus | $5.99 / $59.99 display; App Store localises buttons | iOS IAP + Restore. Web iOS-subscribe copy only. |
+| Home | $9.99 / $99.99 display; App Store localises buttons | iOS Home SKUs wired (`com.dekuworks.bookmarked.home.*`). App Store Connect must create them. No live Stripe IDs. |
 
 ## Downgrade policy
 
-- Preserve all user data (shelves, quotes, club memberships, challenges).
+- Preserve all user data (shelves, quotes, club memberships, challenges, DNA history, meetup attendance, profile, feature requests, support tickets).
 - Block new creation beyond Free limits via helpers (`canCreate*`).
 - Existing over-limit items remain readable/editable; do not auto-delete.
+- Losing Home automatically disables Reader Map discoverability and clears precise GPS.
 
 ## Legacy aliases
 

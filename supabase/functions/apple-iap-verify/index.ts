@@ -25,7 +25,18 @@ const CORS_HEADERS: Record<string, string> = {
 const DEFAULT_PRODUCT_IDS = [
   "com.dekuworks.bookmarked.premium.monthly",
   "com.dekuworks.bookmarked.premium.yearly",
+  "com.dekuworks.bookmarked.home.monthly",
+  "com.dekuworks.bookmarked.home.yearly",
 ];
+
+const HOME_PRODUCT_IDS = new Set([
+  "com.dekuworks.bookmarked.home.monthly",
+  "com.dekuworks.bookmarked.home.yearly",
+]);
+
+function tierFromProductId(productId: string): "plus" | "home" {
+  return HOME_PRODUCT_IDS.has(productId) ? "home" : "plus";
+}
 
 type VerifyPayload = {
   transaction_id?: string;
@@ -188,7 +199,7 @@ Deno.serve(async (req) => {
     .upsert(
       {
         user_id: userData.user.id,
-        subscription_tier: status === "expired" ? "free" : "plus",
+        subscription_tier: status === "expired" ? "free" : tierFromProductId(productId),
         subscription_status: status,
         subscription_provider: "apple",
         subscription_expires_at: expiresAt,

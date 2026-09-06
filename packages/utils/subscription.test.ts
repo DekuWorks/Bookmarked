@@ -3,6 +3,7 @@ import {
   ENTITLEMENTS,
   canAccessFeature,
   canCreateReadingChallenge,
+  IOS_HOME_SUBSCRIBE_COPY,
   IOS_SUBSCRIBE_COPY,
   PLUS_UNLIMITED_FAIR_USE_COPY,
   canCreateCustomShelf,
@@ -55,14 +56,25 @@ describe("ENTITLEMENTS + canAccessFeature", () => {
 
   it("unlocks Home-only surfaces and advanced DNA", () => {
     expect(canAccessFeature("reading_dna_match", activeHome)).toBe(true);
+    expect(canAccessFeature("book_map", activeHome)).toBe(true);
+    expect(canAccessFeature("reader_map", activeHome)).toBe(true);
+    expect(canAccessFeature("concierge", activeHome)).toBe(true);
+    expect(canAccessFeature("home_hub", activeHome)).toBe(true);
+    expect(canAccessFeature("book_map", activePlus)).toBe(false);
+    expect(canAccessFeature("priority_support", activePlus)).toBe(false);
     expect(getReadingDnaAccess(activeHome)).toBe("advanced");
     expect(ENTITLEMENTS.home.readingDNAAccess).toBe("advanced");
+    expect(ENTITLEMENTS.home.customShelves).toBe(Infinity);
+    expect(canAccessFeature("advanced_reading_insights", activeHome)).toBe(true);
+    expect(canCreateReadingChallenge(activeHome)).toBe(true);
   });
 
   it("describes iOS-only subscribe with shared web unlock", () => {
     expect(IOS_SUBSCRIBE_COPY.body).toMatch(/iOS app/i);
     expect(IOS_SUBSCRIBE_COPY.body).toMatch(/bookmarked\.online/i);
     expect(IOS_SUBSCRIBE_COPY.body).not.toMatch(/checkout|stripe/i);
+    expect(IOS_HOME_SUBSCRIBE_COPY.body).toMatch(/Home/);
+    expect(IOS_HOME_SUBSCRIBE_COPY.body).not.toMatch(/checkout|stripe/i);
     expect(PLUS_UNLIMITED_FAIR_USE_COPY).toMatch(/abuse and rate protection/i);
     expect(PLUS_UNLIMITED_FAIR_USE_COPY).not.toMatch(/\d+\s*\/\s*month/);
   });

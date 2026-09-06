@@ -88,8 +88,9 @@ export default function UpgradeRoute() {
       <ScreenHeader title="Bookmarked Membership" />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: TAB_BAR_SPACE, gap: 16 }}>
         <Text className="text-center text-ink-muted">
-          Free keeps the essentials. Bookmarked Plus unlocks reading intelligence; Bookmarked Home
-          adds maps, matches, and concierge support across web and mobile.
+          Free keeps the essentials. Bookmarked Plus is reading intelligence. Bookmarked Home is
+          real-world community, local discovery, experiences, identity, and concierge — not more
+          analytics.
         </Text>
 
         {awaitingActivation && activating ? (
@@ -154,8 +155,8 @@ export default function UpgradeRoute() {
               Subscribe with Apple
             </Text>
             <Text className="mt-1 text-center text-sm text-ink-muted">
-              Official display price: $5.99/month or $59.99/year (about $5.00/month; save $11.89,
-              ~16.5%). Subscribe buttons use the App Store price.
+              Plus: $5.99/month or $59.99/year. Home: $9.99/month or $99.99/year (about $8.33/month;
+              save $19.89, ~16.6%). Subscribe buttons use the App Store price.
             </Text>
 
             <View className="mt-6">

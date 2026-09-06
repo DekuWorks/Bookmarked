@@ -102,9 +102,9 @@ export default function UpgradePage() {
       <header className={layout.pageHeader}>
         <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Bookmarked Membership</h1>
         <p className="mx-auto mt-2 max-w-xl text-pretty text-text-muted">
-          Free keeps the essentials. Bookmarked Plus unlocks deeper reading intelligence, while
-          Bookmarked Home adds maps, matches, and concierge support. Membership syncs across web and
-          mobile after you subscribe in the iOS app.
+          Free keeps the essentials. Bookmarked Plus is reading intelligence. Bookmarked Home is
+          real-world community, local discovery, experiences, identity, and concierge — not more
+          analytics. Subscribe in the iOS app; web unlocks automatically.
         </p>
       </header>
 
@@ -167,8 +167,9 @@ export default function UpgradePage() {
             </p>
             <p className="mt-2 text-lg font-semibold text-puce-red">Subscribe in the iOS app</p>
             <p className="mt-2 text-sm text-text-muted">
-              Official display price: $5.99/month or $59.99/year (about $5.00/month; save $11.89, ~16.5%).
-              Plus then unlocks here on the same account — no second purchase.
+              Plus: $5.99/month or $59.99/year. Home: $9.99/month or $99.99/year (about $8.33/month;
+              save $19.89, ~16.6%). Membership then unlocks here on the same account — no second
+              purchase and no web checkout.
             </p>
           </div>
 

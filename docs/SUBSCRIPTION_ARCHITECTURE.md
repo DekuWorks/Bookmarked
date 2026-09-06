@@ -79,7 +79,7 @@ Server snapshot after purchase/restore via `refresh_subscription_entitlements(us
 | Plan | Monthly | Yearly | Env secrets |
 |---|---|---|---|
 | Plus | $5.99 | $59.99 | `STRIPE_PRICE_ID`, `STRIPE_PRICE_ID_YEARLY` |
-| Home | $9.99 | $99.99 | Not wired yet |
+| Home | $9.99 | $99.99 | IAP SKUs `com.dekuworks.bookmarked.home.monthly` / `.yearly`. App Store Connect must create them. Do not invent live Stripe IDs. |
 
 Run `./scripts/setup-stripe-catalog.sh` to create/reuse prices — **do not invent live Stripe IDs**.
 
@@ -98,9 +98,19 @@ See `feature-entitlements.md`. Short version: Plus custom shelves unlimited; rer
 
 ## Downgrade
 
-- Preserve shelves, quotes, club memberships, challenges, DNA history.
+- Preserve shelves, quotes, club memberships, challenges, DNA history, meetup attendance, profile, feature requests, support tickets.
 - Block **new** creation beyond Free limits.
 - Do not delete over-limit data.
+- Losing Home runs `disable_reader_map_on_home_loss` (opt-in off + precise GPS cleared).
+
+## Home helpers
+
+| Helper | Purpose |
+|---|---|
+| `user_has_home_entitlement` | Server Home check (Plus is not enough) |
+| `HOME_ONLY_FEATURES` / `canAccessFeature` | Client soft gates |
+| `homePricing` | Official $9.99 / $99.99 display math |
+| `reader_map_age_status` | Unknown / under_minimum / eligible |
 
 ## Related docs
 

@@ -97,6 +97,7 @@ export {
   toSubscriptionAccessFromRow,
   ENTITLEMENT_LIMIT_MESSAGES,
   IOS_SUBSCRIBE_COPY,
+  IOS_HOME_SUBSCRIBE_COPY,
   PLUS_UNLIMITED_FAIR_USE_COPY,
   isEntitlementLimitError,
   type ChallengeJoinKind,
@@ -112,6 +113,7 @@ export {
   FREE_READING_DNA_TRAIT_COUNT,
   TOP_TRAITS_DICTIONARY,
   computeReadingDna,
+  deriveReadingPersonality,
   readingDnaMatchPercent,
   titleCaseDnaLabel,
   type ReadingDna,
@@ -871,6 +873,80 @@ export {
   plusAnnualSavingsPercent,
   plusAnnualSavingsUsd,
 } from "./plusPricing";
+
+export {
+  HOME_ANNUAL_SAVINGS_COPY,
+  HOME_DISPLAY_PRICES,
+  homeAnnualSavingsPercent,
+  homeAnnualSavingsUsd,
+} from "./homePricing";
+
+export {
+  DEFAULT_HOME_ELIGIBILITY_FLAGS,
+  HOME_PRODUCT_DECISIONS,
+  canCreatePublicMeetup,
+  canUseReaderMapSocial,
+  parseHomeEligibilityFlags,
+  resolveAgeEligibility,
+  shouldRecalcReadingDna,
+} from "./homeEligibility";
+
+export {
+  PRECISE_LOCATION_MAX_RETENTION_MS,
+  READER_MAP_DEFAULT_OPT_IN,
+  READER_MAP_OPT_IN_COPY,
+  coarsenLatLng,
+  formatPublicDistanceKm,
+  publicSelectHasPreciseCoords,
+  shouldDropPreciseLocation,
+  toPublicReaderMarker,
+} from "./locationPrivacy";
+
+export {
+  ACTIVE_MAP_PROVIDER,
+  OSM_TILE_PROVIDER,
+  latLngToTile,
+  resolveMapProvider,
+  viewportFromCenter,
+} from "./mapProvider";
+
+export {
+  BOOK_MAP_FILTERS,
+  BOOK_MAP_NAV_LABEL,
+  HOME_HUB_NAV_LABEL,
+  HOME_MEMBERSHIP_LABEL,
+  filterBookMapPlaces,
+  osMapsDirectionsUrl,
+  shouldSearchOnPan,
+} from "./bookMap";
+
+export {
+  DEFAULT_READER_MAP_SETTINGS,
+  READER_MAP_NAV_LABEL,
+  applyReaderMapFilters,
+  publicClubNamesOnly,
+  readerMapSocialAllowed,
+} from "./readerMap";
+
+export {
+  EXTERNAL_VIDEO_EVENT_PROVIDER,
+  hideJoinUrlUntilAuthorized,
+  isAuthorizedVideoJoin,
+} from "./videoEventProvider";
+
+export {
+  PARTNER_BENEFIT_NO_PUBLIC_CODE_COPY,
+  SPRINT_NO_STAY_ONLINE_COPY,
+  canAccessExperience,
+  sprintProgress,
+} from "./eventAccess";
+
+export {
+  CONCIERGE_COPY,
+  isValidFeatureRequest,
+  priorityFromEntitlement,
+  sanitizeFeatureRequestInput,
+} from "./homeConcierge";
 
 export {
   PLUS_INSIGHTS_COPY,

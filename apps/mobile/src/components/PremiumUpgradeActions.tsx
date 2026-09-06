@@ -3,10 +3,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Platform, Text, View } from "react-native";
 import { ErrorCode, useIAP, type Purchase } from "expo-iap";
 import {
+  IAP_HOME_PRICE_LABEL,
+  IAP_HOME_YEARLY_PRICE_LABEL,
   IAP_PREMIUM_PRICE_LABEL,
   IAP_PREMIUM_YEARLY_PRICE_LABEL,
 } from "../../../../packages/utils/iap";
-import { APPLE_PREMIUM_PRODUCT_ID, APPLE_PREMIUM_PRODUCT_IDS, APPLE_PREMIUM_YEARLY_PRODUCT_ID } from "../constants/iap";
+import {
+  APPLE_HOME_PRODUCT_ID,
+  APPLE_HOME_YEARLY_PRODUCT_ID,
+  APPLE_PREMIUM_PRODUCT_ID,
+  APPLE_PREMIUM_PRODUCT_IDS,
+  APPLE_PREMIUM_YEARLY_PRODUCT_ID,
+} from "../constants/iap";
 import { env } from "../constants/env";
 import { verifyApplePurchaseOnServer } from "../services/iap";
 import { Button } from "./Button";
@@ -76,6 +84,12 @@ export function PremiumUpgradeActions({ userId, onSubscriptionUpdated }: Props) 
   const yearlyPrice =
     subscriptions.find((item) => item.id === APPLE_PREMIUM_YEARLY_PRODUCT_ID)?.displayPrice ??
     IAP_PREMIUM_YEARLY_PRICE_LABEL;
+  const homeMonthlyPrice =
+    subscriptions.find((item) => item.id === APPLE_HOME_PRODUCT_ID)?.displayPrice ??
+    IAP_HOME_PRICE_LABEL;
+  const homeYearlyPrice =
+    subscriptions.find((item) => item.id === APPLE_HOME_YEARLY_PRODUCT_ID)?.displayPrice ??
+    IAP_HOME_YEARLY_PRICE_LABEL;
 
   const handleSubscribe = useCallback(async (sku: string) => {
     if (!iapEnabled) return;
@@ -134,6 +148,18 @@ export function PremiumUpgradeActions({ userId, onSubscriptionUpdated }: Props) 
           <Button
             title={`Subscribe yearly — ${yearlyPrice}`}
             onPress={() => void handleSubscribe(APPLE_PREMIUM_YEARLY_PRODUCT_ID)}
+            disabled={!connected}
+          />
+          <Button
+            title={`Home monthly — ${homeMonthlyPrice}`}
+            variant="secondary"
+            onPress={() => void handleSubscribe(APPLE_HOME_PRODUCT_ID)}
+            disabled={!connected}
+          />
+          <Button
+            title={`Home yearly — ${homeYearlyPrice}`}
+            variant="secondary"
+            onPress={() => void handleSubscribe(APPLE_HOME_YEARLY_PRODUCT_ID)}
             disabled={!connected}
           />
           <Button
