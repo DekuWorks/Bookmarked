@@ -7,8 +7,8 @@ import { MentionText } from "@/components/social/MentionText";
 import { postFeedPath } from "@/lib/routes/posts";
 import { readerProfilePath } from "@/lib/routes/reader";
 import type { PostWithAuthor } from "@/types";
+import { FeedImageMedia } from "@/components/social/FeedImageMedia";
 import { isGiphyImageUrl } from "@/lib/utils/giphy";
-import { cn } from "@/lib/utils/cn";
 
 function authorLabel(author: PostWithAuthor["author"]): string {
   return author.display_name?.trim() || author.username?.trim() || "Reader";
@@ -50,25 +50,13 @@ export function RepostPreview({ post, linkToPost = true }: Props) {
         </div>
       ) : null}
       {post.image_url ? (
-        <a
-          href={post.image_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-2 block overflow-hidden rounded-md border border-border"
-          onClick={(event) => event.stopPropagation()}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={post.image_url}
+        <div className="mt-2" onClick={(event) => event.stopPropagation()}>
+          <FeedImageMedia
+            url={post.image_url}
             alt={isGiphyImageUrl(post.image_url) ? "Post GIF" : "Post image"}
-            className={cn(
-              "w-full",
-              isGiphyImageUrl(post.image_url)
-                ? "max-h-48 object-contain bg-background"
-                : "max-h-48 object-cover"
-            )}
+            compact
           />
-        </a>
+        </div>
       ) : null}
       {post.book ? (
         <div className="mt-2" onClick={(event) => event.stopPropagation()}>

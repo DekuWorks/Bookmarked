@@ -24,6 +24,7 @@ import { BookmarkedLikeSparkles } from "@/components/social/BookmarkedLikeSparkl
 import { ShareContentModal } from "@/components/social/ShareContentModal";
 import { ContentActionsMenu } from "@/components/moderation/ContentActionsMenu";
 import { usePreferredLocale } from "@/lib/hooks/usePreferredLocale";
+import { FeedImageMedia } from "@/components/social/FeedImageMedia";
 import { isGiphyImageUrl } from "@/lib/utils/giphy";
 import { formatFeedTimestamp } from "@/lib/utils/locale";
 import { cn } from "@/lib/utils/cn";
@@ -274,24 +275,11 @@ export function PostCard({ post, viewerId, highlighted = false, onPostChange }: 
               ) : null}
 
               {localPost.image_url ? (
-                <a
-                  href={localPost.image_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-3 block overflow-hidden rounded-lg border border-border"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={localPost.image_url}
-                    alt={isGiphyImageUrl(localPost.image_url) ? "Post GIF" : "Post image"}
-                    className={cn(
-                      "w-full",
-                      isGiphyImageUrl(localPost.image_url)
-                        ? "max-h-96 object-contain bg-background"
-                        : "max-h-96 object-cover"
-                    )}
-                  />
-                </a>
+                <FeedImageMedia
+                  url={localPost.image_url}
+                  alt={isGiphyImageUrl(localPost.image_url) ? "Post GIF" : "Post image"}
+                  className="mt-3"
+                />
               ) : null}
 
               {localPost.repost_of ? (
