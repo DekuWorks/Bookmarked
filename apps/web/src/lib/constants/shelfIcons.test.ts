@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  getCustomShelfIconSrc,
   getShelfIconConfig,
   getShelfIconsInOrder,
   SHELF_ICON_FRAME_PX,
@@ -8,6 +9,11 @@ import {
   SHELF_ICONS,
   sortShelfIconIds,
 } from "./shelfIcons";
+import {
+  CUSTOM_SHELF_ICON_ASSETS_READY,
+  DEFAULT_CUSTOM_SHELF_ICON_KEY,
+  resolveCustomShelfIconKey,
+} from "@bookmarked/utils/shelfIcons";
 import { getShelvesInOrder, SHELF_CONFIG } from "./shelves";
 import { SHELF_LABELS } from "./shelfLabels";
 
@@ -31,11 +37,28 @@ describe("SHELF_ICON_ORDER", () => {
   it("maps DB read status to finished asset", () => {
     expect(getShelfIconConfig("read").src).toBe("/assets/shelves/finished.png");
     expect(getShelfIconConfig("read").label).toBe("Finished");
+    expect(getShelfIconConfig("read").iconKey).toBe("book_with_sparkle");
+    expect(getShelfIconConfig("read").accessibilityLabel).toBe("Finished Shelf");
   });
 
   it("maps dnf flag to did-not-finish asset", () => {
     expect(getShelfIconConfig("dnf").src).toBe("/assets/shelves/did-not-finish.png");
-    expect(getShelfIconConfig("dnf").label).toBe("Did Not Finish");
+    expect(getShelfIconConfig("dnf").label).toBe("DNF");
+    expect(getShelfIconConfig("dnf").iconKey).toBe("closed_book");
+    expect(getShelfIconConfig("dnf").accessibilityLabel).toBe("DNF Shelf");
+  });
+
+  it("maps TBR and Currently Reading to approved purple assets", () => {
+    expect(getShelfIconConfig("want_to_read").src).toBe("/assets/shelves/want-to-read.png");
+    expect(getShelfIconConfig("want_to_read").iconKey).toBe("stack_of_books");
+    expect(getShelfIconConfig("want_to_read").accessibilityLabel).toBe("TBR Shelf");
+    expect(getShelfIconConfig("currently_reading").src).toBe(
+      "/assets/shelves/currently-reading.png"
+    );
+    expect(getShelfIconConfig("currently_reading").iconKey).toBe("open_book");
+    expect(getShelfIconConfig("currently_reading").accessibilityLabel).toBe(
+      "Currently Reading Shelf"
+    );
   });
 
   it("does not use emoji in labels", () => {
@@ -61,6 +84,16 @@ describe("sortShelfIconIds", () => {
   });
 });
 
+describe("custom shelf icon_key", () => {
+  it("falls missing keys back to the first approved custom icon file", () => {
+    expect(CUSTOM_SHELF_ICON_ASSETS_READY).toBe(false);
+    expect(DEFAULT_CUSTOM_SHELF_ICON_KEY).toBe("custom_icon_1");
+    expect(resolveCustomShelfIconKey(null)).toBe("custom_icon_1");
+    expect(getCustomShelfIconSrc(null)).toBe("/assets/shelves/want-to-read.png");
+    expect(getCustomShelfIconSrc("custom_icon_4")).toBe("/assets/shelves/want-to-read.png");
+  });
+});
+
 describe("SHELF_CONFIG", () => {
   it("uses Finished label for read status", () => {
     const read = SHELF_CONFIG.find((s) => s.status === "read");
@@ -81,6 +114,12 @@ describe("SHELF_CONFIG", () => {
       "currently_reading",
       "read",
       "dnf",
+    ]);
+    expect(getShelvesInOrder().map((s) => s.accessibilityLabel)).toEqual([
+      "TBR Shelf",
+      "Currently Reading Shelf",
+      "Finished Shelf",
+      "DNF Shelf",
     ]);
   });
 });

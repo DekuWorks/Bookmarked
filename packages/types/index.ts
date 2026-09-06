@@ -16,6 +16,8 @@ export interface UserShelf {
   slug: string;
   genre: string | null;
   visibility: ShelfVisibility;
+  /** Stable custom icon key (`custom_icon_1`…`custom_icon_5`). Null uses documented fallback. */
+  icon_key: string | null;
   sort_order: number;
   created_at: string;
   updated_at: string;

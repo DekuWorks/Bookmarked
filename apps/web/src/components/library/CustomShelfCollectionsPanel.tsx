@@ -56,6 +56,7 @@ export function CustomShelfCollectionsPanel({
         slug: shelf.slug,
         genre: shelf.genre,
         visibility: shelf.visibility,
+        icon_key: shelf.icon_key,
         items: [],
       },
     ]);
@@ -64,6 +65,24 @@ export function CustomShelfCollectionsPanel({
   function handleShelfDeleted(shelfId: string) {
     setShelves((prev) => prev.filter((shelf) => shelf.id !== shelfId));
     toast.success("Shelf deleted.");
+  }
+
+  function handleShelfUpdated(shelf: UserShelf) {
+    setShelves((prev) =>
+      prev.map((entry) =>
+        entry.id === shelf.id
+          ? {
+              ...entry,
+              name: shelf.name,
+              slug: shelf.slug,
+              genre: shelf.genre,
+              visibility: shelf.visibility,
+              icon_key: shelf.icon_key,
+            }
+          : entry
+      )
+    );
+    toast.success("Shelf updated.");
   }
 
   return (
@@ -86,7 +105,11 @@ export function CustomShelfCollectionsPanel({
         </div>
       ) : (
         <>
-          <CustomShelvesView shelves={shelves} onShelfDeleted={handleShelfDeleted} />
+          <CustomShelvesView
+            shelves={shelves}
+            onShelfDeleted={handleShelfDeleted}
+            onShelfUpdated={handleShelfUpdated}
+          />
           {showQuickLinks ? (
             <div className="mt-6 flex flex-wrap justify-center gap-2">
               {shelves.map((shelf) => (

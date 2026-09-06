@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { Button } from "../../../src/components/Button";
 import { BookSpine } from "../../../src/components/library/BookSpine";
 import { LibraryViewToggle } from "../../../src/components/library/LibraryViewToggle";
@@ -8,6 +9,8 @@ import { CoverTile } from "../../../src/components/CoverTile";
 import { EmptyState } from "../../../src/components/EmptyState";
 import { LoadingState } from "../../../src/components/LoadingState";
 import { ScreenHeader } from "../../../src/components/ScreenHeader";
+import { EditCustomShelfSheet } from "../../../src/components/EditCustomShelfSheet";
+import { ShelfTitleRow } from "../../../src/components/ShelfTitleRow";
 import { useLibraryViewMode } from "../../../src/hooks/useLibraryViewMode";
 import { clearCustomShelf, getCustomShelfBySlug } from "../../../src/services/customShelves";
 import { useAuthStore } from "../../../src/store/authStore";
@@ -18,6 +21,7 @@ export default function CustomShelfScreen() {
   const router = useRouter();
   const userId = useAuthStore((s) => s.user?.id);
   const { view, setView, isPending } = useLibraryViewMode();
+  const [editOpen, setEditOpen] = useState(false);
 
   const shelfQuery = useQuery({
     queryKey: ["custom-shelf", userId, slug],
@@ -89,13 +93,24 @@ export default function CustomShelfScreen() {
         </Pressable>
 
         <View>
-          <Text className="text-2xl font-bold text-puce-red">📁 {shelf.name}</Text>
+          <ShelfTitleRow
+            iconKey={shelf.icon_key}
+            title={shelf.name}
+            size="medium"
+            titleClassName="text-2xl font-bold text-puce-red"
+          />
           {shelf.genre ? (
             <Text className="mt-1 text-sm text-ink-muted">{shelf.genre}</Text>
           ) : null}
           <Text className="mt-2 text-sm font-medium text-ink">
             {shelf.items.length} book{shelf.items.length === 1 ? "" : "s"}
           </Text>
+          <Button
+            title="Edit shelf"
+            variant="ghost"
+            onPress={() => setEditOpen(true)}
+            className="mt-3 self-start"
+          />
           {shelf.items.length > 0 ? (
             <Button
               title="Clear shelf"
@@ -144,6 +159,14 @@ export default function CustomShelfScreen() {
           </View>
         )}
       </ScrollView>
+      <EditCustomShelfSheet
+        open={editOpen}
+        shelf={shelf}
+        onClose={() => setEditOpen(false)}
+        onSaved={() => {
+          void shelfQuery.refetch();
+        }}
+      />
     </View>
   );
 }

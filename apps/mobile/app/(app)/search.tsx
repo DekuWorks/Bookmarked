@@ -680,7 +680,7 @@ export default function SearchScreen() {
                         isMember ? "border-primary bg-primary/10" : "border-brand-border bg-background"
                       }`}
                     >
-                      <ShelfIcon id="want_to_read" size="small" />
+                      <ShelfIcon iconKey={shelf.icon_key} size="small" />
                       <Text className="flex-1 font-medium text-puce-red">{shelf.name}</Text>
                       {isMember ? <Text className="font-bold text-puce-red">✓</Text> : null}
                     </Pressable>

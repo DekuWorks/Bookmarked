@@ -3,11 +3,12 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { BrandChromeIcon } from "@/components/icons/BrandChromeIcon";
 import { BookSpine } from "@/components/library/BookSpine";
 import { EmptyShelfMessage } from "@/components/library/EmptyShelfMessage";
 import { ShelfSortSelect } from "@/components/library/ShelfSortSelect";
 import { DeleteCustomShelfModal } from "@/components/shelves/DeleteCustomShelfModal";
+import { EditCustomShelfModal } from "@/components/shelves/EditCustomShelfModal";
+import { ShelfTitleRow } from "@/components/shelves/ShelfTitleRow";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
@@ -37,6 +38,7 @@ function CustomShelfContent() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [clearOpen, setClearOpen] = useState(false);
   const [clearing, setClearing] = useState(false);
   const { sort, setSort } = useShelfSort(`custom:${slug}`);
@@ -141,8 +143,12 @@ function CustomShelfContent() {
             ← Back to library
           </Link>
           <h1 className="mt-2 flex items-center justify-center gap-2 text-3xl font-bold text-puce-red sm:text-4xl">
-            <BrandChromeIcon name="library" className="h-8 w-8" />
-            {shelf.name}
+            <ShelfTitleRow
+              iconKey={shelf.icon_key}
+              title={shelf.name}
+              size="medium"
+              titleClassName="text-3xl font-bold text-puce-red sm:text-4xl"
+            />
           </h1>
           {shelf.genre ? (
             <p className="mt-1 text-sm font-medium text-primary">{shelf.genre}</p>
@@ -157,6 +163,9 @@ function CustomShelfContent() {
         <ButtonLink href="/search" variant="secondary">
           Add books
         </ButtonLink>
+        <Button type="button" variant="outline" onClick={() => setEditOpen(true)}>
+          Edit shelf
+        </Button>
         <Button
           type="button"
           variant="ghost"
@@ -172,6 +181,26 @@ function CustomShelfContent() {
         ) : null}
       </header>
 
+      <EditCustomShelfModal
+        open={editOpen}
+        shelf={shelf}
+        onClose={() => setEditOpen(false)}
+        onSaved={(updated) => {
+          setShelf((current) =>
+            current
+              ? {
+                  ...current,
+                  name: updated.name,
+                  slug: updated.slug,
+                  genre: updated.genre,
+                  visibility: updated.visibility,
+                  icon_key: updated.icon_key,
+                }
+              : current
+          );
+          toast.success("Shelf updated.");
+        }}
+      />
       <DeleteCustomShelfModal
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}

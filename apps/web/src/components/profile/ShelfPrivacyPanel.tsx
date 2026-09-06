@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { getShelvesInOrder } from "@/lib/constants/shelves";
+import { ShelfIcon } from "@/components/shelves/ShelfIcon";
 import { ShelfTitleRow } from "@/components/shelves/ShelfTitleRow";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -191,7 +192,10 @@ export function ShelfPrivacyPanel({ profile }: Props) {
             className="flex flex-col gap-2 rounded-lg border border-border bg-background px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
           >
             <div>
-              <p className="font-medium text-text">{shelf.name}</p>
+              <p className="flex items-center gap-2 font-medium text-text">
+                <ShelfIcon iconKey={shelf.icon_key} size="small" labeled />
+                {shelf.name}
+              </p>
               {shelf.genre ? (
                 <p className="text-xs text-text-muted">Genre: {shelf.genre}</p>
               ) : (

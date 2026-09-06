@@ -4,7 +4,8 @@ import type { ShelfIconId, ShelfIconSize } from "@/lib/constants/shelfIcons";
 import { cn } from "@/lib/utils/cn";
 
 type Props = {
-  id: ShelfIconId;
+  id?: ShelfIconId;
+  iconKey?: string | null;
   title: string;
   size?: ShelfIconSize;
   className?: string;
@@ -18,6 +19,7 @@ type Props = {
  */
 export function ShelfTitleRow({
   id,
+  iconKey,
   title,
   size = "medium",
   className,
@@ -26,7 +28,11 @@ export function ShelfTitleRow({
 }: Props) {
   return (
     <span className={cn("inline-flex items-center gap-2", className)}>
-      <ShelfIcon id={id} size={size} labeled className="self-center" />
+      {id ? (
+        <ShelfIcon id={id} size={size} labeled className="self-center" />
+      ) : (
+        <ShelfIcon iconKey={iconKey} size={size} labeled className="self-center" />
+      )}
       <span className={cn("min-w-0 leading-tight", titleClassName)}>{title}</span>
       {action}
     </span>

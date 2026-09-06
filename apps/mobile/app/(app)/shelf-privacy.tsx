@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Alert,
   Pressable,
@@ -8,10 +9,13 @@ import {
   View,
 } from "react-native";
 import { Button } from "../../src/components/Button";
+import { CustomShelfIconPicker } from "../../src/components/CustomShelfIconPicker";
 import { FeatureLimitModal } from "../../src/components/FeatureLimitModal";
 import { LoadingState } from "../../src/components/LoadingState";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
+import { ShelfIcon } from "../../src/components/ShelfIcon";
 import { ShelfTitleRow } from "../../src/components/ShelfTitleRow";
+import { DEFAULT_CUSTOM_SHELF_ICON_KEY, type CustomShelfIconKey } from "../../src/constants/shelfIcons";
 import { getShelvesInOrder } from "../../src/constants/shelves";
 import { SHELF_VISIBILITY_OPTIONS } from "../../src/constants/shelfVisibility";
 import { useProfile } from "../../src/hooks/useProfile";
@@ -21,6 +25,7 @@ import {
   listUserCustomShelves,
   updateCustomShelfVisibility,
 } from "../../src/services/customShelves";
+import { invalidateCustomShelfViews } from "../../src/services/customShelfCache";
 import { supabase } from "../../src/services/supabase";
 import { useAuthStore } from "../../src/store/authStore";
 import type { ShelfStatus, ShelfVisibility, UserShelf } from "../../src/types";
@@ -49,6 +54,7 @@ function visibilityForProfile(
 
 export default function ShelfPrivacyScreen() {
   const userId = useAuthStore((s) => s.user?.id);
+  const queryClient = useQueryClient();
   const { data: profile, refetch } = useProfile();
   const [values, setValues] = useState<Record<ShelfStatus, ShelfVisibility> | null>(null);
   const [customShelves, setCustomShelves] = useState<UserShelf[]>([]);
@@ -58,6 +64,7 @@ export default function ShelfPrivacyScreen() {
   const [newName, setNewName] = useState("");
   const [newGenre, setNewGenre] = useState("");
   const [newVisibility, setNewVisibility] = useState<ShelfVisibility>("public");
+  const [newIconKey, setNewIconKey] = useState<CustomShelfIconKey>(DEFAULT_CUSTOM_SHELF_ICON_KEY);
   const [creating, setCreating] = useState(false);
   const [limitOpen, setLimitOpen] = useState(false);
 
@@ -156,6 +163,7 @@ export default function ShelfPrivacyScreen() {
       name: trimmed,
       genre: newGenre.trim() || null,
       visibility: newVisibility,
+      icon_key: newIconKey,
     });
     setCreating(false);
     if (result.error) {
@@ -170,8 +178,9 @@ export default function ShelfPrivacyScreen() {
     setNewName("");
     setNewGenre("");
     setNewVisibility("public");
+    setNewIconKey(DEFAULT_CUSTOM_SHELF_ICON_KEY);
     setCreateOpen(false);
-    await refreshCustomShelves();
+    await Promise.all([refreshCustomShelves(), invalidateCustomShelfViews(queryClient)]);
   }
 
   if (!profile || !values) {
@@ -215,7 +224,12 @@ export default function ShelfPrivacyScreen() {
         {customShelves.map((shelf) => (
           <VisibilityRow
             key={shelf.id}
-            title={shelf.name}
+            titleNode={
+              <View className="flex-row items-center gap-2">
+                <ShelfIcon iconKey={shelf.icon_key} size="small" labeled />
+                <Text className="font-semibold text-ink">{shelf.name}</Text>
+              </View>
+            }
             subtitle={shelf.genre ? `Genre: ${shelf.genre}` : "Custom collection"}
             value={customValues[shelf.id] ?? shelf.visibility}
             onChange={(next) =>
@@ -242,6 +256,11 @@ export default function ShelfPrivacyScreen() {
               placeholderTextColor="#A99DAE"
               maxLength={60}
               className="min-h-[44px] rounded-xl border border-brand-border bg-background px-3 py-2 text-ink mb-3"
+            />
+            <CustomShelfIconPicker
+              value={newIconKey}
+              onChange={setNewIconKey}
+              disabled={creating}
             />
             <Text className="text-xs text-ink-muted mb-2">Privacy</Text>
             <View className="flex-row flex-wrap gap-2 mb-3">
@@ -275,6 +294,7 @@ export default function ShelfPrivacyScreen() {
                     setNewName("");
                     setNewGenre("");
                     setNewVisibility("public");
+                    setNewIconKey(DEFAULT_CUSTOM_SHELF_ICON_KEY);
                   }}
                   disabled={creating}
                 />

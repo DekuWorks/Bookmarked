@@ -3,6 +3,7 @@ import { Pressable, ScrollView, Text, useWindowDimensions, View } from "react-na
 import { customShelfPath } from "../../lib/libraryRoutes";
 import type { CustomShelfGroup } from "../../services/customShelves";
 import { CoverTile } from "../CoverTile";
+import { ShelfTitleRow } from "../ShelfTitleRow";
 import { BookSpine } from "./BookSpine";
 
 type Props = {
@@ -18,10 +19,15 @@ export function CustomShelfSection({ shelf, view }: Props) {
   return (
     <View className="overflow-hidden rounded-2xl border border-brand-border bg-surface shadow-md">
       <View className="flex-row items-center justify-between border-b border-brand-border px-4 py-3">
-        <Text className="text-base font-bold text-puce-red">
-          📁 {shelf.name}{" "}
+        <View className="min-w-0 flex-1 flex-row items-center gap-2">
+          <ShelfTitleRow
+            iconKey={shelf.icon_key}
+            title={shelf.name}
+            size="small"
+            titleClassName="text-base font-bold text-puce-red"
+          />
           <Text className="text-sm font-normal text-ink-muted">({shelf.items.length})</Text>
-        </Text>
+        </View>
         <Pressable
           onPress={() => router.push(customShelfPath(shelf.slug))}
           className="active:opacity-70"

@@ -106,7 +106,7 @@ export function AddToCustomShelfMenu({
                       : "border-border bg-background hover:border-primary hover:bg-primary/5"
                   )}
                 >
-                  <ShelfIcon id="want_to_read" size="medium" />
+                  <ShelfIcon iconKey={shelf.icon_key} size="medium" />
                   <span className="flex-1">
                     <span className="block font-medium text-text">{shelf.name}</span>
                     {shelf.genre ? (
