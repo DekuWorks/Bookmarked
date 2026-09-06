@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  PRIVATE_REVIEWS_EMPTY_COPY,
+  isPrivateReview,
+} from "./reviewVisibility";
+import {
+  REVIEW_FILTER_OPTIONS,
+  REVIEW_PANEL_COPY,
   buildReviewSharePostBody,
   filterReviews,
   type ReviewFilterable,
@@ -48,6 +54,15 @@ describe("filterReviews", () => {
     const result = filterReviews(reviews, "private");
     expect(result).toHaveLength(1);
     expect(result[0]?.visibility).toBe("private");
+    expect(isPrivateReview(result[0]?.visibility)).toBe(true);
+  });
+
+  it("labels the private filter Private Reviews", () => {
+    expect(REVIEW_FILTER_OPTIONS.find((option) => option.id === "private")?.label).toBe(
+      "Private Reviews"
+    );
+    expect(REVIEW_PANEL_COPY.filterEmpty).toBe("No reviews match this filter.");
+    expect(PRIVATE_REVIEWS_EMPTY_COPY.title).toContain("private reviews");
   });
 
   it("filters spoiler reviews", () => {

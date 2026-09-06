@@ -13,6 +13,7 @@ type Props = {
   format?: "book" | "ebook" | "audiobook" | null;
   /** Show the saved bookmark on the left of the cover, matching web. */
   saved?: boolean;
+  isFavorite?: boolean;
   origin?: string | null;
   widthClassName?: string;
   coverSizeClassName?: string;
@@ -31,6 +32,7 @@ export function CoverTile({
   progressPercent,
   format,
   saved,
+  isFavorite = false,
   origin,
   widthClassName = "w-24",
   coverSizeClassName = "w-24 h-36",
@@ -58,6 +60,15 @@ export function CoverTile({
           saved={saved}
           badgeSize="small"
         />
+        {isFavorite ? (
+          <View
+            accessible
+            accessibilityLabel="Favorite"
+            className="absolute bottom-1 right-1 rounded-full bg-background/90 px-1.5 py-0.5"
+          >
+            <Text className="text-[10px] font-semibold text-puce-red">★</Text>
+          </View>
+        ) : null}
         {format === "audiobook" ? (
           <View className="absolute bottom-1 right-1 rounded-full bg-puce-red/90 px-1.5 py-0.5">
             <Text className="text-[10px] font-semibold text-white">🎧</Text>

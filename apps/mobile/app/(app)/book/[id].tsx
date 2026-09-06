@@ -16,6 +16,8 @@ import { ProgressBar } from "../../../src/components/ProgressBar";
 import { MarkFinishedSheet } from "../../../src/components/MarkFinishedSheet";
 import { RateBookPromptSheet } from "../../../src/components/RateBookPromptSheet";
 import { RateReviewSheet } from "../../../src/components/RateReviewSheet";
+import { PrivateReviewBadge } from "../../../src/components/PrivateReviewBadge";
+import { isPrivateReview } from "../../../../../packages/utils/reviewVisibility";
 import { ReadingJournalSection } from "../../../src/components/ReadingJournalSection";
 import { ReadingNotesSection } from "../../../src/components/ReadingNotesSection";
 import { SavedPill } from "../../../src/components/SavedPill";
@@ -53,7 +55,7 @@ const SHELVES: { status: ShelfStatus; label: string }[] = [
   { status: "read", label: "Finished" },
 ];
 
-function ReviewItem({ review }: { review: Review }) {
+function ReviewItem({ review, isOwn = false }: { review: Review; isOwn?: boolean }) {
   const router = useRouter();
   const [revealed, setRevealed] = useState(false);
   const name = review.profiles?.display_name?.trim() || review.profiles?.username?.trim() || "Reader";
@@ -69,9 +71,12 @@ function ReviewItem({ review }: { review: Review }) {
         >
           <Text className="font-semibold text-ink">{name}</Text>
         </Pressable>
-        {review.read_number > 1 ? (
-          <Text className="text-xs text-primary-dark">Read #{review.read_number}</Text>
-        ) : null}
+        <View className="flex-row items-center gap-2">
+          {isOwn && isPrivateReview(review.visibility) ? <PrivateReviewBadge compact /> : null}
+          {review.read_number > 1 ? (
+            <Text className="text-xs text-primary-dark">Read #{review.read_number}</Text>
+          ) : null}
+        </View>
       </View>
       {review.rating != null ? (
         <View className="mt-1 flex-row items-center gap-2">
@@ -436,7 +441,9 @@ export default function BookScreen() {
   const ownReviews = data?.ownReviews ?? [];
   const ownReview = ownReviews[0] ?? null;
   const readCount = userBook?.read_count ?? 1;
-  const otherReviews = (data?.reviews ?? []).filter((r) => r.user_id !== userId);
+  const otherReviews = (data?.reviews ?? []).filter(
+    (r) => r.user_id !== userId && r.visibility === "public"
+  );
 
   return (
     <View className="flex-1 bg-background">
@@ -698,7 +705,7 @@ export default function BookScreen() {
               {ownReviews.length > 1 ? `Your reading history (${ownReviews.length})` : "Your review"}
             </Text>
             {ownReviews.map((review) => (
-              <ReviewItem key={review.id} review={review} />
+              <ReviewItem key={review.id} review={review} isOwn />
             ))}
           </View>
         ) : null}

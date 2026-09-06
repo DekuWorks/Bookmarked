@@ -127,9 +127,15 @@ async function buildItems(
     }
   }
 
+  const publicReviewIds = new Set<string>();
   if (reviewIds.length) {
-    const { data } = await supabase.from("reviews").select("id, book_id").in("id", reviewIds);
+    const { data } = await supabase
+      .from("reviews")
+      .select("id, book_id, visibility")
+      .in("id", reviewIds);
     for (const rv of data ?? []) {
+      if (rv.visibility !== "public") continue;
+      publicReviewIds.add(rv.id as string);
       for (const row of rows) {
         if (row.entity_type === "review" && row.entity_id === rv.id) {
           bookIdByRow.set(row.id, rv.book_id as string);
@@ -154,7 +160,12 @@ async function buildItems(
     }
   }
 
-  return rows.map((row) => {
+  const visibleRows = rows.filter((row) => {
+    if (row.entity_type !== "review" || !row.entity_id) return true;
+    return publicReviewIds.has(row.entity_id);
+  });
+
+  return visibleRows.map((row) => {
     const profile = profilesById.get(row.user_id);
     const metadata = row.metadata_json;
     const bookId = bookIdByRow.get(row.id) ?? null;

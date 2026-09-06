@@ -70,11 +70,12 @@ async function resolveSharePreviewUncached(
       case "review": {
         const { data } = await supabase
           .from("reviews")
-          .select("id, user_id")
+          .select("id, user_id, visibility")
           .eq("id", payload.contentId)
           .maybeSingle();
         if (!data) return unavailableShareCard(payload);
         if (blocked.has(data.user_id as string)) return unavailableShareCard(payload);
+        if (data.visibility === "private") return unavailableShareCard(payload);
         return snapshotModel;
       }
       case "book": {

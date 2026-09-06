@@ -27,20 +27,30 @@ export function BookMiniGrid({ items, emptyMessage, emptyAction }: Props) {
   }
 
   return (
-    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+    <ul className="grid grid-cols-2 items-start gap-x-3 gap-y-4 sm:grid-cols-3 md:grid-cols-4">
       {items.map((ub) => {
         const book = ub.books;
         const href = book?.id ? bookDetailsPath(book.id) : undefined;
         const inner = (
           <>
-            <BookCover
-              title={book?.title ?? "Untitled"}
-              author={book?.author}
-              coverUrl={book?.cover_url}
-              className="w-full"
-              sizes="120px"
-              bookmarked
-            />
+            <div className="relative w-full">
+              <BookCover
+                title={book?.title ?? "Untitled"}
+                author={book?.author}
+                coverUrl={book?.cover_url}
+                className="w-full"
+                sizes="(max-width: 640px) 46vw, (max-width: 768px) 30vw, 160px"
+                bookmarked
+              />
+              {ub.is_favorite ? (
+                <span
+                  className="absolute bottom-1.5 right-1.5 rounded-full bg-background/90 px-1.5 py-0.5 text-[10px] font-semibold text-puce-red shadow-sm"
+                  aria-label="Favorite"
+                >
+                  ★
+                </span>
+              ) : null}
+            </div>
             <p className="mt-2 line-clamp-2 text-xs font-medium text-text">
               {book?.title ?? "Untitled"}
             </p>

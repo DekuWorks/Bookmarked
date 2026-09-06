@@ -185,13 +185,13 @@ export async function hydrateFeedItems(
 
   const reviewById = new Map<
     string,
-    { bookId: string; body: string | null; hasSpoilers: boolean }
+    { bookId: string; body: string | null; hasSpoilers: boolean; visibility: string }
   >();
 
   if (reviewIds.length) {
     const { data } = await supabase
       .from("reviews")
-      .select("id, book_id, review_body, has_spoilers")
+      .select("id, book_id, review_body, has_spoilers, visibility")
       .in("id", reviewIds);
 
     for (const row of data ?? []) {
@@ -199,6 +199,7 @@ export async function hydrateFeedItems(
         bookId: row.book_id as string,
         body: (row.review_body as string | null) ?? null,
         hasSpoilers: Boolean(row.has_spoilers),
+        visibility: typeof row.visibility === "string" ? row.visibility : "public",
       });
     }
 
@@ -235,7 +236,14 @@ export async function hydrateFeedItems(
     }
   }
 
-  return items.map((item) => {
+  return items
+    .filter((item) => {
+      const activity = rowById.get(item.id);
+      if (activity?.entity_type !== "review" || !activity.entity_id) return true;
+      const review = reviewById.get(activity.entity_id);
+      return Boolean(review) && review?.visibility === "public";
+    })
+    .map((item) => {
     const resolvedBookId = item.bookId ?? bookIdByItemId.get(item.id) ?? null;
     const book = resolvedBookId ? bookMap.get(resolvedBookId) : undefined;
     const activity = rowById.get(item.id);

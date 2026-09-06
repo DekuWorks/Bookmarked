@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "expo-router";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { BookCover } from "../BookCover";
 import { FeelingChip } from "../FeelingChip";
 import { LoadingState } from "../LoadingState";
@@ -17,6 +17,15 @@ import {
   type ReviewFilter,
 } from "../../../../../packages/utils/readingRoomReviews";
 import { ShareReviewButton } from "./ShareReviewButton";
+import { PrivateReviewBadge } from "../PrivateReviewBadge";
+import { ReviewVisibilityControl } from "../ReviewVisibilityControl";
+import { updateReviewVisibility } from "../../services/reviews";
+import {
+  PRIVATE_REVIEWS_EMPTY_COPY,
+  isPrivateReview,
+  parseReviewAudience,
+  type ReviewAudience,
+} from "../../../../../packages/utils/reviewVisibility";
 
 function formatReviewDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -28,10 +37,10 @@ function formatReviewDate(iso: string): string {
 
 type Props = {
   reviews: UserReviewWithBook[] | null;
+  onReviewsChange?: () => void;
 };
 
-export function ReviewsPanel({ reviews }: Props) {
-  const router = useRouter();
+export function ReviewsPanel({ reviews, onReviewsChange }: Props) {
   const [filter, setFilter] = useState<ReviewFilter>("all");
   const filtered = useMemo(
     () => (reviews ? filterReviews(reviews, filter) : []),
@@ -84,7 +93,14 @@ export function ReviewsPanel({ reviews }: Props) {
           </ScrollView>
 
           {filtered.length === 0 ? (
-            <Text className="mt-4 text-sm text-ink-muted">No reviews match this filter.</Text>
+            filter === "private" ? (
+              <View className="mt-4 gap-1">
+                <Text className="text-sm text-ink-muted">{PRIVATE_REVIEWS_EMPTY_COPY.title}</Text>
+                <Text className="text-sm text-ink-muted">{PRIVATE_REVIEWS_EMPTY_COPY.hint}</Text>
+              </View>
+            ) : (
+              <Text className="mt-4 text-sm text-ink-muted">{REVIEW_PANEL_COPY.filterEmpty}</Text>
+            )
           ) : (
             <View className="mt-4 gap-6">
               {groupReviewsByMonth(filtered).map(([month, monthReviews]) => (
@@ -93,99 +109,13 @@ export function ReviewsPanel({ reviews }: Props) {
                     {month}
                   </Text>
                   <View className="mt-3 gap-3">
-                    {monthReviews.map((review) => {
-                      const written = hasWrittenReview(review);
-                      const rated = hasStarRating(review);
-
-                      return (
-                        <View
-                          key={review.id}
-                          className="rounded-xl border border-brand-border bg-background/70 p-3"
-                        >
-                          <View className="flex-col gap-3 sm:flex-row">
-                            {review.books ? (
-                              <Pressable
-                                onPress={() =>
-                                  review.books?.id && router.push(`/book/${review.books.id}`)
-                                }
-                                className="self-center sm:self-start"
-                              >
-                                <BookCover
-                                  url={review.books.cover_url}
-                                  title={review.books.title}
-                                  sizeClassName="w-[80px] h-[120px]"
-                                />
-                              </Pressable>
-                            ) : null}
-
-                            <View className="min-w-0 flex-1">
-                              <View className="flex-row flex-wrap items-center gap-2">
-                                <Pressable
-                                  onPress={() =>
-                                    review.books?.id && router.push(`/book/${review.books.id}`)
-                                  }
-                                  className="min-w-0 flex-1 active:opacity-80"
-                                >
-                                  <Text className="font-semibold text-primary-dark">
-                                    {review.books?.title ?? "Review"}
-                                  </Text>
-                                </Pressable>
-                                {review.read_number > 1 ? (
-                                  <Text className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-puce-red">
-                                    Read #{review.read_number}
-                                  </Text>
-                                ) : null}
-                              </View>
-
-                              {review.books?.author ? (
-                                <Text className="text-xs text-ink-muted">{review.books.author}</Text>
-                              ) : null}
-
-                              <View className="mt-2 flex-row flex-wrap items-center gap-2">
-                                {rated ? (
-                                  <StarRating value={review.rating!} showNumber />
-                                ) : written ? (
-                                  <Text className="text-xs text-ink-muted">No star rating</Text>
-                                ) : null}
-                                {review.edition ? (
-                                  <Text className="text-xs text-ink-muted">· {review.edition}</Text>
-                                ) : null}
-                                {review.has_spoilers ? (
-                                  <Text className="rounded-full bg-rust/15 px-2 py-0.5 text-xs font-medium text-rust">
-                                    Spoilers
-                                  </Text>
-                                ) : null}
-                                <Text className="text-xs text-ink-muted">
-                                  {formatReviewDate(review.created_at)}
-                                </Text>
-                              </View>
-
-                              {review.feelings?.length ? (
-                                <View className="mt-2 flex-row flex-wrap gap-2">
-                                  {review.feelings.map((feeling, i) => (
-                                    <FeelingChip key={feeling} label={feeling} index={i} />
-                                  ))}
-                                </View>
-                              ) : null}
-
-                              {written ? (
-                                <Text className="mt-2 text-sm leading-relaxed text-ink-muted">
-                                  {review.review_body}
-                                </Text>
-                              ) : rated ? (
-                                <Text className="mt-2 text-sm italic text-ink-muted">
-                                  Rating only — no written review.
-                                </Text>
-                              ) : null}
-
-                              <View className="mt-3 flex-row justify-end">
-                                <ShareReviewButton review={review} />
-                              </View>
-                            </View>
-                          </View>
-                        </View>
-                      );
-                    })}
+                    {monthReviews.map((review) => (
+                      <ReviewHistoryCard
+                        key={review.id}
+                        review={review}
+                        onReviewsChange={onReviewsChange}
+                      />
+                    ))}
                   </View>
                 </View>
               ))}
@@ -194,5 +124,131 @@ export function ReviewsPanel({ reviews }: Props) {
         </>
       )}
     </SectionCard>
+  );
+}
+
+function ReviewHistoryCard({
+  review,
+  onReviewsChange,
+}: {
+  review: UserReviewWithBook;
+  onReviewsChange?: () => void;
+}) {
+  const router = useRouter();
+  const written = hasWrittenReview(review);
+  const rated = hasStarRating(review);
+  const [visibility, setVisibility] = useState<ReviewAudience>(
+    parseReviewAudience(review.visibility)
+  );
+  const [saving, setSaving] = useState(false);
+  const [prevReviewVisibility, setPrevReviewVisibility] = useState(review.visibility);
+  if (review.visibility !== prevReviewVisibility) {
+    setPrevReviewVisibility(review.visibility);
+    setVisibility(parseReviewAudience(review.visibility));
+  }
+
+  async function persistVisibility(next: ReviewAudience) {
+    if (next === visibility) return;
+    setVisibility(next);
+    setSaving(true);
+    const result = await updateReviewVisibility(review.id, next);
+    setSaving(false);
+    if (result.error) {
+      setVisibility(parseReviewAudience(review.visibility));
+      Alert.alert("Couldn't update visibility", result.error);
+      return;
+    }
+    onReviewsChange?.();
+  }
+
+  return (
+    <View className="rounded-xl border border-brand-border bg-background/70 p-3">
+      <View className="flex-col gap-3 sm:flex-row">
+        {review.books ? (
+          <Pressable
+            onPress={() => review.books?.id && router.push(`/book/${review.books.id}`)}
+            className="self-center sm:self-start"
+          >
+            <BookCover
+              url={review.books.cover_url}
+              title={review.books.title}
+              sizeClassName="w-[80px] h-[120px]"
+            />
+          </Pressable>
+        ) : null}
+
+        <View className="min-w-0 flex-1">
+          <View className="flex-row flex-wrap items-center gap-2">
+            <Pressable
+              onPress={() => review.books?.id && router.push(`/book/${review.books.id}`)}
+              className="min-w-0 flex-1 active:opacity-80"
+            >
+              <Text className="font-semibold text-primary-dark">
+                {review.books?.title ?? "Review"}
+              </Text>
+            </Pressable>
+            {review.read_number > 1 ? (
+              <Text className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-puce-red">
+                Read #{review.read_number}
+              </Text>
+            ) : null}
+          </View>
+
+          {review.books?.author ? (
+            <Text className="text-xs text-ink-muted">{review.books.author}</Text>
+          ) : null}
+
+          <View className="mt-2 flex-row flex-wrap items-center gap-2">
+            {rated ? (
+              <StarRating value={review.rating!} showNumber />
+            ) : written ? (
+              <Text className="text-xs text-ink-muted">No star rating</Text>
+            ) : null}
+            {review.edition ? (
+              <Text className="text-xs text-ink-muted">· {review.edition}</Text>
+            ) : null}
+            {review.has_spoilers ? (
+              <Text className="rounded-full bg-rust/15 px-2 py-0.5 text-xs font-medium text-rust">
+                Spoilers
+              </Text>
+            ) : null}
+            {isPrivateReview(visibility) ? <PrivateReviewBadge compact /> : null}
+            <Text className="text-xs text-ink-muted">{formatReviewDate(review.created_at)}</Text>
+          </View>
+
+          {review.feelings?.length ? (
+            <View className="mt-2 flex-row flex-wrap gap-2">
+              {review.feelings.map((feeling, i) => (
+                <FeelingChip key={feeling} label={feeling} index={i} />
+              ))}
+            </View>
+          ) : null}
+
+          {written ? (
+            <Text className="mt-2 text-sm leading-relaxed text-ink-muted">
+              {review.review_body}
+            </Text>
+          ) : rated ? (
+            <Text className="mt-2 text-sm italic text-ink-muted">
+              Rating only — no written review.
+            </Text>
+          ) : null}
+
+          <View className="mt-3">
+            <ReviewVisibilityControl
+              value={visibility}
+              disabled={saving}
+              onChange={(next) => void persistVisibility(next)}
+            />
+          </View>
+
+          {review.books?.id && !isPrivateReview(visibility) ? (
+            <View className="mt-3 flex-row justify-end">
+              <ShareReviewButton review={review} />
+            </View>
+          ) : null}
+        </View>
+      </View>
+    </View>
   );
 }

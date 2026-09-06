@@ -20,12 +20,23 @@ import {
   type ReviewFilter,
 } from "@bookmarked/utils/readingRoomReviews";
 import { ShareReviewButton } from "@/components/reading-room/ShareReviewButton";
+import { PrivateReviewBadge } from "@/components/reviews/PrivateReviewBadge";
+import { ReviewVisibilityControl } from "@/components/reviews/ReviewVisibilityControl";
+import { updateReviewVisibility } from "@/lib/services/reviewVisibility";
+import { useToast } from "@/components/ui/Toast";
+import {
+  PRIVATE_REVIEWS_EMPTY_COPY,
+  isPrivateReview,
+  parseReviewAudience,
+  type ReviewAudience,
+} from "@bookmarked/utils/reviewVisibility";
 
 type Props = {
   reviews: UserReviewWithBook[] | null;
+  onReviewsChange?: () => void;
 };
 
-export function ReviewsPanel({ reviews }: Props) {
+export function ReviewsPanel({ reviews, onReviewsChange }: Props) {
   const locale = usePreferredLocale();
   const [filter, setFilter] = useState<ReviewFilter>("all");
 
@@ -74,9 +85,16 @@ export function ReviewsPanel({ reviews }: Props) {
           </div>
 
           {filtered.length === 0 ? (
-            <p className="mt-6 text-center text-sm text-text-muted">
-              No reviews match this filter.
-            </p>
+            filter === "private" ? (
+              <div className="mt-6 space-y-1 text-center text-sm text-text-muted">
+                <p>{PRIVATE_REVIEWS_EMPTY_COPY.title}</p>
+                <p>{PRIVATE_REVIEWS_EMPTY_COPY.hint}</p>
+              </div>
+            ) : (
+              <p className="mt-6 text-center text-sm text-text-muted">
+                {REVIEW_PANEL_COPY.filterEmpty}
+              </p>
+            )
           ) : (
             <div className="mt-6 space-y-8">
               {groupReviewsByMonth(filtered).map(([month, monthReviews]) => (
@@ -86,7 +104,12 @@ export function ReviewsPanel({ reviews }: Props) {
                   </h3>
                   <ul className="mt-3 space-y-4">
                     {monthReviews.map((review) => (
-                      <ReviewHistoryCard key={review.id} review={review} locale={locale} />
+                      <ReviewHistoryCard
+                        key={review.id}
+                        review={review}
+                        locale={locale}
+                        onReviewsChange={onReviewsChange}
+                      />
                     ))}
                   </ul>
                 </div>
@@ -102,14 +125,40 @@ export function ReviewsPanel({ reviews }: Props) {
 function ReviewHistoryCard({
   review,
   locale,
+  onReviewsChange,
 }: {
   review: UserReviewWithBook;
   locale: string;
+  onReviewsChange?: () => void;
 }) {
+  const toast = useToast();
+  const [visibility, setVisibility] = useState<ReviewAudience>(
+    parseReviewAudience(review.visibility)
+  );
+  const [saving, setSaving] = useState(false);
+  const [prevReviewVisibility, setPrevReviewVisibility] = useState(review.visibility);
+  if (review.visibility !== prevReviewVisibility) {
+    setPrevReviewVisibility(review.visibility);
+    setVisibility(parseReviewAudience(review.visibility));
+  }
   const book = review.books;
   const bookHref = book?.id ? bookDetailsPath(book.id) : null;
   const written = hasWrittenReview(review);
   const rated = hasStarRating(review);
+
+  async function persistVisibility(next: ReviewAudience) {
+    if (next === visibility) return;
+    setVisibility(next);
+    setSaving(true);
+    const result = await updateReviewVisibility(review.id, next);
+    setSaving(false);
+    if (result.error) {
+      setVisibility(parseReviewAudience(review.visibility));
+      toast.error(result.error);
+      return;
+    }
+    onReviewsChange?.();
+  }
 
   return (
     <li className="rounded-xl border border-border bg-background/50 p-3 sm:p-4">
@@ -176,6 +225,7 @@ function ReviewHistoryCard({
                 Spoilers
               </span>
             ) : null}
+            {isPrivateReview(visibility) ? <PrivateReviewBadge /> : null}
             <time className="text-xs text-text-muted" dateTime={review.created_at}>
               {formatReviewDate(review.created_at, locale)}
             </time>
@@ -204,8 +254,18 @@ function ReviewHistoryCard({
             </p>
           ) : null}
 
+          <div className="mt-3">
+            <ReviewVisibilityControl
+              value={visibility}
+              disabled={saving}
+              onChange={(next) => void persistVisibility(next)}
+            />
+          </div>
+
           <div className="mt-3 flex justify-end">
-            {book?.id ? <ShareReviewButton review={review} /> : null}
+            {book?.id && !isPrivateReview(visibility) ? (
+              <ShareReviewButton review={review} />
+            ) : null}
           </div>
         </div>
       </div>

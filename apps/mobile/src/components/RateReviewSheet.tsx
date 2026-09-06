@@ -12,8 +12,13 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "./Button";
 import { StarRatingInput } from "./StarRatingInput";
-import { upsertReview, RATING_EMOJIS } from "../services/reviews";
+import { upsertReview, updateReviewVisibility, RATING_EMOJIS } from "../services/reviews";
 import type { Review } from "../types";
+import { ReviewVisibilityControl } from "./ReviewVisibilityControl";
+import {
+  parseReviewAudience,
+  type ReviewAudience,
+} from "../../../../packages/utils/reviewVisibility";
 
 /** Feelings tags exactly as in the rating mockup (IMG_5359). */
 const RATING_FEELINGS = [
@@ -73,6 +78,10 @@ export function RateReviewSheet({
   const [feelings, setFeelings] = useState<string[]>(existingReview?.feelings ?? []);
   const [body, setBody] = useState(existingReview?.review_body ?? "");
   const [hasSpoilers, setHasSpoilers] = useState(existingReview?.has_spoilers ?? false);
+  const [visibility, setVisibility] = useState<ReviewAudience>(
+    parseReviewAudience(existingReview?.visibility)
+  );
+  const [visibilitySaving, setVisibilitySaving] = useState(false);
   const [categories, setCategories] = useState<Record<CategoryKey, number>>({
     plot: existingReview?.plot ?? 0,
     characters: existingReview?.characters ?? 0,
@@ -103,6 +112,7 @@ export function RateReviewSheet({
         ratingEmoji: emoji,
         reviewBody: body,
         hasSpoilers,
+        visibility,
         feelings,
         ratingMode: hasCategories ? "advanced" : "regular",
         plot: categories.plot || null,
@@ -262,6 +272,25 @@ export function RateReviewSheet({
               trackColor={{ true: "#642F37", false: "#D5C3D7" }}
             />
           </View>
+
+          <ReviewVisibilityControl
+            value={visibility}
+            disabled={saving || visibilitySaving}
+            onChange={(next) => {
+              setVisibility(next);
+              if (!existingReview?.id || next === visibility) return;
+              setVisibilitySaving(true);
+              void updateReviewVisibility(existingReview.id, next).then((result) => {
+                setVisibilitySaving(false);
+                if (result.error) {
+                  setVisibility(parseReviewAudience(existingReview.visibility));
+                  Alert.alert("Couldn't update visibility", result.error);
+                  return;
+                }
+                onSaved?.();
+              });
+            }}
+          />
 
           <Button title="Save review" onPress={save} loading={saving} />
         </ScrollView>

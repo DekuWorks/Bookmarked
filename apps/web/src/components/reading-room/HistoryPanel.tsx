@@ -12,13 +12,14 @@ import type { UserReadingSession } from "@/lib/services/readingSessions";
 import { cn } from "@/lib/utils/cn";
 import {
   DEFAULT_HISTORY_SORT,
+  HISTORY_PAGE_SIZE,
   HISTORY_PANEL_COPY,
   filterFinishedHistoryBooks,
   sortHistoryBooks,
   type HistorySortMode,
 } from "@bookmarked/utils/readingRoomHistory";
 import { withOriginQuery } from "@bookmarked/utils/navigationOrigin";
-import { DEFAULT_PAGE_SIZE, paginateItems } from "@bookmarked/utils/pagination";
+import { paginateItems } from "@bookmarked/utils/pagination";
 
 type Props = {
   books: LibraryBookRow[];
@@ -42,7 +43,7 @@ export function HistoryPanel({ books, sessions }: Props) {
   }
 
   const finishedBooksPage = useMemo(
-    () => paginateItems(sortedFinishedBooks, page, DEFAULT_PAGE_SIZE),
+    () => paginateItems(sortedFinishedBooks, page, HISTORY_PAGE_SIZE),
     [sortedFinishedBooks, page]
   );
 

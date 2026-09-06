@@ -155,8 +155,21 @@ export {
 } from "./readingRoomReviews";
 
 export {
+  PRIVATE_REVIEW_BADGE,
+  PRIVATE_REVIEWS_EMPTY_COPY,
+  REVIEW_VISIBILITY_OPTIONS,
+  canViewerReadReview,
+  isPrivateReview,
+  isPublicReview,
+  isReviewPubliclyVisible,
+  parseReviewAudience,
+  reviewActivityVisibility,
+  type ReviewAudience,
+} from "./reviewVisibility";
+
+export {
   DEFAULT_HISTORY_SORT,
-  DEFAULT_HISTORY_VISIBLE_LIMIT,
+  HISTORY_PAGE_SIZE,
   countFinishedHistoryBooks,
   filterFinishedHistoryBooks,
   HISTORY_PANEL_COPY,

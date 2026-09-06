@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
 import { RefreshControl, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
@@ -43,6 +43,7 @@ export default function HomeReadingRoom() {
     book?: string;
   }>();
   const colors = useThemeColors();
+  const queryClient = useQueryClient();
   const userId = useAuthStore((s) => s.user?.id);
   const { data: profile, refetch: refetchProfile } = useProfile();
   const { onScroll } = useTabBarScroll();
@@ -200,7 +201,17 @@ export default function HomeReadingRoom() {
           />
         ) : null}
 
-        {tab === "reviews" ? <ReviewsPanel reviews={reviews} /> : null}
+        {tab === "reviews" ? (
+          <ReviewsPanel
+            reviews={reviews}
+            onReviewsChange={() => {
+              void loadReviews();
+              void queryClient.invalidateQueries({ queryKey: ["home-feed"] });
+              void queryClient.invalidateQueries({ queryKey: ["reader-activity"] });
+              void queryClient.invalidateQueries({ queryKey: ["book-details"] });
+            }}
+          />
+        ) : null}
 
         {tab === "history" ? <HistoryPanel books={books} sessions={sessions} /> : null}
       </Animated.ScrollView>

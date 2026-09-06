@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "expo-router";
-import { FlatList, Pressable, Text, View } from "react-native";
+import { Pressable, Text, useWindowDimensions, View } from "react-native";
 import { CoverTile } from "../CoverTile";
 import { LoadingState } from "../LoadingState";
 import { SectionCard } from "../SectionCard";
@@ -8,13 +8,14 @@ import type { LibraryBookRow } from "../../services/library";
 import type { UserReadingSession } from "../../services/readingSessions";
 import {
   DEFAULT_HISTORY_SORT,
+  HISTORY_PAGE_SIZE,
   HISTORY_PANEL_COPY,
   filterFinishedHistoryBooks,
   sortHistoryBooks,
   type HistorySortMode,
 } from "../../../../../packages/utils/readingRoomHistory";
 import { withOriginQuery } from "../../../../../packages/utils/navigationOrigin";
-import { DEFAULT_PAGE_SIZE, paginateItems } from "../../../../../packages/utils/pagination";
+import { paginateItems } from "../../../../../packages/utils/pagination";
 import { HistorySortSelect } from "./HistorySortSelect";
 import { BookListPagination } from "./BookListPagination";
 
@@ -31,8 +32,13 @@ type Props = {
   sessions: UserReadingSession[] | null;
 };
 
+const TABLET_MIN_WIDTH = 768;
+
 export function HistoryPanel({ books, sessions }: Props) {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isTablet = width >= TABLET_MIN_WIDTH;
+  const tileWidth = isTablet ? "w-[23%]" : "w-[31%]";
   const [sort, setSort] = useState<HistorySortMode>(DEFAULT_HISTORY_SORT);
   const [page, setPage] = useState(1);
 
@@ -49,7 +55,7 @@ export function HistoryPanel({ books, sessions }: Props) {
   }
 
   const finishedBooksPage = useMemo(
-    () => paginateItems(sortedFinishedBooks, page, DEFAULT_PAGE_SIZE),
+    () => paginateItems(sortedFinishedBooks, page, HISTORY_PAGE_SIZE),
     [sortedFinishedBooks, page]
   );
 
@@ -63,21 +69,21 @@ export function HistoryPanel({ books, sessions }: Props) {
         {finishedBooksPage.total === 0 ? (
           <Text className="mt-4 text-sm text-ink-muted">Books you finish will appear here.</Text>
         ) : (
-          <FlatList
-            horizontal
-            data={finishedBooksPage.pageItems}
-            keyExtractor={(item) => item.id}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 12, marginTop: 16 }}
-            renderItem={({ item }) => (
+          <View className="mt-4 flex-row flex-wrap justify-between gap-y-3">
+            {finishedBooksPage.pageItems.map((item) => (
               <CoverTile
+                key={item.id}
                 bookId={item.books?.id}
                 title={item.books?.title}
                 author={item.books?.author}
                 coverUrl={item.books?.cover_url}
+                saved
+                isFavorite={item.is_favorite}
+                widthClassName={tileWidth}
+                coverSizeClassName="w-full aspect-[2/3]"
               />
-            )}
-          />
+            ))}
+          </View>
         )}
 
         <BookListPagination

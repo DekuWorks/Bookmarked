@@ -46,6 +46,7 @@ export async function getBookDetails(
 
   const reviewList = (reviews ?? []) as Review[];
   const ownReviews = reviewList.filter((r) => r.user_id === userId);
+  const publicReviews = reviewList.filter((r) => r.visibility === "public");
 
   const readingSessions = userBook
     ? await listReadingSessions(userBook.id)
@@ -54,7 +55,7 @@ export async function getBookDetails(
   return {
     book: enriched,
     userBook: (userBook as UserBook | null) ?? null,
-    reviews: reviewList,
+    reviews: publicReviews,
     ownReviews,
     communityRating,
     badges,
