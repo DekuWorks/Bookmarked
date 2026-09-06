@@ -32,8 +32,10 @@ type Props = {
 export function BookSpine({ bookId, title, author, coverUrl, pageCount, saved }: Props) {
   const router = useRouter();
   const label = title?.trim() || "Untitled";
+  const authorLabel = author?.trim();
   const width = spineWidth(pageCount);
   const spineColor = SPINE_COLORS[hashTitle(label) % SPINE_COLORS.length];
+  const accessibilityLabel = authorLabel ? `${label} by ${authorLabel}` : label;
 
   return (
     <Pressable
@@ -41,6 +43,8 @@ export function BookSpine({ bookId, title, author, coverUrl, pageCount, saved }:
       onPress={() => bookId && router.push(`/book/${bookId}`)}
       className="items-center active:opacity-80"
       style={{ width }}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
     >
       <View
         className="relative overflow-hidden rounded-t-sm border border-brand-border/40"
@@ -51,20 +55,12 @@ export function BookSpine({ bookId, title, author, coverUrl, pageCount, saved }:
             source={{ uri: resolveCoverDisplayUrl(coverUrl, "thumb") ?? coverUrl }}
             className="absolute inset-0"
             resizeMode="cover"
+            accessible={false}
           />
         ) : (
           <View className={`absolute inset-0 ${spineColor}`} />
         )}
         <View className="absolute inset-0 bg-black/65" />
-        <View className="absolute inset-0 items-center justify-center px-1.5 py-3">
-          <Text
-            numberOfLines={7}
-            className="text-center text-[10px] font-extrabold leading-3 text-white"
-            style={{ transform: [{ rotate: "-90deg" }], width: 156 }}
-          >
-            {label}
-          </Text>
-        </View>
         {saved ? (
           <View
             pointerEvents="none"

@@ -17,7 +17,7 @@ import { Avatar } from "../../src/components/Avatar";
 import { BookCard } from "../../src/components/BookCard";
 import { CoverTile } from "../../src/components/CoverTile";
 import { EmptyState } from "../../src/components/EmptyState";
-import { Input } from "../../src/components/Input";
+import { SearchBar } from "../../src/components/SearchBar";
 import { ScreenGradientWash } from "../../src/components/ScreenGradientWash";
 import { SegmentedTabs } from "../../src/components/SegmentedTabs";
 import { useBookSearch } from "../../src/hooks/useBookSearch";
@@ -59,6 +59,7 @@ import {
   ALREADY_IN_LIBRARY_COPY,
   formatLibraryMemberships,
 } from "../../../../packages/utils/shelfMove";
+import { createSearchRequestGuard } from "../../../../packages/utils/searchClear";
 
 type Mode = "books" | "people" | "clubs";
 
@@ -111,6 +112,7 @@ export default function SearchScreen() {
   const userId = useAuthStore((s) => s.user?.id);
   const { onScroll } = useTabBarScroll();
   const inputRef = useRef<TextInput>(null);
+  const searchGuard = useRef(createSearchRequestGuard());
   const listRef = useRef<FlatList<CatalogDoc>>(null);
   const peopleListRef = useRef<FlatList>(null);
   const clubsListRef = useRef<FlatList>(null);
@@ -317,8 +319,23 @@ export default function SearchScreen() {
     scrollY.current = offset;
   }
 
+  function cancelInFlightSearch() {
+    searchGuard.current.invalidate();
+    void queryClient.cancelQueries({ queryKey: ["book-search"] });
+    void queryClient.cancelQueries({ queryKey: ["search-people"] });
+    void queryClient.cancelQueries({ queryKey: ["search-clubs"] });
+  }
+
+  function clearSearch() {
+    cancelInFlightSearch();
+    setQuery("");
+    setSubmitted("");
+    requestAnimationFrame(() => inputRef.current?.focus());
+  }
+
   function switchMode(next: Mode) {
     if (next === mode) return;
+    cancelInFlightSearch();
     setMode(next);
     setQuery("");
     setSubmitted("");
@@ -408,7 +425,7 @@ export default function SearchScreen() {
             </Pressable>
           </View>
         ) : null}
-        <Input
+        <SearchBar
           ref={inputRef}
           placeholder={
             mode === "books"
@@ -422,13 +439,17 @@ export default function SearchScreen() {
           returnKeyType="search"
           value={query}
           onChangeText={setQuery}
-          onSubmitEditing={() => setSubmitted(query)}
+          onSubmitEditing={() => {
+            searchGuard.current.next();
+            setSubmitted(query);
+          }}
+          onClear={clearSearch}
         />
         <SegmentedTabs options={MODE_TABS} value={mode} onChange={switchMode} />
       </View>
 
       {mode === "books" ? (
-        books.isFetching ? (
+        books.isFetching && submitted.trim().length >= 2 ? (
           <View className="items-center py-8">
             <ActivityIndicator size="large" color="#642F37" />
           </View>
@@ -531,7 +552,7 @@ export default function SearchScreen() {
       ) : mode === "people" ? (
         <Animated.FlatList
           ref={peopleListRef}
-          data={people.data ?? []}
+          data={query.trim().length >= 2 ? (people.data ?? []) : []}
           keyExtractor={(item) => item.id}
           onScroll={onScroll}
           onScrollEndDrag={(event) => rememberScroll(event.nativeEvent.contentOffset.y)}
@@ -583,7 +604,7 @@ export default function SearchScreen() {
       ) : (
         <Animated.FlatList
           ref={clubsListRef}
-          data={clubs.data ?? []}
+          data={query.trim().length >= 2 ? (clubs.data ?? []) : []}
           keyExtractor={(item) => item.id}
           onScroll={onScroll}
           onScrollEndDrag={(event) => rememberScroll(event.nativeEvent.contentOffset.y)}
