@@ -251,6 +251,13 @@ body {
   display: none;
 }
 
+/* Feed-scoped centering: keep the outer shell full-width, center the compact pills. */
+.pill-tabs[data-align="center"] {
+  justify-content: center;
+  justify-content: safe center;
+  align-items: center;
+}
+
 .pill-tab {
   flex: 1;
   min-height: 44px;
