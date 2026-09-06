@@ -88,6 +88,29 @@ export async function listUserReviews(
   return (data ?? []) as UserReviewWithBook[];
 }
 
+/** Owner-only private reviews. RLS still requires user_id = auth user. */
+export async function listPrivateUserReviews(
+  userId: string,
+  limit = 50
+): Promise<UserReviewWithBook[]> {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("reviews")
+    .select("*, books(id, title, author, cover_url)")
+    .eq("user_id", userId)
+    .eq("visibility", "private")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("[readingRoom] list private user reviews failed:", error);
+    return [];
+  }
+
+  return (data ?? []) as UserReviewWithBook[];
+}
+
 /** Public-only reviews for a reader profile. Kept separate from the Reading
  * Room query so private reviews can never be shown by a profile surface. */
 export async function listPublicUserReviews(

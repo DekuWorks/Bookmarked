@@ -1,6 +1,10 @@
 import { supabase } from "./supabase";
 import { activityMetadata, bookActivityContext, recordActivity } from "./activity";
 import type { Review, ReviewRatingMode, ReviewVisibility } from "../types";
+import {
+  parseReviewAudience,
+  type ReviewAudience,
+} from "../../../../packages/utils/reviewVisibility";
 
 /**
  * Mobile reviews service. Writes to the `reviews` table + records feed activity,
@@ -71,7 +75,7 @@ export async function upsertReview(
     rating_emoji: input.ratingEmoji?.trim() || null,
     review_body: input.reviewBody?.trim() || null,
     has_spoilers: input.hasSpoilers ?? false,
-    visibility: input.visibility ?? "public",
+    visibility: parseReviewAudience(input.visibility),
     feelings: input.feelings ?? [],
     rating_mode: input.ratingMode ?? "regular",
     plot: input.plot ?? null,
@@ -105,6 +109,7 @@ export async function upsertReview(
     event_type: existing?.id ? "review_updated" : "review_created",
     entity_type: "review",
     entity_id: review.id,
+    visibility: parseReviewAudience(review.visibility),
     metadata_json: activityMetadata(book.title, {
       ...bookActivityContext(book),
       rating: input.rating ?? undefined,
@@ -113,4 +118,21 @@ export async function upsertReview(
   });
 
   return { review };
+}
+
+export async function updateReviewVisibility(
+  reviewId: string,
+  visibility: ReviewAudience
+): Promise<{ error?: string; review?: Review }> {
+  const next = parseReviewAudience(visibility);
+  const { data, error } = await supabase
+    .from("reviews")
+    .update({ visibility: next, updated_at: new Date().toISOString() })
+    .eq("id", reviewId)
+    .select("*")
+    .maybeSingle();
+
+  if (error) return { error: error.message };
+  if (!data) return { error: "Review not found." };
+  return { review: data as Review };
 }

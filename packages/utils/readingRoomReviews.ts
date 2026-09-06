@@ -20,6 +20,7 @@ export type ReviewFilterable = {
 export const REVIEW_PANEL_COPY = {
   title: "Your Reviews",
   subtitle: "Ratings and reviews across your reading history.",
+  filterEmpty: "No reviews match this filter.",
 } as const;
 
 export const REVIEW_FILTER_OPTIONS: { id: ReviewFilter; label: string }[] = [

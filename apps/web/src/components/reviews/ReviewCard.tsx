@@ -30,6 +30,14 @@ import type { ThreadNode } from "@/lib/utils/threadReplies";
 import { usePreferredLocale } from "@/lib/hooks/usePreferredLocale";
 import { formatReviewDate } from "@/lib/utils/locale";
 import { ContentActionsMenu } from "@/components/moderation/ContentActionsMenu";
+import { PrivateReviewBadge } from "@/components/reviews/PrivateReviewBadge";
+import { ReviewVisibilityControl } from "@/components/reviews/ReviewVisibilityControl";
+import { updateReviewVisibility } from "@/lib/services/reviewVisibility";
+import {
+  isPrivateReview,
+  parseReviewAudience,
+  type ReviewAudience,
+} from "@bookmarked/utils/reviewVisibility";
 
 type ReviewReplyNode = Omit<ReviewReplyWithAuthor, "children">;
 
@@ -75,6 +83,15 @@ export function ReviewCard({
     viewer_reaction: null,
   });
   const [reactionLoading, setReactionLoading] = useState(false);
+  const [visibility, setVisibility] = useState<ReviewAudience>(
+    parseReviewAudience(review.visibility)
+  );
+  const [visibilitySaving, setVisibilitySaving] = useState(false);
+  const [prevReviewVisibility, setPrevReviewVisibility] = useState(review.visibility);
+  if (review.visibility !== prevReviewVisibility) {
+    setPrevReviewVisibility(review.visibility);
+    setVisibility(parseReviewAudience(review.visibility));
+  }
   const [repliesOpen, setRepliesOpen] = useState(false);
   const [replies, setReplies] = useState<ThreadNode<ReviewReplyNode>[]>([]);
   const [repliesLoading, setRepliesLoading] = useState(false);
@@ -122,6 +139,20 @@ export function ReviewCard({
   useEffect(() => {
     if (repliesOpen && reviewId) void loadReplies();
   }, [repliesOpen, reviewId, loadReplies]);
+
+  async function persistVisibility(next: ReviewAudience) {
+    if (!reviewId || next === visibility) return;
+    setVisibility(next);
+    setVisibilitySaving(true);
+    const result = await updateReviewVisibility(reviewId, next);
+    setVisibilitySaving(false);
+    if (result.error) {
+      setVisibility(parseReviewAudience(review.visibility));
+      toast.error(result.error);
+      return;
+    }
+    onReviewChange?.();
+  }
 
   async function handleLike() {
     if (!reviewId) return;
@@ -179,6 +210,9 @@ export function ReviewCard({
             Spoilers
           </span>
         ) : null}
+        {!isEditing && isOwnReview && isPrivateReview(visibility) ? (
+          <PrivateReviewBadge />
+        ) : null}
         {canManage && !isEditing ? (
           <span className="ml-auto flex gap-1">
             <Button type="button" variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
@@ -216,13 +250,24 @@ export function ReviewCard({
           bookId={bookId}
           readNumber={review.read_number}
           reviewId={reviewId}
-          initial={review}
+          initial={{ ...review, visibility }}
           formAction={saveAction}
-          pending={saving}
+          pending={saving || visibilitySaving}
           submitLabel="Save review"
+          onVisibilityPersist={persistVisibility}
         />
       ) : (
         <>
+          {isOwnReview ? (
+            <div className="mb-3">
+              <ReviewVisibilityControl
+                value={visibility}
+                disabled={visibilitySaving}
+                onChange={(next) => void persistVisibility(next)}
+              />
+            </div>
+          ) : null}
+
           {review.edition ? (
             <p className="mb-2 text-xs text-text-muted">Edition: {review.edition}</p>
           ) : null}

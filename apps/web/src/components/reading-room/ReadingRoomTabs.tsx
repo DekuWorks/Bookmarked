@@ -204,7 +204,9 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
 
         {tab === "notes" ? <NotesPanel userId={userId} /> : null}
 
-        {tab === "reviews" ? <ReviewsPanel reviews={reviews} /> : null}
+        {tab === "reviews" ? (
+          <ReviewsPanel reviews={reviews} onReviewsChange={() => void loadReviews()} />
+        ) : null}
 
         {tab === "history" ? (
           <HistoryPanel books={libraryBooks} sessions={sessions} />

@@ -506,7 +506,7 @@ Tracking against the Free/Plus/Reading DNA master spec (Phases 1–42). Distinct
 | Reading DNA algorithm | `docs/READING_DNA_ALGORITHM.md` |
 | Sprint 6 polish / DNF QA | `docs/SPRINT_6_POLISH.md` |
 
-**Last updated:** 3 September 2026 (Twelfth Sprint QA — web + iOS)
+**Last updated:** 5 September 2026 (History Tab — Private Reviews + 12-book grid)
 
 ---
 
@@ -562,6 +562,43 @@ Tracking against the Free/Plus/Reading DNA master spec (Phases 1–42). Distinct
 - Unit: `navigationOrigin`, `recentNotesByBook`, `spoilerReveal`, `pageProgress`, `libraryFilters`, `starRatingDisplay`, `customMoodTags`, `shelfMove`, `rememberMe`
 - Manual QA: origin back, search category clear, shelf move, spoiler timer, stars, Home Recent Notes
 - Blockers: web app is auth-gated — browser QA may stop at sign-in. Mood/total-pages need the new migration applied.
+
+---
+
+## History Tab — Private Reviews + 12-book grid ✅
+
+Twelfth Sprint already renamed the Reviews filter **Rating & Review → Private Reviews**. This pass adds the model, RLS, and UI so privacy is real — not only a label.
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Visibility field | ✅ reused | `reviews.visibility` existed since phase 0 (`text not null default 'public'`). No new column. |
+| Default | ✅ public | Existing rows stay public. Legacy/`followers` values normalised to **public** (never to private). |
+| Allowed values | ✅ | Check constraint `visibility in ('public', 'private')`. UI is Public \| Private only. |
+| RLS | ✅ | Owner read/edit/delete public + private. Others `visibility = 'public'` only. Helper `review_visible_to_viewer()`. Child reaction/reply policies already checked parent visibility. |
+| Feed | ✅ | Web + iOS activity feed uses **copied** `activity_events` rows. Mobile home feed also loads **live public reviews**. Public→Private updates existing activity rows to `private` (trigger) and drops hydrate cards if the review is missing/private. Private→Public reuses the same rows — no duplicate posts. Feed notifications for those activities are deleted when a review becomes private. |
+| Profile / book / discovery | ✅ | Profile uses `listPublicUserReviews`. Book community list is public-only; owner still sees their private review labelled Private. Community/trending ratings stay public-only (rating math unchanged). Share previews hide private reviews. |
+| Create / edit | ✅ | Public \| Private control on web + iOS, default Public, separate from spoiler. Owner can flip anytime; persist is immediate. |
+| Private Reviews filter | ✅ | Label kept. Empty copy: “You don't have any private reviews yet.” Server helper `listPrivateUserReviews` (`user_id` + `visibility = private`). Client filter matches. |
+| Owner badge | ✅ | “Private” + lock icon (SVG / Ionicons). a11y “Private Review”. Not an Apple emoji. |
+| History page size | ✅ | `HISTORY_PAGE_SIZE = 12`. Sort then paginate. Page 1 = 1–12. Last page may be smaller. Trail still uses `DEFAULT_PAGE_SIZE = 10`. |
+| History grid | ✅ | Desktop 4×3, tablet 3, phone 2 (web). iPhone 3-across, iPad 4-across at `width >= 768` (same as Twelfth Sprint). Bookmark + favorite kept. History qualification unchanged (`shelf_status = read`, not DNF). |
+| Android | ✅ skipped | Not in scope. |
+
+### Schema / rollback
+
+Additive migrations:
+- `supabase/migrations/20260906010000_review_private_visibility.sql`
+- `supabase/migrations/20260906010001_review_visibility_helper_grants.sql` (SECURITY DEFINER + execute grant)
+
+- Reuses `reviews.visibility`; default remains `public`.
+- Index `reviews_owner_private_idx` for the owner private list.
+- Trigger `reviews_sync_activity_visibility` keeps copied Feed rows in sync.
+- Rollback (safe, no data loss): drop trigger/function/index/check constraint. Column and public defaults stay.
+
+### Shared utils
+
+- `packages/utils/reviewVisibility.ts` — parse, RLS predicate tests, badge/empty copy
+- `packages/utils/readingRoomHistory.ts` — `HISTORY_PAGE_SIZE = 12`
 
 ---
 

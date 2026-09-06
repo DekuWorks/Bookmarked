@@ -604,6 +604,7 @@ export async function saveReview(
   const rating = parseHalfStarRating(formData.get("rating"));
   const review_body = String(formData.get("review_body") ?? "").trim() || null;
   const has_spoilers = formData.get("has_spoilers") === "on";
+  const visibility = formData.get("visibility") === "private" ? "private" : "public";
   const edition = String(formData.get("edition") ?? "").trim() || null;
   const read_number = Math.max(1, Number(formData.get("read_number") ?? 1) || 1);
   const rating_mode = parseRatingMode(String(formData.get("rating_mode") ?? "regular"));
@@ -645,7 +646,7 @@ export async function saveReview(
     feelings,
     rating_mode,
     rating_emoji,
-    visibility: "public" as const,
+    visibility,
     updated_at: new Date().toISOString(),
     ...aspects,
   };
@@ -694,6 +695,7 @@ export async function saveReview(
     event_type: isUpdate ? "review_updated" : "review_created",
     entity_type: "review",
     entity_id: savedId,
+    visibility,
     metadata_json: activityMetadata(book.title, {
       ...bookActivityContext(book),
       rating,

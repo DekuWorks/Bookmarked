@@ -20,7 +20,8 @@ export type HistorySortMode =
   | "added_oldest";
 
 export const DEFAULT_HISTORY_SORT: HistorySortMode = "added_newest";
-export const DEFAULT_HISTORY_VISIBLE_LIMIT = 10;
+/** History grid page size — sort first, then 12 per page (4×3 on desktop). */
+export const HISTORY_PAGE_SIZE = 12;
 
 export const HISTORY_PANEL_COPY = {
   title: "Recently Finished",
@@ -156,7 +157,7 @@ export function selectHistoryBooks<
 >(
   books: T[],
   sort: HistorySortMode = DEFAULT_HISTORY_SORT,
-  limit = DEFAULT_HISTORY_VISIBLE_LIMIT
+  limit = HISTORY_PAGE_SIZE
 ): T[] {
   const sorted = sortHistoryBooks(filterFinishedHistoryBooks(books), sort);
   return Number.isFinite(limit) ? sorted.slice(0, Math.max(0, limit)) : sorted;

@@ -70,7 +70,7 @@ export async function getBookDetails(
   return {
     book: book as Book,
     userBook: typedUserBook,
-    reviews,
+    reviews: reviews.filter((r) => r.visibility === "public"),
     ownReviews: reviews.filter((r) => r.user_id === userId),
     communityRating,
     readingSessions,

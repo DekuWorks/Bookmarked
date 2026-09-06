@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  DEFAULT_HISTORY_VISIBLE_LIMIT,
+  HISTORY_PAGE_SIZE,
   countFinishedHistoryBooks,
   filterFinishedHistoryBooks,
   selectHistoryBooks,
@@ -113,22 +113,26 @@ describe("selectRecentlyFinishedBooks", () => {
 });
 
 describe("selectHistoryBooks", () => {
-  const rows = Array.from({ length: 12 }, (_, index) =>
+  const rows = Array.from({ length: 15 }, (_, index) =>
     book({
       id: `book-${index + 1}`,
       finished_at: `2026-07-${String(index + 1).padStart(2, "0")}T00:00:00.000Z`,
       books: {
-        title: String.fromCharCode(76 - index),
-        author: `Author ${String.fromCharCode(76 - index)}`,
+        title: String.fromCharCode(79 - index),
+        author: `Author ${String.fromCharCode(79 - index)}`,
       },
     })
   );
 
-  it("defaults to ten visible books after newest-first sorting", () => {
+  it("defaults to twelve visible books after newest-first sorting", () => {
     const selected = selectHistoryBooks(rows);
 
-    expect(selected).toHaveLength(DEFAULT_HISTORY_VISIBLE_LIMIT);
+    expect(HISTORY_PAGE_SIZE).toBe(12);
+    expect(selected).toHaveLength(HISTORY_PAGE_SIZE);
     expect(selected.map((row) => row.id)).toEqual([
+      "book-15",
+      "book-14",
+      "book-13",
       "book-12",
       "book-11",
       "book-10",
@@ -138,7 +142,6 @@ describe("selectHistoryBooks", () => {
       "book-6",
       "book-5",
       "book-4",
-      "book-3",
     ]);
   });
 
@@ -158,12 +161,12 @@ describe("selectHistoryBooks", () => {
       "added_newest"
     );
 
-    expect(selected).toHaveLength(DEFAULT_HISTORY_VISIBLE_LIMIT);
+    expect(selected).toHaveLength(HISTORY_PAGE_SIZE);
     expect(selected.some((row) => row.id === "reading" || row.id === "dnf")).toBe(false);
   });
 
   it("counts all finished history books without changing display limit", () => {
-    expect(countFinishedHistoryBooks(rows)).toBe(12);
-    expect(selectHistoryBooks(rows)).toHaveLength(10);
+    expect(countFinishedHistoryBooks(rows)).toBe(15);
+    expect(selectHistoryBooks(rows)).toHaveLength(HISTORY_PAGE_SIZE);
   });
 });

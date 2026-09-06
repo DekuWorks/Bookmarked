@@ -14,6 +14,11 @@ import {
 import { cn } from "@/lib/utils/cn";
 import { BOOK_EDITION_PRESETS } from "@/lib/constants/bookEditions";
 import type { Review, ReviewRatingMode } from "@/types";
+import {
+  parseReviewAudience,
+  type ReviewAudience,
+} from "@bookmarked/utils/reviewVisibility";
+import { ReviewVisibilityControl } from "@/components/reviews/ReviewVisibilityControl";
 
 const ASPECT_FIELDS = [
   { key: "plot", label: "Plot" },
@@ -34,6 +39,7 @@ type Props = {
   formAction: (payload: FormData) => void;
   pending?: boolean;
   submitLabel?: string;
+  onVisibilityPersist?: (visibility: ReviewAudience) => void | Promise<void>;
 };
 
 export function ReviewForm({
@@ -44,6 +50,7 @@ export function ReviewForm({
   formAction,
   pending = false,
   submitLabel = "Publish review",
+  onVisibilityPersist,
 }: Props) {
   const [mode, setMode] = useState<ReviewRatingMode>(initial?.rating_mode ?? "regular");
   const [rating, setRating] = useState(initial?.rating ? Number(initial.rating) : 0);
@@ -62,6 +69,9 @@ export function ReviewForm({
   );
   const [reviewBody, setReviewBody] = useState(initial?.review_body ?? "");
   const [hasSpoilers, setHasSpoilers] = useState(Boolean(initial?.has_spoilers));
+  const [visibility, setVisibility] = useState<ReviewAudience>(
+    parseReviewAudience(initial?.visibility)
+  );
   const [feelings, setFeelings] = useState<string[]>(initial?.feelings ?? []);
   const [aspects, setAspects] = useState<Record<AspectKey, number>>({
     plot: initial?.plot ? Number(initial.plot) : 0,
@@ -314,6 +324,17 @@ export function ReviewForm({
         />
         Contains spoilers
       </label>
+
+      <ReviewVisibilityControl
+        value={visibility}
+        disabled={pending}
+        onChange={(next) => {
+          setVisibility(next);
+          if (reviewId && next !== visibility) {
+            void onVisibilityPersist?.(next);
+          }
+        }}
+      />
 
       <Button type="submit" variant="primary" loading={pending} disabled={rating < 0.5}>
         {submitLabel}
