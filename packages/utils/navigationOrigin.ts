@@ -12,6 +12,8 @@ export const NAV_ORIGINS = [
   "search_clubs",
   "library_all_books",
   "library_shelf",
+  "challenges",
+  "profile",
 ] as const;
 
 export type NavOrigin = (typeof NAV_ORIGINS)[number];
@@ -131,6 +133,20 @@ export function resolveOriginBack(origin: string | null | undefined): OriginBack
         webHref: "/library/",
         mobileHref: "/library",
         label: "Library",
+      };
+    case "challenges":
+      return {
+        origin: parsed,
+        webHref: "/challenges/",
+        mobileHref: "/challenges",
+        label: "Challenges",
+      };
+    case "profile":
+      return {
+        origin: parsed,
+        webHref: "/profile/",
+        mobileHref: "/profile",
+        label: "Profile",
       };
   }
 }

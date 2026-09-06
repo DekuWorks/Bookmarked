@@ -102,6 +102,9 @@ export function ReadingProgressPanel({
   const [finishOpen, setFinishOpen] = useState(false);
   const [ratePromptOpen, setRatePromptOpen] = useState(false);
   const [celebrationOpen, setCelebrationOpen] = useState(false);
+  const [challengeUpdates, setChallengeUpdates] = useState<
+    import("@bookmarked/utils/challengeTypes").ChallengeEvaluationSummary | null
+  >(null);
   const [progressAction, submitProgress, saving] = useActionState(
     updateReadingProgress,
     initial
@@ -170,8 +173,11 @@ export function ReadingProgressPanel({
     setSessionEnd("");
   });
 
-  function handleFinished() {
+  function handleFinished(
+    summary?: import("@bookmarked/utils/challengeTypes").ChallengeEvaluationSummary
+  ) {
     onProgressChange?.();
+    setChallengeUpdates(summary ?? null);
     setCelebrationOpen(true);
   }
 
@@ -495,6 +501,7 @@ export function ReadingProgressPanel({
       <CompletionCelebration
         open={celebrationOpen}
         bookTitle={bookTitle}
+        challengeUpdates={challengeUpdates}
         onClose={() => setCelebrationOpen(false)}
       />
 

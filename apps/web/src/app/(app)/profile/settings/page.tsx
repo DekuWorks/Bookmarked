@@ -95,12 +95,12 @@ export default function ProfileSettingsPage() {
               </div>
               <p className="mt-1 text-sm text-text-muted">
                 {isPremium
-                  ? "Your subscription is active. Premium features are unlocked."
-                  : "Unlock advanced analytics, AI insights, and early access."}
+                  ? "Your subscription is active. Premium features are unlocked on web and iOS."
+                  : "Subscribe in the iOS app. Plus then unlocks here automatically."}
               </p>
             </div>
             <ButtonLink href="/upgrade/" variant={isPremium ? "outline" : "primary"} size="sm">
-              {isPremium ? "View plan" : "Upgrade"}
+              {isPremium ? "View plan" : "How to subscribe"}
             </ButtonLink>
           </div>
         </section>

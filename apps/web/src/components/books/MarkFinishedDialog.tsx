@@ -19,7 +19,9 @@ type Props = {
   bookId: string;
   bookTitle: string;
   startedAt?: string | null;
-  onFinished?: () => void;
+  onFinished?: (
+    summary?: import("@bookmarked/utils/challengeTypes").ChallengeEvaluationSummary
+  ) => void;
   onPromptReview?: () => void;
 };
 
@@ -57,7 +59,7 @@ export function MarkFinishedDialog({
   }, [open]);
 
   useActionToast(state, () => {
-    onFinishedRef.current?.();
+    onFinishedRef.current?.(state.challengeUpdates);
     onCloseRef.current();
     if (promptReviewRef.current) onPromptReviewRef.current?.();
   });

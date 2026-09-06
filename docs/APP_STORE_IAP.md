@@ -40,8 +40,9 @@ Bookmarked Premium on iOS uses **App Store subscriptions** (`expo-iap`). Web bil
 | Upgrade actions UI | `apps/mobile/src/components/PremiumUpgradeActions.tsx` |
 | Product ID constant | `packages/utils/iap.ts` · `apps/mobile/src/constants/iap.ts` |
 
-- **iOS app:** Subscribe with App Store, Restore purchases, or Subscribe on web (`bookmarked.online/upgrade`).
-- **Android app:** Subscribe on web only (Stripe) — Google Play billing can be added later.
+- **iOS app:** Subscribe with App Store, or Restore purchases. This is the only place to start a new Plus subscription.
+- **Web:** Reads the same `user_subscriptions` row. Locked screens send people to the iOS app — no web checkout.
+- **Android app:** Out of scope.
 - Apple guidelines: do not offer Stripe checkout inside the native iOS app for digital subscriptions.
 
 ## Server verification
@@ -79,8 +80,8 @@ Until JWS verification is deployed, TestFlight purchases may return 503 if `purc
 
 | Provider | Where purchased | Unlocks |
 |----------|-----------------|---------|
-| `stripe` | Web `/upgrade/` | Web + mobile gates |
-| `apple` | iOS app | Web + mobile gates |
+| `stripe` | Historical web checkout (no new purchases) | Web + mobile gates |
+| `apple` | iOS app (only new-purchase path) | Web + mobile gates |
 | `manual` | Admin SQL | Web + mobile gates |
 
 Gates: `packages/utils/subscription.ts` → `canAccessFeature('advanced_analytics' | 'ai_insights')`.
@@ -89,8 +90,8 @@ Gates: `packages/utils/subscription.ts` → `canAccessFeature('advanced_analytic
 
 - [ ] Sandbox purchase on TestFlight → Premium unlocks in Reading Room Progress tab
 - [ ] Restore purchases after reinstall
-- [ ] Web Stripe checkout → same account shows Premium in iOS app (pull to refresh / reopen)
-- [ ] iOS “Subscribe on web” opens Safari checkout and returns to success URL
+- [ ] iOS IAP → same account shows Premium on bookmarked.online (refresh / reopen)
+- [ ] Web `/upgrade/` does not start Stripe Checkout and tells Free users to subscribe on iOS
 - [ ] Non-premium users still see `PremiumFeatureLock` on analytics + AI insights
 
 ## Related docs

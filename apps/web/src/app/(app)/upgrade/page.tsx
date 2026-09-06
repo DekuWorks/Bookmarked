@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { IosSubscribePanel } from "@/components/challenges/IosSubscribePanel";
 import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -16,14 +17,6 @@ import { useSubscriptionActivationPoll } from "@/lib/hooks/useSubscriptionActiva
 import { layout } from "@/lib/constants/layout";
 import { staticRedirect } from "@/lib/navigation/staticRedirect";
 import { createBillingPortalSession } from "@/lib/services/stripePortal";
-import {
-  createPremiumCheckoutSession,
-  getPremiumCheckoutAvailability,
-  type CheckoutInterval,
-} from "@/lib/services/stripeCheckout";
-
-const PLUS_PRICE = "$5.99 / month";
-const PLUS_YEARLY_PRICE = "$59.99 / year";
 
 function clearCheckoutQueryParam(): void {
   if (typeof window === "undefined") return;
@@ -37,13 +30,8 @@ export default function UpgradePage() {
   const toast = useToast();
   const searchParams = useSearchParams();
   const { subscription, isPremium, loading, refresh } = useSubscription(user?.id);
-  const [checkoutLoading, setCheckoutLoading] = useState<CheckoutInterval | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
-  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [portalError, setPortalError] = useState<string | null>(null);
-  const [checkoutUnavailable, setCheckoutUnavailable] = useState(false);
-  const [checkoutMode, setCheckoutMode] = useState<"live" | "test" | "unknown" | null>(null);
-  const [availabilityLoading, setAvailabilityLoading] = useState(true);
 
   const checkoutStatus = searchParams.get("checkout");
   const checkoutSucceeded = checkoutStatus === "success";
@@ -63,21 +51,6 @@ export default function UpgradePage() {
   const awaitingActivation = checkoutSucceeded && !showSubscribedUI;
 
   useEffect(() => {
-    let cancelled = false;
-
-    void getPremiumCheckoutAvailability().then((result) => {
-      if (cancelled) return;
-      setCheckoutUnavailable(!result.available);
-      setCheckoutMode(result.mode ?? null);
-      setAvailabilityLoading(false);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
     if (user === null) {
       staticRedirect("/login/?redirect=%2Fupgrade%2F");
     }
@@ -88,47 +61,6 @@ export default function UpgradePage() {
       clearCheckoutQueryParam();
     }
   }, [checkoutStatus, isPremium]);
-
-  const handleSubscribe = useCallback(
-    async (interval: CheckoutInterval = "month") => {
-      if (!user) {
-        const message = "Sign in to subscribe.";
-        setCheckoutError(message);
-        toast.error(message);
-        staticRedirect("/login/?redirect=%2Fupgrade%2F");
-        return;
-      }
-
-      setCheckoutError(null);
-      setCheckoutLoading(interval);
-
-      try {
-        const result = await createPremiumCheckoutSession(interval);
-
-        if (result.ok) {
-          window.location.href = result.url;
-          return;
-        }
-
-        if (!result.available) {
-          setCheckoutUnavailable(true);
-          toast.error(result.error);
-          return;
-        }
-
-        setCheckoutError(result.error);
-        toast.error(result.error);
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "Could not start checkout. Please try again.";
-        setCheckoutError(message);
-        toast.error(message);
-      } finally {
-        setCheckoutLoading(null);
-      }
-    },
-    [toast, user]
-  );
 
   const handleManageSubscription = useCallback(async () => {
     setPortalError(null);
@@ -153,7 +85,7 @@ export default function UpgradePage() {
     }
   }, [toast]);
 
-  if (user === undefined || (user && loading && !awaitingActivation) || availabilityLoading) {
+  if (user === undefined || (user && loading && !awaitingActivation)) {
     return <LoadingState message="Loading plans…" />;
   }
 
@@ -171,15 +103,10 @@ export default function UpgradePage() {
         <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Bookmarked Membership</h1>
         <p className="mx-auto mt-2 max-w-xl text-pretty text-text-muted">
           Free keeps the essentials. Bookmarked Plus unlocks deeper reading intelligence, while
-          Bookmarked Home adds maps, matches, and concierge support. Membership syncs across web and mobile.
+          Bookmarked Home adds maps, matches, and concierge support. Membership syncs across web and
+          mobile after you subscribe in the iOS app.
         </p>
       </header>
-
-      {checkoutStatus === "canceled" ? (
-        <section className="surface-card p-4 text-center text-sm text-text-muted">
-          Checkout was canceled. You can subscribe whenever you&apos;re ready.
-        </section>
-      ) : null}
 
       {awaitingActivation && activating ? (
         <section className="surface-card border-primary/30 bg-primary/10 p-4 text-center text-sm text-text-muted">
@@ -238,9 +165,10 @@ export default function UpgradePage() {
             <p className="text-sm font-medium uppercase tracking-wide text-primary">
               Bookmarked Plus
             </p>
-            <p className="mt-2 text-3xl font-bold text-puce-red">{PLUS_PRICE}</p>
-            <p className="mt-1 text-sm text-text-muted">{PLUS_YEARLY_PRICE}</p>
-            <p className="mt-1 text-sm text-text-muted">Cancel anytime.</p>
+            <p className="mt-2 text-lg font-semibold text-puce-red">Subscribe in the iOS app</p>
+            <p className="mt-2 text-sm text-text-muted">
+              Plus then unlocks here on the same account — no second purchase.
+            </p>
           </div>
 
           <div className="mt-6">
@@ -249,54 +177,18 @@ export default function UpgradePage() {
 
           <PremiumFeatureList />
 
-          {checkoutUnavailable ? (
-            <div className="mt-6 rounded-xl border border-dashed border-primary/30 bg-primary/5 px-4 py-3 text-center text-sm leading-relaxed text-text-muted">
-              <p className="font-medium text-puce-red">Web checkout is unavailable</p>
-              <p className="mt-1">
-                Subscribe in the iOS app with your Apple ID, or try again later. Membership gates are
-                already wired — your subscription unlocks on web and mobile.
-              </p>
-            </div>
-          ) : (
-            <div className="mt-6 space-y-3">
-              <Button
-                size="lg"
-                className="w-full"
-                loading={checkoutLoading === "month"}
-                disabled={checkoutLoading !== null}
-                onClick={() => void handleSubscribe("month")}
-              >
-                Subscribe monthly — {PLUS_PRICE}
-              </Button>
-              <Button
-                size="lg"
-                variant="secondary"
-                className="w-full"
-                loading={checkoutLoading === "year"}
-                disabled={checkoutLoading !== null}
-                onClick={() => void handleSubscribe("year")}
-              >
-                Subscribe yearly — {PLUS_YEARLY_PRICE}
-              </Button>
-              {checkoutError ? (
-                <p className="text-center text-sm text-red-600">{checkoutError}</p>
-              ) : (
-                <p className="text-center text-xs text-text-muted">
-                  Secure checkout via Stripe. Manage or cancel anytime from your Stripe customer
-                  portal. Yearly requires STRIPE_PRICE_ID_YEARLY after catalog setup.
-                  {checkoutMode === "test" ? " (Stripe test mode — no real charges.)" : null}
-                </p>
-              )}
-            </div>
-          )}
+          <div className="mt-6">
+            <IosSubscribePanel title="How to get Plus" />
+          </div>
         </section>
       ) : null}
 
       {!showSubscribedUI && !awaitingActivation ? (
         <PremiumFeatureLock
           title="Preview membership benefits"
-          description="Plus unlocks reading intelligence and a full Reading DNA dashboard; Home adds maps and reader matching."
+          description="Plus unlocks reading intelligence and a full Reading DNA dashboard; Home adds maps and reader matching. Subscribe in the iOS app — web unlocks automatically."
           compact
+          showCta={false}
         />
       ) : null}
     </div>

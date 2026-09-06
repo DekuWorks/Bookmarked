@@ -14,6 +14,10 @@ describe("notifiable events", () => {
       "post_comment",
       "post_comment_reply",
       "post_published",
+      "challenge_invitation",
+      "challenge_accepted",
+      "challenge_completed",
+      "challenge_community_milestone",
     ]);
     expect(isNotifiableSocialEvent("message")).toBe(true);
     expect(isNotifiableSocialEvent("post_like")).toBe(true);
@@ -42,6 +46,7 @@ describe("notifiable events", () => {
 
   it("keeps club notifications and maps message/follow types", () => {
     expect(shouldCreateStandardNotification({ type: "club" })).toBe(true);
+    expect(shouldCreateStandardNotification({ type: "challenge" })).toBe(true);
     expect(shouldCreateStandardNotification({ type: "message" })).toBe(true);
     expect(shouldCreateStandardNotification({ type: "follow" })).toBe(true);
   });

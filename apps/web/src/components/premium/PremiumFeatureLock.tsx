@@ -9,6 +9,8 @@ type Props = {
   featureLabel?: string;
   className?: string;
   compact?: boolean;
+  /** Hide on `/upgrade/` itself so the page does not link to itself. */
+  showCta?: boolean;
 };
 
 export function PremiumFeatureLock({
@@ -17,6 +19,7 @@ export function PremiumFeatureLock({
   featureLabel = "Bookmarked Plus",
   className,
   compact,
+  showCta = true,
 }: Props) {
   return (
     <div
@@ -36,9 +39,11 @@ export function PremiumFeatureLock({
         <p className={cn("text-text-muted", compact ? "mt-2 text-sm" : "mt-3 text-sm leading-relaxed")}>
           {description}
         </p>
-        <ButtonLink href="/upgrade/" variant="primary" size="sm" className="mt-4 w-full max-w-xs sm:w-auto">
-          Explore membership
-        </ButtonLink>
+        {showCta ? (
+          <ButtonLink href="/upgrade/" variant="primary" size="sm" className="mt-4 w-full max-w-xs sm:w-auto">
+            How to subscribe on iOS
+          </ButtonLink>
+        ) : null}
       </div>
     </div>
   );

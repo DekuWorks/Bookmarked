@@ -30,6 +30,7 @@ import { ProfileClubsSection } from "@/components/profile/ProfileClubsSection";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import { PostNotificationButton } from "@/components/social/PostNotificationButton";
 import { readerProfilePath } from "@/lib/routes/reader";
+import { ProfileBadgeCarousel } from "@/components/challenges/ProfileBadgeCarousel";
 
 type ReaderData = {
   profile: Profile;
@@ -186,6 +187,11 @@ function ReaderProfileContent() {
           size="md"
         />
         <ReadingStreakCard streak={readingStreak} className="mt-6" />
+        <ProfileBadgeCarousel
+          userId={profile.id}
+          isOwner={user.id === profile.id}
+          featuredOnly
+        />
       </header>
 
       <section className="rounded-xl border border-border bg-surface p-6 text-left shadow-sm">

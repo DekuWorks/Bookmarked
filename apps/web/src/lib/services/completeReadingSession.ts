@@ -17,6 +17,8 @@ import {
   mergeCompletionTags,
 } from "@/lib/constants/completionTags";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { ChallengeEvaluationSummary } from "@bookmarked/utils/challengeTypes";
+import { emptyChallengeEvaluationSummary } from "@bookmarked/utils/challengeTypes";
 
 export type CompleteReadingSource =
   | "shelf_move"
@@ -62,6 +64,7 @@ export type CompleteReadingSessionResult = {
   sessionId?: string;
   promptReview?: boolean;
   pageCountPending?: boolean;
+  challengeUpdates?: ChallengeEvaluationSummary;
 };
 
 async function applyCompletionTags(
@@ -196,12 +199,45 @@ export async function completeReadingSession(
   // Soft DNA refresh after a meaningful finish — never block completion UX.
   void refreshReadingDnaAfterFinish(userId);
 
+  const challengeUpdates = await evaluateChallengesAfterFinish({
+    supabase,
+    userId,
+    userBookId,
+    qualifyingEventId: savedSessionId ?? `finish:${userBookId}:${finishedAt}`,
+    qualifyingDate: finishedAt,
+    pagesInEvent: pageCountPending ? 0 : Number(sessionPatch.pages_read) || 0,
+  });
+
   return {
     resolution,
     sessionId: savedSessionId,
     promptReview: true,
     pageCountPending,
+    challengeUpdates,
   };
+}
+
+async function evaluateChallengesAfterFinish(input: {
+  supabase: SupabaseClient;
+  userId: string;
+  userBookId: string;
+  qualifyingEventId: string;
+  qualifyingDate: string;
+  pagesInEvent: number;
+}): Promise<ChallengeEvaluationSummary> {
+  try {
+    const { evaluateQualifyingEventForChallenges } = await import(
+      "@/lib/services/challenges/ChallengeContributionService"
+    );
+    return await evaluateQualifyingEventForChallenges({
+      ...input,
+      eventKind: "completion",
+      listeningSecondsInEvent: 0,
+    });
+  } catch (error) {
+    console.warn("[completeReadingSession] challenge evaluate skipped:", error);
+    return emptyChallengeEvaluationSummary();
+  }
 }
 
 async function refreshReadingDnaAfterFinish(userId: string): Promise<void> {

@@ -4,6 +4,8 @@ export {
   HOME_ONLY_FEATURES,
   MEMBERSHIP_FEATURES,
   ENTITLEMENT_LIMIT_MESSAGES,
+  IOS_SUBSCRIBE_COPY,
+  canCreateReadingChallenge,
   canAccessFeature,
   canCreateCustomShelf,
   canCreateQuoteGraphic,

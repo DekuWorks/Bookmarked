@@ -40,7 +40,7 @@ export type CreatePostInput = {
   body: string;
   bookId?: string | null;
   imageUrl?: string | null;
-  sourceType?: "review" | "note" | null;
+  sourceType?: import("@bookmarked/utils/feedShare").FeedSourceType | null;
   sourceId?: string | null;
 };
 

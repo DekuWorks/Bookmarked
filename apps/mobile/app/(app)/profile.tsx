@@ -15,6 +15,7 @@ import type { ShelfIconId } from "../../src/constants/shelfIcons";
 import { ReadingDnaSection } from "../../src/components/ReadingDnaSection";
 import { PublicReviewsSection } from "../../src/components/PublicReviewsSection";
 import { PublicPostsSection } from "../../src/components/PublicPostsSection";
+import { ProfileBadgeCarousel } from "../../src/components/challenges/ProfileBadgeCarousel";
 import { readerProfilePath } from "../../src/lib/readerProfile";
 
 export default function ProfileRoute() {
@@ -84,6 +85,9 @@ export default function ProfileRoute() {
           canAccess={canAccess}
           onUpgrade={() => router.push("/upgrade")}
         />
+      ) : null}
+      {profile?.id ? (
+        <ProfileBadgeCarousel userId={profile.id} isOwner />
       ) : null}
       {profile?.id ? (
         <PublicPostsSection userId={profile.id} viewerId={profile.id} />

@@ -61,6 +61,7 @@ export type CompleteReadingSessionResult = {
   sessionId?: string;
   promptReview?: boolean;
   pageCountPending?: boolean;
+  challengeUpdates?: import("../../../../packages/utils/challengeTypes").ChallengeEvaluationSummary;
 };
 
 async function applyCompletionTags(
@@ -194,11 +195,28 @@ export async function completeReadingSession(
   // Soft DNA refresh after a meaningful finish — never block completion UX.
   void refreshReadingDnaAfterFinish(userId);
 
+  let challengeUpdates: CompleteReadingSessionResult["challengeUpdates"];
+  try {
+    const { evaluateQualifyingEventForChallenges } = await import("./challenges/ChallengeContributionService");
+    challengeUpdates = await evaluateQualifyingEventForChallenges({
+      userId,
+      userBookId,
+      qualifyingEventId: savedSessionId ?? `finish:${userBookId}:${finishedAt}`,
+      qualifyingDate: finishedAt,
+      eventKind: "completion",
+      pagesInEvent: pageCountPending ? 0 : Number(sessionPatch.pages_read) || 0,
+      listeningSecondsInEvent: 0,
+    });
+  } catch (error) {
+    console.warn("[completeReadingSession] challenge evaluate skipped:", error);
+  }
+
   return {
     resolution,
     sessionId: savedSessionId,
     promptReview: true,
     pageCountPending,
+    challengeUpdates,
   };
 }
 

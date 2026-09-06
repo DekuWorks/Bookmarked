@@ -315,6 +315,13 @@ export function canJoinReadingChallenge(
   return joinedThisYear < getEntitlements(access).readingChallengesPerYear;
 }
 
+/** Create Challenge is Plus/Home only. Join limits stay on the yearly cap. */
+export function canCreateReadingChallenge(
+  access: SubscriptionAccess | null | undefined
+): boolean {
+  return subscriptionIsActive(access);
+}
+
 export function getReadingDnaAccess(
   access: SubscriptionAccess | null | undefined
 ): ReadingDnaAccess {
@@ -358,6 +365,16 @@ export const ENTITLEMENT_LIMIT_MESSAGES = {
     "Free members can join 3 book clubs. Upgrade to Bookmarked Plus for unlimited clubs.",
   reading_challenges:
     "Free members can join 3 reading challenges per year. Upgrade to Bookmarked Plus for unlimited challenges.",
+  create_reading_challenge:
+    "Creating reading challenges is a Bookmarked Plus feature. Subscribe in the Bookmarked iOS app — Plus then unlocks here automatically.",
+} as const;
+
+/** Subscribe only on iOS. Web never starts checkout. */
+export const IOS_SUBSCRIBE_COPY = {
+  headline: "Subscribe on iPhone or iPad",
+  body: "Bookmarked Plus is purchased in the iOS app. After you subscribe there, Plus unlocks automatically on bookmarked.online — no second purchase.",
+  cta: "Open the Bookmarked iOS app",
+  note: "Restore purchases in the iOS app if Plus does not appear after you subscribe.",
 } as const;
 
 export type EntitlementLimitFeature = keyof typeof ENTITLEMENT_LIMIT_MESSAGES;

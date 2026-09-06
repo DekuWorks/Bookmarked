@@ -2,10 +2,12 @@
 
 Source of truth for Free / Plus / Home entitlements and billing boundaries.
 
+**Product rule (2026-09-06):** Subscribe **only on iOS** (App Store IAP). Do not add a web checkout, Stripe/web IAP, or “Subscribe on web” for Challenges or other Plus gates being wired. After IAP, `apple-iap-verify` writes `user_subscriptions`; web reads that same row so bookmarked.online unlocks without a second purchase. Web upsell copy sends people to the iOS app. Server `user_has_paid_entitlement` / row checks are mandatory. Do not hardcode prices.
+
 ## Platforms
 
-- **Web:** Stripe Checkout + Customer Portal (no card data stored in Bookmarked DB).
-- **iOS:** Apple IAP (StoreKit). Restore purchases + refresh entitlements after purchase/verify.
+- **Web:** Reads `user_subscriptions`. `/upgrade/` and locked Plus actions show iOS-app upsell — no web checkout. Historical Stripe customers can still manage billing via the portal. New purchases are App Store only.
+- **iOS:** Apple IAP (StoreKit). Restore purchases + refresh entitlements after purchase/verify. This is the only place to start/pay.
 - **Android:** Out of scope.
 
 ## Tier model
