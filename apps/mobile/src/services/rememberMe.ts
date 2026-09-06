@@ -1,7 +1,13 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { SupportedStorage } from "@supabase/supabase-js";
+import {
+  REMEMBERED_EMAIL_KEY,
+  normalizeRememberedEmail,
+  rememberedEmailStorageValue,
+} from "../../../../packages/utils/rememberMeEmail";
 
 export const REMEMBER_ME_PREF_KEY = "bookmarked_remember_me";
+export { REMEMBERED_EMAIL_KEY };
 
 type SecureStoreLike = {
   getItemAsync: (key: string) => Promise<string | null>;
@@ -42,6 +48,26 @@ export async function setRememberMe(enabled: boolean): Promise<void> {
   rememberMeEnabled = enabled;
   rememberMeHydrated = true;
   await AsyncStorage.setItem(REMEMBER_ME_PREF_KEY, enabled ? "1" : "0");
+  if (!enabled) {
+    await persistRememberedEmail(false);
+  }
+}
+
+export async function getRememberedEmail(): Promise<string> {
+  const stored = await AsyncStorage.getItem(REMEMBERED_EMAIL_KEY);
+  return normalizeRememberedEmail(stored) ?? "";
+}
+
+export async function persistRememberedEmail(
+  remember: boolean,
+  email?: string | null
+): Promise<void> {
+  const stored = rememberedEmailStorageValue({ rememberMe: remember, email });
+  if (stored) {
+    await AsyncStorage.setItem(REMEMBERED_EMAIL_KEY, stored);
+    return;
+  }
+  await AsyncStorage.removeItem(REMEMBERED_EMAIL_KEY);
 }
 
 export function supabaseAuthStorageKey(supabaseUrl: string): string | null {

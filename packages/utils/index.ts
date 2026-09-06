@@ -625,3 +625,48 @@ export {
   type DefaultShelfIconId,
   type DefaultShelfIconKey,
 } from "./shelfIcons";
+
+export {
+  NON_NOTIFIABLE_ACTIVITY_EVENTS,
+  NOTIFIABLE_SOCIAL_EVENTS,
+  isNotifiableSocialEvent,
+  resolveNotificationKind,
+  shouldCreateStandardNotification,
+  type NonNotifiableActivityEvent,
+  type NotifiableSocialEvent,
+} from "./notifiableEvents";
+
+export {
+  STREAK_ACTIVITY_KINDS,
+  collectStreakDateKeys,
+  computeReadingStreak,
+  localDateKey,
+  parseDateKey,
+  sessionQualifiesForStreak,
+  streakDateKeyForSession,
+  type ReadingStreakInsight,
+  type StreakActivityKind,
+  type StreakSessionInput,
+} from "./readingStreak";
+
+export {
+  REMEMBERED_EMAIL_KEY,
+  normalizeRememberedEmail,
+  rememberedEmailStorageValue,
+  storageLooksLikePassword,
+} from "./rememberMeEmail";
+
+export { shouldPromptReviewShareToFeed } from "./reviewSharePrompt";
+
+export { isQuoteTitleRequired, noteContentIsValid } from "./quoteTitle";
+
+export {
+  FEED_SOURCE_TYPES,
+  buildNoteSharePostBody,
+  feedShareDedupKey,
+  isFeedSourceType,
+  noteIsShareableToFeed,
+  type FeedSourceType,
+} from "./feedShare";
+
+export { POST_NOTIFICATION_COPY, postNotificationTitle } from "./postNotifications";

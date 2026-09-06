@@ -14,6 +14,8 @@ import { ShelfIcon } from "../../src/components/ShelfIcon";
 import type { ShelfIconId } from "../../src/constants/shelfIcons";
 import { ReadingDnaSection } from "../../src/components/ReadingDnaSection";
 import { PublicReviewsSection } from "../../src/components/PublicReviewsSection";
+import { PublicPostsSection } from "../../src/components/PublicPostsSection";
+import { readerProfilePath } from "../../src/lib/readerProfile";
 
 export default function ProfileRoute() {
   const router = useRouter();
@@ -83,18 +85,27 @@ export default function ProfileRoute() {
           onUpgrade={() => router.push("/upgrade")}
         />
       ) : null}
+      {profile?.id ? (
+        <PublicPostsSection userId={profile.id} viewerId={profile.id} />
+      ) : null}
       {profile?.id ? <PublicReviewsSection userId={profile.id} readerName={name} /> : null}
 
       <View className="mt-8 gap-2">
-        {!isPremium ? (
-          <ProfileLink icon="✨" label="Explore membership" onPress={() => router.push("/upgrade")} />
+        {readerBase ? (
+          <ProfileLink
+            icon="👤"
+            label="Public Profile"
+            tone="primary"
+            onPress={() => router.push(readerProfilePath(handle ?? ""))}
+          />
         ) : null}
-        <ProfileLink shelfIconId="want_to_read" label="Library" onPress={() => router.push("/library")} />
-        <ProfileLink chromeIcon="notes" label="Reading Notes" onPress={() => router.push("/notes")} />
-        <ProfileLink icon="🖼" label="Quote graphics" onPress={() => router.push("/quote-graphics")} />
-        <ProfileLink icon="🏁" label="Challenges" onPress={() => router.push("/challenges")} />
-        <ProfileLink icon="🧬" label="Reading DNA" onPress={() => router.push("/reading-dna")} />
-        <ProfileLink chromeIcon="clubs" label="Book Clubs" onPress={() => router.push("/clubs")} />
+        {!isPremium ? (
+          <ProfileLink icon="✨" label="Explore membership" tone="orange" onPress={() => router.push("/upgrade")} />
+        ) : null}
+        <ProfileLink shelfIconId="want_to_read" label="Library" tone="surface" onPress={() => router.push("/library")} />
+        <ProfileLink chromeIcon="notes" label="Reading Notes" tone="primary" onPress={() => router.push("/notes")} />
+        <ProfileLink icon="🏁" label="Challenges" tone="orange" onPress={() => router.push("/challenges")} />
+        <ProfileLink chromeIcon="clubs" label="Book Clubs" tone="surface" onPress={() => router.push("/clubs")} />
       </View>
 
       <View className="h-24" />
@@ -108,17 +119,25 @@ function ProfileLink({
   shelfIconId,
   label,
   onPress,
+  tone = "surface",
 }: {
   icon?: string;
   chromeIcon?: BrandChromeIconName;
   shelfIconId?: ShelfIconId;
   label: string;
   onPress: () => void;
+  tone?: "primary" | "orange" | "surface";
 }) {
+  const toneClass =
+    tone === "primary"
+      ? "bg-primary/15"
+      : tone === "orange"
+        ? "bg-royal-orange/15"
+        : "bg-surface";
   return (
     <Pressable
       onPress={onPress}
-      className="min-h-[44px] flex-row items-center gap-2 rounded-2xl border border-brand-border bg-surface px-4 py-3 active:opacity-80"
+      className={`min-h-[44px] flex-row items-center gap-2 rounded-2xl border border-brand-border px-4 py-3 active:opacity-80 ${toneClass}`}
     >
       {shelfIconId ? (
         <ShelfIcon id={shelfIconId} size="small" />

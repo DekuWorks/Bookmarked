@@ -110,6 +110,12 @@ export function NotesPanel({ userId }: Props) {
         >
           Open Notes Search
         </Link>
+        <Link
+          href="/quote-graphics/"
+          className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-primary px-6 py-3 text-base font-bold text-on-primary"
+        >
+          Quote Graphics
+        </Link>
       </div>
 
       <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">

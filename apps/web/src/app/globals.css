@@ -524,3 +524,34 @@ body {
 .animate-fade-in {
   animation: fade-in 0.4s ease-out both;
 }
+
+/* Book complete celebration — light look is pinned; dark uses existing tokens. */
+.completion-celebration-overlay {
+  background: color-mix(in srgb, #642f37 90%, transparent);
+  color: #ffffff;
+}
+.completion-celebration-kicker,
+.completion-celebration-sparkle {
+  color: #f7c767;
+}
+.completion-celebration-button {
+  background: #ffffff;
+  color: #642f37;
+}
+:root[data-theme="dark"] .completion-celebration-overlay {
+  background: color-mix(in srgb, var(--color-background) 94%, var(--color-primary));
+  color: var(--color-text);
+}
+:root[data-theme="dark"] .completion-celebration-kicker,
+:root[data-theme="dark"] .completion-celebration-sparkle {
+  color: var(--color-primary);
+}
+:root[data-theme="dark"] .completion-celebration-button {
+  background: var(--color-primary);
+  color: var(--color-background);
+}
+@media (prefers-reduced-motion: reduce) {
+  .completion-celebration-sparkle {
+    transform: none !important;
+  }
+}

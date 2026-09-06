@@ -296,7 +296,7 @@ async function upsertImportedBook(
       finishedAt,
       startedAt: userBook.started_at ?? startedAt,
       manualPageCount: row.numberOfPages,
-      source: "library",
+      source: "import",
       applyCompletionTags: Boolean(existingUserBook),
       completionTagsState: existingUserBook
         ? {

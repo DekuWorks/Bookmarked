@@ -328,6 +328,8 @@ export type NotificationPreferences = {
 
 export type PostAuthor = MessageProfile;
 
+export type PostSourceType = "review" | "note" | "post";
+
 export interface Post {
   id: string;
   user_id: string;
@@ -335,6 +337,8 @@ export interface Post {
   image_url: string | null;
   book_id: string | null;
   repost_of_post_id: string | null;
+  source_type?: PostSourceType | null;
+  source_id?: string | null;
   moderation_meta?: ModerationMeta | null;
   created_at: string;
   updated_at: string;
@@ -805,6 +809,8 @@ export interface ReadingSession {
   listening_start_seconds?: number | null;
   listening_end_seconds?: number | null;
   listening_seconds?: number | null;
+  session_date?: string | null;
+  activity_kind?: "session" | "progress" | "completion" | "import" | "backfill" | "correction";
   created_at: string;
 }
 

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import type { LibraryBookRow } from "@/lib/services/library";
+import { collectStreakDateKeys } from "@bookmarked/utils/readingStreak";
 
 export type FavoriteGenreInsight = {
   genre: string | null;
@@ -7,26 +8,8 @@ export type FavoriteGenreInsight = {
   source: "library" | "profile" | null;
 };
 
-export type ReadingStreakInsight = {
-  current: number;
-  longest: number;
-  activeDays: number;
-};
-
-function toUtcDateKey(iso: string): string {
-  return new Date(iso).toISOString().slice(0, 10);
-}
-
-function addUtcDays(dateKey: string, delta: number): string {
-  const d = new Date(`${dateKey}T12:00:00.000Z`);
-  d.setUTCDate(d.getUTCDate() + delta);
-  return d.toISOString().slice(0, 10);
-}
-
-function daysBetweenUtc(a: string, b: string): number {
-  const ms = new Date(`${b}T12:00:00.000Z`).getTime() - new Date(`${a}T12:00:00.000Z`).getTime();
-  return Math.round(ms / 86_400_000);
-}
+export type { ReadingStreakInsight } from "@bookmarked/utils/readingStreak";
+export { computeReadingStreak } from "@bookmarked/utils/readingStreak";
 
 function normalizeGenreLabel(raw: string): string {
   const trimmed = raw.trim();
@@ -90,52 +73,17 @@ export function computeFavoriteGenre(
   return { genre: null, bookCount: 0, source: null };
 }
 
-export function computeReadingStreak(timestamps: string[]): ReadingStreakInsight {
-  const dateKeys = new Set(timestamps.map(toUtcDateKey));
-
-  if (dateKeys.size === 0) {
-    return { current: 0, longest: 0, activeDays: 0 };
-  }
-
-  const sorted = Array.from(dateKeys).sort();
-  let longest = 1;
-  let run = 1;
-
-  for (let i = 1; i < sorted.length; i++) {
-    const gap = daysBetweenUtc(sorted[i - 1]!, sorted[i]!);
-    if (gap === 1) {
-      run += 1;
-      longest = Math.max(longest, run);
-    } else if (gap > 1) {
-      run = 1;
-    }
-  }
-
-  const today = toUtcDateKey(new Date().toISOString());
-  const yesterday = addUtcDays(today, -1);
-
-  let current = 0;
-  if (dateKeys.has(today) || dateKeys.has(yesterday)) {
-    let cursor = dateKeys.has(today) ? today : yesterday;
-    while (dateKeys.has(cursor)) {
-      current += 1;
-      cursor = addUtcDays(cursor, -1);
-    }
-  }
-
-  return { current, longest, activeDays: dateKeys.size };
-}
-
 export async function fetchReadingStreakTimestamps(userId: string): Promise<string[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("reading_sessions")
-    .select("created_at")
+    .select(
+      "session_date, created_at, updated_at, pages_read, listening_seconds, listening_start_seconds, listening_end_seconds, note, activity_kind, completed_at"
+    )
     .eq("user_id", userId)
-    .or("pages_read.gt.0,note.not.is.null")
-    .order("created_at", { ascending: false })
+    .order("session_date", { ascending: false })
     .limit(500);
 
   if (error) throw error;
-  return (data ?? []).map((row) => row.created_at as string);
+  return collectStreakDateKeys(data ?? []);
 }

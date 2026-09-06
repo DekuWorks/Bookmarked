@@ -30,6 +30,14 @@ export type BookActionState = {
   bookId?: string;
   /** Set after markBookFinished when the UI should offer a review prompt. */
   promptReview?: boolean;
+  promptShareToFeed?: boolean;
+  reviewId?: string;
+  reviewVisibility?: "public" | "private";
+  bookTitle?: string;
+  bookAuthor?: string | null;
+  bookCoverUrl?: string | null;
+  rating?: number | null;
+  reviewBody?: string | null;
 };
 
 type UserBookRow = {
@@ -50,6 +58,7 @@ type UserBookRow = {
 type CatalogBook = {
   id: string;
   title: string;
+  author: string | null;
   page_count: number | null;
   format: "book" | "ebook" | "audiobook";
   audiobook_duration_seconds: number | null;
@@ -74,7 +83,7 @@ async function fetchCatalogBook(
 ): Promise<CatalogBook | null> {
   const full = await supabase
     .from("books")
-    .select("id, title, page_count, format, audiobook_duration_seconds, cover_url, subjects, isbn")
+    .select("id, title, author, page_count, format, audiobook_duration_seconds, cover_url, subjects, isbn")
     .eq("id", bookId)
     .maybeSingle();
 
@@ -83,6 +92,7 @@ async function fetchCatalogBook(
     return {
       id: String(row.id),
       title: String(row.title),
+      author: (row.author as string | null) ?? null,
       page_count: row.page_count ?? null,
       format: (row.format as CatalogBook["format"] | null) ?? "book",
       audiobook_duration_seconds: row.audiobook_duration_seconds ?? null,
@@ -95,7 +105,7 @@ async function fetchCatalogBook(
   // Older schemas / transient select issues: fall back without audiobook columns.
   const minimal = await supabase
     .from("books")
-    .select("id, title, page_count, cover_url, subjects, isbn")
+    .select("id, title, author, page_count, cover_url, subjects, isbn")
     .eq("id", bookId)
     .maybeSingle();
 
@@ -104,6 +114,7 @@ async function fetchCatalogBook(
   return {
     id: String(minimal.data.id),
     title: String(minimal.data.title),
+    author: (minimal.data.author as string | null) ?? null,
     page_count: minimal.data.page_count ?? null,
     format: "book",
     audiobook_duration_seconds: null,
@@ -141,6 +152,7 @@ async function getAuthUserBook(bookId: string): Promise<AuthBookContext> {
   const book: CatalogBook = catalogBook ?? {
     id: bookId,
     title: "Untitled",
+    author: null,
     page_count: null,
     format: "book",
     audiobook_duration_seconds: null,
@@ -488,6 +500,7 @@ export async function updateReadingProgress(
       pageStart: isAudiobook ? 0 : previousPage,
       pageEnd: isAudiobook ? 0 : finalPage,
       percentComplete: finalPercent,
+      activityKind: "progress",
       readNumber: Number(userBook.read_count) || 1,
       ...(isAudiobook
         ? {
@@ -555,6 +568,7 @@ export async function logListeningSession(
     pageStart: 0,
     pageEnd: 0,
     percentComplete: nextPercent,
+    activityKind: "progress",
     readNumber: Number(userBook.read_count) || 1,
     sessionFormat: "audiobook",
     listeningStartSeconds: validated.startSeconds,
@@ -804,7 +818,18 @@ export async function saveReview(
     }),
   });
 
-  return { success: isUpdate ? "Review updated." : "Review published." };
+  return {
+    success: isUpdate ? "Review updated." : "Review published.",
+    promptShareToFeed: !isUpdate && visibility === "public",
+    reviewId: savedId,
+    reviewVisibility: visibility,
+    bookId,
+    bookTitle: book.title,
+    bookAuthor: book.author,
+    bookCoverUrl: book.cover_url,
+    rating,
+    reviewBody: review_body,
+  };
 }
 
 export async function addAnotherRead(

@@ -1,11 +1,16 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { ReviewCard } from "@/components/reviews/ReviewCard";
 import { ReviewForm } from "@/components/reviews/ReviewForm";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { useActionToast } from "@/lib/hooks/useActionToast";
 import { saveReview, type BookActionState } from "@/lib/actions/book";
+import { ShareToFeedModal, type ShareToFeedPreview } from "@/components/social/ShareToFeedModal";
+import { buildReviewSharePostBody } from "@bookmarked/utils/readingRoomReviews";
+import { shouldPromptReviewShareToFeed } from "@bookmarked/utils/reviewSharePrompt";
+import { bookDetailsPath } from "@/lib/routes/book";
+import { absoluteAppUrl } from "@/lib/utils/copyLink";
 import { readNumberLabel } from "@/lib/utils/ratings";
 import type { Review } from "@/types";
 import { cn } from "@/lib/utils/cn";
@@ -32,11 +37,51 @@ export function BookReviewSection({
   const user = useAuthUser();
   const [state, formAction, pending] = useActionState(saveReview, initial);
   const [reviewTab, setReviewTab] = useState<ReviewTab>("all");
+  const [dismissedShareReviewId, setDismissedShareReviewId] = useState<string | null>(null);
 
   const reviewForCurrentRead = ownReviews.find((r) => r.read_number === readNumber) ?? null;
   const canWriteReview = !reviewForCurrentRead;
 
   useActionToast(state, onReviewsChange);
+
+  const sharePreview = useMemo<ShareToFeedPreview | null>(() => {
+    if (
+      !state.reviewId ||
+      dismissedShareReviewId === state.reviewId ||
+      !shouldPromptReviewShareToFeed({
+        visibility: state.reviewVisibility,
+        isNewPublish: Boolean(state.promptShareToFeed),
+      })
+    ) {
+      return null;
+    }
+    return {
+      sourceType: "review",
+      sourceId: state.reviewId,
+      bookId: state.bookId,
+      bookTitle: state.bookTitle,
+      bookCoverUrl: state.bookCoverUrl,
+      rating: state.rating,
+      body: buildReviewSharePostBody({
+        title: state.bookTitle ?? "Review",
+        author: state.bookAuthor,
+        rating: state.rating,
+        reviewBody: state.reviewBody,
+        bookUrl: state.bookId ? absoluteAppUrl(bookDetailsPath(state.bookId)) : "",
+      }),
+    };
+  }, [
+    dismissedShareReviewId,
+    state.reviewId,
+    state.reviewVisibility,
+    state.promptShareToFeed,
+    state.bookId,
+    state.bookTitle,
+    state.bookCoverUrl,
+    state.rating,
+    state.reviewBody,
+    state.bookAuthor,
+  ]);
 
   const regularReviews = reviews.filter((r) => !r.has_spoilers);
   const spoilerReviews = reviews.filter((r) => r.has_spoilers);
@@ -54,6 +99,13 @@ export function BookReviewSection({
 
   return (
     <section id="book-reviews" className="space-y-6">
+      <ShareToFeedModal
+        open={Boolean(sharePreview)}
+        preview={sharePreview}
+        onClose={() => {
+          if (state.reviewId) setDismissedShareReviewId(state.reviewId);
+        }}
+      />
       {canWriteReview ? (
         <div className="rounded-xl border border-border bg-surface p-5 text-left">
           <h2 className="text-lg font-semibold text-puce-red">

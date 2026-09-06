@@ -15,6 +15,9 @@ import { StarRatingInput } from "./StarRatingInput";
 import { upsertReview, updateReviewVisibility, RATING_EMOJIS } from "../services/reviews";
 import type { Review } from "../types";
 import { ReviewVisibilityControl } from "./ReviewVisibilityControl";
+import { ShareToFeedSheet, type ShareToFeedPreview } from "./ShareToFeedSheet";
+import { buildReviewSharePostBody } from "../../../../packages/utils/readingRoomReviews";
+import { shouldPromptReviewShareToFeed } from "../../../../packages/utils/reviewSharePrompt";
 import {
   parseReviewAudience,
   type ReviewAudience,
@@ -91,6 +94,7 @@ export function RateReviewSheet({
     emotionalImpact: existingReview?.emotional_impact ?? 0,
   });
   const [saving, setSaving] = useState(false);
+  const [sharePreview, setSharePreview] = useState<ShareToFeedPreview | null>(null);
   const [wasOpen, setWasOpen] = useState(visible);
   const [hydratedId, setHydratedId] = useState(existingReview?.id ?? null);
   if (visible && (!wasOpen || (existingReview?.id ?? null) !== hydratedId)) {
@@ -152,12 +156,45 @@ export function RateReviewSheet({
       Alert.alert("Couldn't save review", result.error);
       return;
     }
+    if (
+      result.review &&
+      shouldPromptReviewShareToFeed({
+        visibility,
+        isNewPublish: Boolean(result.isNew),
+      })
+    ) {
+      setSharePreview({
+        sourceType: "review",
+        sourceId: result.review.id,
+        bookId: book.id,
+        bookTitle: book.title,
+        bookCoverUrl: book.cover_url,
+        rating: rating || null,
+        body: buildReviewSharePostBody({
+          title: book.title,
+          author: book.author,
+          rating: rating || null,
+          reviewBody: body,
+          bookUrl: "",
+        }),
+      });
+      onSaved?.();
+      return;
+    }
     onSaved?.();
     onClose();
   }
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} presentationStyle="pageSheet">
+      <ShareToFeedSheet
+        visible={Boolean(sharePreview)}
+        preview={sharePreview}
+        onClose={() => {
+          setSharePreview(null);
+          onClose();
+        }}
+      />
       <View className="flex-1 bg-background">
         <View
           style={{ paddingTop: insets.top + 8 }}

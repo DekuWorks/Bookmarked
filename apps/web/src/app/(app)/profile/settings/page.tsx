@@ -13,6 +13,7 @@ import { ShelfPrivacyPanel } from "@/components/profile/ShelfPrivacyPanel";
 import { ThemePreferencePanel } from "@/components/theme/ThemePreferencePanel";
 import { NotificationPreferencesPanel } from "@/components/notifications/NotificationPreferencesPanel";
 import { DeleteAccountPanel } from "@/components/moderation/DeleteAccountPanel";
+import { AccountSecurityPanel } from "@/components/profile/AccountSecurityPanel";
 import { ReadingGoalPanel } from "@/components/reading-goal/ReadingGoalPanel";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
@@ -76,11 +77,13 @@ export default function ProfileSettingsPage() {
       <header className={layout.pageHeader}>
         <h1 className="mt-2 text-3xl font-bold text-puce-red sm:text-4xl">Account settings</h1>
         <p className="mt-1 text-text-muted">
-          Notifications, reading goal, language, library import, and shelf privacy.
+          Security, notifications, reading goal, language, library import, and shelf privacy.
         </p>
       </header>
 
       <div className="space-y-6">
+        <AccountSecurityPanel />
+
         <ThemePreferencePanel />
 
         <section className="surface-card p-6">

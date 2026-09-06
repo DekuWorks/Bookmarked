@@ -14,10 +14,13 @@ import { computeReadingGoal } from "../../src/services/readingGoal";
 import { env } from "../../src/constants/env";
 import {
   clearPersistedAuthSession,
+  isRememberMeEnabled,
+  persistRememberedEmail,
   supabaseAuthStorageKey,
 } from "../../src/services/rememberMe";
 import { supabase } from "../../src/services/supabase";
 import { ThemePreferencePanel } from "../../src/components/ThemePreferencePanel";
+import { AccountSecurityPanel } from "../../src/components/AccountSecurityPanel";
 import { useAuthStore } from "../../src/store/authStore";
 import { TAB_BAR_SPACE } from "../../src/navigation/TabBarScroll";
 import { useState } from "react";
@@ -40,6 +43,7 @@ export default function SettingsRoute() {
     await supabase.auth.signOut();
     const authKey = supabaseAuthStorageKey(env.supabaseUrl);
     await clearPersistedAuthSession(authKey ? [authKey] : []);
+    if (!isRememberMeEnabled()) await persistRememberedEmail(false);
     router.replace("/(auth)/login");
   }
 
@@ -93,6 +97,8 @@ export default function SettingsRoute() {
         <Text className="text-sm text-ink-muted mb-6">
           Manage your account, notifications, reading goal, and privacy.
         </Text>
+
+        <AccountSecurityPanel />
 
         <ThemePreferencePanel />
 

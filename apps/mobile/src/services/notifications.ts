@@ -1,6 +1,7 @@
 import { supabase } from "./supabase";
 import type { NotificationWithActor, Profile } from "../types";
 import { validateNotificationPreferences } from "../../../../packages/utils/profileValidation";
+import { shouldCreateStandardNotification } from "../../../../packages/utils/notifiableEvents";
 
 export type NotificationPreferences = Pick<
   Profile,
@@ -129,6 +130,13 @@ async function createNotification(params: {
   linkUrl: string;
   metadata: Record<string, unknown>;
 }): Promise<void> {
+  const kind =
+    typeof params.metadata.notification_kind === "string"
+      ? params.metadata.notification_kind
+      : null;
+  if (!shouldCreateStandardNotification({ type: params.type, notificationKind: kind })) {
+    return;
+  }
   try {
     await supabase.rpc("create_notification", {
       p_user_id: params.recipientId,

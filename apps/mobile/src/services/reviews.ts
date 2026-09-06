@@ -64,7 +64,7 @@ export async function upsertReview(
   userId: string,
   input: ReviewInput,
   book: { id: string; title: string; cover_url?: string | null; subjects?: string[] | null }
-): Promise<{ error?: string; review?: Review }> {
+): Promise<{ error?: string; review?: Review; isNew?: boolean }> {
   const readNumber = Math.max(1, Number(input.readNumber) || 1);
   const payload = {
     user_id: userId,
@@ -117,7 +117,7 @@ export async function upsertReview(
     }),
   });
 
-  return { review };
+  return { review, isNew: !existing?.id };
 }
 
 export async function updateReviewVisibility(

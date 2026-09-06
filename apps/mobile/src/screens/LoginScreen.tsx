@@ -5,7 +5,12 @@ import { BookmarkedLogo } from "../components/BookmarkedLogo";
 import { Button } from "../components/Button";
 import { Input } from "../components/Input";
 import { ScreenContainer } from "../components/ScreenContainer";
-import { hydrateRememberMePreference, setRememberMe } from "../services/rememberMe";
+import {
+  getRememberedEmail,
+  hydrateRememberMePreference,
+  persistRememberedEmail,
+  setRememberMe,
+} from "../services/rememberMe";
 import { supabase } from "../services/supabase";
 
 export function LoginScreen() {
@@ -17,7 +22,13 @@ export function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    void hydrateRememberMePreference().then(setRememberMeChecked);
+    void (async () => {
+      const enabled = await hydrateRememberMePreference();
+      setRememberMeChecked(enabled);
+      if (enabled) {
+        setEmail(await getRememberedEmail());
+      }
+    })();
   }, []);
 
   async function onSubmit() {
@@ -40,6 +51,7 @@ export function LoginScreen() {
         setError(signError.message);
         return;
       }
+      await persistRememberedEmail(rememberMe, trimmedEmail);
       router.replace("/");
     } finally {
       setLoading(false);

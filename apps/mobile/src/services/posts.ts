@@ -25,7 +25,7 @@ import type {
  */
 
 const POST_SELECT =
-  "id, user_id, body, image_url, book_id, repost_of_post_id, moderation_meta, created_at, updated_at";
+  "id, user_id, body, image_url, book_id, repost_of_post_id, source_type, source_id, moderation_meta, created_at, updated_at";
 const AUTHOR_SELECT = "id, username, display_name, avatar_url";
 const COMMENT_SELECT =
   "id, post_id, user_id, body, attachment_url, moderation_meta, created_at, updated_at";
@@ -34,6 +34,8 @@ export type CreatePostInput = {
   body: string;
   bookId?: string | null;
   imageUrl?: string | null;
+  sourceType?: "review" | "note" | null;
+  sourceId?: string | null;
 };
 
 export type RepostInput = {
@@ -316,10 +318,22 @@ export async function createPost(
 
   const { data, error } = await supabase
     .from("posts")
-    .insert({ user_id: viewerId, body, book_id: input.bookId ?? null, image_url: imageUrl })
+    .insert({
+      user_id: viewerId,
+      body,
+      book_id: input.bookId ?? null,
+      image_url: imageUrl,
+      source_type: input.sourceType ?? null,
+      source_id: input.sourceId ?? null,
+    })
     .select(POST_SELECT)
     .single();
-  if (error) return { error: error.message };
+  if (error) {
+    if (error.code === "23505" && input.sourceId) {
+      return { error: "Already shared to your feed." };
+    }
+    return { error: error.message };
+  }
 
   const row = data as RawPostRow;
   const actorName = await getActorDisplayName(viewerId);

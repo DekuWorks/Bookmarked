@@ -17,8 +17,8 @@ import {
 import { ReadingStreakCard } from "@/components/profile/ReadingStreakCard";
 import { ProfanityBlur } from "@/components/social/ProfanityBlur";
 import { readerProfilePath } from "@/lib/routes/reader";
-import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import type { Profile } from "@/types";
+import { PublicPostsSection } from "@/components/profile/PublicPostsSection";
 import { cn } from "@/lib/utils/cn";
 import { PremiumBadge } from "@/components/premium/PremiumBadge";
 import { useSubscription } from "@/lib/hooks/useSubscription";
@@ -140,20 +140,10 @@ export default function ProfilePage() {
         ) : null}
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           {profile?.username ? (
-            <>
-              <ButtonLink href={readerProfilePath(profile.username)} variant="secondary" size="sm">
-                Public profile
-              </ButtonLink>
-              <CopyLinkButton
-                path={readerProfilePath(profile.username)}
-                label="Copy profile link"
-                variant="outline"
-              />
-            </>
+            <ButtonLink href={readerProfilePath(profile.username)} variant="primary" size="sm">
+              Public profile
+            </ButtonLink>
           ) : null}
-          <ButtonLink href="/profile/setup" variant="outline" size="sm">
-            Edit profile
-          </ButtonLink>
           <ButtonLink
             href="/profile/settings"
             variant="secondary"
@@ -162,12 +152,6 @@ export default function ProfilePage() {
           >
             <SettingsIcon />
             Account settings
-          </ButtonLink>
-          <ButtonLink href="/reading-dna/" variant="secondary" size="sm">
-            Reading DNA
-          </ButtonLink>
-          <ButtonLink href="/quote-graphics/" variant="outline" size="sm">
-            Quote graphics
           </ButtonLink>
           <ButtonLink href="/challenges/" variant="outline" size="sm">
             Challenges
@@ -189,6 +173,7 @@ export default function ProfilePage() {
           />
         </div>
       </section>
+      <PublicPostsSection userId={user.id} viewerId={user.id} />
       <PublicReviewsSection
         userId={user.id}
         readerName={profile?.display_name || profile?.username || "you"}

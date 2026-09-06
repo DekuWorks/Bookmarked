@@ -13,6 +13,7 @@ import { bookDetailsNotesPath } from "@/lib/routes/book";
 import type { ReadingNoteWithBook } from "@/lib/services/readingNotes";
 import { formatNoteLocation } from "@bookmarked/utils/noteLocation";
 import { isCustomReadingNoteCategory } from "@/lib/readingNotes/categories";
+import { ShareNoteButton } from "@/components/notes/ShareNoteButton";
 
 function formatNoteDate(iso: string): string {
   const date = new Date(iso);
@@ -98,16 +99,17 @@ export function NotesSearchResultCard({ note }: Props) {
         </p>
       ) : null}
 
-      {bookHref ? (
-        <p className="mt-4 border-t border-border/60 pt-3 text-sm">
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <ShareNoteButton note={note} book={note.book} />
+        {bookHref ? (
           <Link
             href={bookHref}
             className="inline-flex min-h-[44px] items-center font-medium text-primary hover:underline"
           >
             View on book page →
           </Link>
-        </p>
-      ) : null}
+        ) : null}
+      </div>
     </li>
   );
 }

@@ -400,7 +400,7 @@ export async function updateReadingProgress(
   const isAudiobook = input.format === "audiobook";
   const { data: existing } = await supabase
     .from("user_books")
-    .select("id, listening_progress_seconds, read_count")
+    .select("id, listening_progress_seconds, progress_pages, read_count")
     .eq("user_id", userId)
     .eq("book_id", book.id)
     .maybeSingle();
@@ -452,12 +452,28 @@ export async function updateReadingProgress(
       pageStart: 0,
       pageEnd: 0,
       percentComplete: progressPercent,
+      activityKind: "progress",
       readNumber: Number(existing?.read_count) || 1,
       sessionFormat: "audiobook",
       listeningStartSeconds: previousListening,
       listeningEndSeconds: listeningProgressSeconds,
     });
     if (session.error) return { error: session.error };
+  } else if (!isAudiobook && userBook?.id) {
+    const previousPage = Number(existing?.progress_pages) || 0;
+    const nextPage = input.progressPages ?? 0;
+    if (nextPage > previousPage) {
+      const session = await createReadingSession({
+        userId,
+        userBookId: userBook.id,
+        pageStart: previousPage,
+        pageEnd: nextPage,
+        percentComplete: progressPercent,
+        activityKind: "progress",
+        readNumber: Number(existing?.read_count) || 1,
+      });
+      if (session.error) return { error: session.error };
+    }
   }
 
   await recordBookActivity(userId, "progress_updated", userBook?.id ?? null, book, {
@@ -515,6 +531,7 @@ export async function logListeningSession(
     pageStart: 0,
     pageEnd: 0,
     percentComplete: nextPercent,
+    activityKind: "progress",
     readNumber: Number(existing.read_count) || 1,
     sessionFormat: "audiobook",
     listeningStartSeconds: validated.startSeconds,

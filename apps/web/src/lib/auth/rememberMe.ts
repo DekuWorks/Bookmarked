@@ -1,3 +1,9 @@
+import {
+  REMEMBERED_EMAIL_KEY,
+  normalizeRememberedEmail,
+  rememberedEmailStorageValue,
+} from "@bookmarked/utils/rememberMeEmail";
+
 const REMEMBER_ME_KEY = "bookmarked_remember_me";
 
 export function isRememberMeEnabled(): boolean {
@@ -49,7 +55,27 @@ export function clearSupabaseAuthStorage(): void {
   }
 }
 
+export function getRememberedEmail(): string {
+  if (typeof window === "undefined") return "";
+  return normalizeRememberedEmail(window.localStorage.getItem(REMEMBERED_EMAIL_KEY)) ?? "";
+}
+
+export function persistRememberedEmail(remember: boolean, email?: string | null): void {
+  if (typeof window === "undefined") return;
+  const stored = rememberedEmailStorageValue({ rememberMe: remember, email });
+  if (stored) {
+    window.localStorage.setItem(REMEMBERED_EMAIL_KEY, stored);
+    return;
+  }
+  window.localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+}
+
 export function applyRememberMePreference(remember: boolean): void {
   setRememberMe(remember);
+  if (!remember) persistRememberedEmail(false);
   clearSupabaseAuthStorage();
+}
+
+export function clearRememberedEmail(): void {
+  persistRememberedEmail(false);
 }
