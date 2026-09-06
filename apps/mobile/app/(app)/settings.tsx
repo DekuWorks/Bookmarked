@@ -127,6 +127,12 @@ export default function SettingsRoute() {
             description="Who can see each shelf on your profile"
             onPress={() => router.push("/shelf-privacy")}
           />
+          <SettingsLink
+            icon="🧬"
+            label="Reading DNA privacy"
+            description="Who can see your traits, Match, and Reader Map DNA"
+            onPress={() => router.push("/(app)/reading-dna")}
+          />
         </View>
 
         <View className="rounded-2xl border border-brand-border bg-surface p-4 mb-6">

@@ -7,7 +7,7 @@ import {
   type ReadingDna,
 } from "../../../../packages/utils/readingDna";
 import {
-  loadComputedReadingDna,
+  loadReadingDnaBundle,
   persistReadingDnaSnapshot,
 } from "../services/readingDna";
 import { SANS_FONT, SANS_FONT_BOLD, SANS_FONT_MEDIUM, SERIF_DISPLAY_FONT } from "../constants/theme";
@@ -43,11 +43,11 @@ export function ReadingDnaSection({ userId, favoriteGenres, canAccess }: Props) 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    void loadComputedReadingDna(userId, favoriteGenres)
-      .then((computed) => {
+    void loadReadingDnaBundle(userId, favoriteGenres)
+      .then((bundle) => {
         if (cancelled) return;
-        setDna(computed);
-        void persistReadingDnaSnapshot(userId, computed);
+        setDna(bundle.dna);
+        if (!bundle.fromCache) void persistReadingDnaSnapshot(userId, bundle.dna);
       })
       .catch(() => {
         if (!cancelled) {

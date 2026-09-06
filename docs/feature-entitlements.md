@@ -44,7 +44,7 @@ Official Home display prices: $9.99/month, $99.99/year (≈ $8.33/month; save $1
 | Reviews (half-star, feelings, spoilers, categories) | yes | yes | `advanced_reviews` is Plus extras only; Free is not gated off reviews |
 | Reading calendar | yes | yes | Qualifying session/progress dates |
 | Feed / follow / public profiles | yes | yes | Private shelves/notes stay private |
-| Reading DNA | top 3 | full / advanced | existing DNA gates; Home personality is derived, not invented |
+| Reading DNA | top 3 on Profile | Plus: full + YoY + matches. Home: + MoM, Match %, similar readers, Reader Map DNA (explicit consent) | `getReadingDnaAccess` / `canAccessFeature`. See `docs/reading-dna.md` |
 | Book Map | no | Home | `canAccessFeature("book_map")` + `book_map_places` |
 | Reader Map | no | Home | opt-in default off; age + Home RPCs |
 | Experiences / meetups | club events | Home extras | `event_access` data; video join RPC |

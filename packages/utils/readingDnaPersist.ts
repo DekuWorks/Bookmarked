@@ -1,5 +1,9 @@
+import { monthPeriodKey, yearPeriodKey } from "./usageCounters";
+import {
+  READING_DNA_VERSION,
+  type ReadingDnaPeriodType,
+} from "./readingDnaConfig";
 import type { ReadingDna, ReadingDnaTrait } from "./readingDna";
-import { yearPeriodKey } from "./usageCounters";
 
 export type ReadingDnaTraitPayload = {
   category: ReadingDnaTrait["category"];
@@ -20,9 +24,12 @@ export function readingDnaFingerprint(dna: ReadingDna): string {
     )
     .sort();
   return [
+    dna.dnaVersion,
     dna.confidence,
     dna.confidenceScore,
     dna.sampleSize,
+    dna.dataPointsCount,
+    dna.forming,
     dna.summary,
     dna.insight,
     ...traits,
@@ -47,20 +54,65 @@ export function readingDnaTraitsPayload(dna: ReadingDna): ReadingDnaTraitPayload
 
 export function readingDnaSnapshotPayload(dna: ReadingDna): Record<string, unknown> {
   return {
+    dnaVersion: dna.dnaVersion,
     summary: dna.summary,
     insight: dna.insight,
     confidence: dna.confidence,
     confidenceScore: dna.confidenceScore,
     sampleSize: dna.sampleSize,
+    dataPointsCount: dna.dataPointsCount,
+    forming: dna.forming,
     topTraits: dna.topTraits,
     personaTraits: dna.personaTraits,
     categories: dna.categories,
     habits: dna.habits,
+    matchVector: dna.matchVector,
   };
 }
 
+/** @deprecated Prefer readingDnaPeriodKeys. Yearly key kept for older callers. */
 export function readingDnaPeriodKey(date: Date = new Date()): string {
   return yearPeriodKey(date);
+}
+
+export function readingDnaPeriodKeys(date: Date = new Date()): {
+  monthly: { periodType: ReadingDnaPeriodType; periodKey: string };
+  yearly: { periodType: ReadingDnaPeriodType; periodKey: string };
+} {
+  return {
+    monthly: { periodType: "monthly", periodKey: monthPeriodKey(date) },
+    yearly: { periodType: "yearly", periodKey: yearPeriodKey(date) },
+  };
+}
+
+export function readingDnaFromCachedPayload(
+  payload: Record<string, unknown> | null | undefined
+): ReadingDna | null {
+  if (!payload || typeof payload !== "object") return null;
+  const categories = payload.categories as ReadingDna["categories"] | undefined;
+  const habits = (payload.habits as ReadingDna["habits"]) ?? [];
+  const topTraits = payload.topTraits as ReadingDna["topTraits"] | undefined;
+  const matchVector = payload.matchVector;
+  if (!Array.isArray(categories) || !Array.isArray(topTraits) || !matchVector) {
+    return null;
+  }
+  const traitsFromCategories = categories.flatMap((category) => category.traits ?? []);
+  return {
+    dnaVersion: typeof payload.dnaVersion === "string" ? payload.dnaVersion : READING_DNA_VERSION,
+    topTraits,
+    personaTraits: (payload.personaTraits as ReadingDna["personaTraits"]) ?? [],
+    traits: (payload.traits as ReadingDna["traits"]) ?? [...traitsFromCategories, ...habits],
+    categories,
+    habits,
+    summary: typeof payload.summary === "string" ? payload.summary : "",
+    insight: typeof payload.insight === "string" ? payload.insight : "",
+    confidence: (payload.confidence as ReadingDna["confidence"]) ?? "low",
+    confidenceScore: Number(payload.confidenceScore ?? 0),
+    sampleSize: Number(payload.sampleSize ?? 0),
+    dataPointsCount: Number(payload.dataPointsCount ?? 0),
+    forming: Boolean(payload.forming),
+    matchVector: matchVector as ReadingDna["matchVector"],
+  };
 }
 
 /** Debounce window for client-side DNA persistence (ms). */

@@ -123,6 +123,10 @@ export function ReaderMapView() {
       </section>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <p className="text-xs text-text-muted">
+          Personality filter only includes readers who opted into DNA visibility. Home is not
+          consent.
+        </p>
         {(["city", "college", "personality", "genre"] as const).map((key) => (
           <input
             key={key}

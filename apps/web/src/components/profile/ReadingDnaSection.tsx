@@ -6,7 +6,7 @@ import { UpgradePrompt } from "@/components/premium/UpgradePrompt";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { readingDnaPath } from "@/lib/routes/readingDna";
 import {
-  loadComputedReadingDna,
+  loadReadingDnaBundle,
   persistReadingDnaSnapshot,
 } from "@/lib/services/readingDna";
 
@@ -38,11 +38,11 @@ export function ReadingDnaSection({ userId, favoriteGenres, canAccess }: Props) 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    void loadComputedReadingDna(userId, favoriteGenres)
-      .then((computed) => {
+    void loadReadingDnaBundle(userId, favoriteGenres)
+      .then((bundle) => {
         if (cancelled) return;
-        setDna(computed);
-        void persistReadingDnaSnapshot(userId, computed);
+        setDna(bundle.dna);
+        if (!bundle.fromCache) void persistReadingDnaSnapshot(userId, bundle.dna);
       })
       .catch(() => {
         if (!cancelled) {

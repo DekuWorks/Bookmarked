@@ -102,8 +102,7 @@ async function resolveSharePreviewUncached(
         }
         return snapshotModel;
       }
-      case "profile":
-      case "reading_dna": {
+      case "profile": {
         if (blocked.has(payload.contentId)) return unavailableShareCard(payload);
         const { data } = await supabase
           .from("profiles")
@@ -111,6 +110,18 @@ async function resolveSharePreviewUncached(
           .eq("id", payload.contentId)
           .maybeSingle();
         if (!data) return unavailableShareCard(payload);
+        return snapshotModel;
+      }
+      case "reading_dna": {
+        if (blocked.has(payload.contentId)) return unavailableShareCard(payload);
+        const { data } = await supabase
+          .from("reading_dna_profiles")
+          .select("visibility, public_top_traits_approved")
+          .eq("user_id", payload.contentId)
+          .maybeSingle();
+        if (!data || data.visibility === "private" || !data.public_top_traits_approved) {
+          return unavailableShareCard(payload);
+        }
         return snapshotModel;
       }
       case "activity": {
