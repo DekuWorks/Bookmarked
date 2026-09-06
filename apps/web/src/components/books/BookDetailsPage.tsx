@@ -32,6 +32,10 @@ import { seriesPagePath } from "@/lib/routes/series";
 import { refreshBookFromCatalog } from "@/lib/services/bookMetadata";
 import type { BookDetailsData } from "@/lib/services/bookDetails";
 import type { ShelfStatus } from "@/types";
+import {
+  resolveAudiobookDurationSeconds,
+  resolveTrackingFormat,
+} from "@bookmarked/utils/listeningTime";
 
 function BookDetailsContent() {
   const searchParams = useSearchParams();
@@ -116,6 +120,14 @@ function BookDetailsContent() {
     badges,
     readingSessions,
   } = data;
+  const trackingFormat = resolveTrackingFormat({
+    userFormat: userBook?.tracking_format,
+    catalogFormat: book.format,
+  });
+  const totalListeningSeconds = resolveAudiobookDurationSeconds({
+    userDurationSeconds: userBook?.audiobook_duration_seconds,
+    catalogDurationSeconds: book.audiobook_duration_seconds,
+  });
   const currentShelf = (userBook?.shelf_status as ShelfStatus | undefined) ?? null;
   const readCount = Number(userBook?.read_count) || 1;
   const hasReviewForCurrentRead = ownReviews.some((r) => r.read_number === readCount);
@@ -193,7 +205,8 @@ function BookDetailsContent() {
         <div className="flex justify-center">
           <BookFormatToggle
             bookId={book.id}
-            format={book.format}
+            format={trackingFormat}
+            onShelf={Boolean(userBook)}
             onFormatChange={loadBookDetails}
           />
         </div>
@@ -235,7 +248,7 @@ function BookDetailsContent() {
               <dd className="text-text">{book.published_date}</dd>
             </div>
           ) : null}
-          {book.page_count ? (
+          {trackingFormat !== "audiobook" && book.page_count ? (
             <div>
               <dt className="font-medium text-text-muted">Pages</dt>
               <dd className="text-text">{book.page_count}</dd>
@@ -316,9 +329,9 @@ function BookDetailsContent() {
           currentPage={Number(userBook?.progress_pages) || 0}
           totalPages={userBook?.total_pages || book.page_count || 0}
           progressPercent={Number(userBook?.progress_percent) || 0}
-          format={book.format}
+          format={trackingFormat}
           currentListeningSeconds={Number(userBook?.listening_progress_seconds) || 0}
-          totalListeningSeconds={book.audiobook_duration_seconds ?? 0}
+          totalListeningSeconds={totalListeningSeconds}
           startedAt={userBook?.started_at}
           finishedAt={userBook?.finished_at}
           hasReviewForCurrentRead={hasReviewForCurrentRead}

@@ -7,6 +7,7 @@ import { HistorySortSelect } from "@/components/reading-room/HistorySortSelect";
 import { BookListPagination } from "@/components/reading-room/BookListPagination";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { formatSessionDate } from "@/lib/reading-room/trail";
+import { formatHistorySessionDetail } from "@bookmarked/utils/listeningTime";
 import type { LibraryBookRow } from "@/lib/services/library";
 import type { UserReadingSession } from "@/lib/services/readingSessions";
 import { cn } from "@/lib/utils/cn";
@@ -102,7 +103,7 @@ export function HistoryPanel({ books, sessions }: Props) {
                   {session.bookTitle ?? "Session"}
                 </span>
                 <span className="text-text-muted">
-                  {formatSessionDate(session.created_at)} · {session.pages_read} pages
+                  {formatSessionDate(session.created_at)} · {formatHistorySessionDetail(session)}
                 </span>
               </li>
             ))}

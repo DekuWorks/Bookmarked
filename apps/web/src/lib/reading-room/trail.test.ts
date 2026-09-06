@@ -77,6 +77,23 @@ describe("groupSessionsByReadNumber", () => {
 });
 
 describe("sessionSummary", () => {
+  it("uses listened copy for audiobook sessions", () => {
+    expect(
+      sessionSummary(
+        session({
+          id: "audio-1",
+          session_format: "audiobook",
+          page_start: 0,
+          page_end: 0,
+          pages_read: 0,
+          listening_start_seconds: 6300,
+          listening_end_seconds: 9000,
+          listening_seconds: 2700,
+        })
+      )
+    ).toBe("Listened from 1:45 to 2:30 · 45 minutes");
+  });
+
   it("formats page ranges and single-page sessions", () => {
     expect(
       sessionSummary(

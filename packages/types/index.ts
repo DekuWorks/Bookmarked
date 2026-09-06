@@ -695,7 +695,11 @@ export interface UserBook {
   progress_percent: number;
   /** Reader-owned page count for their selected edition. */
   total_pages?: number | null;
+  /** Reader-owned format for this edition. Catalog `books.format` is fallback only. */
+  tracking_format?: "book" | "audiobook" | null;
   listening_progress_seconds?: number;
+  /** Reader-owned audiobook length in seconds. Catalog duration is fallback only. */
+  audiobook_duration_seconds?: number | null;
   started_at: string | null;
   finished_at: string | null;
   rating: number | null;

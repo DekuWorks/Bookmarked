@@ -3,6 +3,7 @@ import { EmptyShelfMessage } from "@/components/library/EmptyShelfMessage";
 import { ShelfTitleRow } from "@/components/shelves/ShelfTitleRow";
 import { bookDetailsPath } from "@/lib/routes/book";
 import type { ShelfGroup } from "@/lib/services/library";
+import { resolveTrackingFormat } from "@bookmarked/utils/listeningTime";
 
 type Props = {
   shelves: ShelfGroup[];
@@ -30,7 +31,10 @@ export function LibraryGridView({ shelves }: Props) {
                     coverUrl={book?.cover_url}
                     shelfStatus={shelf.status}
                     progressPercent={Number(ub.progress_percent) || 0}
-                    format={book?.format}
+                    format={resolveTrackingFormat({
+                      userFormat: ub.tracking_format,
+                      catalogFormat: book?.format,
+                    })}
                     href={book?.id ? bookDetailsPath(book.id) : undefined}
                   />
                 );

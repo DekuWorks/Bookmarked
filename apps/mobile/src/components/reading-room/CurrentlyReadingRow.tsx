@@ -10,6 +10,7 @@ import {
   CURRENTLY_READING_CARD_SIZE,
   currentlyReadingCoverBoxStyle,
 } from "../../../../../packages/utils/currentlyReadingCard";
+import { resolveTrackingFormat } from "../../../../../packages/utils/listeningTime";
 
 type Props = {
   userId: string;
@@ -50,6 +51,10 @@ export function CurrentlyReadingRow({ userId, items, onRefresh }: Props) {
                 author={item.books?.author}
                 coverUrl={item.books?.cover_url}
                 progressPercent={item.progress_percent}
+                format={resolveTrackingFormat({
+                  userFormat: item.tracking_format,
+                  catalogFormat: item.books?.format,
+                })}
                 frameStyle={{ width: cardSize.widthPx }}
                 coverSizeStyle={coverSize}
                 priority

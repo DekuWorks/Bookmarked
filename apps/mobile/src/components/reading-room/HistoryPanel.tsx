@@ -18,6 +18,7 @@ import { withOriginQuery } from "../../../../../packages/utils/navigationOrigin"
 import { paginateItems } from "../../../../../packages/utils/pagination";
 import { HistorySortSelect } from "./HistorySortSelect";
 import { BookListPagination } from "./BookListPagination";
+import { formatHistorySessionDetail } from "../../../../../packages/utils/listeningTime";
 
 function formatSessionDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -121,7 +122,7 @@ export function HistoryPanel({ books, sessions }: Props) {
                   {session.bookTitle ?? "Session"}
                 </Text>
                 <Text className="text-xs text-ink-muted">
-                  {formatSessionDate(session.created_at)} · {session.pages_read} pages
+                  {formatSessionDate(session.created_at)} · {formatHistorySessionDetail(session)}
                 </Text>
               </View>
             ))}

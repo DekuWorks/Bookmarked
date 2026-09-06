@@ -510,6 +510,34 @@ export {
 } from "./pageProgress";
 
 export {
+  CURRENT_EXCEEDS_TOTAL_ERROR,
+  LISTENING_TIME_ERROR,
+  SESSION_END_BEFORE_START_ERROR,
+  SESSION_END_EXCEEDS_TOTAL_ERROR,
+  calculateAudiobookProgress,
+  calculateAudiobookSessionDuration,
+  combineListeningTimeParts,
+  formatAudiobookProgressLabel,
+  formatHistorySessionDetail,
+  formatListeningDurationLabel,
+  formatListeningRange,
+  formatListeningSessionSummary,
+  formatListeningTime,
+  formatListeningTimeSpoken,
+  listeningTimeParts,
+  nextListeningProgressAfterSession,
+  parseListeningTime,
+  resolveAudiobookDurationSeconds,
+  resolveTrackingFormat,
+  validateListeningProgress,
+  validateListeningSession,
+  type AudiobookProgressValidation,
+  type AudiobookSessionValidation,
+  type ListeningTimeParse,
+  type TrackingFormat,
+} from "./listeningTime";
+
+export {
   LIBRARY_FILTER_OPTIONS,
   LIBRARY_FILTER_ORDER,
   LIBRARY_TABLET_MIN_WIDTH,
