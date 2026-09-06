@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils/cn";
 
 type ShelfLike = Pick<UserShelf, "id" | "name" | "genre" | "visibility"> & {
   icon_key?: string | null;
+  updated_at?: string;
 };
 
 type Props = {
