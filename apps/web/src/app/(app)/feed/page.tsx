@@ -11,6 +11,7 @@ import { PostCard } from "@/components/social/PostCard";
 import { PostComposer } from "@/components/social/PostComposer";
 import { ShareHead } from "@/components/seo/ShareHead";
 import { ButtonLink } from "@/components/ui/ButtonLink";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { FeedCardSkeleton, PostCardSkeleton } from "@/components/ui/Skeleton";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
@@ -298,35 +299,25 @@ function FeedContent() {
         </div>
       ) : (
         <div className="mx-auto w-full max-w-3xl space-y-5">
-          <div className="pill-tabs overflow-x-auto" role="tablist" aria-label="Feed content">
-            {viewOptions.map((option) => (
-              <Link
-                key={option.id}
-                href={viewHref(option.id)}
-                role="tab"
-                aria-selected={feedView === option.id}
-                data-active={feedView === option.id ? "true" : "false"}
-                className="pill-tab shrink-0"
-              >
-                {option.label}
-              </Link>
-            ))}
-          </div>
+          <SegmentedControl
+            alignment="center"
+            ariaLabel="Feed content"
+            value={feedView}
+            options={viewOptions.map((option) => ({
+              ...option,
+              href: viewHref(option.id),
+            }))}
+          />
 
-          <div className="pill-tabs overflow-x-auto" role="tablist" aria-label="Feed type">
-            {tabOptions.map((option) => (
-              <Link
-                key={option.id}
-                href={tabHref(option.id)}
-                role="tab"
-                aria-selected={tab === option.id}
-                data-active={tab === option.id ? "true" : "false"}
-                className="pill-tab shrink-0"
-              >
-                {option.label}
-              </Link>
-            ))}
-          </div>
+          <SegmentedControl
+            alignment="center"
+            ariaLabel="Feed type"
+            value={tab}
+            options={tabOptions.map((option) => ({
+              ...option,
+              href: tabHref(option.id),
+            }))}
+          />
 
           {error ? (
             <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-left text-sm text-red-700">
