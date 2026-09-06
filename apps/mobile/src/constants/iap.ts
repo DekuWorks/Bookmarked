@@ -1,7 +1,9 @@
 import {
+  IAP_HOME_YEARLY_IOS_PRODUCTION,
   IAP_PREMIUM_MONTHLY_IOS_PRODUCTION,
   IAP_PREMIUM_MONTHLY_IOS_SANDBOX,
   IAP_PREMIUM_YEARLY_IOS_PRODUCTION,
+  resolveIosHomeProductId,
   resolveIosPremiumProductId,
 } from "../../../../packages/utils/iap";
 
@@ -19,9 +21,20 @@ export const APPLE_PREMIUM_PRODUCT_ID = resolveIosPremiumProductId({
 
 export const APPLE_PREMIUM_YEARLY_PRODUCT_ID = IAP_PREMIUM_YEARLY_IOS_PRODUCTION;
 
+const homeOverride = process.env.EXPO_PUBLIC_APPLE_HOME_PRODUCT_ID?.trim() || null;
+
+export const APPLE_HOME_PRODUCT_ID = resolveIosHomeProductId({
+  useSandbox: useSandboxSku,
+  override: homeOverride,
+});
+
+export const APPLE_HOME_YEARLY_PRODUCT_ID = IAP_HOME_YEARLY_IOS_PRODUCTION;
+
 export const APPLE_PREMIUM_PRODUCT_IDS = [
   APPLE_PREMIUM_PRODUCT_ID,
   APPLE_PREMIUM_YEARLY_PRODUCT_ID,
+  APPLE_HOME_PRODUCT_ID,
+  APPLE_HOME_YEARLY_PRODUCT_ID,
 ] as const;
 
 export {

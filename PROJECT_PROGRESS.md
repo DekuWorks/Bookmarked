@@ -1098,10 +1098,57 @@ Shipped the eight Plus answers on web + iOS. Subscribe remains iOS-only. Officia
 
 ---
 
+## Nineteenth Sprint — HOME tier
+
+Official Bookmarked Home on **web + iOS**. Android not in scope. No `expo run:ios`. No TestFlight. No commit in this pass.
+
+**Product rule — subscribe only on iOS.** Home IAP SKUs follow the Plus pattern. Web never starts Stripe Checkout. Home includes Plus + Free via `ENTITLEMENTS` / `canAccessFeature`.
+
+### Audit table
+
+| Area | Status | Pointers |
+|------|--------|----------|
+| Entitlement inheritance Home ⊃ Plus ⊃ Free | Already working → extended | `packages/utils/subscription.ts` + Home-only keys |
+| Plus $5.99 name Premium vs Plus | Flagged | Code stays `plus`; IAP still uses `*.premium.*` |
+| Book Map | Missing → implemented | `/book-map/`, iOS `book-map`, `book_map_places` |
+| Reader Map | Missing → implemented | opt-in default off; coarse RPC; age-gated |
+| Location / map SDKs | None wired | `MapProvider` OSM-tile default; no Amazon Location install |
+| Events / RSVP | Already working → extended | Home experiences + video join RPC |
+| Reading DNA | Already working → connected | Personality + Home gate; official names open |
+| Concierge | Missing → implemented | Server-derived priority; no SLA |
+| Home Hub | Missing → implemented | Distinct from Overview/Home nav |
+| Age / minors | No birthdate in product | Architecture blocks unknown age; min age not invented |
+| Video stack | Meeting URL existed | `VideoEventProvider`; not Zoom-default |
+
+### Product decisions flagged (do not invent)
+
+1–18 in `HOME_PRODUCT_DECISIONS` (`packages/utils/homeEligibility.ts`). New flags: Bookmarked has no age field in general signup, so Reader Map/Meetups stay off until product sets `reader_map_min_age` and members can attest birth year. App Store Connect must create Home SKUs. No live Stripe Home price IDs.
+
+### Tests / verification
+
+- Shared unit tests: Home inheritance, pricing ($19.89 / 16.6%), location privacy (no precise public fields), opt-in default off, age unknown blocked, video join hidden, event access, DNA personality, downgrade disables Reader Map social
+- Web `vitest`: 412 passed
+- Web `tsc --noEmit`: pass
+- Web `next build`: pass (`/book-map`, `/reader-map`, `/home-hub`, `/concierge`)
+- iOS `tsc --noEmit`: pass
+- iOS `vitest`: 396 passed
+- Migration `20260907120000_bookmarked_home_tier.sql` dry-run then applied (`db push --yes --linked`)
+- Edge Function deployed: `apple-iap-verify` (Home SKUs → `home` tier) on `xtdfeorhdlpnbxycpone`
+- Could not click through Home QA accounts or live map keys
+- No `expo run:ios`. No TestFlight. No commit
+
+### Docs
+
+`docs/BOOK_MAP.md`, `READER_MAP.md`, `HOME_EXPERIENCES.md`, `READING_DNA_HOME.md`, `CONCIERGE.md`, plus updates to `feature-entitlements.md`, `FEATURE_GATING_MATRIX.md`, `SUBSCRIPTION_ARCHITECTURE.md`, `APP_STORE_IAP.md`.
+
+---
+
 ## Next up (recommended)
 
 | Priority | Item | Notes |
 |----------|------|-------|
-| P0 | Confirm App Store yearly SKU `com.dekuworks.bookmarked.premium.yearly` | Allowlisted in IAP verify; must exist in App Store Connect |
-| P1 | Enable AI quote graphics flag | When Higgsfield/AI ready; Plus already skips the Free monthly cap |
+| P0 | Create Home IAP SKUs in App Store Connect | `com.dekuworks.bookmarked.home.monthly` / `.yearly` |
+| P0 | Confirm Plus yearly SKU | `com.dekuworks.bookmarked.premium.yearly` |
+| P0 | Decide Reader Map / Meetup minimum age | Until then nearby-reader stays blocked |
+| P1 | Enable AI quote graphics flag | When Higgsfield/AI ready |
 | P1 | Higgsfield assets | Re-auth MCP — see `docs/higgsfield/BLOCKER.md` |

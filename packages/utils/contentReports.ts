@@ -8,6 +8,9 @@ export const REPORTABLE_CONTENT_TYPES = [
   "club_reply",
   "club",
   "profile",
+  "book_map_place",
+  "home_meetup",
+  "home_experience",
 ] as const;
 
 export type ReportableContentType = (typeof REPORTABLE_CONTENT_TYPES)[number];
@@ -20,6 +23,11 @@ export const CONTENT_REPORT_REASONS = [
   "spam",
   "impersonation",
   "other",
+  "closed",
+  "wrong_info",
+  "duplicate",
+  "incorrect",
+  "inappropriate_place",
 ] as const;
 
 export type ContentReportReason = (typeof CONTENT_REPORT_REASONS)[number];
@@ -41,6 +49,11 @@ export const CONTENT_REPORT_REASON_LABELS: Record<ContentReportReason, string> =
   spam: "Spam",
   impersonation: "Impersonation",
   other: "Other",
+  closed: "Closed or moved",
+  wrong_info: "Wrong details",
+  duplicate: "Duplicate listing",
+  incorrect: "Incorrect place",
+  inappropriate_place: "Inappropriate place",
 };
 
 export type ContentReportRow = {

@@ -9,9 +9,11 @@ Bookmarked Premium on iOS uses **App Store subscriptions** (`expo-iap`). Web bil
 | Bundle ID | `com.dekuworks.bookmarked` |
 | Monthly product ID | `com.dekuworks.bookmarked.premium.monthly` (production) |
 | Yearly product ID | `com.dekuworks.bookmarked.premium.yearly` (must exist in App Store Connect) |
+| Home monthly | `com.dekuworks.bookmarked.home.monthly` (**must be created** in App Store Connect) |
+| Home yearly | `com.dekuworks.bookmarked.home.yearly` (**must be created** in App Store Connect) |
 | Sandbox override | `EXPO_PUBLIC_APPLE_PREMIUM_SANDBOX_PRODUCT_ID` (only if separate SKU) |
-| Display price | $5.99 / month · $59.99 / year |
-| Env override (mobile) | `EXPO_PUBLIC_APPLE_PREMIUM_PRODUCT_ID` |
+| Display price | Plus $5.99 / $59.99 · Home $9.99 / $99.99 |
+| Env override (mobile) | `EXPO_PUBLIC_APPLE_PREMIUM_PRODUCT_ID` · `EXPO_PUBLIC_APPLE_HOME_PRODUCT_ID` |
 
 ## App Store Connect setup
 
@@ -58,14 +60,14 @@ Secrets (optional):
 
 | Secret | Purpose |
 |--------|---------|
-| `APPLE_PREMIUM_PRODUCT_IDS` | Comma-separated allowed SKUs |
+| `APPLE_PREMIUM_PRODUCT_IDS` | Comma-separated allowed SKUs. If set, include Home SKUs or Home purchases will be rejected. Default allowlist now includes Plus + Home monthly/yearly. |
 
 The function currently:
 
 1. Authenticates the Supabase user JWT.
 2. Validates `product_id` against allowed SKUs.
 3. Requires a `purchase_token` (StoreKit JWS).
-4. Upserts `user_subscriptions` with `subscription_provider: apple`.
+4. Upserts `user_subscriptions` with `subscription_provider: apple` and tier `plus` or `home` from the product ID.
 
 ### Production hardening (manual)
 

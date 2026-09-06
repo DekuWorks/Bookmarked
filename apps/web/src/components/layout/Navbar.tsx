@@ -24,6 +24,7 @@ const APP_LINKS: NavLinkItem[] = [
   { href: "/search/", label: "Search" },
   { href: "/clubs/", label: "Book Clubs" },
   { href: "/events/", label: "Events" },
+  { href: "/book-map/", label: "Book Map" },
   { href: "/messages/", label: "Messages" },
   { href: "/profile/", label: "Profile" },
 ];
@@ -37,6 +38,8 @@ const APP_MOBILE_MORE_LINKS: NavLinkItem[] = [
   { href: "/library/", label: "Library" },
   { href: "/clubs/", label: "Book Clubs" },
   { href: "/events/", label: "Events" },
+  { href: "/book-map/", label: "Book Map" },
+  { href: "/home-hub/", label: "Home Hub" },
 ];
 
 const PUBLIC_LINKS: NavLinkItem[] = [

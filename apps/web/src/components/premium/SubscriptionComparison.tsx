@@ -3,6 +3,7 @@
 import { PlusBadge } from "@/components/premium/PlusBadge";
 import { cn } from "@/lib/utils/cn";
 import { PLUS_ANNUAL_SAVINGS_COPY, PLUS_DISPLAY_PRICES } from "@bookmarked/utils/plusPricing";
+import { HOME_ANNUAL_SAVINGS_COPY, HOME_DISPLAY_PRICES } from "@bookmarked/utils/homePricing";
 import { PLUS_UNLIMITED_FAIR_USE_COPY } from "@bookmarked/utils/subscription";
 
 type Row = {
@@ -21,6 +22,7 @@ const ROWS: Row[] = [
   { label: "Insights & Wrapped", free: "Yearly recap", plus: "Monthly + yearly", home: "Monthly + yearly" },
   { label: "Quote scanner / AI companion", free: "—", plus: "Included", home: "Included" },
   { label: "Book Map / Reader Map", free: "—", plus: "—", home: "Included" },
+  { label: "Experiences + concierge", free: "—", plus: "—", home: "Included" },
 ];
 
 type Props = {
@@ -75,8 +77,10 @@ export function SubscriptionComparison({ className, showHome = true }: Props) {
         </tbody>
       </table>
       <p className="border-t border-border px-3 py-2 text-xs text-text-muted sm:px-4">
-        Display price: {PLUS_DISPLAY_PRICES.monthlyLabel} or {PLUS_DISPLAY_PRICES.yearlyLabel}{" "}
+        Plus display: {PLUS_DISPLAY_PRICES.monthlyLabel} or {PLUS_DISPLAY_PRICES.yearlyLabel}{" "}
         ({PLUS_DISPLAY_PRICES.yearlyMonthlyEquivalentLabel}; {PLUS_ANNUAL_SAVINGS_COPY.label}).
+        Home display: {HOME_DISPLAY_PRICES.monthlyLabel} or {HOME_DISPLAY_PRICES.yearlyLabel}{" "}
+        ({HOME_DISPLAY_PRICES.yearlyMonthlyEquivalentLabel}; {HOME_ANNUAL_SAVINGS_COPY.label}).
         Subscribe in the Bookmarked iOS app — the App Store shows the localised button price.{" "}
         {PLUS_UNLIMITED_FAIR_USE_COPY}
       </p>

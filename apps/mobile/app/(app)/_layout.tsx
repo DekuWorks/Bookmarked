@@ -64,6 +64,10 @@ export default function AppTabsLayout() {
         <Tabs.Screen name="wrapped" options={{ href: null }} />
         <Tabs.Screen name="wrapped-month" options={{ href: null }} />
         <Tabs.Screen name="quote-scanner" options={{ href: null }} />
+        <Tabs.Screen name="book-map" options={{ href: null }} />
+        <Tabs.Screen name="reader-map" options={{ href: null }} />
+        <Tabs.Screen name="home-hub" options={{ href: null }} />
+        <Tabs.Screen name="concierge" options={{ href: null }} />
       </Tabs>
     </TabBarScrollProvider>
   );

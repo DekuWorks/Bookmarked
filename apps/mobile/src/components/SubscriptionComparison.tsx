@@ -1,6 +1,7 @@
 import { Text, View } from "react-native";
 import { PlusBadge } from "./PlusBadge";
 import { PLUS_ANNUAL_SAVINGS_COPY, PLUS_DISPLAY_PRICES } from "../../../../packages/utils/plusPricing";
+import { HOME_ANNUAL_SAVINGS_COPY, HOME_DISPLAY_PRICES } from "../../../../packages/utils/homePricing";
 import { PLUS_UNLIMITED_FAIR_USE_COPY } from "../../../../packages/utils/subscription";
 
 const ROWS = [
@@ -46,9 +47,10 @@ export function SubscriptionComparison({ showHome = true }: Props) {
         </View>
       ))}
       <Text className="border-t border-brand-border px-3 py-2 text-xs text-ink-muted">
-        Display price: {PLUS_DISPLAY_PRICES.monthlyLabel} or {PLUS_DISPLAY_PRICES.yearlyLabel} (
-        {PLUS_ANNUAL_SAVINGS_COPY.label}). Subscribe buttons use the App Store price.{" "}
-        {PLUS_UNLIMITED_FAIR_USE_COPY}
+        Plus: {PLUS_DISPLAY_PRICES.monthlyLabel} or {PLUS_DISPLAY_PRICES.yearlyLabel} (
+        {PLUS_ANNUAL_SAVINGS_COPY.label}). Home: {HOME_DISPLAY_PRICES.monthlyLabel} or{" "}
+        {HOME_DISPLAY_PRICES.yearlyLabel} ({HOME_ANNUAL_SAVINGS_COPY.label}). Subscribe buttons use
+        the App Store price. {PLUS_UNLIMITED_FAIR_USE_COPY}
       </Text>
     </View>
   );

@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import {
+  deriveReadingPersonality,
   titleCaseDnaLabel,
   type ReadingDna,
   type ReadingDnaCategoryBreakdown,
@@ -220,15 +221,23 @@ export default function ReadingDnaRoute() {
               <HabitBars habits={dna.habits} locked={!hasPlus} colors={colors} />
 
               <Pressable
-                onPress={() => router.push("/(app)/upgrade")}
+                onPress={() => router.push(hasHome ? "/(app)/reader-map" : "/(app)/upgrade")}
                 className="rounded-2xl border border-primary/30 bg-primary/10 p-4"
               >
                 <Text style={{ fontFamily: SERIF_DISPLAY_FONT, color: colors.puceRed, fontSize: 18 }}>
-                  Membership
+                  {hasHome ? "Reading Personality" : "Membership"}
                 </Text>
                 <Text className="mt-2" style={{ fontFamily: SANS_FONT, color: colors.inkMuted }}>
-                  Explore Plus for full DNA, AI insights, and book matches.
+                  {hasHome
+                    ? deriveReadingPersonality(dna)?.explanation ??
+                      "Home scores an explainable personality from your cached DNA traits."
+                    : "Explore Plus for full DNA. Home adds personality and Reader Map filters."}
                 </Text>
+                {hasHome && deriveReadingPersonality(dna) ? (
+                  <Text className="mt-2" style={{ fontFamily: SANS_FONT_BOLD, color: colors.puceRed }}>
+                    {deriveReadingPersonality(dna)?.label}
+                  </Text>
+                ) : null}
               </Pressable>
             </View>
           </View>

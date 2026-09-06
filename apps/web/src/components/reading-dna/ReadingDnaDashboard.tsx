@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import {
+  deriveReadingPersonality,
   titleCaseDnaLabel,
   type ReadingDna,
   type ReadingDnaCategoryBreakdown,
@@ -299,17 +300,27 @@ export function ReadingDnaDashboard({
             </div>
 
             <div className={cn("rounded-2xl border border-primary/30 bg-primary/10 p-4", !hasHome && "opacity-90")}>
-              <h3 className="font-display text-lg text-puce-red dark:text-primary">DNA Match</h3>
+              <h3 className="font-display text-lg text-puce-red dark:text-primary">Reading Personality</h3>
               <p className="mt-2 text-sm leading-relaxed text-text-muted">
                 {hasHome
-                  ? "Home unlocks DNA Match % with friends, Reader Map filters, monthly DNA updates, and exclusive DNA badges."
-                  : "Bookmarked Home adds DNA Match %, Reader Map filters, monthly updates, and exclusive DNA badges."}
+                  ? deriveReadingPersonality(dna)?.explanation ??
+                    "Home scores an explainable personality from your cached DNA traits — not random AI labels."
+                  : "Bookmarked Home adds an explainable Reading Personality, DNA Match %, and an optional Reader Map filter."}
               </p>
-              {!hasHome ? (
+              {hasHome && deriveReadingPersonality(dna) ? (
+                <p className="mt-2 font-semibold text-puce-red">
+                  {deriveReadingPersonality(dna)?.label}
+                </p>
+              ) : null}
+              {hasHome ? (
+                <ButtonLink href="/reader-map/" variant="secondary" size="sm" className="mt-3">
+                  Reader Map filter
+                </ButtonLink>
+              ) : (
                 <ButtonLink href="/upgrade/" variant="ghost" size="sm" className="mt-3">
                   See Home benefits
                 </ButtonLink>
-              ) : null}
+              )}
             </div>
           </div>
         </div>

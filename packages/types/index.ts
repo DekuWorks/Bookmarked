@@ -139,6 +139,12 @@ export type PremiumFeature =
   | "premium_events"
   | "concierge"
   | "priority_support"
+  | "home_hub"
+  | "home_meetups"
+  | "home_experiences"
+  | "priority_feature_requests"
+  | "merch_early_access"
+  | "partner_benefits"
   | "advanced_analytics"
   | "ai_insights";
 
@@ -866,7 +872,10 @@ export type ReportableContentType =
   | "club_discussion"
   | "club_reply"
   | "club"
-  | "profile";
+  | "profile"
+  | "book_map_place"
+  | "home_meetup"
+  | "home_experience";
 
 export type ContentReportReason =
   | "hate_discrimination"
@@ -876,6 +885,11 @@ export type ContentReportReason =
   | "spam"
   | "impersonation"
   | "other"
+  | "closed"
+  | "wrong_info"
+  | "duplicate"
+  | "incorrect"
+  | "inappropriate_place"
   /** @deprecated Use harassment_bullying */
   | "harassment"
   /** @deprecated Use sexual_inappropriate */
@@ -911,5 +925,69 @@ export interface UserBlock {
   blocker_id: string;
   blocked_id: string;
   report_id: string | null;
+  created_at: string;
+}
+
+export type BookMapPlaceCategory = "bookstore" | "library" | "reading_cafe";
+
+export interface BookMapPlaceRow {
+  id: string;
+  name: string;
+  category: BookMapPlaceCategory;
+  address_text: string | null;
+  city: string | null;
+  region: string | null;
+  postal_code: string | null;
+  country: string | null;
+  lat: number;
+  lng: number;
+  website: string | null;
+  phone: string | null;
+  hours: Record<string, unknown> | null;
+  verified: boolean;
+  active: boolean;
+  source: string | null;
+  created_at: string;
+}
+
+export type HomeExperienceKind =
+  | "author_qa"
+  | "virtual_event"
+  | "reading_sprint"
+  | "meetup"
+  | "merch_window"
+  | "partner_benefit";
+
+export type HomeExperienceVisibility = "public" | "home" | "ticketed";
+
+export interface HomeExperience {
+  id: string;
+  kind: HomeExperienceKind;
+  title: string;
+  description: string | null;
+  starts_at: string | null;
+  ends_at: string | null;
+  visibility: HomeExperienceVisibility;
+  is_beta: boolean;
+  venue_kind: "public_venue" | "virtual" | "arbitrary_address" | null;
+  venue_name: string | null;
+  city_label: string | null;
+  video_provider: "external" | "unset";
+  required_tier: SubscriptionTier;
+  created_at: string;
+}
+
+export type ConciergePriority = "standard" | "home_priority";
+
+export interface FeatureRequestRow {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string;
+  category: string;
+  problem: string;
+  screenshot_url: string | null;
+  priority: ConciergePriority;
+  status: string;
   created_at: string;
 }
