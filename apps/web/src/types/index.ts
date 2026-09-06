@@ -101,6 +101,8 @@ export interface UserBook {
   progress_pages: number;
   progress_percent: number;
   listening_progress_seconds?: number;
+  tracking_format?: "book" | "audiobook" | null;
+  audiobook_duration_seconds?: number | null;
   started_at: string | null;
   finished_at: string | null;
   rating: number | null;

@@ -5,6 +5,7 @@ import { CoverTile } from "../CoverTile";
 import { ShelfTitleRow } from "../ShelfTitleRow";
 import { libraryShelfPath } from "../../lib/libraryRoutes";
 import type { ShelfGroup } from "../../services/library";
+import { resolveTrackingFormat } from "../../../../../packages/utils/listeningTime";
 
 type Props = {
   shelves: ShelfGroup[];
@@ -52,7 +53,10 @@ export function LibraryGridView({ shelves, showHeaderLink = true }: Props) {
                   title={item.books?.title}
                   author={item.books?.author}
                   coverUrl={item.books?.cover_url}
-                  format={item.books?.format}
+                  format={resolveTrackingFormat({
+                    userFormat: item.tracking_format,
+                    catalogFormat: item.books?.format,
+                  })}
                   saved
                   widthClassName={tileWidth}
                   coverSizeClassName="w-full aspect-[2/3]"

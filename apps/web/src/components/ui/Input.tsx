@@ -5,6 +5,7 @@ type InputVariant = "default" | "search";
 
 type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   label?: string;
+  hint?: string;
   error?: string;
   variant?: InputVariant;
   hideLabel?: boolean;
@@ -21,6 +22,7 @@ const variantClass: Record<InputVariant, string> = {
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   {
     label,
+    hint,
     error,
     variant = "default",
     hideLabel = false,
@@ -52,6 +54,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         className={cn(fieldBase, variantClass[variant], error && "border-rust", className)}
         {...rest}
       />
+      {hint ? <p className="mt-1.5 text-xs text-text-muted">{hint}</p> : null}
       {error ? <p className="mt-1.5 text-sm text-rust">{error}</p> : null}
     </div>
   );

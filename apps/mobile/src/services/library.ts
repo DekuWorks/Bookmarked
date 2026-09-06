@@ -9,6 +9,13 @@ import {
   type ActivityEventType,
 } from "./activity";
 import { buildUserBookShelfPatch } from "../../../../packages/utils/shelfStatus";
+import {
+  calculateAudiobookProgress,
+  nextListeningProgressAfterSession,
+  resolveAudiobookDurationSeconds,
+  validateListeningProgress,
+  validateListeningSession,
+} from "../../../../packages/utils/listeningTime";
 import type { ShelfMoveDestination } from "../../../../packages/utils/shelfMove";
 import type { ShelfStatus, UserBook } from "../types";
 import { addBookToCustomShelf } from "./customShelves";
@@ -26,6 +33,9 @@ export type LibraryBookRow = {
   dnf: boolean;
   expected_read_date: string | null;
   total_pages?: number | null;
+  tracking_format?: "book" | "audiobook" | null;
+  listening_progress_seconds?: number;
+  audiobook_duration_seconds?: number | null;
   updated_at: string;
   created_at: string;
   books: {
@@ -48,7 +58,7 @@ export type ShelfGroup = {
 };
 
 const LIBRARY_SELECT =
-  "id, shelf_status, progress_percent, progress_pages, total_pages, rating, is_favorite, finished_at, started_at, completion_tags, dnf, expected_read_date, created_at, updated_at, books(id, title, author, cover_url, page_count, published_date, subjects, format)";
+  "id, shelf_status, progress_percent, progress_pages, total_pages, tracking_format, listening_progress_seconds, audiobook_duration_seconds, rating, is_favorite, finished_at, started_at, completion_tags, dnf, expected_read_date, created_at, updated_at, books(id, title, author, cover_url, page_count, published_date, subjects, format, audiobook_duration_seconds)";
 
 export async function getUserLibraryBooks(userId: string): Promise<LibraryBookRow[]> {
   const { data, error } = await supabase
@@ -381,6 +391,8 @@ export async function updateReadingProgress(
     progressPercent: number;
     totalPages?: number | null;
     format?: "book" | "audiobook";
+    currentListeningTime?: string;
+    totalListeningTime?: string;
     listeningProgressSeconds?: number;
     totalListeningSeconds?: number;
   }
@@ -392,19 +404,35 @@ export async function updateReadingProgress(
     .eq("user_id", userId)
     .eq("book_id", book.id)
     .maybeSingle();
-  const effectiveTotal = input.totalListeningSeconds ?? 0;
-  const listeningProgressSeconds = Math.max(0, input.listeningProgressSeconds ?? 0);
-  const progressPercent =
-    isAudiobook && effectiveTotal > 0
-      ? Math.min(100, Math.round((listeningProgressSeconds / effectiveTotal) * 1000) / 10)
-      : input.progressPercent;
+
+  let listeningProgressSeconds = 0;
+  let totalListeningSeconds = 0;
+  let progressPercent = input.progressPercent;
+
+  if (isAudiobook) {
+    const validated = validateListeningProgress({
+      current: input.currentListeningTime ?? input.listeningProgressSeconds,
+      total: input.totalListeningTime ?? input.totalListeningSeconds,
+    });
+    if (!validated.ok) return { error: validated.error };
+    listeningProgressSeconds = validated.currentSeconds;
+    totalListeningSeconds = validated.totalSeconds;
+    progressPercent = validated.percent;
+  }
+
+  const previousListening = Number(existing?.listening_progress_seconds) || 0;
   const { data: userBook, error } = await supabase
     .from("user_books")
     .update({
       progress_percent: progressPercent,
       ...(isAudiobook
-        ? { listening_progress_seconds: listeningProgressSeconds }
+        ? {
+            tracking_format: "audiobook",
+            listening_progress_seconds: listeningProgressSeconds,
+            audiobook_duration_seconds: totalListeningSeconds,
+          }
         : {
+            tracking_format: "book",
             progress_pages: input.progressPages ?? 0,
             ...(input.totalPages && input.totalPages > 0 ? { total_pages: input.totalPages } : {}),
           }),
@@ -417,14 +445,7 @@ export async function updateReadingProgress(
 
   if (error) return { error: error.message };
 
-  if (isAudiobook && effectiveTotal > 0) {
-    await supabase
-      .from("books")
-      .update({ format: "audiobook", audiobook_duration_seconds: effectiveTotal })
-      .eq("id", book.id);
-  }
-
-  if (isAudiobook && userBook?.id) {
+  if (isAudiobook && userBook?.id && listeningProgressSeconds > previousListening) {
     const session = await createReadingSession({
       userId,
       userBookId: userBook.id,
@@ -433,7 +454,7 @@ export async function updateReadingProgress(
       percentComplete: progressPercent,
       readNumber: Number(existing?.read_count) || 1,
       sessionFormat: "audiobook",
-      listeningStartSeconds: Number(existing?.listening_progress_seconds) || 0,
+      listeningStartSeconds: previousListening,
       listeningEndSeconds: listeningProgressSeconds,
     });
     if (session.error) return { error: session.error };
@@ -442,6 +463,86 @@ export async function updateReadingProgress(
   await recordBookActivity(userId, "progress_updated", userBook?.id ?? null, book, {
     progress_percent: progressPercent,
     ...(isAudiobook ? { format: "audiobook", listening_seconds: listeningProgressSeconds } : {}),
+  });
+  return {};
+}
+
+export async function logListeningSession(
+  userId: string,
+  book: {
+    id: string;
+    title: string;
+    cover_url?: string | null;
+    subjects?: string[] | null;
+    audiobook_duration_seconds?: number | null;
+  },
+  input: {
+    startTime: string;
+    endTime: string;
+    currentListeningSeconds?: number;
+    totalListeningSeconds?: number;
+  }
+): Promise<{ error?: string }> {
+  const { data: existing } = await supabase
+    .from("user_books")
+    .select("id, listening_progress_seconds, audiobook_duration_seconds, read_count, started_at, shelf_status, finished_at")
+    .eq("user_id", userId)
+    .eq("book_id", book.id)
+    .maybeSingle();
+
+  if (!existing) return { error: "Add this book to a shelf before logging a session." };
+
+  const totalSeconds = resolveAudiobookDurationSeconds({
+    userDurationSeconds: existing.audiobook_duration_seconds ?? input.totalListeningSeconds,
+    catalogDurationSeconds: book.audiobook_duration_seconds,
+  });
+  const validated = validateListeningSession({
+    start: input.startTime,
+    end: input.endTime,
+    total: totalSeconds > 0 ? totalSeconds : undefined,
+  });
+  if (!validated.ok) return { error: validated.error };
+
+  const currentSeconds =
+    Number(existing.listening_progress_seconds) || input.currentListeningSeconds || 0;
+  const nextCurrent = nextListeningProgressAfterSession(currentSeconds, validated.endSeconds);
+  const nextPercent = totalSeconds > 0 ? calculateAudiobookProgress(nextCurrent, totalSeconds) : 0;
+  const now = new Date().toISOString();
+
+  const session = await createReadingSession({
+    userId,
+    userBookId: existing.id,
+    pageStart: 0,
+    pageEnd: 0,
+    percentComplete: nextPercent,
+    readNumber: Number(existing.read_count) || 1,
+    sessionFormat: "audiobook",
+    listeningStartSeconds: validated.startSeconds,
+    listeningEndSeconds: validated.endSeconds,
+  });
+  if (session.error) return { error: session.error };
+
+  if (nextCurrent !== currentSeconds) {
+    const { error } = await supabase
+      .from("user_books")
+      .update({
+        tracking_format: "audiobook",
+        listening_progress_seconds: nextCurrent,
+        progress_percent: nextPercent,
+        started_at: existing.started_at ?? now,
+        updated_at: now,
+        ...(existing.shelf_status !== "currently_reading" && !existing.finished_at
+          ? { shelf_status: "currently_reading" }
+          : {}),
+      })
+      .eq("id", existing.id);
+    if (error) return { error: error.message };
+  }
+
+  await recordBookActivity(userId, "progress_updated", existing.id, book, {
+    progress_percent: nextPercent,
+    format: "audiobook",
+    listening_seconds: validated.durationSeconds,
   });
   return {};
 }
@@ -621,19 +722,31 @@ export async function updateBookTotalPages(
 }
 
 /**
- * Explicitly sets a catalog book's format (book vs. audiobook). This is the
- * only way a book becomes trackable as an audiobook — without it, the
- * listening-time UI in `updateReadingProgress` has no way to activate since
- * it only reads the format that's already stored.
+ * Sets the reader's edition format on user_books. Page and listening history
+ * stay as-is — nothing is converted.
  */
 export async function updateBookFormat(
+  userId: string,
   bookId: string,
   format: "book" | "audiobook"
 ): Promise<{ error?: string }> {
+  const { data: userBook, error: fetchError } = await supabase
+    .from("user_books")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("book_id", bookId)
+    .maybeSingle();
+
+  if (fetchError) return { error: fetchError.message };
+  if (!userBook) return { error: "Add this book to a shelf before choosing a format." };
+
   const { error } = await supabase
-    .from("books")
-    .update({ format, updated_at: new Date().toISOString() })
-    .eq("id", bookId);
+    .from("user_books")
+    .update({
+      tracking_format: format,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", userBook.id);
 
   if (error) return { error: error.message };
   return {};

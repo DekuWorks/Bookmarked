@@ -5,6 +5,7 @@ import { SectionCard } from "./SectionCard";
 import { SessionMoodChip, SessionMoodPicker } from "./SessionMoodPicker";
 import { updateReadingSession } from "../services/readingSessions";
 import type { ReadingSession } from "../types";
+import { formatListeningSessionSummary } from "../../../../packages/utils/listeningTime";
 
 export const READING_JOURNAL_PREVIEW_LIMIT = 5;
 
@@ -29,8 +30,7 @@ function sessionLabel(session: ReadingSession, isOldest: boolean): string {
   const { page_start, page_end, pages_read, percent_complete } = session;
 
   if (session.session_format === "audiobook") {
-    const minutes = Math.round(Math.max(0, Number(session.listening_seconds) || 0) / 60);
-    return `Listened ${minutes} min (${Math.round(percent_complete)}%)`;
+    return formatListeningSessionSummary(session);
   }
 
   if (isOldest && page_start === 0 && page_end > 0) {

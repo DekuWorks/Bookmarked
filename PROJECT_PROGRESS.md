@@ -207,16 +207,23 @@ Full hub sprint (Phases 1–30). Docs: `docs/BOOK_CLUB_CURRENT_STATE.md`, `BOOK_
 
 ---
 
-## Sprint 8 — Audiobooks ✅
+## Sprint 8 — Audiobook tracking (HH:MM) ✅
+
+Format is **reader-owned** (`user_books.tracking_format`), not a global catalog property. Catalog `books.format` remains fallback for older rows. Internal storage stays **seconds**. Readers only see and enter **HH:MM** (`2:30` = 2h 30m).
 
 | Item | Status | Notes / references |
 |------|--------|-------------------|
-| Audiobook data model | ✅ | `20260801164028_sprint_8_audiobooks.sql` adds format, duration, listening progress, and session fields |
-| Mark a book as an audiobook | ✅ | Web `BookFormatToggle` on the book detail page + native iOS "Track as" pill on `book/[id].tsx`; both call a dedicated format-update action/service so `books.format` can actually be set — previously nothing in the UI could set it, so the listening UI below was unreachable |
-| Listening progress | ✅ | Web `ReadingProgressPanel` and native iOS book detail use listening time for audiobook metadata once a book is marked as an audiobook |
-| Listening history and activity | ✅ | Audiobook saves create `reading_sessions` rows and activity events with listening metadata |
-| Library discoverability | ✅ | 🎧 badge on web `BookCard` (grid/shelf views) and native iOS `CoverTile` / My Books list |
-| Provider research | ✅ | `docs/AUDIOBOOK_RESEARCH.md` documents safe Audible, Spotify, and timer follow-up paths |
+| Shared helpers | ✅ | `packages/utils/listeningTime.ts`: `parseListeningTime`, `formatListeningTime`, `calculateAudiobookProgress`, `calculateAudiobookSessionDuration` |
+| Internal unit | ✅ | Seconds in `user_books.listening_progress_seconds`, `user_books.audiobook_duration_seconds`, and `reading_sessions.listening_*_seconds`. No data rewrite. `9000` seconds displays as `2:30`, never 9000 hours |
+| Format selector | ✅ | Existing Track as Book / Audiobook on web + iOS. Writes `user_books.tracking_format`. Page → audio asks for total + current time and keeps page history. Audio → page keeps listening history. Nothing is converted |
+| Progress UX | ✅ | Audiobook fields: Current Listening Time + Total Listening Time only (placeholders `2:30` / `20:30`). Same progress bar and 1-decimal rounding as pages. 100% when current equals total. Finished-shelf still requires Mark as finished |
+| Session model | ✅ | Existing `session_format` + nullable `listening_start_seconds` / `listening_end_seconds` / `listening_seconds`. Page fields stay 0 on audio rows and are never shown as “pages 0–0” |
+| Manual session log | ✅ | Starting / Ending Listening Position (HH:MM). Duration = end − start. If end > current, current moves forward; historical sessions never rewind current |
+| Trail / History / activity | ✅ | “Listened from 1:45 to 2:30 · 45 minutes”. Progress tab still sums page sessions only — audio minutes are not added to pages read |
+| Sync | ✅ | Web ↔ iPhone ↔ iPad via existing Supabase rows + query invalidation after format / progress / session / duration saves |
+| Out of scope | ✅ | **No listening timer.** **No Audible / Spotify sync.** Android not in this sprint. See `docs/AUDIOBOOK_RESEARCH.md` |
+
+Additive migration: `20260906180000_eighth_sprint_audiobook_user_edition.sql` adds `user_books.tracking_format` and `user_books.audiobook_duration_seconds`. Catalog duration/format columns are unchanged.
 
 ---
 

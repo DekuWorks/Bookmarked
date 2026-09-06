@@ -9,10 +9,22 @@ import { RateBookPrompt } from "@/components/books/RateBookPrompt";
 import { CompletionCelebration } from "@/components/books/CompletionCelebration";
 import { TransferReadingStatsModal } from "@/components/books/TransferReadingStatsModal";
 import { cn } from "@/lib/utils/cn";
-import { updateReadingProgress, type BookActionState } from "@/lib/actions/book";
+import {
+  logListeningSession,
+  updateReadingProgress,
+  type BookActionState,
+} from "@/lib/actions/book";
 import { useActionState } from "react";
 import { useActionToast } from "@/lib/hooks/useActionToast";
 import { validatePageProgress } from "@bookmarked/utils/pageProgress";
+import {
+  calculateAudiobookProgress,
+  formatAudiobookProgressLabel,
+  formatListeningTime,
+  formatListeningTimeSpoken,
+  parseListeningTime,
+  validateListeningProgress,
+} from "@bookmarked/utils/listeningTime";
 
 const initial: BookActionState = {};
 
@@ -51,12 +63,6 @@ type Props = {
   totalListeningSeconds?: number;
 };
 
-function formatDuration(seconds: number): string {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  return hours ? `${hours}h ${minutes}m` : `${minutes}m`;
-}
-
 export function ReadingProgressPanel({
   bookId,
   bookTitle,
@@ -74,15 +80,24 @@ export function ReadingProgressPanel({
   totalListeningSeconds = 0,
 }: Props) {
   const isAudiobook = format === "audiobook";
-  const [page, setPage] = useState(String((isAudiobook ? currentListeningSeconds : currentPage) || ""));
-  const [total, setTotal] = useState(
-    String((isAudiobook ? totalListeningSeconds : totalPages) || "")
+  const [page, setPage] = useState(String(currentPage || ""));
+  const [total, setTotal] = useState(String(totalPages || ""));
+  const [currentTime, setCurrentTime] = useState(
+    currentListeningSeconds > 0 || totalListeningSeconds > 0
+      ? formatListeningTime(currentListeningSeconds)
+      : ""
   );
+  const [totalTime, setTotalTime] = useState(
+    totalListeningSeconds > 0 ? formatListeningTime(totalListeningSeconds) : ""
+  );
+  const [sessionStart, setSessionStart] = useState(
+    currentListeningSeconds > 0 ? formatListeningTime(currentListeningSeconds) : ""
+  );
+  const [sessionEnd, setSessionEnd] = useState("");
   const [displayPercent, setDisplayPercent] = useState(progressPercent);
-  // While focused in either field, hold the last committed percent so
-  // intermediate values (476 → 47) never flash 100% or lock the form.
   const [editing, setEditing] = useState(false);
   const [clientError, setClientError] = useState<string | null>(null);
+  const [sessionError, setSessionError] = useState<string | null>(null);
   const [transferOpen, setTransferOpen] = useState(false);
   const [finishOpen, setFinishOpen] = useState(false);
   const [ratePromptOpen, setRatePromptOpen] = useState(false);
@@ -91,37 +106,68 @@ export function ReadingProgressPanel({
     updateReadingProgress,
     initial
   );
+  const [sessionAction, submitSession, sessionSaving] = useActionState(
+    logListeningSession,
+    initial
+  );
   const onProgressChangeRef = useRef(onProgressChange);
 
   useEffect(() => {
     onProgressChangeRef.current = onProgressChange;
   }, [onProgressChange]);
 
-  // Track the last props we synced so we only pull server values into the
-  // inputs when they *actually* change. Without this, toggling `editing`
-  // false (on blur/submit) would re-run this effect and overwrite the value
-  // the user just typed with the stale prop — making edits appear to revert.
-  const lastSynced = useRef({ currentPage, totalPages, progressPercent });
+  const lastSynced = useRef({
+    currentPage,
+    totalPages,
+    progressPercent,
+    currentListeningSeconds,
+    totalListeningSeconds,
+  });
 
   useEffect(() => {
     const prev = lastSynced.current;
     const propsChanged =
       prev.currentPage !== currentPage ||
       prev.totalPages !== totalPages ||
-      prev.progressPercent !== progressPercent;
-    lastSynced.current = { currentPage, totalPages, progressPercent };
+      prev.progressPercent !== progressPercent ||
+      prev.currentListeningSeconds !== currentListeningSeconds ||
+      prev.totalListeningSeconds !== totalListeningSeconds;
+    lastSynced.current = {
+      currentPage,
+      totalPages,
+      progressPercent,
+      currentListeningSeconds,
+      totalListeningSeconds,
+    };
 
-    // Only overwrite local input when new server data arrives, and never
-    // while the user is actively editing (a realtime tick must not clobber
-    // an in-progress edit).
     if (!propsChanged || editing) return;
-    setPage(String((isAudiobook ? currentListeningSeconds : currentPage) || ""));
-    setTotal(String((isAudiobook ? totalListeningSeconds : totalPages) || ""));
+    setPage(String(currentPage || ""));
+    setTotal(String(totalPages || ""));
+    setCurrentTime(
+      currentListeningSeconds > 0 || totalListeningSeconds > 0
+        ? formatListeningTime(currentListeningSeconds)
+        : ""
+    );
+    setTotalTime(totalListeningSeconds > 0 ? formatListeningTime(totalListeningSeconds) : "");
+    setSessionStart(
+      currentListeningSeconds > 0 ? formatListeningTime(currentListeningSeconds) : ""
+    );
     setDisplayPercent(progressPercent);
-  }, [currentPage, totalPages, progressPercent, editing]);
+  }, [
+    currentPage,
+    totalPages,
+    progressPercent,
+    currentListeningSeconds,
+    totalListeningSeconds,
+    editing,
+  ]);
 
   useActionToast(progressAction, () => {
     onProgressChangeRef.current?.();
+  });
+  useActionToast(sessionAction, () => {
+    onProgressChangeRef.current?.();
+    setSessionEnd("");
   });
 
   function handleFinished() {
@@ -134,13 +180,25 @@ export function ReadingProgressPanel({
     onReviewNow?.();
   }
 
+  function normalizeTime(value: string): string {
+    const parsed = parseListeningTime(value);
+    return parsed.ok ? parsed.display : value;
+  }
+
   function commitPreview() {
     setEditing(false);
     if (isAudiobook) {
-      const cur = Number(page) || 0;
-      const tot = Number(total) || totalPages || 0;
-      const next = percentFromPages(cur, tot);
-      if (next != null) setDisplayPercent(next);
+      const nextCurrent = normalizeTime(currentTime);
+      const nextTotal = normalizeTime(totalTime);
+      setCurrentTime(nextCurrent);
+      setTotalTime(nextTotal);
+      const validated = validateListeningProgress({ current: nextCurrent, total: nextTotal });
+      if (validated.ok) {
+        setDisplayPercent(validated.percent);
+        setClientError(null);
+        return;
+      }
+      if (nextCurrent && nextTotal) setClientError(validated.error);
       return;
     }
     const validated = validatePageProgress({ currentPage: page, totalPages: total });
@@ -165,14 +223,29 @@ export function ReadingProgressPanel({
 
   const startedLabel = formatDate(startedAt);
   const finishedLabel = formatDate(finishedAt);
-  // Only an explicit finish marks the book finished — never live percent.
   const isFinished = Boolean(finishedAt);
-
-  const cur = Number(page) || 0;
-  const tot = Number(total) || totalPages || 0;
-  const pageCountUnavailable = !(isAudiobook ? totalListeningSeconds : totalPages) && !total;
+  const parsedCurrent = isAudiobook ? parseListeningTime(currentTime) : null;
+  const parsedTotal = isAudiobook ? parseListeningTime(totalTime) : null;
+  const cur = isAudiobook
+    ? parsedCurrent?.ok
+      ? parsedCurrent.seconds
+      : currentListeningSeconds
+    : Number(page) || 0;
+  const tot = isAudiobook
+    ? parsedTotal?.ok
+      ? parsedTotal.seconds
+      : totalListeningSeconds
+    : Number(total) || totalPages || 0;
+  const pageCountUnavailable = isAudiobook
+    ? tot <= 0
+    : !(totalPages) && !total;
   const atFullProgress = !editing && tot > 0 && cur >= tot && !isFinished;
   const progressAboveTotal = !editing && cur > 0 && tot > 0 && cur > tot;
+  const livePercent = isAudiobook
+    ? tot > 0
+      ? calculateAudiobookProgress(cur, tot)
+      : displayPercent
+    : percentFromPages(cur, tot) ?? displayPercent;
 
   return (
     <section className="rounded-xl border border-border bg-surface p-5">
@@ -188,7 +261,7 @@ export function ReadingProgressPanel({
             <dt className="text-text-muted">{isAudiobook ? "Listening time" : "Pages"}</dt>
             <dd className="font-medium text-text">
               {isAudiobook
-                ? `${formatDuration(cur || currentListeningSeconds)} / ${formatDuration(tot)}`
+                ? `${formatAudiobookProgressLabel(cur, tot)} · ${Math.round(livePercent)}%`
                 : `${cur || currentPage} / ${tot}`}
             </dd>
           </div>
@@ -214,7 +287,7 @@ export function ReadingProgressPanel({
       {pageCountUnavailable ? (
         <p className="mt-2 text-sm text-text-muted">
           {isAudiobook
-            ? "Listening time unavailable — enter the total duration below to track percent complete."
+            ? "Enter the audiobook's total listening time below to track percent complete."
             : "Page count unavailable — enter total pages below to track percent complete."}
         </p>
       ) : null}
@@ -230,36 +303,85 @@ export function ReadingProgressPanel({
         <input type="hidden" name="book_id" value={bookId} />
         <input type="hidden" name="format" value={isAudiobook ? "audiobook" : "book"} />
         <div className="grid gap-4 sm:grid-cols-2">
-          <Input
-            label={isAudiobook ? "Current listening time (seconds)" : "Current page"}
-            name={isAudiobook ? "current_listening_seconds" : "current_page"}
-            type="number"
-            min={0}
-            value={page}
-            onFocus={() => setEditing(true)}
-            onChange={(e) => {
-              setEditing(true);
-              setPage(e.target.value);
-              setClientError(null);
-            }}
-            onBlur={commitPreview}
-            error={clientError ?? undefined}
-          />
-          <Input
-            label={isAudiobook ? "Total listening time (seconds)" : "Total pages"}
-            name={isAudiobook ? "total_listening_seconds" : "total_pages"}
-            type="number"
-            min={0}
-            placeholder={isAudiobook ? "Enter total seconds" : totalPages ? String(totalPages) : "Enter total"}
-            value={total}
-            onFocus={() => setEditing(true)}
-            onChange={(e) => {
-              setEditing(true);
-              setTotal(e.target.value);
-              setClientError(null);
-            }}
-            onBlur={commitPreview}
-          />
+          {isAudiobook ? (
+            <>
+              <Input
+                label="Current Listening Time"
+                name="current_listening_time"
+                inputMode="numeric"
+                placeholder="2:30"
+                hint="Enter your current listening position in hours and minutes."
+                value={currentTime}
+                aria-label={
+                  parsedCurrent?.ok
+                    ? formatListeningTimeSpoken(parsedCurrent.seconds)
+                    : "Current listening time"
+                }
+                onFocus={() => setEditing(true)}
+                onChange={(e) => {
+                  setEditing(true);
+                  setCurrentTime(e.target.value);
+                  setClientError(null);
+                }}
+                onBlur={() => {
+                  setCurrentTime(normalizeTime(currentTime));
+                  commitPreview();
+                }}
+                error={clientError ?? undefined}
+              />
+              <Input
+                label="Total Listening Time"
+                name="total_listening_time"
+                inputMode="numeric"
+                placeholder="20:30"
+                hint="Enter the audiobook's total length in hours and minutes."
+                value={totalTime}
+                onFocus={() => setEditing(true)}
+                onChange={(e) => {
+                  setEditing(true);
+                  setTotalTime(e.target.value);
+                  setClientError(null);
+                }}
+                onBlur={() => {
+                  setTotalTime(normalizeTime(totalTime));
+                  commitPreview();
+                }}
+              />
+            </>
+          ) : (
+            <>
+              <Input
+                label="Current page"
+                name="current_page"
+                type="number"
+                min={0}
+                value={page}
+                onFocus={() => setEditing(true)}
+                onChange={(e) => {
+                  setEditing(true);
+                  setPage(e.target.value);
+                  setClientError(null);
+                }}
+                onBlur={commitPreview}
+                error={clientError ?? undefined}
+              />
+              <Input
+                label="Total pages"
+                name="total_pages"
+                type="number"
+                min={0}
+                placeholder={totalPages ? String(totalPages) : "Enter total"}
+                value={total}
+                onFocus={() => setEditing(true)}
+                onChange={(e) => {
+                  setEditing(true);
+                  setTotal(e.target.value);
+                  setClientError(null);
+                }}
+                onBlur={commitPreview}
+              />
+            </>
+          )}
         </div>
         <ProgressBar
           value={displayPercent}
@@ -268,14 +390,16 @@ export function ReadingProgressPanel({
         />
         {atFullProgress ? (
           <p className="rounded-lg bg-orange-yellow/20 px-3 py-2 text-sm text-puce-red">
-            You&apos;ve reached the last page — mark this book as finished to move it to
-            Read.
+            {isAudiobook
+              ? "You've reached the end — mark this audiobook as finished to move it to Read."
+              : "You've reached the last page — mark this book as finished to move it to Read."}
           </p>
         ) : null}
         {progressAboveTotal ? (
           <p className="text-sm text-text-muted">
-            Current page is above total pages. Saving will cap progress at 100% without
-            marking the book finished.
+            {isAudiobook
+              ? "Current listening time is above the total. Saving will cap progress at 100% without marking the book finished."
+              : "Current page is above total pages. Saving will cap progress at 100% without marking the book finished."}
           </p>
         ) : null}
         <Button type="submit" variant="secondary" loading={saving}>
@@ -288,6 +412,49 @@ export function ReadingProgressPanel({
           </p>
         ) : null}
       </form>
+
+      {isAudiobook ? (
+        <form
+          action={submitSession}
+          className="mt-6 space-y-3 border-t border-border pt-4"
+          onSubmit={() => setSessionError(null)}
+        >
+          <h3 className="text-sm font-semibold text-puce-red">Log listening session</h3>
+          <input type="hidden" name="book_id" value={bookId} />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              label="Starting Listening Position"
+              name="listening_start_time"
+              inputMode="numeric"
+              placeholder="1:45"
+              hint="Hours and minutes, such as 1:45."
+              value={sessionStart}
+              onChange={(e) => {
+                setSessionStart(e.target.value);
+                setSessionError(null);
+              }}
+              onBlur={() => setSessionStart(normalizeTime(sessionStart))}
+              error={sessionError ?? undefined}
+            />
+            <Input
+              label="Ending Listening Position"
+              name="listening_end_time"
+              inputMode="numeric"
+              placeholder="2:30"
+              hint="Hours and minutes, such as 2:30."
+              value={sessionEnd}
+              onChange={(e) => {
+                setSessionEnd(e.target.value);
+                setSessionError(null);
+              }}
+              onBlur={() => setSessionEnd(normalizeTime(sessionEnd))}
+            />
+          </div>
+          <Button type="submit" variant="outline" loading={sessionSaving}>
+            Save listening session
+          </Button>
+        </form>
+      ) : null}
 
       {!isFinished ? (
         <div

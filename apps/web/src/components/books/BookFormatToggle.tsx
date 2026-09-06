@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils/cn";
 type Props = {
   bookId: string;
   format?: "book" | "ebook" | "audiobook";
+  onShelf?: boolean;
   onFormatChange?: () => void;
 };
 
@@ -17,11 +18,10 @@ const OPTIONS: { value: "book" | "audiobook"; label: string; icon: string }[] = 
 ];
 
 /**
- * Lets a reader mark a catalog book as an audiobook (or switch it back).
- * This is the entry point for audiobook tracking — `ReadingProgressPanel`
- * only shows listening-time fields once `books.format` is "audiobook".
+ * Lets a reader mark their edition as an audiobook (or switch it back).
+ * Format lives on the user-book, not the shared catalog.
  */
-export function BookFormatToggle({ bookId, format = "book", onFormatChange }: Props) {
+export function BookFormatToggle({ bookId, format = "book", onShelf = true, onFormatChange }: Props) {
   const toast = useToast();
   const [optimisticFormat, setOptimisticFormat] = useState(format);
   const [pending, setPending] = useState(false);
@@ -70,7 +70,7 @@ export function BookFormatToggle({ bookId, format = "book", onFormatChange }: Pr
             <button
               key={option.value}
               type="button"
-              disabled={pending}
+              disabled={pending || !onShelf}
               aria-pressed={active}
               onClick={() => void selectFormat(option.value)}
               className={cn(
@@ -86,11 +86,19 @@ export function BookFormatToggle({ bookId, format = "book", onFormatChange }: Pr
           );
         })}
       </div>
-      {isAudiobook ? (
+      {!onShelf ? (
         <p className="max-w-xs text-center text-xs text-text-muted">
-          Progress below now tracks listening time instead of pages.
+          Add this book to a shelf to choose book or audiobook tracking.
         </p>
-      ) : null}
+      ) : isAudiobook ? (
+        <p className="max-w-xs text-center text-xs text-text-muted">
+          Progress below tracks listening time. Page history is kept.
+        </p>
+      ) : (
+        <p className="max-w-xs text-center text-xs text-text-muted">
+          Tracking pages. Listening history is kept if you switch formats.
+        </p>
+      )}
     </div>
   );
 }

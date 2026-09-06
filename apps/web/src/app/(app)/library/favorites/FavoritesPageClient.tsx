@@ -10,6 +10,7 @@ import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { bookDetailsPath } from "@/lib/routes/book";
 import { getUserLibraryBooks, type LibraryBookRow } from "@/lib/services/library";
 import { FAVORITES_LISTING } from "@bookmarked/utils/overviewCopy";
+import { resolveTrackingFormat } from "@bookmarked/utils/listeningTime";
 import { originBackLink } from "@bookmarked/utils/navigationOrigin";
 
 export default function FavoritesPageClient() {
@@ -86,7 +87,10 @@ export default function FavoritesPageClient() {
                 coverUrl={book?.cover_url}
                 shelfStatus={ub.shelf_status}
                 progressPercent={Number(ub.progress_percent) || 0}
-                format={book?.format}
+                format={resolveTrackingFormat({
+                  userFormat: ub.tracking_format,
+                  catalogFormat: book?.format,
+                })}
                 href={book?.id ? bookDetailsPath(book.id) : undefined}
               />
             );

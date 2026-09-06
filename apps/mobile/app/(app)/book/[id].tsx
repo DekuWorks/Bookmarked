@@ -34,6 +34,7 @@ import { StarRating } from "../../../src/components/StarRating";
 import { getBookDetails } from "../../../src/services/bookDetails";
 import {
   addAnotherRead,
+  logListeningSession,
   markFinished,
   setDnf,
   setShelfStatus,
@@ -41,6 +42,7 @@ import {
   updateBookTotalPages,
   updateReadingProgress,
 } from "../../../src/services/library";
+import { ListeningTimeInput } from "../../../src/components/ListeningTimeInput";
 import {
   addBookToCustomShelf,
   listCustomShelfIdsForBook,
@@ -51,6 +53,14 @@ import {
   resolveUserEditionTotalPages,
   validatePageProgress,
 } from "../../../../../packages/utils/pageProgress";
+import {
+  combineListeningTimeParts,
+  formatAudiobookProgressLabel,
+  listeningTimeParts,
+  parseListeningTime,
+  resolveAudiobookDurationSeconds,
+  resolveTrackingFormat,
+} from "../../../../../packages/utils/listeningTime";
 import { needsMissingPageCountPrompt } from "../../../src/services/completeReadingSession";
 import { TAB_BAR_SPACE } from "../../../src/navigation/TabBarScroll";
 import { useAuthStore } from "../../../src/store/authStore";
@@ -179,9 +189,17 @@ export default function BookScreen() {
   const [celebrationOpen, setCelebrationOpen] = useState(false);
   const [finishLoading, setFinishLoading] = useState(false);
   const [progressOpen, setProgressOpen] = useState(false);
+  const [sessionOpen, setSessionOpen] = useState(false);
   const [progressValue, setProgressValue] = useState("");
   const [totalPagesValue, setTotalPagesValue] = useState("");
-  const [totalListeningValue, setTotalListeningValue] = useState("");
+  const [currentHours, setCurrentHours] = useState("");
+  const [currentMinutes, setCurrentMinutes] = useState("");
+  const [totalHours, setTotalHours] = useState("");
+  const [totalMinutes, setTotalMinutes] = useState("");
+  const [sessionStartHours, setSessionStartHours] = useState("");
+  const [sessionStartMinutes, setSessionStartMinutes] = useState("");
+  const [sessionEndHours, setSessionEndHours] = useState("");
+  const [sessionEndMinutes, setSessionEndMinutes] = useState("");
   const [totalPagesOpen, setTotalPagesOpen] = useState(false);
   const [formatPending, setFormatPending] = useState(false);
   const [sessionOverrides, setSessionOverrides] = useState<Record<string, ReadingSession>>({});
@@ -225,6 +243,15 @@ export default function BookScreen() {
 
   const data = details.data;
   const book = data?.book;
+  const trackingFormat = resolveTrackingFormat({
+    userFormat: data?.userBook?.tracking_format,
+    catalogFormat: book?.format,
+  });
+  const isAudiobook = trackingFormat === "audiobook";
+  const totalListeningSeconds = resolveAudiobookDurationSeconds({
+    userDurationSeconds: data?.userBook?.audiobook_duration_seconds,
+    catalogDurationSeconds: book?.audiobook_duration_seconds,
+  });
   const readingSessions = useMemo(() => {
     const base = data?.readingSessions ?? [];
     return base.map((session) => sessionOverrides[session.id] ?? session);
@@ -353,20 +380,14 @@ export default function BookScreen() {
 
   async function saveProgress() {
     if (!userId || !book) return;
-    const isAudiobook = book.format === "audiobook";
     if (isAudiobook) {
       const result = await updateReadingProgress(userId, book, {
         progressPercent: 0,
         format: "audiobook",
-        listeningProgressSeconds: Math.max(0, Number(progressValue) || 0),
-        totalListeningSeconds: Math.max(
-          0,
-          Number(totalListeningValue) || book.audiobook_duration_seconds || 0
-        ),
+        currentListeningTime: combineListeningTimeParts(currentHours, currentMinutes),
+        totalListeningTime: combineListeningTimeParts(totalHours, totalMinutes),
       });
       setProgressOpen(false);
-      setProgressValue("");
-      setTotalListeningValue("");
       if (result.error) Alert.alert("Error", result.error);
       invalidate();
       return;
@@ -388,21 +409,56 @@ export default function BookScreen() {
     setProgressOpen(false);
     setProgressValue("");
     setTotalPagesValue("");
-    setTotalListeningValue("");
     if (result.error) Alert.alert("Error", result.error);
     invalidate();
   }
 
+  function fillListeningFields(currentSeconds: number, totalSeconds: number) {
+    const current = listeningTimeParts(currentSeconds);
+    const total = listeningTimeParts(totalSeconds);
+    setCurrentHours(currentSeconds > 0 || totalSeconds > 0 ? current.hours : "");
+    setCurrentMinutes(currentSeconds > 0 || totalSeconds > 0 ? current.minutes : "");
+    setTotalHours(totalSeconds > 0 ? total.hours : "");
+    setTotalMinutes(totalSeconds > 0 ? total.minutes : "");
+    setSessionStartHours(currentSeconds > 0 ? current.hours : "");
+    setSessionStartMinutes(currentSeconds > 0 ? current.minutes : "");
+  }
+
+  async function saveListeningSession() {
+    if (!userId || !book) return;
+    const result = await logListeningSession(userId, book, {
+      startTime: combineListeningTimeParts(sessionStartHours, sessionStartMinutes),
+      endTime: combineListeningTimeParts(sessionEndHours, sessionEndMinutes),
+      currentListeningSeconds: data?.userBook?.listening_progress_seconds,
+      totalListeningSeconds,
+    });
+    if (result.error) {
+      Alert.alert("Error", result.error);
+      return;
+    }
+    setSessionOpen(false);
+    setSessionEndHours("");
+    setSessionEndMinutes("");
+    await invalidate();
+  }
+
   async function selectFormat(next: "book" | "audiobook") {
-    if (!book || book.format === next || formatPending) return;
+    if (!book || !userId || trackingFormat === next || formatPending) return;
     setFormatPending(true);
-    const result = await updateBookFormat(book.id, next);
+    const result = await updateBookFormat(userId, book.id, next);
     setFormatPending(false);
     if (result.error) {
       Alert.alert("Error", result.error);
       return;
     }
     await invalidate();
+    if (next === "audiobook") {
+      fillListeningFields(
+        Number(data?.userBook?.listening_progress_seconds) || 0,
+        totalListeningSeconds
+      );
+      setProgressOpen(true);
+    }
   }
 
   async function saveTotalPages() {
@@ -554,31 +610,38 @@ export default function BookScreen() {
           </Text>
           <View className="flex-row rounded-full border border-brand-border bg-surface p-1">
             <Pressable
-              disabled={formatPending}
+              disabled={formatPending || !userBook}
               onPress={() => selectFormat("book")}
-              className={`rounded-full px-3.5 py-1.5 ${book.format === "audiobook" ? "" : "bg-puce-red"}`}
+              className={`rounded-full px-3.5 py-1.5 ${isAudiobook ? "" : "bg-puce-red"}`}
             >
               <Text
-                className={`text-xs font-semibold ${book.format === "audiobook" ? "text-primary-dark" : "text-white"}`}
+                className={`text-xs font-semibold ${isAudiobook ? "text-primary-dark" : "text-white"}`}
               >
                 📖 Book
               </Text>
             </Pressable>
             <Pressable
-              disabled={formatPending}
+              disabled={formatPending || !userBook}
               onPress={() => selectFormat("audiobook")}
-              className={`rounded-full px-3.5 py-1.5 ${book.format === "audiobook" ? "bg-puce-red" : ""}`}
+              className={`rounded-full px-3.5 py-1.5 ${isAudiobook ? "bg-puce-red" : ""}`}
             >
               <Text
-                className={`text-xs font-semibold ${book.format === "audiobook" ? "text-white" : "text-primary-dark"}`}
+                className={`text-xs font-semibold ${isAudiobook ? "text-white" : "text-primary-dark"}`}
               >
                 🎧 Audiobook
               </Text>
             </Pressable>
           </View>
+          <Text className="max-w-xs text-center text-[11px] text-ink-muted">
+            {!userBook
+              ? "Add this book to a shelf to choose book or audiobook tracking."
+              : isAudiobook
+                ? "Listening time below. Page history is kept."
+                : "Page tracking. Listening history is kept if you switch formats."}
+          </Text>
         </View>
 
-        {book.format !== "audiobook" && userBook ? (
+        {!isAudiobook && userBook ? (
           <Pressable
             onPress={() => {
               const editionTotal = resolveUserEditionTotalPages({
@@ -602,6 +665,45 @@ export default function BookScreen() {
                   : "Add current page + total pages";
               })()}
             </Text>
+          </Pressable>
+        ) : null}
+
+        {isAudiobook && userBook ? (
+          <Pressable
+            onPress={() => {
+              fillListeningFields(
+                Number(userBook.listening_progress_seconds) || 0,
+                totalListeningSeconds
+              );
+              setProgressOpen(true);
+            }}
+            className="self-center rounded-full border border-brand-border bg-surface px-3 py-1.5 active:opacity-70"
+          >
+            <Text className="text-xs font-semibold text-primary-dark">
+              {totalListeningSeconds > 0
+                ? `${formatAudiobookProgressLabel(
+                    Number(userBook.listening_progress_seconds) || 0,
+                    totalListeningSeconds
+                  )} · ${Math.round(userBook.progress_percent ?? 0)}% · Edit`
+                : "Add current + total listening time"}
+            </Text>
+          </Pressable>
+        ) : null}
+
+        {isAudiobook && userBook && userBook.shelf_status !== "currently_reading" ? (
+          <Pressable
+            onPress={() => {
+              fillListeningFields(
+                Number(userBook.listening_progress_seconds) || 0,
+                totalListeningSeconds
+              );
+              setSessionEndHours("");
+              setSessionEndMinutes("");
+              setSessionOpen(true);
+            }}
+            className="self-center rounded-full border border-brand-border bg-surface px-3 py-1.5 active:opacity-70"
+          >
+            <Text className="text-xs font-semibold text-primary-dark">Log listening session</Text>
           </Pressable>
         ) : null}
 
@@ -678,12 +780,17 @@ export default function BookScreen() {
         {userBook?.shelf_status === "currently_reading" ? (
           <View className="rounded-2xl border border-brand-border bg-surface p-4">
             <Text className="mb-2 font-semibold text-ink">
-              {book.format === "audiobook" ? "Listening progress" : "Reading progress"}
+              {isAudiobook ? "Listening progress" : "Reading progress"}
             </Text>
             <ProgressBar percent={userBook.progress_percent ?? 0} />
             <Text className="mt-1 text-xs text-ink-muted">
-              {book.format === "audiobook"
-                ? `${userBook.progress_percent ?? 0}%`
+              {isAudiobook
+                ? totalListeningSeconds > 0
+                  ? `${formatAudiobookProgressLabel(
+                      Number(userBook.listening_progress_seconds) || 0,
+                      totalListeningSeconds
+                    )} · ${Math.round(userBook.progress_percent ?? 0)}%`
+                  : `${Math.round(userBook.progress_percent ?? 0)}%`
                 : (() => {
                     const total = resolveUserEditionTotalPages({
                       userTotalPages: userBook.total_pages,
@@ -700,22 +807,22 @@ export default function BookScreen() {
                   title="Update progress"
                   variant="ghost"
                   onPress={() => {
-                    setProgressValue(
-                      String(
-                        book.format === "audiobook"
-                          ? userBook.listening_progress_seconds ?? 0
-                          : userBook.progress_pages ?? 0
-                      )
-                    );
-                    setTotalPagesValue(
-                      String(
-                        resolveUserEditionTotalPages({
-                          userTotalPages: userBook.total_pages,
-                          catalogPageCount: book.page_count,
-                        }) || ""
-                      )
-                    );
-                    setTotalListeningValue(String(book.audiobook_duration_seconds ?? ""));
+                    if (isAudiobook) {
+                      fillListeningFields(
+                        Number(userBook.listening_progress_seconds) || 0,
+                        totalListeningSeconds
+                      );
+                    } else {
+                      setProgressValue(String(userBook.progress_pages ?? 0));
+                      setTotalPagesValue(
+                        String(
+                          resolveUserEditionTotalPages({
+                            userTotalPages: userBook.total_pages,
+                            catalogPageCount: book.page_count,
+                          }) || ""
+                        )
+                      );
+                    }
                     setProgressOpen(true);
                   }}
                 />
@@ -724,6 +831,23 @@ export default function BookScreen() {
                 <Button title="Mark finished" onPress={finish} />
               </View>
             </View>
+            {isAudiobook ? (
+              <View className="mt-2">
+                <Button
+                  title="Log listening session"
+                  variant="ghost"
+                  onPress={() => {
+                    fillListeningFields(
+                      Number(userBook.listening_progress_seconds) || 0,
+                      totalListeningSeconds
+                    );
+                    setSessionEndHours("");
+                    setSessionEndMinutes("");
+                    setSessionOpen(true);
+                  }}
+                />
+              </View>
+            ) : null}
           </View>
         ) : null}
 
@@ -840,39 +964,120 @@ export default function BookScreen() {
       {/* Progress modal */}
       <Modal transparent visible={progressOpen} animationType="fade" onRequestClose={() => setProgressOpen(false)}>
         <Pressable className="flex-1 items-center justify-center bg-black/30" onPress={() => setProgressOpen(false)}>
-          <View className="w-72 rounded-2xl bg-surface p-5">
+          <Pressable className="w-80 rounded-2xl bg-surface p-5" onPress={(event) => event.stopPropagation()}>
             <Text className="mb-3 text-lg font-bold text-puce-red">Update progress</Text>
-            <TextInput
-              value={progressValue}
-              onChangeText={setProgressValue}
-              keyboardType="number-pad"
-              placeholder={book.format === "audiobook" ? "Current listening time (seconds)" : "Current page"}
-              placeholderTextColor="#A99DAE"
-              className="rounded-xl border border-brand-border bg-background px-3 py-3 text-base text-ink"
-            />
-            {book.format === "audiobook" ? (
-              <TextInput
-                value={totalListeningValue}
-                onChangeText={setTotalListeningValue}
-                keyboardType="number-pad"
-                placeholder="Total listening time (seconds)"
-                placeholderTextColor="#A99DAE"
-                className="mt-3 rounded-xl border border-brand-border bg-background px-3 py-3 text-base text-ink"
-              />
+            {isAudiobook ? (
+              <View className="gap-4">
+                <ListeningTimeInput
+                  label="Current Listening Time"
+                  hint="Enter your current listening position in hours and minutes."
+                  hours={currentHours}
+                  minutes={currentMinutes}
+                  onHoursChange={setCurrentHours}
+                  onMinutesChange={setCurrentMinutes}
+                  onBlur={() => {
+                    const parsed = parseListeningTime(
+                      combineListeningTimeParts(currentHours, currentMinutes)
+                    );
+                    if (parsed.ok) {
+                      const parts = listeningTimeParts(parsed.seconds);
+                      setCurrentHours(parts.hours);
+                      setCurrentMinutes(parts.minutes);
+                    }
+                  }}
+                />
+                <ListeningTimeInput
+                  label="Total Listening Time"
+                  hint="Enter the audiobook's total length in hours and minutes."
+                  hours={totalHours}
+                  minutes={totalMinutes}
+                  onHoursChange={setTotalHours}
+                  onMinutesChange={setTotalMinutes}
+                  onBlur={() => {
+                    const parsed = parseListeningTime(
+                      combineListeningTimeParts(totalHours, totalMinutes)
+                    );
+                    if (parsed.ok) {
+                      const parts = listeningTimeParts(parsed.seconds);
+                      setTotalHours(parts.hours);
+                      setTotalMinutes(parts.minutes);
+                    }
+                  }}
+                />
+              </View>
             ) : (
-              <TextInput
-                value={totalPagesValue}
-                onChangeText={setTotalPagesValue}
-                keyboardType="number-pad"
-                placeholder="Total pages"
-                placeholderTextColor="#A99DAE"
-                className="mt-3 rounded-xl border border-brand-border bg-background px-3 py-3 text-base text-ink"
-              />
+              <>
+                <TextInput
+                  value={progressValue}
+                  onChangeText={setProgressValue}
+                  keyboardType="number-pad"
+                  placeholder="Current page"
+                  placeholderTextColor="#A99DAE"
+                  className="rounded-xl border border-brand-border bg-background px-3 py-3 text-base text-ink"
+                />
+                <TextInput
+                  value={totalPagesValue}
+                  onChangeText={setTotalPagesValue}
+                  keyboardType="number-pad"
+                  placeholder="Total pages"
+                  placeholderTextColor="#A99DAE"
+                  className="mt-3 rounded-xl border border-brand-border bg-background px-3 py-3 text-base text-ink"
+                />
+              </>
             )}
             <View className="mt-4">
               <Button title="Save" onPress={saveProgress} />
             </View>
-          </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal transparent visible={sessionOpen} animationType="fade" onRequestClose={() => setSessionOpen(false)}>
+        <Pressable className="flex-1 items-center justify-center bg-black/30" onPress={() => setSessionOpen(false)}>
+          <Pressable className="w-80 rounded-2xl bg-surface p-5" onPress={(event) => event.stopPropagation()}>
+            <Text className="mb-3 text-lg font-bold text-puce-red">Log listening session</Text>
+            <View className="gap-4">
+              <ListeningTimeInput
+                label="Starting Listening Position"
+                hint="Hours and minutes, such as 1:45."
+                hours={sessionStartHours}
+                minutes={sessionStartMinutes}
+                onHoursChange={setSessionStartHours}
+                onMinutesChange={setSessionStartMinutes}
+                onBlur={() => {
+                  const parsed = parseListeningTime(
+                    combineListeningTimeParts(sessionStartHours, sessionStartMinutes)
+                  );
+                  if (parsed.ok) {
+                    const parts = listeningTimeParts(parsed.seconds);
+                    setSessionStartHours(parts.hours);
+                    setSessionStartMinutes(parts.minutes);
+                  }
+                }}
+              />
+              <ListeningTimeInput
+                label="Ending Listening Position"
+                hint="Hours and minutes, such as 2:30."
+                hours={sessionEndHours}
+                minutes={sessionEndMinutes}
+                onHoursChange={setSessionEndHours}
+                onMinutesChange={setSessionEndMinutes}
+                onBlur={() => {
+                  const parsed = parseListeningTime(
+                    combineListeningTimeParts(sessionEndHours, sessionEndMinutes)
+                  );
+                  if (parsed.ok) {
+                    const parts = listeningTimeParts(parsed.seconds);
+                    setSessionEndHours(parts.hours);
+                    setSessionEndMinutes(parts.minutes);
+                  }
+                }}
+              />
+            </View>
+            <View className="mt-4">
+              <Button title="Save session" onPress={() => void saveListeningSession()} />
+            </View>
+          </Pressable>
         </Pressable>
       </Modal>
 

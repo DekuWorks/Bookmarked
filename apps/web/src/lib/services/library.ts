@@ -14,6 +14,9 @@ export type LibraryBookRow = {
   dnf: boolean;
   expected_read_date: string | null;
   total_pages?: number | null;
+  tracking_format?: "book" | "audiobook" | null;
+  listening_progress_seconds?: number;
+  audiobook_duration_seconds?: number | null;
   updated_at: string;
   created_at: string;
   books: {
@@ -30,6 +33,7 @@ export type LibraryBookRow = {
     publisher: string | null;
     isbn: string | null;
     format: "book" | "ebook" | "audiobook" | null;
+    audiobook_duration_seconds?: number | null;
   } | null;
 };
 
@@ -41,7 +45,7 @@ export type ShelfGroup = {
 };
 
 const LIBRARY_SELECT =
-  "id, shelf_status, progress_percent, progress_pages, total_pages, rating, is_favorite, finished_at, started_at, dnf, expected_read_date, created_at, updated_at, books(id, title, author, cover_url, page_count, subjects, external_id, external_source, description, published_date, publisher, isbn, format)";
+  "id, shelf_status, progress_percent, progress_pages, total_pages, tracking_format, listening_progress_seconds, audiobook_duration_seconds, rating, is_favorite, finished_at, started_at, dnf, expected_read_date, created_at, updated_at, books(id, title, author, cover_url, page_count, subjects, external_id, external_source, description, published_date, publisher, isbn, format, audiobook_duration_seconds)";
 
 export async function getUserLibraryBooks(userId: string): Promise<LibraryBookRow[]> {
   const supabase = createClient();

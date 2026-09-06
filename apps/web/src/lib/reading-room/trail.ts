@@ -1,4 +1,5 @@
 import type { UserReadingSession } from "@/lib/services/readingSessions";
+import { formatListeningSessionSummary } from "@bookmarked/utils/listeningTime";
 
 export type BookSessionGroup = {
   key: string;
@@ -79,9 +80,7 @@ export function formatSessionDate(iso: string): string {
 
 export function sessionSummary(session: UserReadingSession): string {
   if (session.session_format === "audiobook") {
-    const listened = Math.max(0, Number(session.listening_seconds) || 0);
-    const minutes = Math.round(listened / 60);
-    return `Listened ${minutes} min · ${Math.round(session.percent_complete)}% complete`;
+    return formatListeningSessionSummary(session);
   }
   if (session.pages_read > 0) {
     if (session.page_start === session.page_end) {

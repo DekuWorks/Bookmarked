@@ -28,14 +28,19 @@ function formatPagePart(pageNumber: number | null | undefined): string | null {
   return `Page ${pageNumber}`;
 }
 
-/** Audiobook timestamps stored in `chapter` (e.g. 1:23:45 or 12:34). */
+/** Audiobook timestamps stored in `chapter` (e.g. 1:23:45 or 12:34). Display HH:MM. */
 function formatTimestampPart(
   chapterNumber: number | string | null | undefined
 ): string | null {
   if (typeof chapterNumber !== "string") return null;
   const text = chapterNumber.trim();
-  if (!/^\d{1,2}:\d{2}(:\d{2})?$/.test(text)) return null;
-  return text;
+  const withSeconds = /^(\d{1,3}):(\d{2}):(\d{2})$/.exec(text);
+  if (withSeconds) {
+    return `${Number(withSeconds[1])}:${withSeconds[2]}`;
+  }
+  if (!/^\d{1,3}:\d{2}$/.test(text)) return null;
+  const [hours, minutes] = text.split(":");
+  return `${Number(hours)}:${minutes}`;
 }
 
 function formatChapterPart(

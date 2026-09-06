@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import type { ReadingSession } from "../types";
+import { calculateAudiobookSessionDuration } from "../../../../packages/utils/listeningTime";
 
 /** Mobile reading sessions — mirrors apps/web/src/lib/services/readingSessions.ts. */
 
@@ -84,27 +85,28 @@ export async function listUserReadingSessions(
 export async function createReadingSession(
   input: CreateReadingSessionInput
 ): Promise<{ error?: string; session?: ReadingSession }> {
-  const pagesRead = Math.max(0, input.pageEnd - input.pageStart);
+  const isAudiobook = input.sessionFormat === "audiobook";
+  const pagesRead = isAudiobook ? 0 : Math.max(0, input.pageEnd - input.pageStart);
   const { data, error } = await supabase
     .from("reading_sessions")
     .insert({
       user_id: input.userId,
       user_book_id: input.userBookId,
-      page_start: input.pageStart,
-      page_end: input.pageEnd,
+      page_start: isAudiobook ? 0 : input.pageStart,
+      page_end: isAudiobook ? 0 : input.pageEnd,
       pages_read: pagesRead,
       percent_complete: input.percentComplete,
       note: input.note ?? null,
       mood: input.mood ?? null,
       read_number: input.readNumber ?? 1,
       session_format: input.sessionFormat ?? "book",
-      ...(input.sessionFormat === "audiobook"
+      ...(isAudiobook
         ? {
             listening_start_seconds: input.listeningStartSeconds ?? 0,
             listening_end_seconds: input.listeningEndSeconds ?? 0,
-            listening_seconds: Math.max(
-              0,
-              (input.listeningEndSeconds ?? 0) - (input.listeningStartSeconds ?? 0)
+            listening_seconds: calculateAudiobookSessionDuration(
+              input.listeningStartSeconds ?? 0,
+              input.listeningEndSeconds ?? 0
             ),
           }
         : {}),

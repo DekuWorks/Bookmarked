@@ -7,6 +7,7 @@ import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 import { useToast } from "@/components/ui/Toast";
 import { SessionMoodPicker, SessionMoodChip } from "@/components/books/SessionMoodPicker";
 import type { ReadingSession } from "@/types";
+import { formatListeningSessionSummary } from "@bookmarked/utils/listeningTime";
 
 export const READING_JOURNAL_PREVIEW_LIMIT = 5;
 
@@ -29,6 +30,10 @@ function formatSessionDay(iso: string): string {
 
 function sessionLabel(session: ReadingSession, isOldest: boolean): string {
   const { page_start, page_end, pages_read, percent_complete } = session;
+
+  if (session.session_format === "audiobook") {
+    return formatListeningSessionSummary(session);
+  }
 
   if (isOldest && page_start === 0 && page_end > 0) {
     return `Started reading — page ${page_end} (${Math.round(percent_complete)}%)`;

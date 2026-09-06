@@ -18,6 +18,7 @@ import {
   type LibraryFilterId,
 } from "../../../../../packages/utils/libraryFilters";
 import { withOriginQuery } from "../../../../../packages/utils/navigationOrigin";
+import { resolveTrackingFormat } from "../../../../../packages/utils/listeningTime";
 
 type SortKey =
   | "date_added"
@@ -110,7 +111,12 @@ function BookRow({ row }: { row: LibraryBookRow }) {
           <Text className="font-semibold text-ink" numberOfLines={1}>
             {book.title}
           </Text>
-          {book.format === "audiobook" ? <Text className="text-xs">🎧</Text> : null}
+          {resolveTrackingFormat({
+            userFormat: row.tracking_format,
+            catalogFormat: book.format,
+          }) === "audiobook" ? (
+            <Text className="text-xs">🎧</Text>
+          ) : null}
         </View>
         {book.author ? (
           <Text className="text-sm text-ink-muted" numberOfLines={1}>
