@@ -22,7 +22,10 @@ const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const DEFAULT_PRODUCT_IDS = ["com.dekuworks.bookmarked.premium.monthly"];
+const DEFAULT_PRODUCT_IDS = [
+  "com.dekuworks.bookmarked.premium.monthly",
+  "com.dekuworks.bookmarked.premium.yearly",
+];
 
 type VerifyPayload = {
   transaction_id?: string;

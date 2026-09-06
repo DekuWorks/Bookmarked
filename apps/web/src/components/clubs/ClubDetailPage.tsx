@@ -17,6 +17,7 @@ import { ClubSchedulePanel } from "@/components/clubs/ClubSchedulePanel";
 import { ClubBookshelfPanel } from "@/components/clubs/ClubBookshelfPanel";
 import { ClubMembersPanel } from "@/components/clubs/ClubMembersPanel";
 import { ClubStatsPanel } from "@/components/clubs/ClubStatsPanel";
+import { ClubPollsPanel } from "@/components/clubs/ClubPollsPanel";
 import { ClubInviteModal } from "@/components/clubs/ClubInviteModal";
 import { ClubSettingsModal } from "@/components/clubs/ClubSettingsModal";
 import { ContentActionsMenu } from "@/components/moderation/ContentActionsMenu";
@@ -53,6 +54,7 @@ const TABS = [
   ["schedule", "Schedule"],
   ["bookshelf", "Bookshelf"],
   ["members", "Members"],
+  ["polls", "Polls"],
   ["stats", "Stats"],
 ] as const;
 
@@ -65,6 +67,7 @@ function parseTab(value: string | null): ClubTab {
     value === "schedule" ||
     value === "bookshelf" ||
     value === "members" ||
+    value === "polls" ||
     value === "stats"
   ) {
     return value;
@@ -581,6 +584,10 @@ function ClubDetailContent() {
               onChanged={() => void loadClub()}
             />
           </section>
+        ) : null}
+
+        {activeTab === "polls" && user ? (
+          <ClubPollsPanel clubId={club.id} userId={user.id} />
         ) : null}
 
         {activeTab === "stats" ? (

@@ -2,7 +2,7 @@
 
 Source of truth for Free / Plus / Home entitlements and billing boundaries.
 
-**Product rule (2026-09-06):** Subscribe **only on iOS** (App Store IAP). Do not add a web checkout, Stripe/web IAP, or “Subscribe on web” for Challenges or other Plus gates being wired. After IAP, `apple-iap-verify` writes `user_subscriptions`; web reads that same row so bookmarked.online unlocks without a second purchase. Web upsell copy sends people to the iOS app. Server `user_has_paid_entitlement` / row checks are mandatory. Do not hardcode prices.
+**Product rule (2026-09-06):** Subscribe **only on iOS** (App Store IAP). Do not add a web checkout, Stripe/web IAP, or “Subscribe on web” for Challenges or other Plus gates being wired. After IAP, `apple-iap-verify` writes `user_subscriptions`; web reads that same row so bookmarked.online unlocks without a second purchase. Web upsell copy sends people to the iOS app. Server `user_has_paid_entitlement` / row checks are mandatory. Upgrade-page **display** prices are $5.99/month and $59.99/year; iOS subscribe buttons still prefer StoreKit `displayPrice`.
 
 ## Platforms
 
@@ -91,6 +91,10 @@ Edge Function `create-checkout-session` accepts `{ interval: "month" | "year" }`
 2. Apple ASN → `subscription-webhook?provider=apple` → grace/expired/canceled mapping → upsert.
 3. iOS client → `apple-iap-verify` (JWT) → product allowlist → upsert → refresh entitlements.
 4. Duplicate `event_id` → `{ ok: true, duplicate: true }` (idempotent).
+
+## Plus product decisions (2026-09-06)
+
+See `feature-entitlements.md`. Short version: Plus custom shelves unlimited; reread + character ratings share 5-star half-star; poll multi-select is opt-in; analytics owner/host only; no advanced-goal simultaneous cap; show fair-use copy for unlimited graphics; keep reading vs listening time separate.
 
 ## Downgrade
 

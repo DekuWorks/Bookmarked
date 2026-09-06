@@ -5,6 +5,11 @@ import {
   parseReviewAudience,
   type ReviewAudience,
 } from "../../../../packages/utils/reviewVisibility";
+import {
+  parseRereadLikelihood,
+  validateCharacterName,
+} from "../../../../packages/utils/plusReviews";
+import { parseHalfStarRating } from "../../../../packages/utils/starRatingDisplay";
 
 /**
  * Mobile reviews service. Writes to the `reviews` table + records feed activity,
@@ -30,6 +35,11 @@ export type ReviewInput = {
   worldBuilding?: number | null;
   pacing?: number | null;
   emotionalImpact?: number | null;
+  wouldRecommend?: boolean | null;
+  favoriteChapterNumber?: number | null;
+  characterName?: string | null;
+  characterScore?: number | null;
+  rereadLikelihood?: number | null;
 };
 
 /** Signature rating emoji options (matches the web review composer set). */
@@ -84,6 +94,15 @@ export async function upsertReview(
     world_building: input.worldBuilding ?? null,
     pacing: input.pacing ?? null,
     emotional_impact: input.emotionalImpact ?? null,
+    would_recommend: input.wouldRecommend ?? null,
+    favorite_chapter_number: input.favoriteChapterNumber ?? null,
+    ...(() => {
+      const reread = parseRereadLikelihood({ value: input.rereadLikelihood });
+      return {
+        reread_likelihood: reread.value,
+        reread_likelihood_scale: reread.scaleKey,
+      };
+    })(),
     updated_at: new Date().toISOString(),
   };
 
@@ -104,6 +123,17 @@ export async function upsertReview(
   if (error) return { error: error.message };
 
   const review = data as Review;
+  const namedCharacter = input.characterName
+    ? validateCharacterName(input.characterName)
+    : null;
+  if (namedCharacter?.ok) {
+    await supabase.from("review_character_ratings").upsert({
+      review_id: review.id,
+      user_id: userId,
+      character_name: namedCharacter.name,
+      score: parseHalfStarRating(input.characterScore),
+    }, { onConflict: "review_id,character_name" });
+  }
   await recordActivity({
     user_id: userId,
     event_type: existing?.id ? "review_updated" : "review_created",

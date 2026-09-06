@@ -6,7 +6,9 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AnalyticsGrid } from "@/components/analytics/AnalyticsGrid";
 import { ReadingActivityPanel } from "@/components/analytics/ReadingActivityPanel";
+import { AiCompanionPanel } from "@/components/premium/AiCompanionPanel";
 import { AiInsightsPanel } from "@/components/premium/AiInsightsPanel";
+import { PlusInsightsPanel } from "@/components/premium/PlusInsightsPanel";
 import { PremiumFeatureLock } from "@/components/premium/PremiumFeatureLock";
 import { NotesPanel } from "@/components/reading-room/NotesPanel";
 import { OverviewTab } from "@/components/reading-room/OverviewTab";
@@ -177,11 +179,14 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
                 {subscriptionLoading ? (
                   <LoadingState message="Checking subscription…" />
                 ) : hasAdvancedAnalytics ? (
-                  <ReadingActivityPanel userId={userId} />
+                  <div className="space-y-8">
+                    <ReadingActivityPanel userId={userId} />
+                    <PlusInsightsPanel userId={userId} />
+                  </div>
                 ) : (
                   <PremiumFeatureLock
                     title="Advanced reading analytics"
-                    description="Unlock reading heatmaps, pace trends, and weekly activity charts with Premium."
+                    description="Unlock reading heatmaps, pace trends, and weekly activity charts with Bookmarked Plus."
                     compact
                   />
                 )}
@@ -197,7 +202,10 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
                 {subscriptionLoading ? (
                   <LoadingState message="Checking subscription…" />
                 ) : hasAiInsights ? (
-                  <AiInsightsPanel userId={userId} />
+                  <div className="space-y-6">
+                    <AiInsightsPanel userId={userId} />
+                    <AiCompanionPanel />
+                  </div>
                 ) : (
                   <PremiumFeatureLock
                     title="AI reading insights"

@@ -1,6 +1,9 @@
 /** Production App Store subscription product ID — must match App Store Connect. */
 export const IAP_PREMIUM_MONTHLY_IOS_PRODUCTION = "com.dekuworks.bookmarked.premium.monthly";
 
+/** Yearly Plus SKU. App Store Connect must use this exact product ID. */
+export const IAP_PREMIUM_YEARLY_IOS_PRODUCTION = "com.dekuworks.bookmarked.premium.yearly";
+
 /**
  * Sandbox / TestFlight SKU override. App Store Connect normally uses the same
  * product ID in sandbox and production; set only if you created a separate SKU.
@@ -19,6 +22,7 @@ export const IAP_PREMIUM_YEARLY_PRICE_LABEL = "$59.99 / year";
 export const IAP_ALLOWED_PREMIUM_SKUS = [
   IAP_PREMIUM_MONTHLY_IOS_PRODUCTION,
   IAP_PREMIUM_MONTHLY_IOS_SANDBOX,
+  IAP_PREMIUM_YEARLY_IOS_PRODUCTION,
   IAP_PREMIUM_MONTHLY_ANDROID,
 ] as const;
 

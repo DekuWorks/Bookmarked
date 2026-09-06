@@ -3,7 +3,12 @@
 import { useEffect, useState } from "react";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { getClubStats } from "@/lib/services/bookClubs";
+import { loadClubAnalytics } from "@/lib/services/clubPolls";
+import { canViewClubAnalytics } from "@bookmarked/utils/clubAnalytics";
 import { canViewDetailedStats } from "@bookmarked/utils/clubPermissions";
+import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { useSubscription } from "@/lib/hooks/useSubscription";
+import { PremiumFeatureLock } from "@/components/premium/PremiumFeatureLock";
 import type { BookClubMemberRole, BookClubStats } from "@/types";
 
 type Props = {
@@ -22,8 +27,15 @@ function StatCard({ label, value }: { label: string; value: number | string }) {
 }
 
 export function ClubStatsPanel({ clubId, viewerRole, memberCount }: Props) {
-  const detailed = canViewDetailedStats(viewerRole);
+  const user = useAuthUser();
+  const { canAccess } = useSubscription(user?.id);
+  const detailed = canViewClubAnalytics({
+    hasPlus: canAccess("club_analytics"),
+    role: viewerRole,
+  });
+  const basicDetailed = canViewDetailedStats(viewerRole);
   const [stats, setStats] = useState<BookClubStats | null | undefined>(undefined);
+  const [plusSnapshot, setPlusSnapshot] = useState<Record<string, number> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -46,6 +58,16 @@ export function ClubStatsPanel({ clubId, viewerRole, memberCount }: Props) {
     };
   }, [clubId]);
 
+  useEffect(() => {
+    if (!detailed) {
+      setPlusSnapshot(null);
+      return;
+    }
+    void loadClubAnalytics(clubId).then((result) => {
+      if ("snapshot" in result && result.snapshot) setPlusSnapshot(result.snapshot);
+    });
+  }, [clubId, detailed]);
+
   if (stats === undefined) {
     return <LoadingState message="Loading stats…" />;
   }
@@ -67,8 +89,10 @@ export function ClubStatsPanel({ clubId, viewerRole, memberCount }: Props) {
       <h2 className="text-lg font-semibold text-puce-red">Club stats</h2>
       <p className="mt-1 text-sm text-text-muted">
         {detailed
-          ? "Detailed engagement for hosts and owners."
-          : "Snapshot of club activity."}
+          ? "Plus club analytics for owners and hosts. Aggregates only — not anyone’s private reading."
+          : basicDetailed
+            ? "Basic club activity. Plus unlocks owner/host analytics."
+            : "Snapshot of club activity."}
       </p>
 
       <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -78,11 +102,21 @@ export function ClubStatsPanel({ clubId, viewerRole, memberCount }: Props) {
         <StatCard label="Replies" value={stats.replies_posted} />
         {detailed ? (
           <>
-            <StatCard label="Events" value={stats.events_created} />
-            <StatCard label="RSVPs (going)" value={stats.rsvp_participation} />
-            <StatCard label="Books completed" value={stats.books_completed} />
-            <StatCard label="Growth (30d)" value={stats.member_growth_30d} />
+            <StatCard label="Events" value={plusSnapshot?.events ?? stats.events_created} />
+            <StatCard label="RSVPs (going)" value={plusSnapshot?.rsvpsGoing ?? stats.rsvp_participation} />
+            <StatCard label="Books completed" value={plusSnapshot?.booksCompleted ?? stats.books_completed} />
+            <StatCard label="Growth (30d)" value={plusSnapshot?.growth30d ?? stats.member_growth_30d} />
+            <StatCard label="Polls" value={plusSnapshot?.pollCount ?? 0} />
+            <StatCard label="Poll votes" value={plusSnapshot?.pollVotes ?? 0} />
           </>
+        ) : basicDetailed ? (
+          <div className="col-span-2 sm:col-span-3">
+            <PremiumFeatureLock
+              compact
+              title="Club analytics"
+              description="Owner and host analytics are a Plus feature. Subscribe in the iOS app."
+            />
+          </div>
         ) : null}
       </dl>
     </section>

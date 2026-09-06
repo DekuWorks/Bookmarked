@@ -12,6 +12,7 @@ import {
 } from "@/lib/services/usageCounters";
 import { searchNotes } from "@/lib/services/readingNotes";
 import { isEntitlementLimitError } from "@/lib/utils/subscription";
+import { PLUS_UNLIMITED_FAIR_USE_COPY } from "@bookmarked/utils/subscription";
 import { cn } from "@/lib/utils/cn";
 
 type Props = {
@@ -120,6 +121,7 @@ export function QuoteGraphicsStudio({ userId }: Props) {
           <p className="mt-1 text-sm text-text-muted">
             Turn a favorite line into a shareable card. Free members get 3 per month.
           </p>
+          <p className="mt-1 text-xs text-text-muted">{PLUS_UNLIMITED_FAIR_USE_COPY}</p>
         </div>
         <span className="rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-puce-red">
           {remaining == null ? "…" : `${remaining} left this month`}

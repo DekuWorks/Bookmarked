@@ -7,9 +7,10 @@ Bookmarked Premium on iOS uses **App Store subscriptions** (`expo-iap`). Web bil
 | Field | Value |
 |-------|-------|
 | Bundle ID | `com.dekuworks.bookmarked` |
-| Subscription product ID | `com.dekuworks.bookmarked.premium.monthly` (production) |
+| Monthly product ID | `com.dekuworks.bookmarked.premium.monthly` (production) |
+| Yearly product ID | `com.dekuworks.bookmarked.premium.yearly` (must exist in App Store Connect) |
 | Sandbox override | `EXPO_PUBLIC_APPLE_PREMIUM_SANDBOX_PRODUCT_ID` (only if separate SKU) |
-| Price | $4.99 / month |
+| Display price | $5.99 / month · $59.99 / year |
 | Env override (mobile) | `EXPO_PUBLIC_APPLE_PREMIUM_PRODUCT_ID` |
 
 ## App Store Connect setup

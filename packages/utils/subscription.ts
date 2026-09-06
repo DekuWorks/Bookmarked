@@ -499,6 +499,9 @@ export function toSubscriptionAccessFromRow(
   };
 }
 
+/** Official upgrade-page display prices. iOS buttons still prefer StoreKit displayPrice. */
+export { PLUS_ANNUAL_SAVINGS_COPY, PLUS_DISPLAY_PRICES } from "./plusPricing";
+
 /** Subscribe only on iOS. Web never starts checkout. */
 export const IOS_SUBSCRIBE_COPY = {
   headline: "Subscribe on iPhone or iPad",
@@ -506,6 +509,10 @@ export const IOS_SUBSCRIBE_COPY = {
   cta: "Open the Bookmarked iOS app",
   note: "Restore purchases in the iOS app if Plus does not appear after you subscribe.",
 } as const;
+
+/** Shown on Quote Graphics and Plus upgrade copy. No invented monthly Plus cap. */
+export const PLUS_UNLIMITED_FAIR_USE_COPY =
+  "Unlimited on Plus still has abuse and rate protection so the service stays reliable.";
 
 export type EntitlementLimitFeature = keyof typeof ENTITLEMENT_LIMIT_MESSAGES;
 

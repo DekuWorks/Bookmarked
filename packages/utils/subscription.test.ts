@@ -4,6 +4,7 @@ import {
   canAccessFeature,
   canCreateReadingChallenge,
   IOS_SUBSCRIBE_COPY,
+  PLUS_UNLIMITED_FAIR_USE_COPY,
   canCreateCustomShelf,
   canJoinBookClub,
   canSaveQuote,
@@ -46,6 +47,8 @@ describe("ENTITLEMENTS + canAccessFeature", () => {
     expect(canAccessFeature("reader_map", activePlus)).toBe(false);
     expect(getReadingDnaAccess(activePlus)).toBe("full");
     expect(getEntitlements(activePlus).joinedBookClubs).toBe(Infinity);
+    expect(getEntitlements(activePlus).customShelves).toBe(Infinity);
+    expect(ENTITLEMENTS.plus.customShelves).toBe(Infinity);
     expect(canCreateReadingChallenge(null)).toBe(false);
     expect(canCreateReadingChallenge(activePlus)).toBe(true);
   });
@@ -60,6 +63,8 @@ describe("ENTITLEMENTS + canAccessFeature", () => {
     expect(IOS_SUBSCRIBE_COPY.body).toMatch(/iOS app/i);
     expect(IOS_SUBSCRIBE_COPY.body).toMatch(/bookmarked\.online/i);
     expect(IOS_SUBSCRIBE_COPY.body).not.toMatch(/checkout|stripe/i);
+    expect(PLUS_UNLIMITED_FAIR_USE_COPY).toMatch(/abuse and rate protection/i);
+    expect(PLUS_UNLIMITED_FAIR_USE_COPY).not.toMatch(/\d+\s*\/\s*month/);
   });
 
   it("enforces numeric Free limits via helpers", () => {

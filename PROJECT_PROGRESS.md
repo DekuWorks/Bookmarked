@@ -1037,11 +1037,71 @@ Official Free-tier product on **web + iOS (iPhone/iPad)**. Android not in scope.
 
 ---
 
+## Seventeenth Sprint — PREMIUM / PLUS tier ✅
+
+Official Plus product on **web + iOS (iPhone/iPad)**. Android not in scope. No `expo run:ios`. No TestFlight. No commit in this pass.
+
+**Product rule — subscribe only on iOS.** Web never starts Stripe Checkout. Display copy uses $5.99/month and $59.99/year; iOS subscribe buttons prefer StoreKit `displayPrice`. Once Plus is on `user_subscriptions`, bookmarked.online unlocks automatically.
+
+### What shipped
+
+- Shared Plus compute: insights, YoY (no Infinity%), monthly Wrapped, mood IDs, favorite authors, advanced goals, polls, companion safety, quote scanner
+- Additive migration `20260907070000_plus_tier_features.sql`: favorite authors, advanced goals, review extras, club polls, AI usage/cache, optional `duration_seconds`, session_date page RPCs
+- Dual-platform UI: Plus insights, monthly Wrapped, polls, analytics gate, quote scanner, companion, review extras
+- iOS monthly + yearly IAP + Restore; web iOS-subscribe copy only
+
+### Product decisions (answered 2026-09-06)
+
+1. Custom shelves on Plus — unlimited (`ENTITLEMENTS.plus.customShelves = Infinity`). No second cap.
+2. Reread Likelihood — shared 5-star half-star (`stars_5_half`), persisted 0.5-step. Not 1–10.
+3. Character Ratings — optional 5-star half-star + user-entered names. Not required to publish.
+4. Club polls — multi-select allowed when the creator opts in. Default single-select. Server enforces the mode.
+5. Club Analytics roles — owner/host only (`canViewDetailedStats`). No admin role.
+6. Advanced Goals simultaneous cap — none (`ADVANCED_GOAL_SIMULTANEOUS_LIMIT = null`).
+7. Fair-use copy — shown on Quote Graphics and upgrade Plus copy. No invented Plus monthly cap.
+8. Reading time vs listening time — kept separate. No combined “Total Reading Time.”
+
+### Docs
+
+- `docs/feature-entitlements.md`, `FEATURE_GATING_MATRIX.md`, `SUBSCRIPTION_ARCHITECTURE.md`, `APP_STORE_IAP.md`, `PLUS_FEATURE_AUDIT.md`
+
+### Tests / verification
+
+- Shared Plus unit tests: 31 passed (insights dating, YoY, spoiler/ending safety, poll validation, club analytics auth, pricing)
+- Web `tsc --noEmit`: pass
+- Web `next build`: pass (`/quote-scanner`, `/wrapped/month`)
+- iOS `tsc --noEmit`: pass
+- Migration `20260907070000_plus_tier_features.sql` dry-run then applied (`db push --yes --linked`)
+- Edge Functions deployed: `ai-reading-companion`, `quote-scanner`
+- Could not click through Plus/Free QA accounts in prod
+- No `expo run:ios`. No TestFlight. No commit
+
+---
+
+## Eighteenth Sprint — Plus product decisions ✅
+
+Shipped the eight Plus answers on web + iOS. Subscribe remains iOS-only. Official/featured challenges still skip yearly slots. Club create-as-owner still consumes the Free 3-club cap. Downgrade still preserves over-limit data.
+
+### What shipped
+
+- Reread Likelihood + optional character ratings persist on the shared 5-star half-star scale
+- Club poll create UI can opt in to `allow_multiple`; `vote_club_poll` already enforces the mode
+- Fair-use copy on Quote Graphics and upgrade comparison (`PLUS_UNLIMITED_FAIR_USE_COPY`)
+- Additive migration `20260907080000_plus_product_decisions.sql` (0.5–5 CHECKs + comments)
+- Docs record the eight decisions
+
+### Tests / verification
+
+- Focused Plus unit tests (reread/character scale, poll vote mode, insights stay separate)
+- Web + iOS `tsc --noEmit`
+- Migration dry-run then `db push --yes --linked`
+
+---
+
 ## Next up (recommended)
 
 | Priority | Item | Notes |
 |----------|------|-------|
-| P0 | Apply remaining DNA/challenge migrations if any | `…190000`, `…200000`, `…210000` upsert DNA, `…220000` challenge seeds. Free-tier `…050000` + club/challenge slot `…060000` |
-| P1 | Enable AI quote graphics flag | When Higgsfield/AI ready; keep Free monthly consume semantics |
+| P0 | Confirm App Store yearly SKU `com.dekuworks.bookmarked.premium.yearly` | Allowlisted in IAP verify; must exist in App Store Connect |
+| P1 | Enable AI quote graphics flag | When Higgsfield/AI ready; Plus already skips the Free monthly cap |
 | P1 | Higgsfield assets | Re-auth MCP — see `docs/higgsfield/BLOCKER.md` |
-| P1 | Stripe/ASC catalog cutover | Operator-only; leave documented |

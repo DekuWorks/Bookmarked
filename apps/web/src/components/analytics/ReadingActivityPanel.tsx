@@ -130,17 +130,18 @@ export function ReadingActivityPanel({
 
       {showHeatmap && heatmap.length > 0 ? (
         <div>
-          <p className="mb-2 text-sm font-medium text-puce-red">Reading calendar</p>
-          <p className="mb-3 text-xs text-text-muted">Last 12 weeks — darker orange means more pages.</p>
+          <p className="mb-2 text-sm font-medium text-puce-red">Pages heatmap</p>
+          <p className="mb-3 text-xs text-text-muted">Last 12 weeks — darker royal orange means more pages. Listening stays separate.</p>
           <div
             className="grid grid-flow-col grid-rows-7 gap-0.5 overflow-x-auto pb-1"
             role="img"
-            aria-label="Heatmap of reading activity over the last 12 weeks"
+            aria-label="Heatmap of pages read over the last 12 weeks"
           >
             {heatmap.map((day) => (
               <span
                 key={day.day}
                 title={formatHeatmapTitle(day.day, day.pages_read)}
+                aria-label={formatHeatmapTitle(day.day, day.pages_read)}
                 className={cn("h-3 w-3 shrink-0 rounded-sm", heatmapIntensity(day.pages_read, heatmapMax))}
               />
             ))}

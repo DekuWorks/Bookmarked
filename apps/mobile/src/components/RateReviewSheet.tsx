@@ -22,6 +22,8 @@ import {
   parseReviewAudience,
   type ReviewAudience,
 } from "../../../../packages/utils/reviewVisibility";
+import { REREAD_LIKELIHOOD_SCALE } from "../../../../packages/utils/plusReviews";
+import { useSubscription } from "../hooks/useSubscription";
 
 /** Feelings tags exactly as in the rating mockup (IMG_5359). */
 const RATING_FEELINGS = [
@@ -76,6 +78,19 @@ export function RateReviewSheet({
   onSaved,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const { canAccess } = useSubscription();
+  const plusReviews = canAccess("advanced_reviews");
+  const [wouldRecommend, setWouldRecommend] = useState<"yes" | "no" | "">(
+    existingReview?.would_recommend === true ? "yes" : existingReview?.would_recommend === false ? "no" : ""
+  );
+  const [favoriteChapter, setFavoriteChapter] = useState(
+    existingReview?.favorite_chapter_number ? String(existingReview.favorite_chapter_number) : ""
+  );
+  const [characterName, setCharacterName] = useState("");
+  const [characterScore, setCharacterScore] = useState(0);
+  const [rereadLikelihood, setRereadLikelihood] = useState(
+    existingReview?.reread_likelihood ?? 0
+  );
   const [rating, setRating] = useState(existingReview?.rating ?? 0);
   const [emoji, setEmoji] = useState<string | null>(existingReview?.rating_emoji ?? null);
   const [feelings, setFeelings] = useState<string[]>(existingReview?.feelings ?? []);
@@ -114,6 +129,17 @@ export function RateReviewSheet({
       pacing: existingReview?.pacing ?? 0,
       emotionalImpact: existingReview?.emotional_impact ?? 0,
     });
+    setWouldRecommend(
+      existingReview?.would_recommend === true
+        ? "yes"
+        : existingReview?.would_recommend === false
+          ? "no"
+          : ""
+    );
+    setFavoriteChapter(
+      existingReview?.favorite_chapter_number ? String(existingReview.favorite_chapter_number) : ""
+    );
+    setRereadLikelihood(existingReview?.reread_likelihood ?? 0);
   }
   if (!visible && wasOpen) {
     setWasOpen(false);
@@ -148,6 +174,13 @@ export function RateReviewSheet({
         worldBuilding: categories.worldBuilding || null,
         pacing: categories.pacing || null,
         emotionalImpact: categories.emotionalImpact || null,
+        wouldRecommend: wouldRecommend === "yes" ? true : wouldRecommend === "no" ? false : null,
+        favoriteChapterNumber: Number.isInteger(Number(favoriteChapter)) && Number(favoriteChapter) >= 1
+          ? Number(favoriteChapter)
+          : null,
+        characterName: characterName.trim() || null,
+        characterScore: characterScore || null,
+        rereadLikelihood: rereadLikelihood || null,
       },
       book
     );
@@ -332,6 +365,43 @@ export function RateReviewSheet({
               trackColor={{ true: "#642F37", false: "#D5C3D7" }}
             />
           </View>
+
+          {plusReviews ? (
+            <View className="gap-2 rounded-xl border border-brand-border p-3">
+              <Text className="text-xs font-bold uppercase text-ink-muted">Plus extras</Text>
+              <View className="flex-row gap-2">
+                {(["yes", "no"] as const).map((value) => (
+                  <Pressable
+                    key={value}
+                    onPress={() => setWouldRecommend((current) => (current === value ? "" : value))}
+                    className={`rounded-full px-3 py-1 ${wouldRecommend === value ? "bg-puce-red" : "bg-primary/15"}`}
+                  >
+                    <Text className={wouldRecommend === value ? "text-white" : "text-puce-red"}>
+                      {value === "yes" ? "Recommend" : "Not recommend"}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+              <TextInput
+                value={favoriteChapter}
+                onChangeText={setFavoriteChapter}
+                placeholder="Favorite chapter number"
+                keyboardType="number-pad"
+                className="rounded-lg border border-brand-border px-3 py-2"
+              />
+              <Text className="mt-1 text-xs font-medium text-ink">Reread likelihood (optional)</Text>
+              <StarRatingInput value={rereadLikelihood} onChange={setRereadLikelihood} size={24} />
+              <Text className="text-xs text-ink-muted">{REREAD_LIKELIHOOD_SCALE.note}</Text>
+              <TextInput
+                value={characterName}
+                onChangeText={setCharacterName}
+                placeholder="Character name (optional)"
+                className="rounded-lg border border-brand-border px-3 py-2"
+              />
+              <Text className="text-xs font-medium text-ink">Character rating (optional)</Text>
+              <StarRatingInput value={characterScore} onChange={setCharacterScore} size={20} />
+            </View>
+          ) : null}
 
           <ReviewVisibilityControl
             value={visibility}

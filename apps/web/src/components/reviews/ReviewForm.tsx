@@ -18,7 +18,10 @@ import {
   parseReviewAudience,
   type ReviewAudience,
 } from "@bookmarked/utils/reviewVisibility";
+import { REREAD_LIKELIHOOD_SCALE } from "@bookmarked/utils/plusReviews";
 import { ReviewVisibilityControl } from "@/components/reviews/ReviewVisibilityControl";
+import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { useSubscription } from "@/lib/hooks/useSubscription";
 
 const ASPECT_FIELDS = [
   { key: "plot", label: "Plot" },
@@ -73,6 +76,21 @@ export function ReviewForm({
     parseReviewAudience(initial?.visibility)
   );
   const [feelings, setFeelings] = useState<string[]>(initial?.feelings ?? []);
+  const user = useAuthUser();
+  const { canAccess } = useSubscription(user?.id);
+  const plusReviews = canAccess("advanced_reviews");
+  const [wouldRecommend, setWouldRecommend] = useState<"yes" | "no" | "">(
+    initial?.would_recommend === true ? "yes" : initial?.would_recommend === false ? "no" : ""
+  );
+  const [favoriteChapter, setFavoriteChapter] = useState(
+    initial?.favorite_chapter_number ? String(initial.favorite_chapter_number) : ""
+  );
+  const [chapterReview, setChapterReview] = useState("");
+  const [characterName, setCharacterName] = useState("");
+  const [characterScore, setCharacterScore] = useState(0);
+  const [rereadLikelihood, setRereadLikelihood] = useState(
+    initial?.reread_likelihood ? Number(initial.reread_likelihood) : 0
+  );
   const [aspects, setAspects] = useState<Record<AspectKey, number>>({
     plot: initial?.plot ? Number(initial.plot) : 0,
     characters: initial?.characters ? Number(initial.characters) : 0,
@@ -114,6 +132,12 @@ export function ReviewForm({
       <input type="hidden" name="rating" value={rating || ""} />
       <input type="hidden" name="rating_emoji" value={sanitizeRatingEmoji(ratingEmoji) ?? ""} />
       <input type="hidden" name="edition" value={editionValue} />
+      <input type="hidden" name="would_recommend" value={wouldRecommend} />
+      <input type="hidden" name="favorite_chapter_number" value={favoriteChapter} />
+      <input type="hidden" name="chapter_review_body" value={chapterReview} />
+      <input type="hidden" name="character_name" value={characterName} />
+      <input type="hidden" name="character_score" value={characterScore || ""} />
+      <input type="hidden" name="reread_likelihood" value={rereadLikelihood || ""} />
       {reviewId ? <input type="hidden" name="review_id" value={reviewId} /> : null}
       {feelings.map((feeling) => (
         <input key={feeling} type="hidden" name="feelings" value={feeling} />
@@ -324,6 +348,69 @@ export function ReviewForm({
         />
         Contains spoilers
       </label>
+
+      {plusReviews ? (
+        <div className="space-y-3 rounded-xl border border-border p-3">
+          <p className="text-sm font-medium text-puce-red">Plus review extras</p>
+          <div className="flex gap-2">
+            {(["yes", "no"] as const).map((value) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setWouldRecommend((current) => (current === value ? "" : value))}
+                className={cn(
+                  "rounded-full border px-3 py-1 text-xs font-medium",
+                  wouldRecommend === value
+                    ? "border-puce-red bg-puce-red text-white"
+                    : "border-border text-text-muted"
+                )}
+              >
+                {value === "yes" ? "Would recommend" : "Would not recommend"}
+              </button>
+            ))}
+          </div>
+          <Input
+            label="Favorite chapter number"
+            value={favoriteChapter}
+            onChange={(e) => setFavoriteChapter(e.target.value)}
+            placeholder="Manual chapter number"
+          />
+          <Textarea
+            label="Chapter review"
+            value={chapterReview}
+            onChange={(e) => setChapterReview(e.target.value)}
+            placeholder="Optional notes for that chapter"
+          />
+          <div>
+            <p className="mb-1.5 text-sm font-medium text-text">
+              Reread likelihood <span className="font-normal text-text-muted">(optional)</span>
+            </p>
+            <StarRating
+              value={rereadLikelihood}
+              onChange={setRereadLikelihood}
+              label="Reread likelihood"
+            />
+            <p className="mt-1 text-xs text-text-muted">{REREAD_LIKELIHOOD_SCALE.note}</p>
+          </div>
+          <Input
+            label="Character name"
+            value={characterName}
+            onChange={(e) => setCharacterName(e.target.value)}
+            placeholder="Your name for them — optional, not required to publish"
+          />
+          <div>
+            <p className="mb-1.5 text-sm font-medium text-text">
+              Character rating <span className="font-normal text-text-muted">(optional)</span>
+            </p>
+            <StarRating
+              value={characterScore}
+              onChange={setCharacterScore}
+              size="sm"
+              label="Character rating"
+            />
+          </div>
+        </div>
+      ) : null}
 
       <ReviewVisibilityControl
         value={visibility}

@@ -97,6 +97,7 @@ export {
   toSubscriptionAccessFromRow,
   ENTITLEMENT_LIMIT_MESSAGES,
   IOS_SUBSCRIBE_COPY,
+  PLUS_UNLIMITED_FAIR_USE_COPY,
   isEntitlementLimitError,
   type ChallengeJoinKind,
   type ClubMembershipKind,
@@ -149,6 +150,7 @@ export {
   IAP_PREMIUM_MONTHLY_IOS,
   IAP_PREMIUM_MONTHLY_IOS_PRODUCTION,
   IAP_PREMIUM_MONTHLY_IOS_SANDBOX,
+  IAP_PREMIUM_YEARLY_IOS_PRODUCTION,
   IAP_PREMIUM_PRICE_LABEL,
   IAP_PREMIUM_YEARLY_PRICE_LABEL,
   isAllowedPremiumSku,
@@ -585,6 +587,8 @@ export {
 export {
   STAR_RATING_ROW_CLASS,
   clampStarRating,
+  isValidHalfStarRating,
+  parseHalfStarRating,
   starFill,
   starFills,
   type StarFill,
@@ -860,3 +864,105 @@ export {
   filterPublicLibraryBooks,
   visibilityForBuiltInShelf,
 } from "./publicLibraryVisibility";
+
+export {
+  PLUS_ANNUAL_SAVINGS_COPY,
+  PLUS_DISPLAY_PRICES,
+  plusAnnualSavingsPercent,
+  plusAnnualSavingsUsd,
+} from "./plusPricing";
+
+export {
+  PLUS_INSIGHTS_COPY,
+  computePagesByMonth,
+  computePagesByWeek,
+  computeReadingHabits,
+  computeReadingSpeed,
+  computeReadingTime,
+  computeYearOverYear,
+  heatmapA11yLabel,
+  toHeatmapDays,
+  type HeatmapDay,
+  type PlusInsightSession,
+  type ReadingSpeedInsight,
+  type ReadingTimeInsight,
+  type YearOverYearPoint,
+} from "./plusInsights";
+
+export {
+  MONTHLY_WRAPPED_COPY,
+  availableWrappedMonths,
+  computeMonthlyWrapped,
+  type MonthlyWrappedRecap,
+  type MonthlyWrappedSession,
+} from "./monthlyWrapped";
+
+export {
+  builtinMoodTagId,
+  computeMoodAnalytics,
+  resolveMoodTagRef,
+  type MoodCount,
+} from "./moodAnalytics";
+
+export {
+  FAVORITE_AUTHOR_MAX_NAME,
+  favoriteAuthorKey,
+  normalizeAuthorName,
+  validateFavoriteAuthorName,
+} from "./favoriteAuthors";
+
+export {
+  ADVANCED_GOAL_KINDS,
+  ADVANCED_GOAL_SIMULTANEOUS_LIMIT,
+  canCreateAnotherAdvancedGoal,
+  challengeRuleForGoalKind,
+  isAdvancedGoalKind,
+  validateAdvancedGoalDraft,
+  type AdvancedGoalDraft,
+  type AdvancedGoalKind,
+} from "./advancedGoals";
+
+export {
+  REREAD_LIKELIHOOD_SCALE,
+  REREAD_LIKELIHOOD_SCALE_KEY,
+  parseCharacterScore,
+  parseRereadLikelihood,
+  parseWouldRecommend,
+  validateChapterNumber,
+  validateCharacterName,
+  type WouldRecommend,
+} from "./plusReviews";
+
+export {
+  CLUB_POLL_MULTI_SELECT_DEFAULT,
+  pollIsOpen,
+  tallyClubPollVotes,
+  validateClubPollDraft,
+  validateClubPollVote,
+  type ClubPollDraft,
+  type ClubPollTally,
+} from "./clubPolls";
+
+export {
+  CLUB_ANALYTICS_ROLES,
+  canViewClubAnalytics,
+  emptyClubAnalytics,
+  type ClubAnalyticsSnapshot,
+} from "./clubAnalytics";
+
+export {
+  AI_COMPANION_ACTIONS,
+  AI_COMPANION_RATE_LIMIT,
+  audiobookScheduleLabel,
+  buildCompanionSystemPrompt,
+  companionSafetyFor,
+  endingExplanationBlocked,
+  type AiCompanionAction,
+} from "./aiCompanionSafety";
+
+export {
+  QUOTE_SCANNER_COPY,
+  normalizeScannedQuote,
+  quoteScanIsSavable,
+  type QuoteScanPreview,
+} from "./quoteScanner";

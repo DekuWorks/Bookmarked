@@ -9,9 +9,16 @@ type Props = {
   onChange: (value: number) => void;
   disabled?: boolean;
   size?: "sm" | "md";
+  label?: string;
 };
 
-export function StarRating({ value, onChange, disabled = false, size = "md" }: Props) {
+export function StarRating({
+  value,
+  onChange,
+  disabled = false,
+  size = "md",
+  label = "Rating",
+}: Props) {
   const [hoverValue, setHoverValue] = useState<number | null>(null);
   const display = hoverValue ?? value;
   const textSize = size === "sm" ? "text-xl" : "text-2xl";
@@ -29,7 +36,7 @@ export function StarRating({ value, onChange, disabled = false, size = "md" }: P
     <div
       className={cn(STAR_RATING_ROW_CLASS, "shrink-0 gap-0.5")}
       role="radiogroup"
-      aria-label="Rating"
+      aria-label={label}
       onMouseLeave={() => setHoverValue(null)}
     >
       {fills.map((fill, index) => {
