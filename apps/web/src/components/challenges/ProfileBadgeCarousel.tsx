@@ -25,7 +25,9 @@ export function ProfileBadgeCarousel({
   const [badges, setBadges] = useState<Badge[]>([]);
 
   useEffect(() => {
-    void listUserBadges(userId, featuredOnly && !isOwner).then(setBadges);
+    void listUserBadges(userId, featuredOnly && !isOwner)
+      .then(setBadges)
+      .catch(() => setBadges([]));
   }, [userId, featuredOnly, isOwner]);
 
   if (!badges.length) return null;

@@ -31,16 +31,27 @@ export function LibraryAnalyticsPanel({
         .from("reviews")
         .select("id", { count: "exact", head: true })
         .eq("user_id", userId),
-    ]).then(([profile, streakTimestamps, reviewResult]) => {
-      setAnalytics(
-        computeReadingAnalytics({
-          books,
-          reviewsWritten: reviewResult.count ?? 0,
-          streakTimestamps,
-          profileGenres: profile?.favorite_genres,
-        })
-      );
-    });
+    ])
+      .then(([profile, streakTimestamps, reviewResult]) => {
+        setAnalytics(
+          computeReadingAnalytics({
+            books,
+            reviewsWritten: reviewResult.count ?? 0,
+            streakTimestamps,
+            profileGenres: profile?.favorite_genres,
+          })
+        );
+      })
+      .catch((error) => {
+        console.error("[library] insights load failed:", error);
+        setAnalytics(
+          computeReadingAnalytics({
+            books,
+            reviewsWritten: 0,
+            streakTimestamps: [],
+          })
+        );
+      });
   }, [books, userId]);
 
   if (!analytics) {

@@ -30,6 +30,23 @@ export type ReadingRoomData = {
   shelves: ShelfGroup[];
 };
 
+export function emptyReadingRoomData(
+  yearlyReadingGoal: number | null = null
+): ReadingRoomData {
+  return {
+    currentlyReading: [],
+    recentlyFinished: [],
+    favorites: [],
+    analytics: computeReadingAnalytics({
+      books: [],
+      reviewsWritten: 0,
+      streakTimestamps: [],
+    }),
+    readingGoal: computeReadingGoal([], yearlyReadingGoal),
+    shelves: groupBooksByShelf([]),
+  };
+}
+
 export async function getReadingRoomData(
   userId: string,
   yearlyReadingGoal: number | null = null,
@@ -37,7 +54,10 @@ export async function getReadingRoomData(
 ): Promise<ReadingRoomData> {
   const supabase = createClient();
   const [books, streakTimestamps] = await Promise.all([
-    getUserLibraryBooks(userId),
+    getUserLibraryBooks(userId).catch((error) => {
+      console.error("[readingRoom] library load failed:", error);
+      return [] as LibraryBookRow[];
+    }),
     fetchReadingStreakTimestamps(userId),
   ]);
 

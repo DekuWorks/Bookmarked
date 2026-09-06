@@ -73,16 +73,21 @@ export function computeFavoriteGenre(
   return { genre: null, bookCount: 0, source: null };
 }
 
+/** Columns that exist on `reading_sessions`. Do not add `updated_at` — that column is not on the table. */
+const STREAK_SESSION_SELECT =
+  "session_date, created_at, pages_read, listening_seconds, listening_start_seconds, listening_end_seconds, note, activity_kind, completed_at";
+
 export async function fetchReadingStreakTimestamps(userId: string): Promise<string[]> {
   const { data, error } = await supabase
     .from("reading_sessions")
-    .select(
-      "session_date, created_at, updated_at, pages_read, listening_seconds, listening_start_seconds, listening_end_seconds, note, activity_kind, completed_at"
-    )
+    .select(STREAK_SESSION_SELECT)
     .eq("user_id", userId)
     .order("session_date", { ascending: false })
     .limit(500);
 
-  if (error) throw error;
+  if (error) {
+    console.warn("[readingInsights] streak query failed:", error.message);
+    return [];
+  }
   return collectStreakDateKeys(data ?? []);
 }

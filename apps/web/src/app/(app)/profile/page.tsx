@@ -44,25 +44,33 @@ export default function ProfilePage() {
   const loadProfile = useCallback(async () => {
     if (!user) return;
 
-    const [profile, followCounts, streakTimestamps] = await Promise.all([
-      getProfile(user.id),
-      getFollowCounts(user.id),
-      fetchReadingStreakTimestamps(user.id),
-    ]);
+    try {
+      const [profile, followCounts, streakTimestamps] = await Promise.all([
+        getProfile(user.id),
+        getFollowCounts(user.id),
+        fetchReadingStreakTimestamps(user.id),
+      ]);
 
-    setData({
-      profile,
-      email: user.email ?? "",
-      followCounts,
-      readingStreak: computeReadingStreak(streakTimestamps),
-    });
+      setData({
+        profile,
+        email: user.email ?? "",
+        followCounts,
+        readingStreak: computeReadingStreak(streakTimestamps),
+      });
+    } catch (error) {
+      console.error("[profile] load failed:", error);
+      setData({
+        profile: null,
+        email: user.email ?? "",
+        followCounts: { followers: 0, following: 0 },
+        readingStreak: computeReadingStreak([]),
+      });
+    }
   }, [user]);
 
   useEffect(() => {
     if (!user) return;
-    void loadProfile().catch((error) => {
-      console.error("[profile] load failed:", error);
-    });
+    void loadProfile();
   }, [user, loadProfile]);
 
   if (user === undefined || (user && !data)) {
