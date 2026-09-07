@@ -1,9 +1,9 @@
 import { createClient } from "@/lib/supabase/client";
 import { SHELF_CONFIG } from "@/lib/constants/shelves";
 import {
-  DEFAULT_CUSTOM_SHELF_ICON_KEY,
-  parseCustomShelfIconWrite,
+  parseCustomShelfIconSelection,
   resolveCustomShelfIconKey,
+  type CustomShelfIconType,
 } from "@bookmarked/utils/shelfIcons";
 import {
   ENTITLEMENT_LIMIT_MESSAGES,
@@ -33,6 +33,8 @@ export type CustomShelfGroup = {
   genre: string | null;
   visibility: ShelfVisibility;
   icon_key: string | null;
+  icon_type: CustomShelfIconType | null;
+  icon_emoji: string | null;
   items: CustomShelfBookItem[];
 };
 
@@ -129,6 +131,8 @@ export async function getCustomShelfGroupsWithBooks(
     genre: shelf.genre,
     visibility: shelf.visibility,
     icon_key: shelf.icon_key,
+    icon_type: shelf.icon_type,
+    icon_emoji: shelf.icon_emoji,
     items: byShelf.get(shelf.id) ?? [],
   }));
 }
@@ -164,6 +168,8 @@ export async function getCustomShelfBySlug(
     genre: typedShelf.genre,
     visibility: typedShelf.visibility,
     icon_key: typedShelf.icon_key,
+    icon_type: typedShelf.icon_type,
+    icon_emoji: typedShelf.icon_emoji,
     items: (items ?? []) as unknown as CustomShelfBookItem[],
   };
 }
@@ -173,6 +179,8 @@ export type CustomShelfInput = {
   genre?: string | null;
   visibility?: ShelfVisibility;
   icon_key?: string | null;
+  icon_type?: CustomShelfIconType | null;
+  icon_emoji?: string | null;
 };
 
 export type ValidatedCustomShelfInput = {
@@ -180,6 +188,8 @@ export type ValidatedCustomShelfInput = {
   genre: string | null;
   visibility: ShelfVisibility;
   icon_key: string;
+  icon_type: CustomShelfIconType;
+  icon_emoji: string | null;
 };
 
 const VALID_VISIBILITIES = new Set<ShelfVisibility>(["public", "followers", "private"]);
@@ -205,9 +215,11 @@ export function validateCustomShelfInput(
     return { ok: false, error: "Invalid shelf visibility." };
   }
 
-  const iconParsed = parseCustomShelfIconWrite(
-    input.icon_key === undefined ? DEFAULT_CUSTOM_SHELF_ICON_KEY : input.icon_key
-  );
+  const iconParsed = parseCustomShelfIconSelection({
+    icon_key: input.icon_key,
+    icon_type: input.icon_type,
+    icon_emoji: input.icon_emoji,
+  });
   if (!iconParsed.ok) {
     return { ok: false, error: iconParsed.error };
   }
@@ -222,7 +234,14 @@ export function validateCustomShelfInput(
 
   return {
     ok: true,
-    value: { name: trimmedName, genre, visibility, icon_key: iconParsed.value },
+    value: {
+      name: trimmedName,
+      genre,
+      visibility,
+      icon_key: iconParsed.value.icon_key,
+      icon_type: iconParsed.value.icon_type,
+      icon_emoji: iconParsed.value.icon_emoji,
+    },
   };
 }
 
@@ -240,7 +259,8 @@ export async function createCustomShelf(
     return { error: validated.error };
   }
 
-  const { name: trimmedName, genre, visibility, icon_key } = validated.value;
+  const { name: trimmedName, genre, visibility, icon_key, icon_type, icon_emoji } =
+    validated.value;
 
   const supabase = createClient();
   const {
@@ -288,6 +308,8 @@ export async function createCustomShelf(
       genre,
       visibility,
       icon_key,
+      icon_type,
+      icon_emoji,
     })
     .select("*")
     .single();
@@ -341,6 +363,8 @@ export async function updateCustomShelf(
       genre: validated.value.genre,
       visibility: validated.value.visibility,
       icon_key: validated.value.icon_key,
+      icon_type: validated.value.icon_type,
+      icon_emoji: validated.value.icon_emoji,
       updated_at: new Date().toISOString(),
     })
     .eq("id", shelfId)

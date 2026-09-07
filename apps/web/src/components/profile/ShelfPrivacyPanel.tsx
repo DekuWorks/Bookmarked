@@ -193,7 +193,13 @@ export function ShelfPrivacyPanel({ profile }: Props) {
           >
             <div>
               <p className="flex items-center gap-2 font-medium text-text">
-                <ShelfIcon iconKey={shelf.icon_key} size="small" labeled />
+                <ShelfIcon
+                  iconKey={shelf.icon_key}
+                  iconType={shelf.icon_type}
+                  iconEmoji={shelf.icon_emoji}
+                  size="small"
+                  labeled
+                />
                 {shelf.name}
               </p>
               {shelf.genre ? (

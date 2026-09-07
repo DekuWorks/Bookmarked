@@ -66,6 +66,8 @@ export function CustomShelfSection({
             <h2 className="flex flex-wrap items-center justify-center gap-2 text-lg font-semibold text-puce-red sm:justify-start">
               <ShelfTitleRow
                 iconKey={shelf.icon_key}
+                iconType={shelf.icon_type}
+                iconEmoji={shelf.icon_emoji}
                 title={shelf.name}
                 size="small"
                 titleClassName="text-lg font-semibold text-puce-red"

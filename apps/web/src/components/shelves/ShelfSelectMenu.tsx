@@ -3,6 +3,7 @@
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { ShelfIcon } from "@/components/shelves/ShelfIcon";
+import { CUSTOM_COLLECTIONS_HEADING } from "@/lib/constants/shelfIcons";
 import { getShelvesInOrder } from "@/lib/constants/shelves";
 import type { ShelfStatus, UserShelf } from "@/types";
 import { cn } from "@/lib/utils/cn";
@@ -88,7 +89,12 @@ export function ShelfSelectMenu({
                     : "border-border bg-background hover:border-primary hover:bg-primary/5"
                 )}
               >
-                <ShelfIcon iconKey={shelf.icon_key} size="medium" />
+                <ShelfIcon
+                  iconKey={shelf.icon_key}
+                  iconType={shelf.icon_type}
+                  iconEmoji={shelf.icon_emoji}
+                  size="medium"
+                />
                 <span className="flex-1 font-medium leading-tight text-text">{shelf.name}</span>
                 {isMember ? (
                   <span className="text-xs font-medium text-primary">On shelf</span>
@@ -110,7 +116,9 @@ export function ShelfSelectMenu({
               )}
             >
               <ShelfIcon iconKey={null} size="medium" />
-              <span className="flex-1 font-medium leading-tight text-text">Custom collections</span>
+              <span className="flex-1 font-medium leading-tight text-text">
+                {CUSTOM_COLLECTIONS_HEADING}
+              </span>
             </button>
           </li>
         ) : null}

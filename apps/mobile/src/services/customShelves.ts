@@ -1,9 +1,9 @@
 import { supabase } from "./supabase";
 import { SHELF_CONFIG } from "../constants/shelves";
 import {
-  DEFAULT_CUSTOM_SHELF_ICON_KEY,
-  parseCustomShelfIconWrite,
+  parseCustomShelfIconSelection,
   resolveCustomShelfIconKey,
+  type CustomShelfIconType,
 } from "../../../../packages/utils/shelfIcons";
 import {
   ENTITLEMENT_LIMIT_MESSAGES,
@@ -38,6 +38,8 @@ export type CustomShelfGroup = {
   genre: string | null;
   visibility: ShelfVisibility;
   icon_key: string | null;
+  icon_type: CustomShelfIconType | null;
+  icon_emoji: string | null;
   items: CustomShelfBookItem[];
 };
 
@@ -110,6 +112,8 @@ export async function getCustomShelfBySlug(
     genre: typedShelf.genre,
     visibility: typedShelf.visibility,
     icon_key: typedShelf.icon_key,
+    icon_type: typedShelf.icon_type,
+    icon_emoji: typedShelf.icon_emoji,
     items: (items ?? []) as unknown as CustomShelfBookItem[],
   };
 }
@@ -152,6 +156,8 @@ export async function getCustomShelfGroupsWithBooks(
     genre: shelf.genre,
     visibility: shelf.visibility,
     icon_key: shelf.icon_key,
+    icon_type: shelf.icon_type,
+    icon_emoji: shelf.icon_emoji,
     items: byShelf.get(shelf.id) ?? [],
   }));
 }
@@ -163,6 +169,8 @@ export async function createCustomShelf(
     genre?: string | null;
     visibility?: ShelfVisibility;
     icon_key?: string | null;
+    icon_type?: CustomShelfIconType | null;
+    icon_emoji?: string | null;
   }
 ): Promise<{ shelf?: UserShelf; error?: string }> {
   const trimmedName = input.name.trim();
@@ -174,9 +182,11 @@ export async function createCustomShelf(
     return { error: "Invalid shelf visibility." };
   }
 
-  const iconParsed = parseCustomShelfIconWrite(
-    input.icon_key === undefined ? DEFAULT_CUSTOM_SHELF_ICON_KEY : input.icon_key
-  );
+  const iconParsed = parseCustomShelfIconSelection({
+    icon_key: input.icon_key,
+    icon_type: input.icon_type,
+    icon_emoji: input.icon_emoji,
+  });
   if (!iconParsed.ok) return { error: iconParsed.error };
 
   const baseSlug = slugifyShelfName(trimmedName);
@@ -211,7 +221,9 @@ export async function createCustomShelf(
       slug,
       genre: input.genre?.trim() || null,
       visibility,
-      icon_key: iconParsed.value,
+      icon_key: iconParsed.value.icon_key,
+      icon_type: iconParsed.value.icon_type,
+      icon_emoji: iconParsed.value.icon_emoji,
     })
     .select("*")
     .single();
@@ -239,6 +251,8 @@ export async function updateCustomShelf(
     genre?: string | null;
     visibility?: ShelfVisibility;
     icon_key?: string | null;
+    icon_type?: CustomShelfIconType | null;
+    icon_emoji?: string | null;
   }
 ): Promise<{ shelf?: UserShelf; error?: string }> {
   const trimmedName = input.name.trim();
@@ -250,9 +264,11 @@ export async function updateCustomShelf(
     return { error: "Invalid shelf visibility." };
   }
 
-  const iconParsed = parseCustomShelfIconWrite(
-    input.icon_key === undefined ? DEFAULT_CUSTOM_SHELF_ICON_KEY : input.icon_key
-  );
+  const iconParsed = parseCustomShelfIconSelection({
+    icon_key: input.icon_key,
+    icon_type: input.icon_type,
+    icon_emoji: input.icon_emoji,
+  });
   if (!iconParsed.ok) return { error: iconParsed.error };
 
   const { data, error } = await supabase
@@ -261,7 +277,9 @@ export async function updateCustomShelf(
       name: trimmedName,
       genre: input.genre?.trim() || null,
       visibility,
-      icon_key: iconParsed.value,
+      icon_key: iconParsed.value.icon_key,
+      icon_type: iconParsed.value.icon_type,
+      icon_emoji: iconParsed.value.icon_emoji,
       updated_at: new Date().toISOString(),
     })
     .eq("id", shelfId)

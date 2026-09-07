@@ -11,8 +11,10 @@ import {
 } from "@/lib/services/customShelves";
 import { SHELF_VISIBILITY_OPTIONS } from "@/lib/services/shelfVisibility";
 import { CustomShelfIconPicker } from "@/components/shelves/CustomShelfIconPicker";
-import { DEFAULT_CUSTOM_SHELF_ICON_KEY } from "@/lib/constants/shelfIcons";
-import type { CustomShelfIconKey } from "@/lib/constants/shelfIcons";
+import {
+  DEFAULT_CUSTOM_SHELF_ICON_SELECTION,
+  type CustomShelfIconSelection,
+} from "@/lib/constants/shelfIcons";
 import type { ShelfVisibility, UserShelf } from "@/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -44,7 +46,7 @@ export function CreateShelfModal({
   const [name, setName] = useState(initialName);
   const [genre, setGenre] = useState(initialGenre);
   const [visibility, setVisibility] = useState<ShelfVisibility>("public");
-  const [iconKey, setIconKey] = useState<CustomShelfIconKey>(DEFAULT_CUSTOM_SHELF_ICON_KEY);
+  const [icon, setIcon] = useState<CustomShelfIconSelection>(DEFAULT_CUSTOM_SHELF_ICON_SELECTION);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [limitOpen, setLimitOpen] = useState(false);
@@ -54,7 +56,7 @@ export function CreateShelfModal({
       setName(initialName);
       setGenre(initialGenre);
       setVisibility("public");
-      setIconKey(DEFAULT_CUSTOM_SHELF_ICON_KEY);
+      setIcon(DEFAULT_CUSTOM_SHELF_ICON_SELECTION);
       setError(null);
     }
   }, [open, initialName, initialGenre]);
@@ -64,7 +66,7 @@ export function CreateShelfModal({
     setName("");
     setGenre("");
     setVisibility("public");
-    setIconKey(DEFAULT_CUSTOM_SHELF_ICON_KEY);
+    setIcon(DEFAULT_CUSTOM_SHELF_ICON_SELECTION);
     setError(null);
     onClose();
   }
@@ -77,7 +79,9 @@ export function CreateShelfModal({
       name,
       genre: genre || null,
       visibility,
-      icon_key: iconKey,
+      icon_key: icon.type === "bookmarked" ? icon.value : undefined,
+      icon_type: icon.type,
+      icon_emoji: icon.type === "emoji" ? icon.value : null,
     });
     if (!validated.ok) {
       setError(validated.error);
@@ -101,7 +105,7 @@ export function CreateShelfModal({
         setName("");
         setGenre("");
         setVisibility("public");
-        setIconKey(DEFAULT_CUSTOM_SHELF_ICON_KEY);
+        setIcon(DEFAULT_CUSTOM_SHELF_ICON_SELECTION);
         setError(null);
         onClose();
         setLimitOpen(true);
@@ -116,7 +120,7 @@ export function CreateShelfModal({
       setName("");
       setGenre("");
       setVisibility("public");
-      setIconKey(DEFAULT_CUSTOM_SHELF_ICON_KEY);
+      setIcon(DEFAULT_CUSTOM_SHELF_ICON_SELECTION);
       setError(null);
       onClose();
     }
@@ -155,11 +159,7 @@ export function CreateShelfModal({
           maxLength={80}
         />
 
-        <CustomShelfIconPicker
-          value={iconKey}
-          onChange={setIconKey}
-          disabled={saving}
-        />
+        <CustomShelfIconPicker value={icon} onChange={setIcon} disabled={saving} />
 
         <label className="mb-4 block">
           <span className="mb-1.5 block text-sm font-medium text-text">Privacy</span>

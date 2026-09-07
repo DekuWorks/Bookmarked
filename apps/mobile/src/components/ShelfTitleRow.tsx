@@ -6,6 +6,8 @@ import { SERIF_DISPLAY_FONT } from "../constants/theme";
 type Props = {
   id?: ShelfIconId;
   iconKey?: string | null;
+  iconType?: string | null;
+  iconEmoji?: string | null;
   title: string;
   size?: ShelfIconSize;
   className?: string;
@@ -19,6 +21,8 @@ type Props = {
 export function ShelfTitleRow({
   id,
   iconKey,
+  iconType,
+  iconEmoji,
   title,
   size = "medium",
   className,
@@ -29,7 +33,13 @@ export function ShelfTitleRow({
       {id ? (
         <ShelfIcon id={id} size={size} labeled />
       ) : (
-        <ShelfIcon iconKey={iconKey} size={size} labeled />
+        <ShelfIcon
+          iconKey={iconKey}
+          iconType={iconType}
+          iconEmoji={iconEmoji}
+          size={size}
+          labeled
+        />
       )}
       <Text
         className={titleClassName}

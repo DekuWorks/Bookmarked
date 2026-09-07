@@ -55,11 +55,11 @@ html {
   --color-border: var(--color-border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-display);
+  --font-display: var(--font-playfair);
 }
 
 .font-display {
-  font-family: var(--font-display), Georgia, "Times New Roman", serif;
+  font-family: var(--font-playfair), Georgia, "Times New Roman", serif;
 }
 
 /* Page titles & section headers — logo serif, body stays Geist */
@@ -67,7 +67,7 @@ html {
 .app-shell-gradient h2.text-puce-red,
 .feed-header-gradient h1,
 .font-display {
-  font-family: var(--font-display), Georgia, "Times New Roman", serif;
+  font-family: var(--font-playfair), Georgia, "Times New Roman", serif;
 }
 
 html {
@@ -395,11 +395,13 @@ body {
   );
 }
 
+.book-spine .book-spine-title,
 .book-spine-title {
   position: relative;
   z-index: 2;
   max-height: 12.75rem;
   overflow: hidden;
+  font-family: var(--font-playfair), Georgia, "Times New Roman", serif;
   font-size: clamp(0.58rem, 1vw, 0.72rem);
   font-weight: 800;
   text-transform: none;

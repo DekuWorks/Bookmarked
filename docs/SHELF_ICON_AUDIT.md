@@ -4,18 +4,22 @@ Canonical mapping lives in `packages/utils/shelfIcons.ts`. Platform files only a
 
 | Shelf | Canonical ID | Logical key | Asset | Users can change? |
 |-------|--------------|-------------|-------|-------------------|
-| TBR | `want_to_read` | `stack_of_books` | `want-to-read.png` | No |
-| Currently Reading | `currently_reading` | `open_book` | `currently-reading.png` | No |
+| TBR | `want_to_read` | `stack_of_books` | `currently-reading.png` | No |
+| Currently Reading | `currently_reading` | `open_book` | `did-not-finish.png` | No |
 | Finished | `read` | `book_with_sparkle` | `finished.png` | No |
-| DNF | `dnf` | `closed_book` | `did-not-finish.png` | No |
+| DNF | `dnf` | `closed_book` | `want-to-read.png` | No |
+
+Filenames are historical. Website artwork was one slot off: TBR ← CR ← DNF ← TBR; Finished stayed.
 
 A11y: “TBR Shelf”, “Currently Reading Shelf”, “Finished Shelf”, “DNF Shelf”.
 
 ## Custom shelves
 
-`user_shelves.icon_key` stores `custom_icon_1` … `custom_icon_5` only (never paths, blobs, or emoji). Missing/invalid keys fall back to `custom_icon_1`.
+`user_shelves.icon_key` stores `custom_icon_1` … `custom_icon_5` (never paths or blobs). Missing/invalid keys fall back to `custom_icon_1`.
 
-**BLOCKED ASSET ITEM — Leighton final files.** Expected drop-ins: `custom-icon-1.png` … `custom-icon-5.png` in `apps/web/public/assets/shelves/` and `apps/mobile/assets/shelves/`. Until those exist, `CUSTOM_SHELF_ICON_ASSETS_READY` is `false` and every custom key renders the approved stack-of-books PNG (`want-to-read.png`). Do not mark custom visuals complete.
+Optional emoji: `icon_type` is `bookmarked` | `emoji`; `icon_emoji` holds one sanitized grapheme when type is `emoji`. Existing rows with null type/emoji stay on the Bookmarked fallback. Do not randomly assign `custom_icon_N`.
+
+**BLOCKED ASSET ITEM — Leighton final files.** Expected drop-ins: `custom-icon-1.png` … `custom-icon-5.png` in `apps/web/public/assets/shelves/` and `apps/mobile/assets/shelves/`. Until those exist, `CUSTOM_SHELF_ICON_ASSETS_READY` is `false` and every custom key renders the Bookmarked B-mark (`logo-mark.png` / `/logo-mark.png`). That mark is none of the four default-shelf icons. Do not mark custom visuals complete.
 
 Create preselects `custom_icon_1`. Edit persists name, privacy, genre, and icon immediately. Default-shelf icons are not editable. Android is out of scope.
 

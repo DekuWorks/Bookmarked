@@ -10,6 +10,7 @@ import {
   sortShelfIconIds,
 } from "./shelfIcons";
 import {
+  CUSTOM_COLLECTIONS_HEADING,
   CUSTOM_SHELF_ICON_ASSETS_READY,
   DEFAULT_CUSTOM_SHELF_ICON_KEY,
   resolveCustomShelfIconKey,
@@ -41,19 +42,19 @@ describe("SHELF_ICON_ORDER", () => {
     expect(getShelfIconConfig("read").accessibilityLabel).toBe("Finished Shelf");
   });
 
-  it("maps dnf flag to did-not-finish asset", () => {
-    expect(getShelfIconConfig("dnf").src).toBe("/assets/shelves/did-not-finish.png");
+  it("maps dnf flag to the closed-book asset (former TBR file)", () => {
+    expect(getShelfIconConfig("dnf").src).toBe("/assets/shelves/want-to-read.png");
     expect(getShelfIconConfig("dnf").label).toBe("DNF");
     expect(getShelfIconConfig("dnf").iconKey).toBe("closed_book");
     expect(getShelfIconConfig("dnf").accessibilityLabel).toBe("DNF Shelf");
   });
 
   it("maps TBR and Currently Reading to approved purple assets", () => {
-    expect(getShelfIconConfig("want_to_read").src).toBe("/assets/shelves/want-to-read.png");
+    expect(getShelfIconConfig("want_to_read").src).toBe("/assets/shelves/currently-reading.png");
     expect(getShelfIconConfig("want_to_read").iconKey).toBe("stack_of_books");
     expect(getShelfIconConfig("want_to_read").accessibilityLabel).toBe("TBR Shelf");
     expect(getShelfIconConfig("currently_reading").src).toBe(
-      "/assets/shelves/currently-reading.png"
+      "/assets/shelves/did-not-finish.png"
     );
     expect(getShelfIconConfig("currently_reading").iconKey).toBe("open_book");
     expect(getShelfIconConfig("currently_reading").accessibilityLabel).toBe(
@@ -89,8 +90,14 @@ describe("custom shelf icon_key", () => {
     expect(CUSTOM_SHELF_ICON_ASSETS_READY).toBe(false);
     expect(DEFAULT_CUSTOM_SHELF_ICON_KEY).toBe("custom_icon_1");
     expect(resolveCustomShelfIconKey(null)).toBe("custom_icon_1");
-    expect(getCustomShelfIconSrc(null)).toBe("/assets/shelves/want-to-read.png");
-    expect(getCustomShelfIconSrc("custom_icon_4")).toBe("/assets/shelves/want-to-read.png");
+    expect(getCustomShelfIconSrc(null)).toBe("/logo-mark.png");
+    expect(getCustomShelfIconSrc("custom_icon_4")).toBe("/logo-mark.png");
+  });
+});
+
+describe("Custom Collections heading", () => {
+  it("uses the exact user-created shelves heading", () => {
+    expect(CUSTOM_COLLECTIONS_HEADING).toBe("Custom Collections");
   });
 });
 

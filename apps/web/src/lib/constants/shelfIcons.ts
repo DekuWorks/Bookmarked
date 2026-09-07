@@ -1,19 +1,26 @@
 import type { ShelfStatus } from "@/types";
 import {
+  CUSTOM_COLLECTIONS_HEADING,
   CUSTOM_SHELF_ICON_ASSETS_READY,
+  CUSTOM_SHELF_ICON_FALLBACK_SRC,
   CUSTOM_SHELF_ICON_FILE,
   CUSTOM_SHELF_ICON_KEYS,
   DEFAULT_CUSTOM_SHELF_ICON_KEY,
+  DEFAULT_CUSTOM_SHELF_ICON_SELECTION,
   DEFAULT_SHELF_A11Y_LABEL,
   DEFAULT_SHELF_ICON_FILE,
   DEFAULT_SHELF_ICON_KEY,
   DEFAULT_SHELF_ICON_LABEL,
   DEFAULT_SHELF_ICON_ORDER,
+  customShelfIconProps,
   getCustomShelfA11yLabel,
-  getCustomShelfIconFile,
+  getCustomShelfIconA11yLabel,
   getDefaultShelfA11yLabel,
+  parseCustomShelfIconSelection,
   parseCustomShelfIconWrite,
+  resolveCustomShelfIcon,
   resolveCustomShelfIconKey,
+  sanitizeShelfEmoji,
   sortDefaultShelfIconIds,
   type CustomShelfIconKey,
   type DefaultShelfIconId,
@@ -22,19 +29,30 @@ import {
 export type ShelfIconId = DefaultShelfIconId;
 export type {
   CustomShelfIconKey,
+  CustomShelfIconRow,
+  CustomShelfIconSelection,
+  CustomShelfIconType,
+  CustomShelfIconWrite,
   DefaultShelfIconId,
   DefaultShelfIconKey,
 } from "@bookmarked/utils/shelfIcons";
 
 export {
+  CUSTOM_COLLECTIONS_HEADING,
   CUSTOM_SHELF_ICON_ASSETS_READY,
   CUSTOM_SHELF_ICON_KEYS,
   DEFAULT_CUSTOM_SHELF_ICON_KEY,
+  DEFAULT_CUSTOM_SHELF_ICON_SELECTION,
   DEFAULT_SHELF_ICON_ORDER,
+  customShelfIconProps,
   getCustomShelfA11yLabel,
+  getCustomShelfIconA11yLabel,
   getDefaultShelfA11yLabel,
+  parseCustomShelfIconSelection,
   parseCustomShelfIconWrite,
+  resolveCustomShelfIcon,
   resolveCustomShelfIconKey,
+  sanitizeShelfEmoji,
   sortDefaultShelfIconIds,
 };
 
@@ -116,7 +134,7 @@ export type CustomShelfIconConfig = {
   accessibilityLabel: string;
 };
 
-const CUSTOM_FALLBACK_SRC = `/assets/shelves/${getCustomShelfIconFile(DEFAULT_CUSTOM_SHELF_ICON_KEY)}`;
+const CUSTOM_FALLBACK_SRC = CUSTOM_SHELF_ICON_FALLBACK_SRC;
 
 export function getCustomShelfIconSrc(iconKey?: string | null): string {
   const key = resolveCustomShelfIconKey(iconKey);

@@ -5,9 +5,9 @@ import { Button } from "./Button";
 import { CustomShelfIconPicker } from "./CustomShelfIconPicker";
 import { SHELF_VISIBILITY_OPTIONS } from "../constants/shelfVisibility";
 import {
-  DEFAULT_CUSTOM_SHELF_ICON_KEY,
-  resolveCustomShelfIconKey,
-  type CustomShelfIconKey,
+  DEFAULT_CUSTOM_SHELF_ICON_SELECTION,
+  resolveCustomShelfIcon,
+  type CustomShelfIconSelection,
 } from "../constants/shelfIcons";
 import { invalidateCustomShelfViews } from "../services/customShelfCache";
 import { updateCustomShelf } from "../services/customShelves";
@@ -15,6 +15,8 @@ import type { ShelfVisibility, UserShelf } from "../types";
 
 type ShelfLike = Pick<UserShelf, "id" | "name" | "genre" | "visibility"> & {
   icon_key?: string | null;
+  icon_type?: string | null;
+  icon_emoji?: string | null;
 };
 
 type Props = {
@@ -29,7 +31,7 @@ export function EditCustomShelfSheet({ open, shelf, onClose, onSaved }: Props) {
   const [name, setName] = useState("");
   const [genre, setGenre] = useState("");
   const [visibility, setVisibility] = useState<ShelfVisibility>("public");
-  const [iconKey, setIconKey] = useState<CustomShelfIconKey>(DEFAULT_CUSTOM_SHELF_ICON_KEY);
+  const [icon, setIcon] = useState<CustomShelfIconSelection>(DEFAULT_CUSTOM_SHELF_ICON_SELECTION);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -37,7 +39,7 @@ export function EditCustomShelfSheet({ open, shelf, onClose, onSaved }: Props) {
     setName(shelf.name);
     setGenre(shelf.genre ?? "");
     setVisibility(shelf.visibility);
-    setIconKey(resolveCustomShelfIconKey(shelf.icon_key));
+    setIcon(resolveCustomShelfIcon(shelf));
   }, [open, shelf]);
 
   async function handleSave() {
@@ -52,7 +54,9 @@ export function EditCustomShelfSheet({ open, shelf, onClose, onSaved }: Props) {
       name: trimmed,
       genre: genre.trim() || null,
       visibility,
-      icon_key: iconKey,
+      icon_key: icon.type === "bookmarked" ? icon.value : shelf.icon_key,
+      icon_type: icon.type,
+      icon_emoji: icon.type === "emoji" ? icon.value : null,
     });
     setSaving(false);
     if (result.error) {
@@ -96,7 +100,7 @@ export function EditCustomShelfSheet({ open, shelf, onClose, onSaved }: Props) {
               maxLength={80}
               className="mb-3 min-h-[44px] rounded-xl border border-brand-border bg-background px-3 py-2 text-ink"
             />
-            <CustomShelfIconPicker value={iconKey} onChange={setIconKey} disabled={saving} />
+            <CustomShelfIconPicker value={icon} onChange={setIcon} disabled={saving} />
             <Text className="mb-2 text-xs text-ink-muted">Privacy</Text>
             <View className="mb-4 flex-row flex-wrap gap-2">
               {SHELF_VISIBILITY_OPTIONS.map((option) => (

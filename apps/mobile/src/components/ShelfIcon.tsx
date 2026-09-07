@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Image, View, type ImageStyle, type StyleProp } from "react-native";
+import { Image, Text, View, type ImageStyle, type StyleProp } from "react-native";
 import {
-  getCustomShelfA11yLabel,
+  getCustomShelfIconA11yLabel,
   getCustomShelfIconSource,
   getShelfIconConfig,
+  resolveCustomShelfIcon,
   SHELF_ICON_FRAME_PX,
   SHELF_ICON_SIZE_PX,
   type ShelfIconId,
@@ -13,11 +14,15 @@ import {
 type DefaultProps = {
   id: ShelfIconId;
   iconKey?: never;
+  iconType?: never;
+  iconEmoji?: never;
 };
 
 type CustomProps = {
   id?: never;
   iconKey?: string | null;
+  iconType?: string | null;
+  iconEmoji?: string | null;
 };
 
 type Props = (DefaultProps | CustomProps) & {
@@ -30,6 +35,8 @@ type Props = (DefaultProps | CustomProps) & {
 export function ShelfIcon({
   id,
   iconKey,
+  iconType,
+  iconEmoji,
   size = "small",
   style,
   labeled = false,
@@ -38,11 +45,19 @@ export function ShelfIcon({
   const [error, setError] = useState(false);
   const isCustom = id == null;
   const defaultConfig = id ? getShelfIconConfig(id) : null;
+  const customSelection = isCustom
+    ? resolveCustomShelfIcon({
+        icon_key: iconKey,
+        icon_type: iconType,
+        icon_emoji: iconEmoji,
+      })
+    : null;
+  const isEmoji = customSelection?.type === "emoji";
   const source = isCustom
     ? getCustomShelfIconSource(iconKey)
     : defaultConfig!.source;
   const a11y = isCustom
-    ? getCustomShelfA11yLabel(iconKey)
+    ? getCustomShelfIconA11yLabel(customSelection)
     : defaultConfig!.accessibilityLabel;
   const px = SHELF_ICON_SIZE_PX[size];
   const frame = SHELF_ICON_FRAME_PX[size];
@@ -66,36 +81,42 @@ export function ShelfIcon({
         style,
       ]}
     >
-      {!loaded && !error ? (
-        <View
-          style={{
-            width: px,
-            height: px,
-            backgroundColor: "transparent",
-            opacity: 0.35,
-          }}
-        />
-      ) : null}
-      {error && !isCustom ? (
-        <View
-          style={{
-            width: px,
-            height: px,
-            backgroundColor: "transparent",
-          }}
-        />
+      {isEmoji ? (
+        <Text style={{ fontSize: Math.round(px * 0.82), lineHeight: px }}>{customSelection.value}</Text>
       ) : (
-        <Image
-          source={source}
-          onLoad={() => setLoaded(true)}
-          onError={() => setError(true)}
-          style={{
-            width: px,
-            height: px,
-            resizeMode: "contain",
-            opacity: loaded ? 1 : 0,
-          }}
-        />
+        <>
+          {!loaded && !error ? (
+            <View
+              style={{
+                width: px,
+                height: px,
+                backgroundColor: "transparent",
+                opacity: 0.35,
+              }}
+            />
+          ) : null}
+          {error && !isCustom ? (
+            <View
+              style={{
+                width: px,
+                height: px,
+                backgroundColor: "transparent",
+              }}
+            />
+          ) : (
+            <Image
+              source={source}
+              onLoad={() => setLoaded(true)}
+              onError={() => setError(true)}
+              style={{
+                width: px,
+                height: px,
+                resizeMode: "contain",
+                opacity: loaded ? 1 : 0,
+              }}
+            />
+          )}
+        </>
       )}
     </View>
   );

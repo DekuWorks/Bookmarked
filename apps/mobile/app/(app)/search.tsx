@@ -40,6 +40,7 @@ import { searchProfiles } from "../../src/services/profile";
 import { fetchTrendingSections } from "../../src/services/trending";
 import { ShelfBadge } from "../../src/components/ShelfBadge";
 import { ShelfIcon } from "../../src/components/ShelfIcon";
+import { CUSTOM_COLLECTIONS_HEADING } from "../../src/constants/shelfIcons";
 import { TAB_BAR_SPACE, useTabBarScroll } from "../../src/navigation/TabBarScroll";
 import { useAuthStore } from "../../src/store/authStore";
 import { trackProductEvent } from "../../src/services/productAnalytics";
@@ -688,7 +689,7 @@ export default function SearchScreen() {
             {customShelves.length ? (
               <>
                 <Text className="mb-2 mt-3 text-xs font-semibold uppercase tracking-wide text-ink-muted">
-                  Collections
+                  {CUSTOM_COLLECTIONS_HEADING}
                 </Text>
                 {customShelves.map((shelf) => {
                   const isMember = customMemberIds.includes(shelf.id);
@@ -701,7 +702,12 @@ export default function SearchScreen() {
                         isMember ? "border-primary bg-primary/10" : "border-brand-border bg-background"
                       }`}
                     >
-                      <ShelfIcon iconKey={shelf.icon_key} size="small" />
+                      <ShelfIcon
+                        iconKey={shelf.icon_key}
+                        iconType={shelf.icon_type}
+                        iconEmoji={shelf.icon_emoji}
+                        size="small"
+                      />
                       <Text className="flex-1 font-medium text-puce-red">{shelf.name}</Text>
                       {isMember ? <Text className="font-bold text-puce-red">✓</Text> : null}
                     </Pressable>

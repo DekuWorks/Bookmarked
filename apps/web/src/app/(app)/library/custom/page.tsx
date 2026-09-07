@@ -145,6 +145,8 @@ function CustomShelfContent() {
           <h1 className="mt-2 flex items-center justify-center gap-2 text-3xl font-bold text-puce-red sm:text-4xl">
             <ShelfTitleRow
               iconKey={shelf.icon_key}
+              iconType={shelf.icon_type}
+              iconEmoji={shelf.icon_emoji}
               title={shelf.name}
               size="medium"
               titleClassName="text-3xl font-bold text-puce-red sm:text-4xl"
@@ -195,6 +197,8 @@ function CustomShelfContent() {
                   genre: updated.genre,
                   visibility: updated.visibility,
                   icon_key: updated.icon_key,
+                  icon_type: updated.icon_type,
+                  icon_emoji: updated.icon_emoji,
                 }
               : current
           );

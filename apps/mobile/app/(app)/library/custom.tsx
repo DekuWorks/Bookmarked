@@ -95,6 +95,8 @@ export default function CustomShelfScreen() {
         <View>
           <ShelfTitleRow
             iconKey={shelf.icon_key}
+            iconType={shelf.icon_type}
+            iconEmoji={shelf.icon_emoji}
             title={shelf.name}
             size="medium"
             titleClassName="text-2xl font-bold text-puce-red"

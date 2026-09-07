@@ -3,10 +3,11 @@
 import Image from "next/image";
 import { useState } from "react";
 import {
-  getCustomShelfA11yLabel,
+  getCustomShelfIconA11yLabel,
   getCustomShelfIconFallbackSrc,
   getCustomShelfIconSrc,
   getShelfIconConfig,
+  resolveCustomShelfIcon,
   SHELF_ICON_FRAME_PX,
   SHELF_ICON_SIZE_PX,
   type ShelfIconId,
@@ -17,11 +18,15 @@ import { cn } from "@/lib/utils/cn";
 type DefaultProps = {
   id: ShelfIconId;
   iconKey?: never;
+  iconType?: never;
+  iconEmoji?: never;
 };
 
 type CustomProps = {
   id?: never;
   iconKey?: string | null;
+  iconType?: string | null;
+  iconEmoji?: string | null;
 };
 
 type Props = (DefaultProps | CustomProps) & {
@@ -36,6 +41,8 @@ type Props = (DefaultProps | CustomProps) & {
 export function ShelfIcon({
   id,
   iconKey,
+  iconType,
+  iconEmoji,
   size = "small",
   className,
   labeled = false,
@@ -45,13 +52,21 @@ export function ShelfIcon({
   const [error, setError] = useState(false);
   const isCustom = id == null;
   const defaultConfig = id ? getShelfIconConfig(id) : null;
+  const customSelection = isCustom
+    ? resolveCustomShelfIcon({
+        icon_key: iconKey,
+        icon_type: iconType,
+        icon_emoji: iconEmoji,
+      })
+    : null;
+  const isEmoji = customSelection?.type === "emoji";
   const src = isCustom
     ? error
       ? getCustomShelfIconFallbackSrc()
       : getCustomShelfIconSrc(iconKey)
     : defaultConfig!.src;
   const a11y = isCustom
-    ? getCustomShelfA11yLabel(iconKey)
+    ? getCustomShelfIconA11yLabel(customSelection)
     : defaultConfig!.accessibilityLabel;
   const px = SHELF_ICON_SIZE_PX[size];
   const frame = SHELF_ICON_FRAME_PX[size];
@@ -69,36 +84,47 @@ export function ShelfIcon({
       aria-label={labeled ? a11y : undefined}
       aria-hidden={!labeled}
     >
-      {!loaded && !error ? (
+      {isEmoji ? (
         <span
-          className="block animate-pulse bg-transparent opacity-40"
-          style={{ width: px, height: px }}
-          aria-hidden
-        />
-      ) : null}
-      {error && !isCustom ? (
-        <span className="block bg-transparent" style={{ width: px, height: px }} aria-hidden />
+          className="flex items-center justify-center leading-none"
+          style={{ width: px, height: px, fontSize: Math.round(px * 0.82) }}
+        >
+          {customSelection.value}
+        </span>
       ) : (
-        <Image
-          src={src}
-          alt={labeled ? a11y : ""}
-          width={px}
-          height={px}
-          className={cn(
-            "object-contain dark:brightness-110",
-            !loaded && "absolute opacity-0"
+        <>
+          {!loaded && !error ? (
+            <span
+              className="block animate-pulse bg-transparent opacity-40"
+              style={{ width: px, height: px }}
+              aria-hidden
+            />
+          ) : null}
+          {error && !isCustom ? (
+            <span className="block bg-transparent" style={{ width: px, height: px }} aria-hidden />
+          ) : (
+            <Image
+              src={src}
+              alt={labeled ? a11y : ""}
+              width={px}
+              height={px}
+              className={cn(
+                "object-contain dark:brightness-110",
+                !loaded && "absolute opacity-0"
+              )}
+              onLoad={() => setLoaded(true)}
+              onError={() => {
+                if (isCustom && src !== getCustomShelfIconFallbackSrc()) {
+                  setError(true);
+                  setLoaded(false);
+                  return;
+                }
+                setError(true);
+              }}
+              unoptimized
+            />
           )}
-          onLoad={() => setLoaded(true)}
-          onError={() => {
-            if (isCustom && src !== getCustomShelfIconFallbackSrc()) {
-              setError(true);
-              setLoaded(false);
-              return;
-            }
-            setError(true);
-          }}
-          unoptimized
-        />
+        </>
       )}
     </span>
   );

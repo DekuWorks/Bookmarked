@@ -783,7 +783,12 @@ export default function BookScreen() {
                     isMember ? "border-primary bg-primary/10" : "border-brand-border bg-surface"
                   }`}
                 >
-                  <ShelfIcon iconKey={shelf.icon_key} size="small" />
+                  <ShelfIcon
+                    iconKey={shelf.icon_key}
+                    iconType={shelf.icon_type}
+                    iconEmoji={shelf.icon_emoji}
+                    size="small"
+                  />
                   <Text className="flex-1 font-semibold text-puce-red">{shelf.name}</Text>
                   {isMember ? (
                     <Text className="text-xs font-semibold text-primary-dark">On shelf</Text>

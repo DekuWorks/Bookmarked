@@ -6,12 +6,12 @@ Built-in reading shelves share a single visual language across web and mobile.
 
 | Product label | DB `shelf_status` / flag | Icon asset | Sort |
 |---------------|--------------------------|------------|------|
-| Want to Read | `want_to_read` | `want-to-read.png` | 1 |
-| Currently Reading | `currently_reading` | `currently-reading.png` | 2 |
+| Want to Read | `want_to_read` | `currently-reading.png` | 1 |
+| Currently Reading | `currently_reading` | `did-not-finish.png` | 2 |
 | Finished | `read` | `finished.png` | 3 |
-| Did Not Finish | `dnf` (boolean on `user_books`) | `did-not-finish.png` | 4 |
+| Did Not Finish | `dnf` (boolean on `user_books`) | `want-to-read.png` | 4 |
 
-DB IDs are unchanged. `read` maps to the **Finished** label and `finished.png`; the `dnf` flag maps to **Did Not Finish** and `did-not-finish.png`.
+DB IDs are unchanged. Filenames are historical after the website icon shuffle (TBR ← CR ← DNF ← TBR). `read` maps to the **Finished** label and `finished.png`.
 
 ## Components
 

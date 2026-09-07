@@ -20,6 +20,8 @@ export function CustomShelfSection({ shelf, view }: Props) {
         <View className="min-w-0 flex-1 flex-row items-center gap-2">
           <ShelfTitleRow
             iconKey={shelf.icon_key}
+            iconType={shelf.icon_type}
+            iconEmoji={shelf.icon_emoji}
             title={shelf.name}
             size="small"
             titleClassName="text-base font-bold text-puce-red"
