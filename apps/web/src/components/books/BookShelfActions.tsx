@@ -1,8 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { ShelfSelectMenu } from "@/components/shelves/ShelfSelectMenu";
 import { MissingPageCountDialog } from "@/components/books/MissingPageCountDialog";
 import { AddToCustomShelfMenu } from "@/components/shelves/AddToCustomShelfMenu";
 import { useToast } from "@/components/ui/Toast";
@@ -17,7 +16,6 @@ import { needsMissingPageCountPrompt } from "@/lib/services/completeReadingSessi
 import { getShelvesInOrder } from "@/lib/constants/shelves";
 import { ShelfIcon } from "@/components/shelves/ShelfIcon";
 import {
-  addBookToCustomShelf,
   listCustomShelfIdsForBook,
   listUserCustomShelves,
 } from "@/lib/services/customShelves";
@@ -25,6 +23,7 @@ import type { UserShelf } from "@/types";
 import { ShelfBadge } from "@/components/shelves/ShelfBadge";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import type { ShelfStatus } from "@/types";
+import { describeLibraryPresence } from "@bookmarked/utils/libraryPresence";
 
 const initial: BookActionState = {};
 
@@ -51,7 +50,6 @@ export function BookShelfActions({
 }: Props) {
   const user = useAuthUser();
   const toast = useToast();
-  const [menuOpen, setMenuOpen] = useState(false);
   const [customMenuOpen, setCustomMenuOpen] = useState(false);
   const [missingPageOpen, setMissingPageOpen] = useState(false);
   const [pendingShelf, setPendingShelf] = useState<ShelfStatus | null>(null);
@@ -78,6 +76,20 @@ export function BookShelfActions({
 
   useActionToast(removeState);
   useActionToast(favState);
+
+  const memberNames = useMemo(
+    () =>
+      customShelves
+        .filter((shelf) => memberShelfIds.includes(shelf.id))
+        .map((shelf) => shelf.name),
+    [customShelves, memberShelfIds]
+  );
+
+  const presence = describeLibraryPresence({
+    defaultShelf: optimisticShelf,
+    customShelfIds: memberShelfIds,
+    customCollectionNames: memberNames,
+  });
 
   async function submitShelf(
     shelfStatus: ShelfStatus,
@@ -106,7 +118,6 @@ export function BookShelfActions({
       }
       if (result.success) {
         toast.success(result.success);
-        setMenuOpen(false);
         setMissingPageOpen(false);
         setPendingShelf(null);
         onShelfChange?.(result);
@@ -120,6 +131,9 @@ export function BookShelfActions({
   }
 
   async function applyShelf(shelfStatus: ShelfStatus) {
+    if (optimisticShelf === shelfStatus) return;
+    setPendingShelf(shelfStatus);
+
     if (
       shelfStatus === "read" &&
       needsMissingPageCountPrompt({
@@ -139,97 +153,60 @@ export function BookShelfActions({
   return (
     <section className="rounded-xl border border-border bg-surface p-5">
       <h2 className="text-lg font-semibold text-puce-red">Your shelf</h2>
-      {optimisticShelf ? (
-        <div className="mt-3 flex flex-wrap items-center gap-3">
+      <div className="mt-3 min-h-[1.75rem]">
+        {presence.kind === "default" && optimisticShelf ? (
           <ShelfBadge status={optimisticShelf} />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setMenuOpen(true)}
-            disabled={pending}
-          >
-            Move shelf
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setCustomMenuOpen(true)}
-          >
-            Add to collection
-          </Button>
-          <form action={favAction} className="inline">
-            <input type="hidden" name="book_id" value={bookId} />
-            <Button type="submit" variant="ghost" size="sm" loading={favoriting}>
-              {isFavorite ? "★ Favorited" : "☆ Add to favorites"}
-            </Button>
-          </form>
-          <form action={removeAction} className="inline">
-            <input type="hidden" name="book_id" value={bookId} />
-            <Button type="submit" variant="ghost" size="sm" loading={removing}>
-              Remove
-            </Button>
-          </form>
-        </div>
-      ) : (
-        <div className="mt-4">
-          <p className="mb-3 text-sm text-text-muted">Not on your shelves yet.</p>
-          <div className="flex flex-wrap gap-2">
-            {getShelvesInOrder().map(({ status, title }) => (
-              <Button
-                key={status}
-                type="button"
-                variant="outline"
-                size="sm"
-                loading={pending}
-                onClick={() => applyShelf(status)}
-              >
-                <span className="inline-flex items-center gap-2">
-                  <ShelfIcon id={status} size="small" />
-                  <span className="leading-tight">{title}</span>
-                </span>
-              </Button>
-            ))}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setCustomMenuOpen(true)}
-            >
-              Add to collection
-            </Button>
-          </div>
-        </div>
-      )}
+        ) : (
+          <p className="text-sm text-text-muted">{presence.label}</p>
+        )}
+      </div>
 
-      <ShelfSelectMenu
-        bookTitle={bookTitle}
-        open={menuOpen}
-        loading={pending}
-        currentShelfStatus={optimisticShelf}
-        mode={optimisticShelf ? "move" : "add"}
-        customShelves={customShelves}
-        memberShelfIds={memberShelfIds}
-        onSelectShelf={applyShelf}
-        onSelectCustom={async (shelf) => {
-          if (!user) return;
-          setPending(true);
-          const result = await addBookToCustomShelf(shelf.id, user.id, bookId);
-          setPending(false);
-          if (result.error) {
-            toast.error(result.error);
-            return;
-          }
-          setMemberShelfIds((prev) => [...prev, shelf.id]);
-          toast.success(`Added to ${shelf.name}`);
-          setMenuOpen(false);
-        }}
-        onOpenCustomCollections={() => setCustomMenuOpen(true)}
-        onClose={() => {
-          if (!pending) setMenuOpen(false);
-        }}
-      />
+      <div className="mt-4 flex flex-wrap gap-2">
+        {getShelvesInOrder().map(({ status, title }) => {
+          const isCurrent = optimisticShelf === status;
+          return (
+            <Button
+              key={status}
+              type="button"
+              variant={isCurrent ? "primary" : "outline"}
+              size="sm"
+              aria-pressed={isCurrent}
+              disabled={pending}
+              loading={pending && pendingShelf === status}
+              onClick={() => applyShelf(status)}
+            >
+              <span className="inline-flex items-center gap-2">
+                <ShelfIcon id={status} size="small" />
+                <span className="leading-tight">{title}</span>
+              </span>
+            </Button>
+          );
+        })}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setCustomMenuOpen(true)}
+        >
+          Add to collection
+        </Button>
+        {optimisticShelf ? (
+          <>
+            <form action={favAction} className="inline">
+              <input type="hidden" name="book_id" value={bookId} />
+              <Button type="submit" variant="ghost" size="sm" loading={favoriting}>
+                {isFavorite ? "★ Favorited" : "☆ Add to favorites"}
+              </Button>
+            </form>
+            <form action={removeAction} className="inline">
+              <input type="hidden" name="book_id" value={bookId} />
+              <Button type="submit" variant="ghost" size="sm" loading={removing}>
+                Remove
+              </Button>
+            </form>
+          </>
+        ) : null}
+      </div>
 
       <MissingPageCountDialog
         bookTitle={bookTitle}
@@ -256,7 +233,10 @@ export function BookShelfActions({
         bookTitle={bookTitle}
         open={customMenuOpen}
         memberShelfIds={memberShelfIds}
-        onAdded={(shelfId) => setMemberShelfIds((prev) => [...prev, shelfId])}
+        onAdded={(shelfId) => {
+          setMemberShelfIds((prev) => (prev.includes(shelfId) ? prev : [...prev, shelfId]));
+          onShelfChange?.({});
+        }}
         onClose={() => setCustomMenuOpen(false)}
       />
     </section>

@@ -63,6 +63,10 @@ import {
   resolveTrackingFormat,
 } from "../../../../../packages/utils/listeningTime";
 import { needsMissingPageCountPrompt } from "../../../src/services/completeReadingSession";
+import {
+  describeLibraryPresence,
+  hasLibraryPresence,
+} from "../../../../../packages/utils/libraryPresence";
 import { TAB_BAR_SPACE } from "../../../src/navigation/TabBarScroll";
 import { useAuthStore } from "../../../src/store/authStore";
 import type { Review, ReadingSession, ShelfStatus } from "../../../src/types";
@@ -550,6 +554,18 @@ export default function BookScreen() {
   const ownReviews = data?.ownReviews ?? [];
   const ownReview = ownReviews[0] ?? null;
   const readCount = userBook?.read_count ?? 1;
+  const memberNames = customShelves
+    .filter((shelf) => memberShelfIds.includes(shelf.id))
+    .map((shelf) => shelf.name);
+  const presence = describeLibraryPresence({
+    defaultShelf: userBook?.shelf_status ?? null,
+    customShelfIds: memberShelfIds,
+    customCollectionNames: memberNames,
+  });
+  const onLibrary = hasLibraryPresence({
+    defaultShelf: userBook?.shelf_status ?? null,
+    customShelfIds: memberShelfIds,
+  });
   const otherReviews = (data?.reviews ?? []).filter(
     (r) => r.user_id !== userId && isPublicReview(r.visibility)
   );
@@ -567,7 +583,7 @@ export default function BookScreen() {
               url={book.cover_url}
               title={book.title}
               sizeClassName="w-32 h-48"
-              saved={Boolean(userBook)}
+              saved={onLibrary}
               badgeSize="large"
               priority
             />
@@ -618,7 +634,11 @@ export default function BookScreen() {
               </Text>
             </Pressable>
           ) : null}
-          {userBook ? <SavedPill shelf={userBook.shelf_status} /> : null}
+          {presence.kind === "default" && userBook ? (
+            <SavedPill shelf={userBook.shelf_status} />
+          ) : presence.kind === "custom" ? (
+            <SavedPill label={presence.label} />
+          ) : null}
         </View>
 
         <View className="items-center gap-1.5">
@@ -731,41 +751,53 @@ export default function BookScreen() {
         ) : null}
 
         {/* Shelf actions */}
-        <View className="flex-row gap-2">
-          {SHELVES.map((s) => {
-            const active = userBook?.shelf_status === s.status;
-            return (
-              <Pressable
-                key={s.status}
-                onPress={() => changeShelf(s.status)}
-                className={`min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-xl py-2.5 ${active ? "bg-puce-red" : "bg-primary/15"}`}
-              >
-                <ShelfIcon id={s.status} size="small" />
-                <Text
-                  className={`text-sm font-semibold leading-tight ${active ? "text-white" : "text-puce-red"}`}
+        <View className="gap-2">
+          <Text className="text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
+            Your shelf
+          </Text>
+          <Text className="text-sm text-ink-muted">{presence.label}</Text>
+          <View className="flex-row gap-2">
+            {SHELVES.map((s) => {
+              const active = userBook?.shelf_status === s.status;
+              return (
+                <Pressable
+                  key={s.status}
+                  onPress={() => changeShelf(s.status)}
+                  className={`min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-xl py-2.5 ${active ? "bg-puce-red" : "bg-primary/15"}`}
                 >
-                  {s.label}
-                </Text>
-              </Pressable>
-            );
-          })}
+                  <ShelfIcon id={s.status} size="small" />
+                  <Text
+                    className={`text-sm font-semibold leading-tight ${active ? "text-white" : "text-puce-red"}`}
+                  >
+                    {s.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
 
-        {userBook ? (
-          <Pressable
-            onPress={toggleDnf}
-            className={`min-h-[44px] flex-row items-center justify-center gap-2 rounded-xl py-2.5 ${
-              userBook.dnf ? "bg-rust" : "bg-primary/15"
+        <Pressable
+          onPress={() => {
+            if (userBook) {
+              void toggleDnf();
+              return;
+            }
+            void changeShelf("dnf");
+          }}
+          className={`min-h-[44px] flex-row items-center justify-center gap-2 rounded-xl py-2.5 ${
+            userBook?.dnf || userBook?.shelf_status === "dnf" ? "bg-rust" : "bg-primary/15"
+          }`}
+        >
+          <ShelfIcon id="dnf" size="small" />
+          <Text
+            className={`text-sm font-semibold leading-tight ${
+              userBook?.dnf || userBook?.shelf_status === "dnf" ? "text-white" : "text-puce-red"
             }`}
           >
-            <ShelfIcon id="dnf" size="small" />
-            <Text
-              className={`text-sm font-semibold leading-tight ${userBook.dnf ? "text-white" : "text-puce-red"}`}
-            >
-              {userBook.dnf ? "Did not finish" : "Mark did not finish"}
-            </Text>
-          </Pressable>
-        ) : null}
+            {userBook?.dnf || userBook?.shelf_status === "dnf" ? "Did not finish" : "Mark did not finish"}
+          </Text>
+        </Pressable>
 
         {customShelves.length ? (
           <View className="gap-2">

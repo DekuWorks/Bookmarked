@@ -245,6 +245,14 @@ export {
 } from "./shelfStatus";
 
 export {
+  describeLibraryPresence,
+  hasLibraryPresence,
+  type LibraryPresenceDescription,
+  type LibraryPresenceInput,
+  type LibraryPresenceKind,
+} from "./libraryPresence";
+
+export {
   COMPLETION_TAGS,
   computeCompletionTags,
   mergeCompletionTags,
