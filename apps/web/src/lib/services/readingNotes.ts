@@ -7,8 +7,11 @@ import {
 import {
   NOTES_BOOK_FILTER_COPY,
   buildNotesBookFilterOptions,
+  mergeNotesBookFilterOptions,
+  notesBookFilterOptionFromUserBook,
   type NotesBookFilterOption,
 } from "@bookmarked/utils/notesBookFilter";
+import { filterFinishedHistoryBooks } from "@bookmarked/utils/readingRoomHistory";
 import {
   HOME_RECENT_NOTED_BOOKS_LIMIT,
   pickLatestNotePerBook,
@@ -332,18 +335,37 @@ async function loadBooksByUserBookIds(
   return bookByUserBookId;
 }
 
-/** Books that have at least one of the signed-in user's notes. RLS still scopes rows. */
+type NotesFilterShelfRow = {
+  id: string;
+  book_id: string | null;
+  shelf_status: string;
+  dnf: boolean;
+  completion_tags: string[] | null;
+  finished_at: string | null;
+  created_at: string;
+  books: {
+    id?: string | null;
+    title?: string | null;
+    author?: string | null;
+    cover_url?: string | null;
+  } | null;
+};
+
+/** Finished shelf (no LIMIT 6) plus any noted books on other shelves. RLS still scopes rows. */
 export async function listNotedBooksForUser(
   userId: string
 ): Promise<{ options: NotesBookFilterOption[]; error?: string }> {
   const supabase = createClient();
-  const { data, error } = await supabase
-    .from("reading_notes")
-    .select("user_book_id")
-    .eq("user_id", userId);
+  const [{ data, error }, { data: shelfRows, error: shelfError }] = await Promise.all([
+    supabase.from("reading_notes").select("user_book_id").eq("user_id", userId),
+    supabase
+      .from("user_books")
+      .select("id, book_id, shelf_status, dnf, completion_tags, finished_at, created_at, books(id, title, author, cover_url)")
+      .eq("user_id", userId),
+  ]);
 
-  if (error) {
-    console.error("[readingNotes] noted books failed:", error);
+  if (error || shelfError) {
+    console.error("[readingNotes] noted books failed:", error ?? shelfError);
     return { options: [], error: NOTES_BOOK_FILTER_COPY.error };
   }
 
@@ -353,24 +375,43 @@ export async function listNotedBooksForUser(
     counts.set(row.user_book_id, (counts.get(row.user_book_id) ?? 0) + 1);
   }
 
-  const userBookIds = [...counts.keys()];
-  const bookByUserBookId = await loadBooksByUserBookIds(supabase, userBookIds, userId);
-  if (!bookByUserBookId) {
-    return { options: [], error: NOTES_BOOK_FILTER_COPY.error };
-  }
-
-  const stubs = userBookIds.map((userBookId) => ({
-    id: userBookId,
-    user_book_id: userBookId,
-    created_at: "",
-    book: bookByUserBookId.get(userBookId) ?? null,
+  const libraryRows = ((shelfRows ?? []) as unknown as NotesFilterShelfRow[]).map((row) => ({
+    ...row,
+    books: (Array.isArray(row.books) ? row.books[0] : row.books) ?? null,
   }));
+  const finished = filterFinishedHistoryBooks(libraryRows).map((row) =>
+    notesBookFilterOptionFromUserBook(row, counts.get(row.id) ?? 0)
+  );
+  const notedOnOtherShelves = libraryRows
+    .filter((row) => counts.has(row.id) && row.shelf_status !== "read")
+    .map((row) => notesBookFilterOptionFromUserBook(row, counts.get(row.id) ?? 0));
 
-  return {
-    options: buildNotesBookFilterOptions(stubs).map((option) => ({
+  const knownIds = new Set([
+    ...finished.map((option) => option.userBookId),
+    ...notedOnOtherShelves.map((option) => option.userBookId),
+  ]);
+  const missingNotedIds = [...counts.keys()].filter((id) => !knownIds.has(id));
+  let notedFallback: NotesBookFilterOption[] = [];
+  if (missingNotedIds.length > 0) {
+    const bookByUserBookId = await loadBooksByUserBookIds(supabase, missingNotedIds, userId);
+    if (!bookByUserBookId) {
+      return { options: [], error: NOTES_BOOK_FILTER_COPY.error };
+    }
+    notedFallback = buildNotesBookFilterOptions(
+      missingNotedIds.map((userBookId) => ({
+        id: userBookId,
+        user_book_id: userBookId,
+        created_at: "",
+        book: bookByUserBookId.get(userBookId) ?? null,
+      }))
+    ).map((option) => ({
       ...option,
       noteCount: counts.get(option.userBookId) ?? option.noteCount,
-    })),
+    }));
+  }
+
+  return {
+    options: mergeNotesBookFilterOptions(finished, notedOnOtherShelves, notedFallback),
   };
 }
 

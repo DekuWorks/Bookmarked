@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { NotesBookFilter } from "@/components/notes/NotesBookFilter";
+import {
+  NOTES_TAB_HEADING_CLASS,
+  NotesBookFilter,
+} from "@/components/notes/NotesBookFilter";
 import { NotesSearchResultCard } from "@/components/notes/NotesSearchResultCard";
 import { Button } from "@/components/ui/Button";
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -105,12 +108,6 @@ export function NotesPanel({ userId }: Props) {
           Open Full Notes Page
         </Link>
         <Link
-          href="/notes/"
-          className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-border bg-surface px-5 py-2.5 text-sm font-semibold text-puce-red transition hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
-        >
-          Open Notes Search
-        </Link>
-        <Link
           href="/quote-graphics/"
           className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-primary px-6 py-3 text-base font-bold text-on-primary"
         >
@@ -119,20 +116,21 @@ export function NotesPanel({ userId }: Props) {
       </div>
 
       <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
-        <h3 className="text-center text-base font-semibold text-puce-red">
+        <h3 className={NOTES_TAB_HEADING_CLASS}>
           {selectedUserBookId ? "Notes" : HOME_RECENT_NOTES_COPY.title}
         </h3>
-        <p className="mt-1 text-center text-sm text-text-muted">
+        <p className="mt-1 text-pretty text-center text-sm text-text-muted">
           {selectedUserBookId
             ? "Every note saved for this book, oldest first."
             : HOME_RECENT_NOTES_COPY.subtitle}
         </p>
 
-        <div className="mx-auto mt-4 max-w-xl">
+        <div className="mx-auto mt-4 flex w-full max-w-xl flex-col items-center">
           <NotesBookFilter
             options={options ?? []}
             selectedUserBookId={selectedUserBookId}
             onSelect={selectBook}
+            headingClassName={NOTES_TAB_HEADING_CLASS}
           />
         </div>
 

@@ -26,6 +26,7 @@ import {
   type ReadingNoteWithBook,
 } from "../../services/readingNotes";
 import { HOME_RECENT_NOTES_COPY } from "../../../../../packages/utils/recentNotesByBook";
+import { SECTION_CARD_HEADING_CLASS } from "../../constants/sectionHeading";
 
 function categoryMeta(value: ReadingNoteWithBook["category"]) {
   return READING_NOTE_CATEGORIES.find((c) => c.value === value);
@@ -35,11 +36,22 @@ type Props = {
   userId: string;
   bookParam?: string | null;
   refreshId?: number;
+  onPickerOpenChange?: (open: boolean) => void;
 };
 
-export function NotesPanel({ userId, bookParam = null, refreshId = 0 }: Props) {
+export function NotesPanel({
+  userId,
+  bookParam = null,
+  refreshId = 0,
+  onPickerOpenChange,
+}: Props) {
   const router = useRouter();
   const [pickerOpen, setPickerOpen] = useState(false);
+
+  function setPickerVisible(open: boolean) {
+    setPickerOpen(open);
+    onPickerOpenChange?.(open);
+  }
   const [options, setOptions] = useState<NotesBookFilterOption[] | null>(null);
   const [notes, setNotes] = useState<ReadingNoteWithBook[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -96,14 +108,6 @@ export function NotesPanel({ userId, bookParam = null, refreshId = 0 }: Props) {
         <Text className="text-sm font-semibold text-white">Open Full Notes Page</Text>
       </Pressable>
       <Pressable
-        onPress={() => router.push("/notes")}
-        className="self-stretch items-center rounded-full border border-brand-border bg-surface px-4 py-3 active:opacity-80"
-        accessibilityRole="button"
-        accessibilityLabel="Open Notes Search"
-      >
-        <Text className="text-sm font-semibold text-puce-red">Open Notes Search</Text>
-      </Pressable>
-      <Pressable
         onPress={() => router.push("/quote-graphics")}
         className="min-h-[52px] items-center justify-center self-stretch rounded-2xl bg-primary px-5 py-3 active:opacity-80"
         accessibilityRole="button"
@@ -112,12 +116,27 @@ export function NotesPanel({ userId, bookParam = null, refreshId = 0 }: Props) {
         <Text className="text-base font-bold text-on-primary">Quote Graphics</Text>
       </Pressable>
 
-      <SectionCard title={selectedUserBookId ? "Notes" : HOME_RECENT_NOTES_COPY.title}>
-        <View className="mb-3">
+      <SectionCard
+        title={selectedUserBookId ? "Notes" : HOME_RECENT_NOTES_COPY.title}
+        actionLayout="stacked"
+      >
+        <Text className="mb-3 text-center text-sm text-ink-muted">
+          {selectedUserBookId
+            ? "Every note saved for this book, oldest first."
+            : HOME_RECENT_NOTES_COPY.subtitle}
+        </Text>
+        <View className="mb-3 w-full items-center">
+          <Text
+            className={`${SECTION_CARD_HEADING_CLASS} mb-2 text-center`}
+            accessibilityRole="header"
+          >
+            {NOTES_BOOK_FILTER_COPY.label}
+          </Text>
           <NotesBookFilterButton
             options={options ?? []}
             selectedUserBookId={selectedUserBookId}
-            onPress={() => setPickerOpen(true)}
+            showHeading={false}
+            onPress={() => setPickerVisible(true)}
           />
         </View>
 
@@ -199,7 +218,7 @@ export function NotesPanel({ userId, bookParam = null, refreshId = 0 }: Props) {
         visible={pickerOpen}
         options={options ?? []}
         selectedUserBookId={selectedUserBookId}
-        onClose={() => setPickerOpen(false)}
+        onClose={() => setPickerVisible(false)}
         onSelect={selectBook}
       />
     </View>

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   HOME_RECENT_NOTED_BOOKS_LIMIT,
+  HOME_RECENT_NOTES_COPY,
   pickLatestNotePerBook,
   selectRecentNotedBooks,
 } from "./recentNotesByBook";
@@ -31,6 +32,15 @@ describe("selectRecentNotedBooks", () => {
         { userBookId: "b", lastReadAt: null, updatedAt: "2026-08-01T00:00:00.000Z" },
       ])
     ).toHaveLength(2);
+  });
+});
+
+describe("HOME_RECENT_NOTES_COPY", () => {
+  it("keeps the exact Recent Notes subtitle", () => {
+    expect(HOME_RECENT_NOTES_COPY.title).toBe("Recent Notes");
+    expect(HOME_RECENT_NOTES_COPY.subtitle).toBe(
+      "The latest note from each of your five most recently read books."
+    );
   });
 });
 

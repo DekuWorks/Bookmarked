@@ -1,84 +1,97 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { BookCover } from "@/components/books/BookCover";
-import { Input } from "@/components/ui/Input";
+import { SearchBar } from "@/components/search/SearchBar";
 import { Modal } from "@/components/ui/Modal";
 import { cn } from "@/lib/utils/cn";
 import {
   NOTES_BOOK_FILTER_COPY,
-  NOTES_BOOK_SEARCH_THRESHOLD,
   filterNotesBookOptionsByQuery,
   formatNotesBookCount,
   notesBookFilterLabel,
   type NotesBookFilterOption,
 } from "@bookmarked/utils/notesBookFilter";
 
+export const NOTES_TAB_HEADING_CLASS =
+  "text-center text-base font-semibold text-puce-red";
+
 type Props = {
   options: NotesBookFilterOption[];
   selectedUserBookId: string | null;
   onSelect: (userBookId: string | null) => void;
+  headingClassName?: string;
 };
 
-export function NotesBookFilter({ options, selectedUserBookId, onSelect }: Props) {
+export function NotesBookFilter({
+  options,
+  selectedUserBookId,
+  onSelect,
+  headingClassName = NOTES_TAB_HEADING_CLASS,
+}: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const selectedLabel = notesBookFilterLabel(selectedUserBookId, options);
   const filtered = useMemo(
     () => filterNotesBookOptionsByQuery(options, query),
     [options, query]
   );
-  const showSearch = options.length >= NOTES_BOOK_SEARCH_THRESHOLD;
+
+  const close = useCallback(() => {
+    setOpen(false);
+    setQuery("");
+    requestAnimationFrame(() => triggerRef.current?.focus());
+  }, []);
 
   function choose(userBookId: string | null) {
     onSelect(userBookId);
-    setOpen(false);
-    setQuery("");
+    close();
   }
 
   return (
-    <div className="text-left">
-      <label className="block">
-        <span className="mb-1 block text-xs font-medium text-text-muted">
-          {NOTES_BOOK_FILTER_COPY.label}
+    <div className="flex w-full flex-col items-center">
+      <h3 className={headingClassName}>{NOTES_BOOK_FILTER_COPY.label}</h3>
+      <button
+        ref={triggerRef}
+        type="button"
+        className={cn(
+          "mt-2 flex min-h-[44px] w-full items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2 text-left text-sm text-text",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
+        )}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-label={`${NOTES_BOOK_FILTER_COPY.label}: ${selectedLabel}`}
+        onClick={() => setOpen(true)}
+      >
+        <span className="min-w-0 truncate font-medium">{selectedLabel}</span>
+        <span aria-hidden className="text-text-muted">
+          ▾
         </span>
-        <button
-          type="button"
-          className={cn(
-            "flex min-h-[44px] w-full items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2 text-left text-sm text-text",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
-          )}
-          aria-haspopup="dialog"
-          aria-expanded={open}
-          aria-label={`${NOTES_BOOK_FILTER_COPY.label}: ${selectedLabel}`}
-          onClick={() => setOpen(true)}
-        >
-          <span className="min-w-0 truncate font-medium">{selectedLabel}</span>
-          <span aria-hidden className="text-text-muted">
-            ▾
-          </span>
-        </button>
-      </label>
+      </button>
 
       <Modal
         open={open}
-        onClose={() => {
-          setOpen(false);
-          setQuery("");
-        }}
+        onClose={close}
         title={NOTES_BOOK_FILTER_COPY.label}
+        scrollPanel={false}
       >
-        {showSearch ? (
-          <Input
+        <div className="sticky top-0 z-[1] shrink-0 bg-surface pb-3">
+          <SearchBar
             label={NOTES_BOOK_FILTER_COPY.searchLabel}
-            hideLabel
             placeholder={NOTES_BOOK_FILTER_COPY.searchPlaceholder}
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={setQuery}
+            onClear={() => setQuery("")}
           />
-        ) : null}
+        </div>
 
-        <ul className="space-y-2" role="listbox" aria-label={NOTES_BOOK_FILTER_COPY.label}>
+        <ul
+          className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pr-1"
+          role="listbox"
+          aria-label={NOTES_BOOK_FILTER_COPY.label}
+          onWheel={(event) => event.stopPropagation()}
+        >
           <li>
             <button
               type="button"
@@ -139,10 +152,14 @@ export function NotesBookFilter({ options, selectedUserBookId, onSelect }: Props
               </li>
             );
           })}
+          {filtered.length === 0 ? (
+            <li>
+              <p className="py-3 text-sm text-text-muted">
+                {NOTES_BOOK_FILTER_COPY.searchEmpty}
+              </p>
+            </li>
+          ) : null}
         </ul>
-        {filtered.length === 0 ? (
-          <p className="mt-3 text-sm text-text-muted">No books match that search.</p>
-        ) : null}
       </Modal>
     </div>
   );
