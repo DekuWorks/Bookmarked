@@ -69,6 +69,8 @@ export default function CreateClubRoute() {
   const [avatarImage, setAvatarImage] = useState<PickedImage | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [retryable, setRetryable] = useState(false);
   const [createdClubId, setCreatedClubId] = useState<string | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [limitOpen, setLimitOpen] = useState(false);
@@ -133,6 +135,8 @@ export default function CreateClubRoute() {
     }
 
     setSubmitting(true);
+    setFormError(null);
+    setRetryable(false);
 
     let currentBookId: string | null = null;
     if (currentBook) {
@@ -160,7 +164,16 @@ export default function CreateClubRoute() {
         setLimitOpen(true);
         return;
       }
-      Alert.alert("Couldn't create club", result.error ?? "Please try again.");
+      setFormError(result.error ?? "Could not create club.");
+      setRetryable(Boolean(result.retryable));
+      if (result.retryable) {
+        Alert.alert("Content review unavailable", result.error ?? "Please try again.", [
+          { text: "Cancel", style: "cancel" },
+          { text: "Try Again", onPress: () => void handleCreate() },
+        ]);
+      } else {
+        Alert.alert("Couldn't create club", result.error ?? "Please try again.");
+      }
       return;
     }
 
@@ -407,6 +420,27 @@ export default function CreateClubRoute() {
               />
             ) : null}
             <Button title="Open club" variant="ghost" onPress={finish} />
+          </View>
+        ) : null}
+
+        {formError ? (
+          <View
+            accessible
+            accessibilityRole="alert"
+            accessibilityLiveRegion="polite"
+            className="mt-3 rounded-xl border border-brand-border bg-surface px-3 py-3"
+          >
+            <Text className="text-sm text-puce-red">{formError}</Text>
+            {retryable ? (
+              <Button
+                title="Try Again"
+                variant="secondary"
+                className="mt-2"
+                loading={submitting}
+                disabled={submitting}
+                onPress={() => void handleCreate()}
+              />
+            ) : null}
           </View>
         ) : null}
 

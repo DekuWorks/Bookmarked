@@ -3,9 +3,21 @@ export type ClubReplySort = (typeof CLUB_REPLY_SORTS)[number];
 
 export const CLUB_REPLY_SORT_STORAGE_KEY = "bookmarked.clubReplySort";
 
+export const CLUB_REPLY_SORT_OPTIONS = [
+  { id: "newest", label: "Newest First" },
+  { id: "oldest", label: "Oldest First" },
+] as const;
+
+export const CLUB_REPLY_SORT_LABEL = "Sort Replies";
+
+export function clubReplyRealtimeTopic(discussionId: string): string {
+  return `club_discussion_replies:${discussionId}`;
+}
+
 export type ClubReplySortable = {
   id: string;
   created_at: string;
+  discussion_id?: string;
 };
 
 export function parseClubReplySort(value: unknown): ClubReplySort {
@@ -45,4 +57,20 @@ export function mergeClubReplies<T extends ClubReplySortable>(
 
 export function removeClubReply<T extends ClubReplySortable>(existing: T[], replyId: string): T[] {
   return existing.filter((row) => row.id !== replyId);
+}
+
+/** Keep already-loaded pages and fold a reconnect refetch in by id. */
+export function mergeReconnectClubReplies<T extends ClubReplySortable>(
+  loaded: T[],
+  refetch: T[],
+  sort: ClubReplySort,
+  discussionId?: string
+): T[] {
+  const scopedLoaded = discussionId
+    ? loaded.filter((row) => !row.discussion_id || row.discussion_id === discussionId)
+    : loaded;
+  const scopedRefetch = discussionId
+    ? refetch.filter((row) => !row.discussion_id || row.discussion_id === discussionId)
+    : refetch;
+  return mergeClubReplies(scopedLoaded, scopedRefetch, sort);
 }

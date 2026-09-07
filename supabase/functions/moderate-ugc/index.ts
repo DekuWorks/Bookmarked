@@ -9,9 +9,13 @@ import {
   blockMessageWithOptionalCategory,
   isModerationContentType,
   moderateContent,
+  moderationContentFamily,
+  moderationOutcome,
+  unavailableResult,
   type ModerationContentType,
   type ModerationProvider,
   type ModerationResult,
+  type ProviderModerationResult,
 } from "../_shared/contentModeration.ts";
 
 const CORS_HEADERS: Record<string, string> = {
@@ -34,9 +38,29 @@ function discussionPayload(title: string | null | undefined, body: string): stri
   return `${title ?? ""}\n${body}`;
 }
 
+function providerErrorType(error: unknown): string {
+  if (!(error instanceof Error)) return "unknown";
+  const message = error.message;
+  if (message === "moderation_timeout") return "timeout";
+  const statusMatch = message.match(/moderation_provider_(\d+)/);
+  if (statusMatch) return `http_${statusMatch[1]}`;
+  if (message.includes("abort") || message.includes("network")) return "network";
+  return "exception";
+}
+
+function providerStatusFromError(error: unknown): number | undefined {
+  if (!(error instanceof Error)) return undefined;
+  const statusMatch = error.message.match(/moderation_provider_(\d+)/);
+  return statusMatch ? Number(statusMatch[1]) : undefined;
+}
+
+function logModerationEvent(event: Record<string, unknown>): void {
+  console.log(JSON.stringify({ source: "moderate-ugc", ...event }));
+}
+
 function createOpenAiProvider(apiKey: string, model: string): ModerationProvider {
   return {
-    async moderate(text: string) {
+    async moderate(text: string): Promise<ProviderModerationResult> {
       const response = await fetch(OPENAI_MODERATION_URL, {
         method: "POST",
         headers: {
@@ -61,6 +85,9 @@ function createOpenAiProvider(apiKey: string, model: string): ModerationProvider
 }
 
 Deno.serve(async (req) => {
+  const started = Date.now();
+  const requestId = crypto.randomUUID();
+
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
   }
@@ -75,7 +102,13 @@ Deno.serve(async (req) => {
   const openaiModel = Deno.env.get("OPENAI_MODERATION_MODEL")?.trim() || "omni-moderation-latest";
 
   if (!supabaseUrl || !serviceKey || !anonKey) {
-    return jsonResponse({ error: "Content review is temporarily unavailable. Please try again." }, 503);
+    logModerationEvent({
+      requestId,
+      outcome: "SERVICE_UNAVAILABLE",
+      providerErrorType: "missing_supabase_env",
+      latencyMs: Date.now() - started,
+    });
+    return jsonResponse(unavailableResult(), 503);
   }
 
   const authHeader = req.headers.get("Authorization");
@@ -116,23 +149,25 @@ Deno.serve(async (req) => {
     contentType === "BOOK_CLUB_DISCUSSION" ? discussionPayload(title, rawText) : rawText;
   const persistDecision = payload.persistDecision !== false;
   const contentId = typeof payload.contentId === "string" ? payload.contentId : null;
+  const contentFamily = moderationContentFamily(contentType);
 
   if (!openaiKey) {
-    return jsonResponse({
-      status: "block",
-      categories: [],
-      spans: [],
-      reasonCode: "PROVIDER_UNAVAILABLE",
-      userMessage: "Content review is temporarily unavailable. Please try again.",
-      moderationVersion: "2026.09.1",
-      unavailable: true,
-    }, 503);
+    logModerationEvent({
+      requestId,
+      contentType,
+      contentFamily,
+      outcome: "SERVICE_UNAVAILABLE",
+      providerErrorType: "missing_provider_key",
+      latencyMs: Date.now() - started,
+    });
+    return jsonResponse(unavailableResult(), 503);
   }
 
   const admin = createClient(supabaseUrl, serviceKey);
   const provider = createOpenAiProvider(openaiKey, openaiModel);
 
   let result: ModerationResult;
+  let lastProviderError: unknown;
   try {
     result = await moderateContent({
       text,
@@ -140,17 +175,12 @@ Deno.serve(async (req) => {
       userId: userData.user.id,
       provider,
     });
-  } catch {
-    result = {
-      status: "block",
-      categories: [],
-      spans: [],
-      reasonCode: "PROVIDER_UNAVAILABLE",
-      userMessage: "Content review is temporarily unavailable. Please try again.",
-      moderationVersion: "2026.09.1",
-      unavailable: true,
-    };
+  } catch (error) {
+    lastProviderError = error;
+    result = unavailableResult();
   }
+
+  const outcome = moderationOutcome(result);
 
   await admin.from("moderation_logs").insert({
     content_type: contentType,
@@ -161,13 +191,26 @@ Deno.serve(async (req) => {
     moderation_version: result.moderationVersion,
   });
 
+  logModerationEvent({
+    requestId,
+    contentType,
+    contentFamily,
+    outcome,
+    providerErrorType: result.unavailable ? providerErrorType(lastProviderError ?? new Error("provider_unavailable")) : undefined,
+    providerStatus: providerStatusFromError(lastProviderError),
+    latencyMs: Date.now() - started,
+  });
+
+  if (outcome === "SERVICE_UNAVAILABLE" || outcome === "ERROR") {
+    return jsonResponse({ ...result, outcome }, 503);
+  }
+
   if (result.status === "block") {
     return jsonResponse({
       ...result,
-      userMessage: result.unavailable
-        ? result.userMessage
-        : blockMessageWithOptionalCategory(result),
-    }, result.unavailable ? 503 : 200);
+      outcome: "BLOCK",
+      userMessage: blockMessageWithOptionalCategory(result),
+    });
   }
 
   if (persistDecision && text.trim()) {
@@ -175,15 +218,15 @@ Deno.serve(async (req) => {
       p_text: text,
     });
     if (hashError || typeof hashRow !== "string") {
-      return jsonResponse({
-        status: "block",
-        categories: [],
-        spans: [],
-        reasonCode: "PROVIDER_UNAVAILABLE",
-        userMessage: "Content review is temporarily unavailable. Please try again.",
-        moderationVersion: result.moderationVersion,
-        unavailable: true,
-      }, 503);
+      logModerationEvent({
+        requestId,
+        contentType,
+        contentFamily,
+        outcome: "SERVICE_UNAVAILABLE",
+        providerErrorType: "hash_rpc",
+        latencyMs: Date.now() - started,
+      });
+      return jsonResponse(unavailableResult(), 503);
     }
 
     const { error: decisionError } = await admin.from("moderation_decisions").insert({
@@ -197,17 +240,17 @@ Deno.serve(async (req) => {
       moderation_version: result.moderationVersion,
     });
     if (decisionError) {
-      return jsonResponse({
-        status: "block",
-        categories: [],
-        spans: [],
-        reasonCode: "PROVIDER_UNAVAILABLE",
-        userMessage: "Content review is temporarily unavailable. Please try again.",
-        moderationVersion: result.moderationVersion,
-        unavailable: true,
-      }, 503);
+      logModerationEvent({
+        requestId,
+        contentType,
+        contentFamily,
+        outcome: "SERVICE_UNAVAILABLE",
+        providerErrorType: "decision_insert",
+        latencyMs: Date.now() - started,
+      });
+      return jsonResponse(unavailableResult(), 503);
     }
   }
 
-  return jsonResponse(result);
+  return jsonResponse({ ...result, outcome });
 });

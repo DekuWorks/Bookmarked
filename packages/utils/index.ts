@@ -7,7 +7,13 @@ export {
 export {
   MODERATION_BLOCK_MESSAGE,
   MODERATION_CATEGORIES,
+  MODERATION_CLUB_UNAVAILABLE_MESSAGE,
+  MODERATION_CLIENT_TIMEOUT_MS,
   MODERATION_CONTENT_TYPES,
+  MODERATION_OUTCOMES,
+  MODERATION_PROVIDER_ATTEMPTS,
+  MODERATION_PROVIDER_BACKOFF_MS,
+  MODERATION_PROVIDER_TIMEOUT_MS,
   MODERATION_STATUSES,
   MODERATION_UNAVAILABLE_MESSAGE,
   MODERATION_VERSION,
@@ -15,17 +21,26 @@ export {
   categoryLabel,
   classifyLocalContent,
   combineModerationResults,
+  errorResult,
+  isModerationBlock,
   isModerationContentType,
+  isServiceUnavailable,
   moderateContent,
+  moderationContentFamily,
+  moderationOutcome,
   normalizeForMatching,
   normalizeForModeration,
   parseModerationMeta,
   resolveWarnSpans,
   splitTextBySpans,
   toModerationMeta,
+  unavailableResult,
+  withBoundedBackoff,
+  withTimeout,
   type ModerationCategory,
   type ModerationContentType,
   type ModerationMeta,
+  type ModerationOutcome,
   type ModerationProvider,
   type ModerationReasonCode,
   type ModerationResult,
@@ -37,8 +52,12 @@ export {
 
 export {
   CLUB_REPLY_SORTS,
+  CLUB_REPLY_SORT_LABEL,
+  CLUB_REPLY_SORT_OPTIONS,
   CLUB_REPLY_SORT_STORAGE_KEY,
+  clubReplyRealtimeTopic,
   mergeClubReplies,
+  mergeReconnectClubReplies,
   parseClubReplySort,
   removeClubReply,
   sortClubReplies,
@@ -47,8 +66,13 @@ export {
 } from "./clubReplyThread";
 
 export {
+  clubCreateUnavailableMessage,
   dedupeAsync,
+  fetchWithTimeout,
+  gateFromModeration,
   moderationRequestKey,
+  parseModerationResponse,
+  type ModerateUgcParsed,
 } from "./moderateUgcClient";
 
 export {

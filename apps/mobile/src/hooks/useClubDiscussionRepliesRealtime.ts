@@ -1,14 +1,16 @@
 import { useEffect, useRef } from "react";
 import { AppState, type AppStateStatus } from "react-native";
+import { clubReplyRealtimeTopic } from "../../../../packages/utils/clubReplyThread";
 import { supabase } from "../services/supabase";
 
-type ReplyChange =
+export type ClubReplyRealtimeChange =
   | { type: "insert" | "update"; id: string }
-  | { type: "delete"; id: string };
+  | { type: "delete"; id: string }
+  | { type: "reconnect" };
 
 export function useClubDiscussionRepliesRealtime(
   discussionId: string | undefined,
-  onChange: (change: ReplyChange) => void
+  onChange: (change: ClubReplyRealtimeChange) => void
 ): void {
   const onChangeRef = useRef(onChange);
 
@@ -20,7 +22,7 @@ export function useClubDiscussionRepliesRealtime(
     if (!discussionId) return;
 
     let cancelled = false;
-    const topic = `club_discussion_replies:${discussionId}`;
+    const topic = clubReplyRealtimeTopic(discussionId);
 
     function subscribe() {
       for (const existing of supabase.getChannels()) {
@@ -63,7 +65,7 @@ export function useClubDiscussionRepliesRealtime(
       if (next !== "active" || cancelled) return;
       void supabase.removeChannel(channel);
       channel = subscribe();
-      onChangeRef.current({ type: "insert", id: "" });
+      onChangeRef.current({ type: "reconnect" });
     }
 
     const sub = AppState.addEventListener("change", handleAppState);

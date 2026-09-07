@@ -865,6 +865,75 @@ Feed posts + edits + comments + comment replies; profile bio; club create/rename
 
 ---
 
+## Book Club Discussions – Real-Time Replies ✅
+
+Users already on a thread see new replies without refresh. Web + iOS.
+
+| Item | Notes |
+|------|--------|
+| Scope | `book_club_discussion_replies` channel `club_discussion_replies:{discussionId}` filtered by `discussion_id` only. Not all club replies. |
+| Events | INSERT + UPDATE + DELETE. RLS still gates private clubs, membership, banned users. |
+| Dedupe | Merge by stable reply `id`. Optimistic post + realtime insert do not double. |
+| Sort | “Sort Replies”: Newest First (`created_at` DESC) / Oldest First (`created_at` ASC). Canonical server `created_at` only. |
+| Persist | `bookmarked.clubReplySort` in localStorage (web) / AsyncStorage (iOS). Session + later visits. No new DB table. |
+| Scroll | New replies merge in place. Sort is preserved. No page reload, navigation, or sort reset. |
+| Pagination | Reconnect refetch merges into already-loaded rows; older pages are not dropped. |
+| Reconnect | Web: `visibilitychange` + `online`. iOS: AppState foreground. Re-subscribe, refetch, merge, dedupe. |
+| Cleanup | Unsubscribe on leave / switch discussion / unmount. Stale channels removed before resubscribe. |
+| Moderation | Realtime only delivers persisted rows. Blocked drafts never insert, so they never arrive. |
+
+### Verification
+
+- Shared: sort, id-dedupe, reconnect merge (keeps older pages), discussion-scoped merge
+- Web `tsc --noEmit`: pass
+- Web `vitest`: 85 files, 468 tests pass
+- Web production `next build`: pass
+- iOS `tsc --noEmit`: pass
+- iOS `vitest`: 89 files, 447 tests pass
+- No `expo run:ios`. Two-user live reply merge was not exercised. Browser create/thread UI is auth-gated.
+
+---
+
+## Book Club Discussions – Content Review Error When Creating Club ✅
+
+### Root cause
+
+Create Club called Edge Function `moderate-ugc`. Any provider/env/timeout/hash/decision failure was returned as `status: "block"` plus “Content review is temporarily unavailable. Please try again.” The client treated every `block` as a hard stop. There was no timeout, no bounded retry, and no `SERVICE_UNAVAILABLE` outcome. Club **description** was never sent through the shared gate (name only).
+
+This is not a Community Guidelines rejection. A transient OpenAI/network/function failure (or missing provider key) was shown as a generic review outage, and retry created a second club if the first insert had already succeeded.
+
+### What changed
+
+| Item | Notes |
+|------|--------|
+| Outcomes | `ALLOW` / `WARN` / `BLOCK` / `SERVICE_UNAVAILABLE` / `ERROR`. Outage is not Community Guidelines. |
+| Provider | Still OpenAI Moderations via `ModerationProvider`. Local rules remain the trusted fallback for **BLOCK** only. Local ALLOW/WARN still requires the provider before publish. |
+| Retry | Server-side bounded backoff (3 attempts, 300ms / 700ms). Per-attempt timeout 4s. Client abort 15s. Never an infinite spinner. |
+| Logs | `requestId`, `contentType`, `contentFamily=book_club` for club fields, `providerErrorType`, `providerStatus`, `latencyMs`. No tokens, passwords, or raw private text. |
+| Club fields | Name (`BOOK_CLUB_NAME`, strict) + description (`BOOK_CLUB_DESCRIPTION`) go through the same pipeline. Additive trigger on `name, description`. |
+| Copy | Violation: Community Guidelines message. Outage: “Content review is temporarily unavailable. Your club details have been saved here. Please try again in a moment.” |
+| UX | Form preserved. Accessible alert + Try Again. Submit disabled while in flight. |
+| Idempotency | Same owner + name created in the last 5 minutes returns the existing club id. |
+| Replies | Still ALLOW/WARN/BLOCK before persist. |
+
+### Apply (not done this session)
+
+- Additive migration `20260908120000_book_club_description_moderation.sql`
+- Redeploy `moderate-ugc`
+- Do not db reset. Do not push to prod unless asked.
+
+### Verification
+
+- Shared: ALLOW / WARN / BLOCK / SERVICE_UNAVAILABLE / ERROR; retry then allow; timeout ≠ guidelines; club-create outage copy; local BLOCK still wins during provider outage
+- Web `tsc --noEmit`: pass
+- Web `vitest`: 85 files, 468 tests pass
+- Web production `next build`: pass
+- iOS `tsc --noEmit`: pass
+- iOS `vitest`: 89 files, 447 tests pass
+- Logged-in club create was not exercised. Function + description trigger not deployed this session.
+
+---
+
 ## Thirteenth Sprint — Feature / polish ✅
 
 Remaining product polish on **web + iOS (iPhone/iPad)**. Android not in scope. No `expo run:ios`. No TestFlight. No commit in this pass.
