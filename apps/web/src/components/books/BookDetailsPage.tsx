@@ -37,6 +37,8 @@ import {
   resolveAudiobookDurationSeconds,
   resolveTrackingFormat,
 } from "@bookmarked/utils/listeningTime";
+import { hasLibraryPresence } from "@bookmarked/utils/libraryPresence";
+import { listCustomShelfIdsForBook } from "@/lib/services/customShelves";
 
 function BookDetailsContent() {
   const searchParams = useSearchParams();
@@ -47,6 +49,7 @@ function BookDetailsContent() {
   const [data, setData] = useState<BookDetailsData | null | undefined>(undefined);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState<string | null>(null);
+  const [memberShelfIds, setMemberShelfIds] = useState<string[]>([]);
 
   const loadBookDetails = useCallback(() => {
     if (!user || !bookId) return;
@@ -58,6 +61,16 @@ function BookDetailsContent() {
       });
   }, [user, bookId]);
 
+  const loadCustomMembership = useCallback(() => {
+    if (!user || !bookId) {
+      setMemberShelfIds([]);
+      return;
+    }
+    void listCustomShelfIdsForBook(user.id, bookId)
+      .then(setMemberShelfIds)
+      .catch((error) => console.error("[custom-shelf] membership load failed:", error));
+  }, [user, bookId]);
+
   useEffect(() => {
     if (!user || !bookId) {
       if (user !== undefined) setData(null);
@@ -67,6 +80,10 @@ function BookDetailsContent() {
   }, [user, bookId, loadBookDetails]);
 
   useUserBooksRealtime(user?.id, loadBookDetails);
+
+  useEffect(() => {
+    loadCustomMembership();
+  }, [loadCustomMembership, data?.userBook?.id]);
 
   useEffect(() => {
     if (focusSection !== "reviews" || !data) return;
@@ -130,6 +147,10 @@ function BookDetailsContent() {
     catalogDurationSeconds: book.audiobook_duration_seconds,
   });
   const currentShelf = (userBook?.shelf_status as ShelfStatus | undefined) ?? null;
+  const onLibrary = hasLibraryPresence({
+    defaultShelf: currentShelf,
+    customShelfIds: memberShelfIds,
+  });
   const readCount = Number(userBook?.read_count) || 1;
   const hasReviewForCurrentRead = ownReviews.some((r) => r.read_number === readCount);
   const canRefreshFromCatalog = Boolean(book.external_id || book.isbn);
@@ -171,7 +192,7 @@ function BookDetailsContent() {
           coverUrl={book.cover_url}
           className="mx-auto mt-6 max-w-[220px] shadow-sm"
           priority
-          bookmarked={Boolean(userBook)}
+          bookmarked={onLibrary}
         />
 
         <div className="mt-6 min-w-0">
@@ -334,7 +355,10 @@ function BookDetailsContent() {
           pageCount={book.page_count}
           editionSelected={Boolean(book.isbn)}
           previousPage={Number(userBook?.progress_pages) || 0}
-          onShelfChange={() => loadBookDetails()}
+          onShelfChange={() => {
+            loadBookDetails();
+            loadCustomMembership();
+          }}
         />
         <ReadingProgressPanel
           bookId={book.id}

@@ -1279,6 +1279,19 @@ Website artwork was one slot off. Applied the user’s cycle (TBR ← CR ← DNF
 
 ---
 
+## Book Details — shelf status includes custom collections
+
+Custom-only books were treated as unshelved. “Your shelf” now uses shared `hasLibraryPresence` / `describeLibraryPresence` (default shelf **or** custom membership). Web keeps the four default-shelf buttons after add and highlights the current one in Bookmarked purple. iOS already had that row; it now uses the same copy and shows DNF in both states.
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Shared presence helper | ✅ | `packages/utils/libraryPresence.ts` — default shelf wins; custom-only is still on shelves |
+| Web Book Details | ✅ | `BookShelfActions` no longer swaps to a short “Move shelf” row |
+| iOS Book Details | ✅ | Status line + SavedPill for custom membership; cover bookmark uses presence |
+| Add / move / favorite / remove / RLS | ✅ | Unchanged write paths |
+
+---
+
 ## Next up (recommended)
 
 | Priority | Item | Notes |
