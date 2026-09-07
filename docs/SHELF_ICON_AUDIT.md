@@ -15,13 +15,13 @@ A11y: “TBR Shelf”, “Currently Reading Shelf”, “Finished Shelf”, “D
 
 ## Custom shelves
 
-`user_shelves.icon_key` stores `custom_icon_1` … `custom_icon_5` (never paths or blobs). Missing/invalid keys fall back to `custom_icon_1`.
+`user_shelves.icon_key` still accepts `custom_icon_1` … `custom_icon_5` (never paths or blobs) so existing shelves load. The create/edit picker offers **one** Bookmarked option: `custom_icon_1`, rendered as the B-mark (`logo-mark.png`). Stored `custom_icon_2`…`5` display as that same bookmark. Missing/invalid keys fall back to `custom_icon_1`.
 
 Optional emoji: `icon_type` is `bookmarked` | `emoji`; `icon_emoji` holds one sanitized grapheme when type is `emoji`. Existing rows with null type/emoji stay on the Bookmarked fallback. Do not randomly assign `custom_icon_N`.
 
-**BLOCKED ASSET ITEM — Leighton final files.** Expected drop-ins: `custom-icon-1.png` … `custom-icon-5.png` in `apps/web/public/assets/shelves/` and `apps/mobile/assets/shelves/`. Until those exist, `CUSTOM_SHELF_ICON_ASSETS_READY` is `false` and every custom key renders the Bookmarked B-mark (`logo-mark.png` / `/logo-mark.png`). That mark is none of the four default-shelf icons. Do not mark custom visuals complete.
+**BLOCKED ASSET ITEM — Leighton final files.** Do not invent custom artwork. Until a dedicated PNG exists, `CUSTOM_SHELF_ICON_ASSETS_READY` is `false` and the picker bookmark (plus legacy `custom_icon_2`…`5`) render the Bookmarked B-mark (`logo-mark.png` / `/logo-mark.png`). That mark is none of the four default-shelf icons.
 
-Create preselects `custom_icon_1`. Edit persists name, privacy, genre, and icon immediately. Default-shelf icons are not editable. Android is out of scope.
+Create preselects the bookmark unless the shelf already saved an emoji. Edit persists name, privacy, genre, and icon immediately. Default-shelf icons are not editable. Android is out of scope.
 
 **Shared:** `packages/utils/shelfIcons.ts`  
 **Config:** `apps/web/src/lib/constants/shelfIcons.ts` · `apps/mobile/src/constants/shelfIcons.ts`  

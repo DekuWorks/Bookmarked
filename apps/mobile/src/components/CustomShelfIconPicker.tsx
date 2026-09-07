@@ -1,9 +1,8 @@
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import {
-  CUSTOM_SHELF_ICON_KEYS,
-  DEFAULT_CUSTOM_SHELF_ICON_SELECTION,
   getCustomShelfIconA11yLabel,
   getCustomShelfIconCatalog,
+  resolveCustomShelfPickerSelection,
   sanitizeShelfEmoji,
   type CustomShelfIconSelection,
 } from "../constants/shelfIcons";
@@ -16,12 +15,7 @@ type Props = {
 };
 
 export function CustomShelfIconPicker({ value, onChange, disabled }: Props) {
-  const selected =
-    value.type === "bookmarked" && CUSTOM_SHELF_ICON_KEYS.includes(value.value)
-      ? value
-      : value.type === "emoji"
-        ? value
-        : DEFAULT_CUSTOM_SHELF_ICON_SELECTION;
+  const selected = resolveCustomShelfPickerSelection(value);
   const catalog = getCustomShelfIconCatalog();
   const emojiSelected = selected.type === "emoji";
 
@@ -29,7 +23,7 @@ export function CustomShelfIconPicker({ value, onChange, disabled }: Props) {
     <View className="mb-3">
       <Text className="mb-1 text-xs text-ink-muted">Choose icon</Text>
       <Text className="mb-2 text-xs text-ink-muted">
-        First icon is selected by default. You can change it before saving.
+        The bookmark is selected by default. You can use an emoji instead.
       </Text>
       <ScrollView
         horizontal

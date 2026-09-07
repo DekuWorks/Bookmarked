@@ -4,6 +4,7 @@ import {
   CUSTOM_COLLECTIONS_HEADING,
   CUSTOM_SHELF_ICON_ASSETS_READY,
   CUSTOM_SHELF_ICON_KEYS,
+  CUSTOM_SHELF_ICON_PICKER_KEYS,
   DEFAULT_CUSTOM_SHELF_ICON_KEY,
   DEFAULT_CUSTOM_SHELF_ICON_SELECTION,
   DEFAULT_SHELF_A11Y_LABEL,
@@ -17,6 +18,7 @@ import {
   parseCustomShelfIconWrite,
   resolveCustomShelfIcon,
   resolveCustomShelfIconKey,
+  resolveCustomShelfPickerSelection,
   sanitizeShelfEmoji,
   sortDefaultShelfIconIds,
   type CustomShelfIconKey,
@@ -38,6 +40,7 @@ export {
   CUSTOM_COLLECTIONS_HEADING,
   CUSTOM_SHELF_ICON_ASSETS_READY,
   CUSTOM_SHELF_ICON_KEYS,
+  CUSTOM_SHELF_ICON_PICKER_KEYS,
   DEFAULT_CUSTOM_SHELF_ICON_KEY,
   DEFAULT_CUSTOM_SHELF_ICON_SELECTION,
   DEFAULT_SHELF_ICON_ORDER,
@@ -48,6 +51,7 @@ export {
   parseCustomShelfIconWrite,
   resolveCustomShelfIcon,
   resolveCustomShelfIconKey,
+  resolveCustomShelfPickerSelection,
   sanitizeShelfEmoji,
   sortDefaultShelfIconIds,
 };
@@ -145,7 +149,7 @@ export function getCustomShelfIconSource(
 }
 
 export function getCustomShelfIconCatalog(): CustomShelfIconConfig[] {
-  return CUSTOM_SHELF_ICON_KEYS.map((key) => ({
+  return CUSTOM_SHELF_ICON_PICKER_KEYS.map((key) => ({
     key,
     source: getCustomShelfIconSource(key),
     accessibilityLabel: getCustomShelfA11yLabel(key),

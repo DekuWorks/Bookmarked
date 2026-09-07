@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  getCustomShelfIconCatalog,
   getCustomShelfIconSrc,
   getShelfIconConfig,
   getShelfIconsInOrder,
@@ -92,6 +93,7 @@ describe("custom shelf icon_key", () => {
     expect(resolveCustomShelfIconKey(null)).toBe("custom_icon_1");
     expect(getCustomShelfIconSrc(null)).toBe("/logo-mark.png");
     expect(getCustomShelfIconSrc("custom_icon_4")).toBe("/logo-mark.png");
+    expect(getCustomShelfIconCatalog().map((item) => item.key)).toEqual(["custom_icon_1"]);
   });
 });
 

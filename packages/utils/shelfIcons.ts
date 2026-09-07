@@ -5,9 +5,10 @@
  * Custom shelves persist `user_shelves.icon_key` (logical Bookmarked key)
  * plus optional `icon_type` / `icon_emoji` for a user-chosen emoji.
  *
- * waiting-on-assets: Leighton has not delivered the 5 custom PNGs.
- * Until those files land, every custom key renders the Bookmarked B-mark
- * (`logo-mark.png`) — not any of the four default-shelf icons.
+ * The create/edit picker offers one Bookmarked option (`custom_icon_1`,
+ * rendered as the B-mark / `logo-mark.png`) plus Use emoji.
+ * Stored keys `custom_icon_2`…`5` still validate so existing shelves load;
+ * they display as that same bookmark, not a missing Leighton PNG.
  */
 
 import type { ShelfStatus } from "../types";
@@ -97,6 +98,7 @@ export const DEFAULT_SHELF_A11Y_LABEL: Record<DefaultShelfIconId, string> = {
   dnf: "DNF Shelf",
 };
 
+/** Stored keys still accepted so existing `custom_icon_2`…`5` shelves load. */
 export const CUSTOM_SHELF_ICON_KEYS: readonly CustomShelfIconKey[] = [
   "custom_icon_1",
   "custom_icon_2",
@@ -106,8 +108,16 @@ export const CUSTOM_SHELF_ICON_KEYS: readonly CustomShelfIconKey[] = [
 ] as const;
 
 /**
+ * Create/edit picker: one Bookmarked bookmark (`custom_icon_1` → B-mark).
+ * Use emoji is a separate control, not a key in this list.
+ */
+export const CUSTOM_SHELF_ICON_PICKER_KEYS: readonly CustomShelfIconKey[] = [
+  "custom_icon_1",
+];
+
+/**
  * Preferred create default and missing-key fallback.
- * Not a random assignment of one of the 5 — always the first approved key.
+ * Not a random assignment of one of the stored keys — always the picker bookmark.
  */
 export const DEFAULT_CUSTOM_SHELF_ICON_KEY: CustomShelfIconKey = "custom_icon_1";
 
@@ -129,7 +139,7 @@ export const CUSTOM_SHELF_A11Y_LABEL: Record<CustomShelfIconKey, string> = {
 };
 
 /**
- * False until Leighton files exist in web + iOS asset folders.
+ * False until a dedicated custom-collection PNG exists.
  * Visual fallback is the Bookmarked B-mark — none of the four default-shelf PNGs.
  */
 export const CUSTOM_SHELF_ICON_ASSETS_READY = false;
@@ -140,9 +150,14 @@ export const CUSTOM_SHELF_ICON_FALLBACK_FILE = "logo-mark.png";
 export const CUSTOM_SHELF_ICON_FALLBACK_SRC = "/logo-mark.png";
 
 const CUSTOM_KEY_SET = new Set<string>(CUSTOM_SHELF_ICON_KEYS);
+const CUSTOM_PICKER_KEY_SET = new Set<string>(CUSTOM_SHELF_ICON_PICKER_KEYS);
 
 export function isCustomShelfIconKey(value: unknown): value is CustomShelfIconKey {
   return typeof value === "string" && CUSTOM_KEY_SET.has(value);
+}
+
+export function isCustomShelfPickerIconKey(value: unknown): value is CustomShelfIconKey {
+  return typeof value === "string" && CUSTOM_PICKER_KEY_SET.has(value);
 }
 
 export function isDefaultShelfIconId(value: unknown): value is DefaultShelfIconId {
@@ -172,6 +187,23 @@ export function resolveCustomShelfIconKey(value: unknown): CustomShelfIconKey {
 }
 
 /**
+ * Visual / picker glyph. Stored `custom_icon_2`…`5` show the one bookmark
+ * (`custom_icon_1` / B-mark), not a missing Leighton file.
+ */
+export function resolveCustomShelfDisplayIconKey(value: unknown): CustomShelfIconKey {
+  const key = resolveCustomShelfIconKey(value);
+  return isCustomShelfPickerIconKey(key) ? key : DEFAULT_CUSTOM_SHELF_ICON_KEY;
+}
+
+/** Picker selection: saved emoji stays; any Bookmarked key maps to the one bookmark. */
+export function resolveCustomShelfPickerSelection(
+  value?: CustomShelfIconSelection | null
+): CustomShelfIconSelection {
+  if (value?.type === "emoji") return value;
+  return DEFAULT_CUSTOM_SHELF_ICON_SELECTION;
+}
+
+/**
  * Writes: missing/empty → first approved key.
  * Explicit invalid values are rejected (do not persist garbage).
  */
@@ -191,14 +223,14 @@ export function getCustomShelfA11yLabel(
   value: unknown,
   selected = false
 ): string {
-  const key = resolveCustomShelfIconKey(value);
+  const key = resolveCustomShelfDisplayIconKey(value);
   const base = CUSTOM_SHELF_A11Y_LABEL[key];
   return selected ? `${base}, Selected` : base;
 }
 
 /** Filename to load for a custom key. Pending assets use the Bookmarked B-mark. */
 export function getCustomShelfIconFile(value: unknown): string {
-  const key = resolveCustomShelfIconKey(value);
+  const key = resolveCustomShelfDisplayIconKey(value);
   if (!CUSTOM_SHELF_ICON_ASSETS_READY) {
     return CUSTOM_SHELF_ICON_FALLBACK_FILE;
   }
@@ -383,6 +415,6 @@ export function getCustomShelfIconA11yLabel(
       ? selection.value
         ? `Emoji ${selection.value}`
         : "Emoji shelf icon"
-      : CUSTOM_SHELF_A11Y_LABEL[selection.value];
+      : CUSTOM_SHELF_A11Y_LABEL[resolveCustomShelfDisplayIconKey(selection.value)];
   return selected ? `${base}, Selected` : base;
 }
