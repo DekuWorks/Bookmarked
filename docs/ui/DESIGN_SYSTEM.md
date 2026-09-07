@@ -304,8 +304,10 @@ Props: `variant`, `size` (`sm` | `md` | `lg`), `loading`, `disabled`, `children`
 
 **Path:** `src/components/library/ShelfSearchFilter.tsx`
 
-- Client-side filter by title/author on shelf detail pages
-- Sort: Recently added (default), Title, Author — via `lib/utils/shelfSort.ts`
+- Uses `ShelfOrganizeControls` — Filter by title or author + Sort by, same height, side-by-side from `sm`
+- Client-side filter by title/author on that shelf only (`packages/utils/shelfFilter.ts`)
+- Sort options from `packages/utils/shelfSort.ts` (web re-export)
+- No “Hide did-not-finish books” control — DNF books stay visible
 - Empty state when shelf is empty or search has no matches
 - Fade-in on mount (`.animate-fade-in`)
 
@@ -367,7 +369,7 @@ Props: `variant`, `size` (`sm` | `md` | `lg`), `loading`, `disabled`, `children`
 
 **Path:** `src/components/library/ShelfStatsPanel.tsx`
 
-Per-shelf stats on `/library/want-to-read`, `/library/reading`, `/library/read`
+Centered wrap of fixed-width stat cards on default shelves and Custom Collections. Card set from `buildShelfStatCards` (2/3/4 — no placeholders).
 
 ---
 

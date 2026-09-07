@@ -1311,6 +1311,29 @@ Create/edit on web + iOS no longer shows five Bookmarked icons. One bookmark (`c
 
 ---
 
+## Shelf UI/UX cleanup — stats, organize, DNF, Custom Collections
+
+Web + iOS (no Android). Icon picker was already shipped in PR #34 — not rebuilt. Picker remains one Bookmarked bookmark + Use emoji.
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Centered stat cards | ✅ | Shared `buildShelfStatCards` / `ShelfStatsPanel` (web) / `ShelfStatsRow` (iOS). Fixed card width, `justify-center` wrap, no empty placeholders. TBR / DNF / custom = 2 cards; CR = 3; Finished = 4 |
+| Organize Shelf alignment | ✅ | Shared Filter + Sort row. Same `h-11` / 44px controls, same label line-height, `items-end`, stack below 640px. No `top: -3px` hacks. Default shelves + Custom Collections |
+| DNF hide control | ✅ | Removed “Hide did-not-finish books” from the DNF shelf (and every shelf page). Not grayed out. No persisted hide-DNF filter. Profile / global shelf privacy unchanged |
+| Custom Collections parity | ✅ | Same page width, heading, stats, organize Filter + Sort (scoped to that collection). Horizontal action row: Edit, Privacy (existing settings / shelf-privacy), Share (copy / system share) |
+| Icon picker leftover | ✅ | Confirmed one bookmark + emoji. Docs already describe stored `2`…`5` as legacy load/fallback, not a five-icon picker |
+
+### Tests / verification
+
+- Shared: stat card counts, title/author filter keeps DNF books, hide-DNF helper is always false, sort options
+- Web hide-control source test: no `hideDnf` / “Hide did-not-finish”
+- Web `tsc --noEmit`: pass · `vitest`: 84 files, 456 tests
+- iOS `tsc --noEmit`: pass · `vitest`: 88 files, 435 tests
+- Local `/library/want-to-read/` and `/library/custom/` serve 200. Library is auth-gated; logged-in browser QA of the card row was not possible in this session
+- No Android. No `expo run:ios`. No TestFlight. No commit
+
+---
+
 ## Next up (recommended)
 
 | Priority | Item | Notes |

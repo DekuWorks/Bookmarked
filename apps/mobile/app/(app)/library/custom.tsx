@@ -1,19 +1,26 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Share, Text, View } from "react-native";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "../../../src/components/Button";
 import { BookSpine } from "../../../src/components/library/BookSpine";
 import { LibraryCoverGrid } from "../../../src/components/library/LibraryCoverGrid";
 import { LibraryViewToggle } from "../../../src/components/library/LibraryViewToggle";
+import { ShelfActionRow } from "../../../src/components/library/ShelfActionRow";
+import { ShelfOrganizeRow } from "../../../src/components/library/ShelfOrganizeRow";
+import { ShelfStatsRow } from "../../../src/components/library/ShelfStatsRow";
 import { EmptyState } from "../../../src/components/EmptyState";
 import { LoadingState } from "../../../src/components/LoadingState";
 import { ScreenHeader } from "../../../src/components/ScreenHeader";
 import { EditCustomShelfSheet } from "../../../src/components/EditCustomShelfSheet";
 import { ShelfTitleRow } from "../../../src/components/ShelfTitleRow";
+import { env } from "../../../src/constants/env";
 import { useLibraryViewMode } from "../../../src/hooks/useLibraryViewMode";
 import { clearCustomShelf, getCustomShelfBySlug } from "../../../src/services/customShelves";
 import { useAuthStore } from "../../../src/store/authStore";
+import { filterItemsByTitleOrAuthor } from "../../../../../packages/utils/shelfFilter";
+import { DEFAULT_SHELF_SORT, sortShelfItems, type ShelfSortMode } from "../../../../../packages/utils/shelfSort";
+import { computeShelfStatsFromItems } from "../../../../../packages/utils/shelfStats";
 
 export default function CustomShelfScreen() {
   const { slug: slugParam } = useLocalSearchParams<{ slug?: string }>();
@@ -22,12 +29,24 @@ export default function CustomShelfScreen() {
   const userId = useAuthStore((s) => s.user?.id);
   const { view, setView, isPending } = useLibraryViewMode();
   const [editOpen, setEditOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<ShelfSortMode>(DEFAULT_SHELF_SORT);
 
   const shelfQuery = useQuery({
     queryKey: ["custom-shelf", userId, slug],
     queryFn: () => getCustomShelfBySlug(userId as string, slug),
     enabled: Boolean(userId && slug),
   });
+
+  const shelf = shelfQuery.data;
+  const stats = useMemo(
+    () => computeShelfStatsFromItems(shelf?.items ?? [], "custom"),
+    [shelf]
+  );
+  const displayItems = useMemo(
+    () => (shelf ? sortShelfItems(filterItemsByTitleOrAuthor(shelf.items, query), sort) : []),
+    [shelf, query, sort]
+  );
 
   if (!slug) {
     return (
@@ -47,7 +66,6 @@ export default function CustomShelfScreen() {
     );
   }
 
-  const shelf = shelfQuery.data;
   if (!shelf) {
     return (
       <View className="flex-1 bg-background">
@@ -107,21 +125,32 @@ export default function CustomShelfScreen() {
           <Text className="mt-2 text-sm font-medium text-ink">
             {shelf.items.length} book{shelf.items.length === 1 ? "" : "s"}
           </Text>
-          <Button
-            title="Edit shelf"
-            variant="ghost"
-            onPress={() => setEditOpen(true)}
-            className="mt-3 self-start"
-          />
-          {shelf.items.length > 0 ? (
-            <Button
-              title="Clear shelf"
-              variant="ghost"
-              onPress={confirmClearShelf}
-              className="mt-3 self-start"
-            />
-          ) : null}
         </View>
+
+        <ShelfActionRow>
+          <Button title="Edit" variant="ghost" onPress={() => setEditOpen(true)} />
+          <Button title="Privacy" variant="ghost" onPress={() => router.push("/shelf-privacy")} />
+          <Button
+            title="Share"
+            variant="ghost"
+            onPress={() => {
+              const url = `${env.siteUrl}/library/custom/?slug=${encodeURIComponent(shelf.slug)}`;
+              void Share.share({ message: `${shelf.name}\n${url}`, url });
+            }}
+          />
+        </ShelfActionRow>
+        {shelf.items.length > 0 ? (
+          <Button title="Clear shelf" variant="ghost" onPress={confirmClearShelf} />
+        ) : null}
+
+        <ShelfStatsRow stats={stats} status="custom" />
+
+        <ShelfOrganizeRow
+          query={query}
+          onQueryChange={setQuery}
+          sort={sort}
+          onSortChange={setSort}
+        />
 
         <LibraryViewToggle view={view} onChange={setView} disabled={isPending} />
 
@@ -129,10 +158,14 @@ export default function CustomShelfScreen() {
           <Text className="rounded-2xl border border-dashed border-brand-border bg-background px-4 py-10 text-center text-sm text-ink-muted">
             No books on this shelf yet.
           </Text>
+        ) : displayItems.length === 0 ? (
+          <Text className="rounded-2xl border border-dashed border-brand-border bg-background px-4 py-10 text-center text-sm text-ink-muted">
+            No books match “{query}” on this shelf.
+          </Text>
         ) : view === "bookshelf" ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View className="flex-row items-end gap-3 rounded-2xl border border-brand-border bg-surface p-4">
-              {shelf.items.map((item) => (
+              {displayItems.map((item) => (
                 <BookSpine
                   key={item.id}
                   bookId={item.books?.id}
@@ -147,7 +180,7 @@ export default function CustomShelfScreen() {
           </ScrollView>
         ) : (
           <LibraryCoverGrid
-            items={shelf.items.map((item) => ({
+            items={displayItems.map((item) => ({
               id: item.id,
               bookId: item.books?.id,
               title: item.books?.title,

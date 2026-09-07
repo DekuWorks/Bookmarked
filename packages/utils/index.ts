@@ -747,6 +747,36 @@ export {
 } from "./shelfIcons";
 
 export {
+  SHELF_STAT_CARD_WIDTH_PX,
+  buildShelfStatCards,
+  computeShelfStatsFromItems,
+  type ShelfStatCard,
+  type ShelfStatKind,
+  type ShelfStats,
+  type ShelfStatsInputItem,
+} from "./shelfStats";
+
+export {
+  filterItemsByTitleOrAuthor,
+  shouldApplyHideDnfFilter,
+  type TitleAuthorFilterable,
+} from "./shelfFilter";
+
+export {
+  DEFAULT_SHELF_SORT,
+  SHELF_SORT_OPTIONS,
+  getShelfSortOptions,
+  parseShelfSortMode,
+  sortLibraryBookRows,
+  sortLibraryBooks,
+  sortShelfGroups,
+  sortShelfItems,
+  type ShelfSortMode,
+  type ShelfSortOption,
+  type SortableShelfItem,
+} from "./shelfSort";
+
+export {
   NON_NOTIFIABLE_ACTIVITY_EVENTS,
   NOTIFIABLE_SOCIAL_EVENTS,
   isNotifiableSocialEvent,
