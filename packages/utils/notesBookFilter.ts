@@ -16,10 +16,11 @@ export const NOTES_BOOK_QUERY_PARAM = "book";
 export const NOTES_BOOK_SEARCH_THRESHOLD = 8;
 
 export const NOTES_BOOK_FILTER_COPY = {
-  label: "Filter by Book",
+  label: "Filter By Book",
   allBooks: "All Books",
-  searchLabel: "Search books",
-  searchPlaceholder: "Search by title or author",
+  searchLabel: "Search Books",
+  searchPlaceholder: "Search Books",
+  searchEmpty: "No finished books found.",
   emptyAll: "You haven't saved any notes yet.",
   emptyBook: "No notes saved for this book yet.",
   error: "Couldn't load your notes. Please try again.",
@@ -120,13 +121,72 @@ export function buildNotesBookFilterOptions(
     });
   }
 
-  return [...grouped.values()]
-    .map((entry) => entry.option)
-    .sort((a, b) => {
-      const titleCmp = compareStrings(a.title, b.title);
-      if (titleCmp !== 0) return titleCmp;
-      return compareStrings(a.author ?? "", b.author ?? "");
-    });
+  return sortNotesBookFilterOptions(
+    [...grouped.values()].map((entry) => entry.option)
+  );
+}
+
+export function sortNotesBookFilterOptions(
+  options: readonly NotesBookFilterOption[]
+): NotesBookFilterOption[] {
+  return [...options].sort((a, b) => {
+    const titleCmp = compareStrings(a.title, b.title);
+    if (titleCmp !== 0) return titleCmp;
+    return compareStrings(a.author ?? "", b.author ?? "");
+  });
+}
+
+/** Build a picker row from a library / Finished-shelf user-book. */
+export function notesBookFilterOptionFromUserBook(
+  row: {
+    id: string;
+    book_id?: string | null;
+    books?: {
+      id?: string | null;
+      title?: string | null;
+      author?: string | null;
+      cover_url?: string | null;
+    } | null;
+  },
+  noteCount = 0
+): NotesBookFilterOption {
+  const book = row.books;
+  return {
+    userBookId: row.id,
+    bookId: (book?.id || row.book_id || "").trim(),
+    title: book?.title?.trim() || "Untitled",
+    author: book?.author?.trim() || null,
+    coverUrl: book?.cover_url ?? null,
+    noteCount,
+  };
+}
+
+/**
+ * Union picker rows by `userBookId` (Finished shelf + noted books).
+ * Does not slice — callers must not cap the Finished shelf at 6.
+ */
+export function mergeNotesBookFilterOptions(
+  ...groups: readonly (readonly NotesBookFilterOption[])[]
+): NotesBookFilterOption[] {
+  const byId = new Map<string, NotesBookFilterOption>();
+  for (const group of groups) {
+    for (const option of group) {
+      const existing = byId.get(option.userBookId);
+      if (!existing) {
+        byId.set(option.userBookId, { ...option });
+        continue;
+      }
+      byId.set(option.userBookId, {
+        ...existing,
+        noteCount: Math.max(existing.noteCount, option.noteCount),
+        title: existing.title !== "Untitled" ? existing.title : option.title,
+        author: existing.author ?? option.author,
+        coverUrl: existing.coverUrl ?? option.coverUrl,
+        bookId: existing.bookId || option.bookId,
+      });
+    }
+  }
+  return sortNotesBookFilterOptions([...byId.values()]);
 }
 
 export function filterNotesBookOptionsByQuery(

@@ -53,6 +53,6 @@ export function pickLatestNotePerBook<T extends RecentNoteCandidate>(
 
 export const HOME_RECENT_NOTES_COPY = {
   title: "Recent Notes",
-  subtitle: "One latest note from each of your five most recently read books.",
+  subtitle: "The latest note from each of your five most recently read books.",
   empty: "Notes from books you are reading will appear here.",
 } as const;

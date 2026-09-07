@@ -486,6 +486,45 @@ Shipped actions (same order, web + iOS):
 
 ---
 
+## Second Sprint — Notes Tab Fixes ✅
+
+| Item | Status | Notes / references |
+|------|--------|--------------------|
+| Notes Tab – Filter by Book | ✅ | Picker list scrolls on its own; Notes page behind stays locked. Sticky **Search Books** (title + author, clear-X via existing `SearchBar`). Empty: “No finished books found.” All Books kept. Escape + focus restore on web. iOS pageSheet + parent `scrollEnabled={false}` while open. VoiceOver labels on heading, search, title/author, selected. |
+| Notes Tab – Remove Duplicate Notes Search Button | ✅ | Removed **Open Notes Search** next to **Open Full Notes Page** on web + iOS Home Notes. Full Notes search stays on `/notes`. |
+| Notes Tab – Subtitle Update | ✅ | Exact copy: `The latest note from each of your five most recently read books.` Query unchanged (5 books × 1 latest). |
+| Notes Tab – Filter By Book Alignment | ✅ | Same heading class as Recent Notes; heading + control centered with flex (`items-center`), no left-margin hacks. |
+
+### FILTER
+
+- **Scroll leak (web):** `NotesBookFilter` sat in `Modal` with `overflow-y-auto` on the whole panel and no max-height on the `<ul>`. Wheel/overscroll left the dialog and moved the Reading Room page. `body` lock did not cover `html`, and there was no `overscroll-contain`.
+- **Scroll leak (iOS):** Home Notes lives in a parent `Animated.ScrollView`. The sheet’s inner `ScrollView` and that parent both took the gesture, so the Notes page rubber-banded behind the picker.
+- **Fix:** Web — modal `scrollPanel={false}`, list `overflow-y-auto overscroll-contain`, lock `html` + `body`, ignore wheel/touch outside the panel. iOS — `presentationStyle="pageSheet"`, disable Home / Full Notes scroll while the sheet is open, search stays outside the list `ScrollView`.
+- **Finished-shelf query:** `listNotedBooksForUser` was noted-books only (no `LIMIT 6` / `slice(0, 6)`). It now unions the full Finished shelf via `filterFinishedHistoryBooks` (no recently-finished cap of 6) with noted books on other shelves so filter semantics stay the same. Key remains `user_book_id`.
+
+### BUTTON
+
+- Redundant Home Notes shortcut removed. Quote Graphics + Open Full Notes Page remain.
+
+### COPY
+
+- `HOME_RECENT_NOTES_COPY.subtitle` is exactly that Recent Notes line. Shown on web and iOS (iOS was missing the subtitle).
+
+### ALIGNMENT
+
+- Shared `NOTES_TAB_HEADING_CLASS` (web) / `SECTION_CARD_HEADING_CLASS` (iOS) for Recent Notes and Filter By Book. Control sits under the heading in a centered column.
+
+### Testing (this sprint)
+
+- Unit: `packages/utils/notesBookFilter.test.ts` (19) + `recentNotesByBook.test.ts` (4) + web/iOS notes filter tests. All passed.
+- `tsc --noEmit` web + iOS passed. Web eslint on touched Notes files: only pre-existing Modal `set-state-in-effect` (portal mount). Did not chase quote-graphics `"outline"`.
+- Browser: Cursor browser MCP would not create a tab (`No browser tab available`). Local Next on :3020 returned HTTP 200 for `/reading-room/?tab=notes`. Interactive wheel / Escape / clear-X / light-dark not clicked. Notes is auth-gated.
+- iOS: code + types only. No simulator/device tap. VoiceOver not exercised on a phone.
+
+**Last updated:** 7 September 2026 (Notes Tab Fixes)
+
+---
+
 ## Free / Plus / Reading DNA (master phases)
 
 Tracking against the Free/Plus/Reading DNA master spec (Phases 1–42). Distinct from historical Phase 1–10 above.

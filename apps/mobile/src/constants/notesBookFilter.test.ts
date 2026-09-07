@@ -52,5 +52,7 @@ describe("iOS notes book filter", () => {
   it("uses the shared empty copy", () => {
     expect(NOTES_BOOK_FILTER_COPY.emptyAll).toBe("You haven't saved any notes yet.");
     expect(NOTES_BOOK_FILTER_COPY.emptyBook).toBe("No notes saved for this book yet.");
+    expect(NOTES_BOOK_FILTER_COPY.searchEmpty).toBe("No finished books found.");
+    expect(NOTES_BOOK_FILTER_COPY.label).toBe("Filter By Book");
   });
 });

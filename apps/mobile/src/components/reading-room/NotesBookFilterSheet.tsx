@@ -2,10 +2,9 @@ import { useMemo, useState } from "react";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BookCover } from "../BookCover";
-import { Input } from "../Input";
+import { SearchBar } from "../SearchBar";
 import {
   NOTES_BOOK_FILTER_COPY,
-  NOTES_BOOK_SEARCH_THRESHOLD,
   filterNotesBookOptionsByQuery,
   formatNotesBookCount,
   notesBookFilterLabel,
@@ -33,7 +32,6 @@ export function NotesBookFilterSheet({
     () => filterNotesBookOptionsByQuery(options, query),
     [options, query]
   );
-  const showSearch = options.length >= NOTES_BOOK_SEARCH_THRESHOLD;
 
   function choose(userBookId: string | null) {
     onSelect(userBookId);
@@ -41,44 +39,53 @@ export function NotesBookFilterSheet({
     onClose();
   }
 
+  function close() {
+    setQuery("");
+    onClose();
+  }
+
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={close}
+    >
       <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
         <View className="flex-row items-center justify-between px-5 pt-3 pb-2">
           <Text
             className="text-xl font-bold text-ink"
             accessibilityRole="header"
+            accessibilityLabel={NOTES_BOOK_FILTER_COPY.label}
           >
             {NOTES_BOOK_FILTER_COPY.label}
           </Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Close"
-            onPress={() => {
-              setQuery("");
-              onClose();
-            }}
+            onPress={close}
             className="min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-primary/15 active:opacity-80"
           >
             <Text className="text-sm font-semibold text-puce-red">Close</Text>
           </Pressable>
         </View>
 
-        {showSearch ? (
-          <View className="px-5">
-            <Input
-              accessibilityLabel={NOTES_BOOK_FILTER_COPY.searchLabel}
-              placeholder={NOTES_BOOK_FILTER_COPY.searchPlaceholder}
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={query}
-              onChangeText={setQuery}
-            />
-          </View>
-        ) : null}
+        <View className="px-5">
+          <SearchBar
+            accessibilityLabel={NOTES_BOOK_FILTER_COPY.searchLabel}
+            placeholder={NOTES_BOOK_FILTER_COPY.searchPlaceholder}
+            autoCapitalize="none"
+            autoCorrect={false}
+            value={query}
+            onChangeText={setQuery}
+            onClear={() => setQuery("")}
+          />
+        </View>
 
         <ScrollView
           className="flex-1 px-5"
+          keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled
           contentContainerStyle={{ paddingBottom: insets.bottom + 24, gap: 8 }}
         >
           <Pressable
@@ -134,7 +141,9 @@ export function NotesBookFilterSheet({
           })}
 
           {filtered.length === 0 ? (
-            <Text className="py-6 text-sm text-ink-muted">No books match that search.</Text>
+            <Text className="py-6 text-sm text-ink-muted">
+              {NOTES_BOOK_FILTER_COPY.searchEmpty}
+            </Text>
           ) : null}
         </ScrollView>
       </View>
@@ -146,10 +155,12 @@ export function NotesBookFilterButton({
   options,
   selectedUserBookId,
   onPress,
+  showHeading = true,
 }: {
   options: NotesBookFilterOption[];
   selectedUserBookId: string | null;
   onPress: () => void;
+  showHeading?: boolean;
 }) {
   const label = notesBookFilterLabel(selectedUserBookId, options);
   return (
@@ -157,13 +168,18 @@ export function NotesBookFilterButton({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${NOTES_BOOK_FILTER_COPY.label}: ${label}`}
-      className="min-h-[44px] flex-row items-center justify-between rounded-xl border border-brand-border bg-surface px-3 py-2.5 active:opacity-80"
+      className="min-h-[44px] w-full flex-row items-center justify-between rounded-xl border border-brand-border bg-surface px-3 py-2.5 active:opacity-80"
     >
       <View className="min-w-0 flex-1">
-        <Text className="text-xs font-medium text-ink-muted">
-          {NOTES_BOOK_FILTER_COPY.label}
-        </Text>
-        <Text className="mt-0.5 text-sm font-semibold text-ink" numberOfLines={1}>
+        {showHeading ? (
+          <Text className="text-xs font-medium text-ink-muted">
+            {NOTES_BOOK_FILTER_COPY.label}
+          </Text>
+        ) : null}
+        <Text
+          className={`text-sm font-semibold text-ink ${showHeading ? "mt-0.5" : ""}`}
+          numberOfLines={1}
+        >
           {label}
         </Text>
       </View>

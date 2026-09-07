@@ -143,6 +143,7 @@ export default function NotesScreen() {
         <Animated.FlatList
           data={noteRows}
           keyExtractor={(item) => item.id}
+          scrollEnabled={!pickerOpen}
           onScroll={onScroll}
           scrollEventThrottle={16}
           contentContainerStyle={{ padding: 16, paddingBottom: TAB_BAR_SPACE, flexGrow: 1 }}

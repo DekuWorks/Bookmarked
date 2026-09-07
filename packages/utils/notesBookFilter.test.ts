@@ -8,7 +8,9 @@ import {
   filterNotesByUserBookId,
   formatNotesBookCount,
   matchNotesBookFilter,
+  mergeNotesBookFilterOptions,
   notesBookFilterLabel,
+  notesBookFilterOptionFromUserBook,
   notesEmptyMessage,
   parseNotesBookQueryParam,
   selectNotesForBookFilter,
@@ -211,6 +213,45 @@ describe("selectNotesForBookFilter", () => {
   });
 });
 
+describe("finished-shelf picker options", () => {
+  it("keeps the full Finished shelf and does not slice to 6", () => {
+    const finished = Array.from({ length: 13 }, (_, index) =>
+      notesBookFilterOptionFromUserBook(
+        {
+          id: `ub-${index}`,
+          book_id: `book-${index}`,
+          books: { id: `book-${index}`, title: `Book ${index}`, author: "Author" },
+        },
+        0
+      )
+    );
+    const noted = [
+      notesBookFilterOptionFromUserBook(
+        {
+          id: "ub-0",
+          book_id: "book-0",
+          books: { id: "book-0", title: "Book 0", author: "Author" },
+        },
+        4
+      ),
+      notesBookFilterOptionFromUserBook(
+        {
+          id: "ub-reading",
+          book_id: "book-reading",
+          books: { id: "book-reading", title: "Still Reading", author: null },
+        },
+        1
+      ),
+    ];
+
+    const merged = mergeNotesBookFilterOptions(finished, noted);
+    expect(merged).toHaveLength(14);
+    expect(merged.find((option) => option.userBookId === "ub-0")?.noteCount).toBe(4);
+    expect(merged.some((option) => option.userBookId === "ub-12")).toBe(true);
+    expect(merged.some((option) => option.userBookId === "ub-reading")).toBe(true);
+  });
+});
+
 describe("copy and labels", () => {
   it("uses All Books vs selected-book empty copy", () => {
     expect(notesEmptyMessage(null)).toBe(NOTES_BOOK_FILTER_COPY.emptyAll);
@@ -227,5 +268,12 @@ describe("copy and labels", () => {
     expect(formatNotesBookCount(1)).toBe("1 note");
     expect(formatNotesBookCount(3)).toBe("3 notes");
     expect(NOTES_BOOK_QUERY_PARAM).toBe("book");
+  });
+
+  it("uses Search Books copy and the finished-shelf empty state", () => {
+    expect(NOTES_BOOK_FILTER_COPY.label).toBe("Filter By Book");
+    expect(NOTES_BOOK_FILTER_COPY.searchLabel).toBe("Search Books");
+    expect(NOTES_BOOK_FILTER_COPY.searchPlaceholder).toBe("Search Books");
+    expect(NOTES_BOOK_FILTER_COPY.searchEmpty).toBe("No finished books found.");
   });
 });

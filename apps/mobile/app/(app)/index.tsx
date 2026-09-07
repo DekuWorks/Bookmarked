@@ -50,10 +50,15 @@ export default function HomeReadingRoom() {
   const { data: profile, refetch: refetchProfile } = useProfile();
   const { onScroll } = useTabBarScroll();
   const [tab, setTab] = useState<ReadingRoomTab>("overview");
+  const [notesPickerOpen, setNotesPickerOpen] = useState(false);
 
   useEffect(() => {
     setTab(parseReadingRoomTabParam(tabParam));
   }, [tabParam]);
+
+  useEffect(() => {
+    if (tab !== "notes") setNotesPickerOpen(false);
+  }, [tab]);
 
   const [sessions, setSessions] = useState<Awaited<ReturnType<typeof listUserReadingSessions>> | null>(
     null
@@ -134,6 +139,7 @@ export default function HomeReadingRoom() {
       <ScreenGradientWash />
       <BrandTopHeader />
       <Animated.ScrollView
+        scrollEnabled={!notesPickerOpen}
         onScroll={onScroll}
         scrollEventThrottle={16}
         contentContainerStyle={{ padding: 16, paddingBottom: TAB_BAR_SPACE, gap: 16 }}
@@ -212,6 +218,7 @@ export default function HomeReadingRoom() {
             userId={userId}
             bookParam={Array.isArray(bookParam) ? bookParam[0] : bookParam}
             refreshId={notesRefreshId}
+            onPickerOpenChange={setNotesPickerOpen}
           />
         ) : null}
 
