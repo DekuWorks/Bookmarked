@@ -788,12 +788,12 @@ Default icons are **not** user-editable. Same assets on web + iOS. Android not i
 ### Custom shelves — `icon_key`
 
 - **Field:** created `user_shelves.icon_key` (nullable text). Existing shelves stay valid. Migration `20260906140000_user_shelves_icon_key.sql`.
-- **Catalog:** `custom_icon_1` … `custom_icon_5`. Writes validate against that list; invalid keys are rejected. Null/missing → `custom_icon_1` (documented fallback, not a random assignment).
-- **Create:** Choose Icon picker; first approved key is preselected; user can change before save.
+- **Catalog:** stored keys still `custom_icon_1` … `custom_icon_5` so existing shelves load. Picker shows **one** bookmark (`custom_icon_1` / Bookmarked B-mark) plus Use emoji. `custom_icon_2`…`5` display as that same mark. Invalid/null → `custom_icon_1`.
+- **Create:** bookmark preselected unless they already saved an emoji.
 - **Edit:** current icon selected; name + privacy + genre + icon; Save persists immediately and refreshes Library / Profile / Add-Move / cached cards (iOS query invalidation).
 - **Sync:** same `icon_key` / `icon_type` / `icon_emoji` on web and iOS.
 
-**BLOCKED ASSET ITEM — Leighton final files.** The 5 custom PNGs are **not** in the repo. Architecture and keys are shipped; visual fallback is the Bookmarked B-mark (`logo-mark.png`). Do **not** mark custom visuals complete until `custom-icon-1.png` … `custom-icon-5.png` are verified on web + iOS.
+**BLOCKED ASSET ITEM — Leighton final files.** Do not invent custom artwork. The picker bookmark and legacy `custom_icon_2`…`5` render the Bookmarked B-mark (`logo-mark.png`).
 
 ### Surfaces
 
@@ -1255,7 +1255,7 @@ Website artwork was one slot off. Applied the user’s cycle (TBR ← CR ← DNF
 | Item | Status | Notes |
 |------|--------|-------|
 | Default ID → icon | ✅ | TBR `currently-reading.png` · Currently Reading `did-not-finish.png` · DNF `want-to-read.png` · Finished `finished.png` |
-| Custom Bookmarked keys | ✅ | `custom_icon_1`…`5` + Bookmarked B-mark fallback (`logo-mark.png`). Leighton PNGs still missing |
+| Custom Bookmarked keys | ✅ | Picker: one bookmark (`custom_icon_1` / B-mark) + Use emoji. Stored `2`…`5` still load as that mark |
 | Custom emoji | ✅ | Additive `icon_type` + `icon_emoji`. Keyboard emoji on iOS; text input on web |
 | Custom Collections heading | ✅ | Exact string for user-created shelves only (`CUSTOM_COLLECTIONS_HEADING`) |
 | Web spine title font | ✅ | Playfair via `--font-playfair` (broke the circular `--font-display`). `.book-spine-title` also has `font-display` |
@@ -1263,9 +1263,9 @@ Website artwork was one slot off. Applied the user’s cycle (TBR ← CR ← DNF
 
 ### Emoji storage
 
-- Keep `icon_key` CHECK (`custom_icon_1`…`5` or null).
+- Keep `icon_key` CHECK (`custom_icon_1`…`5` or null). Picker writes `custom_icon_1` or emoji.
 - Add `icon_type` (`bookmarked` \| `emoji`, null = bookmarked) and `icon_emoji` (sanitized grapheme).
-- Writes: approved key **or** one grapheme. Reject paths/blobs. Existing shelves with no icon stay on `custom_icon_1` fallback — no random `custom_icon_N`.
+- Writes: approved key **or** one grapheme. Reject paths/blobs. Existing shelves with no icon stay on `custom_icon_1` fallback — no random `custom_icon_N`. Legacy `2`…`5` display as the B-mark.
 
 ### Tests / verification
 
@@ -1302,6 +1302,12 @@ Voice-note polish: default-shelf **buttons** stay highlighted; redundant status 
 | Back to library contrast | ✅ | Web Book Details: `font-semibold text-puce-red` (Copy link outline token). iOS header was already `text-puce-red` on a solid bar |
 | Remove from collection | ✅ | Web `AddToCustomShelfMenu` Remove; iOS Book Details Remove on member rows. Library Remove unchanged |
 | Finished + custom both | ✅ | `addBookToCustomShelf` / `removeBookFromCustomShelf` write `user_shelf_books` only. `customCollectionWriteTouchesShelfStatus()` is false |
+
+---
+
+## Custom shelf icon picker — one bookmark + emoji
+
+Create/edit on web + iOS no longer shows five Bookmarked icons. One bookmark (`custom_icon_1`, Bookmarked B-mark / `logo-mark.png`) plus **Use emoji**. Default is that bookmark unless the shelf already saved an emoji. Stored `custom_icon_2`…`5` still load and render as the same mark. Default TBR / CR / DNF / Finished icons unchanged. No Android. No `expo run:ios`. No commit.
 
 ---
 

@@ -16,7 +16,7 @@ export interface UserShelf {
   slug: string;
   genre: string | null;
   visibility: ShelfVisibility;
-  /** Stable custom icon key (`custom_icon_1`…`custom_icon_5`). Null uses documented fallback. */
+  /** Stable custom icon key. Picker uses `custom_icon_1`; `2`…`5` still load. Null uses documented fallback. */
   icon_key: string | null;
   /** `bookmarked` (PNG key) or `emoji`. Null is treated as bookmarked. */
   icon_type: "bookmarked" | "emoji" | null;

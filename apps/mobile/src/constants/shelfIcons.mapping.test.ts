@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   CUSTOM_COLLECTIONS_HEADING,
   CUSTOM_SHELF_ICON_KEYS,
+  CUSTOM_SHELF_ICON_PICKER_KEYS,
   DEFAULT_CUSTOM_SHELF_ICON_KEY,
   DEFAULT_SHELF_A11Y_LABEL,
   DEFAULT_SHELF_ICON_FILE,
@@ -33,6 +34,7 @@ describe("canonical shelf icon mapping", () => {
 
   it("validates custom keys and falls existing shelves back to custom_icon_1", () => {
     expect(CUSTOM_SHELF_ICON_KEYS).toHaveLength(5);
+    expect(CUSTOM_SHELF_ICON_PICKER_KEYS).toEqual(["custom_icon_1"]);
     expect(DEFAULT_CUSTOM_SHELF_ICON_KEY).toBe("custom_icon_1");
     expect(resolveCustomShelfIconKey(null)).toBe("custom_icon_1");
     expect(parseCustomShelfIconWrite("custom_icon_5").ok).toBe(true);

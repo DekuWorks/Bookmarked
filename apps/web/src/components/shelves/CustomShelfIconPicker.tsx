@@ -1,10 +1,9 @@
 "use client";
 
 import {
-  CUSTOM_SHELF_ICON_KEYS,
-  DEFAULT_CUSTOM_SHELF_ICON_SELECTION,
   getCustomShelfIconA11yLabel,
   getCustomShelfIconCatalog,
+  resolveCustomShelfPickerSelection,
   sanitizeShelfEmoji,
   type CustomShelfIconSelection,
 } from "@/lib/constants/shelfIcons";
@@ -18,12 +17,7 @@ type Props = {
 };
 
 export function CustomShelfIconPicker({ value, onChange, disabled }: Props) {
-  const selected =
-    value.type === "bookmarked" && CUSTOM_SHELF_ICON_KEYS.includes(value.value)
-      ? value
-      : value.type === "emoji"
-        ? value
-        : DEFAULT_CUSTOM_SHELF_ICON_SELECTION;
+  const selected = resolveCustomShelfPickerSelection(value);
   const catalog = getCustomShelfIconCatalog();
   const emojiSelected = selected.type === "emoji";
 
@@ -31,7 +25,7 @@ export function CustomShelfIconPicker({ value, onChange, disabled }: Props) {
     <fieldset className="mb-4" disabled={disabled}>
       <legend className="mb-1.5 block text-sm font-medium text-text">Choose icon</legend>
       <p className="mb-2 text-xs text-text-muted">
-        First icon is selected by default. You can change it before saving.
+        The bookmark is selected by default. You can use an emoji instead.
       </p>
       <div
         role="radiogroup"

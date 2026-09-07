@@ -7,6 +7,7 @@ import {
   CUSTOM_SHELF_ICON_FALLBACK_SRC,
   CUSTOM_SHELF_ICON_FILE,
   CUSTOM_SHELF_ICON_KEYS,
+  CUSTOM_SHELF_ICON_PICKER_KEYS,
   DEFAULT_CUSTOM_SHELF_ICON_KEY,
   DEFAULT_CUSTOM_SHELF_ICON_SELECTION,
   DEFAULT_SHELF_A11Y_LABEL,
@@ -22,8 +23,10 @@ import {
   isValidShelfEmoji,
   parseCustomShelfIconSelection,
   parseCustomShelfIconWrite,
+  resolveCustomShelfDisplayIconKey,
   resolveCustomShelfIcon,
   resolveCustomShelfIconKey,
+  resolveCustomShelfPickerSelection,
   sanitizeShelfEmoji,
   sortDefaultShelfIconIds,
 } from "./shelfIcons";
@@ -79,7 +82,7 @@ describe("default shelf ID → icon key", () => {
 });
 
 describe("custom shelf icon_key", () => {
-  it("lists five stable keys", () => {
+  it("keeps stored keys for existing shelves and one picker bookmark", () => {
     expect(CUSTOM_SHELF_ICON_KEYS).toEqual([
       "custom_icon_1",
       "custom_icon_2",
@@ -87,6 +90,7 @@ describe("custom shelf icon_key", () => {
       "custom_icon_4",
       "custom_icon_5",
     ]);
+    expect(CUSTOM_SHELF_ICON_PICKER_KEYS).toEqual(["custom_icon_1"]);
     expect(DEFAULT_CUSTOM_SHELF_ICON_KEY).toBe("custom_icon_1");
   });
 
@@ -104,6 +108,8 @@ describe("custom shelf icon_key", () => {
     expect(resolveCustomShelfIconKey("")).toBe("custom_icon_1");
     expect(resolveCustomShelfIconKey("emoji")).toBe("custom_icon_1");
     expect(resolveCustomShelfIconKey("custom_icon_4")).toBe("custom_icon_4");
+    expect(resolveCustomShelfDisplayIconKey("custom_icon_4")).toBe("custom_icon_1");
+    expect(resolveCustomShelfDisplayIconKey("custom_icon_2")).toBe("custom_icon_1");
   });
 
   it("does not randomly assign one of the five on fallback", () => {
@@ -135,9 +141,10 @@ describe("custom shelf icon_key", () => {
   });
 
   it("uses numbered a11y labels and Selected suffix", () => {
-    expect(getCustomShelfA11yLabel("custom_icon_2")).toBe("Custom Shelf Icon 2");
+    expect(getCustomShelfA11yLabel("custom_icon_1")).toBe("Custom Shelf Icon 1");
+    expect(getCustomShelfA11yLabel("custom_icon_2")).toBe("Custom Shelf Icon 1");
     expect(getCustomShelfA11yLabel("custom_icon_2", true)).toBe(
-      "Custom Shelf Icon 2, Selected"
+      "Custom Shelf Icon 1, Selected"
     );
     expect(getCustomShelfA11yLabel(null)).toBe("Custom Shelf Icon 1");
     expect(CUSTOM_SHELF_A11Y_LABEL.custom_icon_5).toBe("Custom Shelf Icon 5");
@@ -196,6 +203,12 @@ describe("custom shelf emoji", () => {
         icon_emoji: null,
       })
     ).toEqual({ type: "bookmarked", value: "custom_icon_4" });
+    expect(
+      resolveCustomShelfPickerSelection({ type: "bookmarked", value: "custom_icon_4" })
+    ).toEqual(DEFAULT_CUSTOM_SHELF_ICON_SELECTION);
+    expect(
+      resolveCustomShelfPickerSelection({ type: "emoji", value: "🌙" })
+    ).toEqual({ type: "emoji", value: "🌙" });
     expect(
       resolveCustomShelfIcon({
         icon_key: "custom_icon_2",
