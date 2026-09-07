@@ -305,6 +305,7 @@ export async function listUserCustomShelves(userId: string): Promise<UserShelf[]
   return (data ?? []) as UserShelf[];
 }
 
+/** Inserts `user_shelf_books` only. Never updates `user_books.shelf_status`. */
 export async function addBookToCustomShelf(
   shelfId: string,
   userId: string,
@@ -321,6 +322,7 @@ export async function addBookToCustomShelf(
   return {};
 }
 
+/** Deletes this collection membership only. Leaves `user_books.shelf_status` unchanged. */
 export async function removeBookFromCustomShelf(
   shelfId: string,
   bookId: string

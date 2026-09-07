@@ -542,6 +542,9 @@ export function SearchResultCard({
           open
           memberShelfIds={memberShelfIds}
           onAdded={(shelfId) => setMemberShelfIds((prev) => [...prev, shelfId])}
+          onRemoved={(shelfId) =>
+            setMemberShelfIds((prev) => prev.filter((id) => id !== shelfId))
+          }
           onClose={() => setCustomBookId(null)}
         />
       ) : null}

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import {
   addBookToCustomShelf,
   listUserCustomShelves,
+  removeBookFromCustomShelf,
 } from "@/lib/services/customShelves";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { useToast } from "@/components/ui/Toast";
@@ -20,6 +21,7 @@ type Props = {
   onClose: () => void;
   memberShelfIds?: string[];
   onAdded?: (shelfId: string) => void;
+  onRemoved?: (shelfId: string) => void;
 };
 
 export function AddToCustomShelfMenu({
@@ -29,6 +31,7 @@ export function AddToCustomShelfMenu({
   onClose,
   memberShelfIds = [],
   onAdded,
+  onRemoved,
 }: Props) {
   const user = useAuthUser();
   const toast = useToast();
@@ -71,11 +74,32 @@ export function AddToCustomShelfMenu({
     onAdded?.(shelf.id);
   }
 
+  async function handleRemove(shelf: UserShelf) {
+    if (!user || !memberships.has(shelf.id)) return;
+
+    setSavingShelfId(shelf.id);
+    const result = await removeBookFromCustomShelf(shelf.id, bookId);
+    setSavingShelfId(null);
+
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+
+    setMemberships((prev) => {
+      const next = new Set(prev);
+      next.delete(shelf.id);
+      return next;
+    });
+    toast.success(`Removed from ${shelf.name}`);
+    onRemoved?.(shelf.id);
+  }
+
   return (
     <Modal open={open} onClose={onClose} title="Add to collection">
       <p className="mb-4 text-sm text-text-muted">
-        Add <span className="font-medium text-text">{bookTitle}</span> to one of your custom
-        shelves.
+        Add or remove <span className="font-medium text-text">{bookTitle}</span> from a custom
+        collection. This does not change TBR, Currently Reading, Finished, or DNF.
       </p>
 
       {loading ? (
@@ -92,36 +116,56 @@ export function AddToCustomShelfMenu({
             const isSaving = savingShelfId === shelf.id;
             return (
               <li key={shelf.id}>
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={isMember}
-                  disabled={isMember || isSaving}
-                  onClick={() => void handleSelect(shelf)}
+                <div
                   className={cn(
-                    "flex min-h-[44px] w-full items-center gap-3 rounded-lg border px-4 py-3 text-left transition disabled:opacity-50",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange",
+                    "flex min-h-[44px] w-full items-center gap-2 rounded-lg border px-3 py-2",
                     isMember
                       ? "border-primary bg-primary/10"
-                      : "border-border bg-background hover:border-primary hover:bg-primary/5"
+                      : "border-border bg-background"
                   )}
                 >
-                  <ShelfIcon
-                    iconKey={shelf.icon_key}
-                    iconType={shelf.icon_type}
-                    iconEmoji={shelf.icon_emoji}
-                    size="medium"
-                  />
-                  <span className="flex-1">
-                    <span className="block font-medium text-text">{shelf.name}</span>
-                    {shelf.genre ? (
-                      <span className="text-xs text-text-muted">{shelf.genre}</span>
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={isMember}
+                    disabled={isMember || isSaving}
+                    onClick={() => void handleSelect(shelf)}
+                    className={cn(
+                      "flex min-w-0 flex-1 items-center gap-3 rounded-md px-1 py-1 text-left transition",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange",
+                      isMember
+                        ? "cursor-default"
+                        : "hover:border-primary hover:bg-primary/5 disabled:opacity-50"
+                    )}
+                  >
+                    <ShelfIcon
+                      iconKey={shelf.icon_key}
+                      iconType={shelf.icon_type}
+                      iconEmoji={shelf.icon_emoji}
+                      size="medium"
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-medium text-text">{shelf.name}</span>
+                      {shelf.genre ? (
+                        <span className="text-xs text-text-muted">{shelf.genre}</span>
+                      ) : null}
+                    </span>
+                    {isMember ? (
+                      <span className="text-xs font-medium text-primary">Added</span>
                     ) : null}
-                  </span>
+                  </button>
                   {isMember ? (
-                    <span className="text-xs font-medium text-primary">Added</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      loading={isSaving}
+                      onClick={() => void handleRemove(shelf)}
+                    >
+                      Remove
+                    </Button>
                   ) : null}
-                </button>
+                </div>
               </li>
             );
           })}

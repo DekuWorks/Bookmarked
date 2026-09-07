@@ -20,7 +20,6 @@ import {
   listUserCustomShelves,
 } from "@/lib/services/customShelves";
 import type { UserShelf } from "@/types";
-import { ShelfBadge } from "@/components/shelves/ShelfBadge";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import type { ShelfStatus } from "@/types";
 import { describeLibraryPresence } from "@bookmarked/utils/libraryPresence";
@@ -153,13 +152,9 @@ export function BookShelfActions({
   return (
     <section className="rounded-xl border border-border bg-surface p-5">
       <h2 className="text-lg font-semibold text-puce-red">Your shelf</h2>
-      <div className="mt-3 min-h-[1.75rem]">
-        {presence.kind === "default" && optimisticShelf ? (
-          <ShelfBadge status={optimisticShelf} />
-        ) : (
-          <p className="text-sm text-text-muted">{presence.label}</p>
-        )}
-      </div>
+      {presence.kind !== "default" ? (
+        <p className="mt-3 text-sm text-text-muted">{presence.label}</p>
+      ) : null}
 
       <div className="mt-4 flex flex-wrap gap-2">
         {getShelvesInOrder().map(({ status, title }) => {
@@ -235,6 +230,10 @@ export function BookShelfActions({
         memberShelfIds={memberShelfIds}
         onAdded={(shelfId) => {
           setMemberShelfIds((prev) => (prev.includes(shelfId) ? prev : [...prev, shelfId]));
+          onShelfChange?.({});
+        }}
+        onRemoved={(shelfId) => {
+          setMemberShelfIds((prev) => prev.filter((id) => id !== shelfId));
           onShelfChange?.({});
         }}
         onClose={() => setCustomMenuOpen(false)}

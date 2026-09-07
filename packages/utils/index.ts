@@ -647,6 +647,7 @@ export {
 
 export {
   ALREADY_IN_LIBRARY_COPY,
+  customCollectionWriteTouchesShelfStatus,
   formatLibraryMemberships,
   parseShelfMoveDestination,
   shelfMovePreservesUserBook,

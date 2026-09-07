@@ -46,3 +46,11 @@ export function parseShelfMoveDestination(
 export function shelfMovePreservesUserBook(_destination: ShelfMoveDestination): true {
   return true;
 }
+
+/**
+ * Add/remove on a custom collection writes `user_shelf_books` only.
+ * Finished + Smut (or any custom collection) can be true at the same time.
+ */
+export function customCollectionWriteTouchesShelfStatus(): false {
+  return false;
+}
