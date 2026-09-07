@@ -26,7 +26,11 @@ export function SegmentedControl<T extends string>({
 }: Props<T>) {
   return (
     <div
-      className={cn("pill-tabs overflow-x-auto", className)}
+      className={cn(
+        "pill-tabs overflow-x-auto",
+        alignment === "center" && "mx-auto w-fit",
+        className
+      )}
       data-align={alignment}
       role="tablist"
       aria-label={ariaLabel}

@@ -1184,23 +1184,21 @@ Official Bookmarked Home on **web + iOS**. Android not in scope. No `expo run:io
 
 ---
 
-## Feed – Center Posts/Activity + For You/Following Controls ✅
+## Feed – Hug Posts/Activity + For You/Following Shells ✅
 
-Web-only. Compact Posts / Activity and For You / Following pills stay natural width; the option group is centered inside the existing full-width Feed shells. iOS unchanged. No Feed redesign.
+Web-only. Posts / Activity and For You / Following keep the same pill size and capsule style; the outer `.pill-tabs` shell now hugs content and stays centered in the Feed column. iOS Feed already uses individual `SegmentedTabs` pills (no wide shared shell) — left unchanged.
 
 | Item | Status | Notes / references |
 |------|--------|-------------------|
-| Shared `SegmentedControl` | ✅ | `apps/web/src/components/ui/SegmentedControl.tsx` — default `alignment="start"`; Feed passes `alignment="center"` |
-| Feed scoped centering | ✅ | `.pill-tabs[data-align="center"]` in `globals.css` — flex-center the inner group, do not shrink the outer container, do not stretch pills to 50% |
+| Shared `SegmentedControl` | ✅ | `apps/web/src/components/ui/SegmentedControl.tsx` — `alignment="center"` adds `mx-auto w-fit` |
+| Feed scoped hug | ✅ | `.pill-tabs[data-align="center"]` in `globals.css` — `width: fit-content; max-width: 100%; margin-inline: auto`. Default `alignment="start"` (clubs, search, reading room) stays full-width |
 | URL / a11y / fetch | ✅ | Same `view` / `tab` query links, `tablist` / `tab` roles, selected pill styles |
 
 ### Tests / verification
 
-- Web `tsc --noEmit`: pass
-- eslint on `SegmentedControl.tsx`: pass. Feed page still has pre-existing `react-hooks/set-state-in-effect` (unchanged)
-- Headless Chrome against local Next (`:3013`): Feed is auth-gated (`/feed/` → `/login/?redirect=%2Ffeed%2F`). Injected the same `pill-tabs[data-align="center"]` markup into the compiled CSS page and measured Posts / Activity + For You / Following at 390 / 768 / 1280 in light and dark. Both shells stay full column width; inner groups `centerDelta: 0`; pills `flex: 0 0 auto`; gap `6px`
-- Clicked Posts, Activity, For You, Following on those controls — hrefs `/feed/?view=posts`, `/feed/?view=activity`, `/feed/`, `/feed/?tab=following`; `tablist` / `tab` roles intact
-- Cursor browser MCP could not keep a tab open. Did not log in, so live Feed fetch after tab change was not exercised
+- Compiled CSS on local Next (`:3013`) includes `.w-fit` and `.pill-tabs[data-align="center"] { width: fit-content; max-width: 100%; margin-inline: auto }`
+- Headless Chrome measured the two Feed shells against compiled CSS at 390 / 768 / 1280 (light) and 768 (dark class). Posts / Activity shell **169px**; For You / Following **195px**; both centered (`leftGap === rightGap`). Pills stay `flex: 0 0 auto`, 14px / 600, padding 8px 16px. Unscoped `data-align="start"` still spans the column
+- Cursor browser MCP could not keep a tab open. Feed is client-auth gated, so live tab-switch fetch was not exercised. Hrefs in the control remain `/feed/?view=posts`, `/feed/?view=activity`, `/feed/`, `/feed/?tab=following`
 - No commit. No TestFlight. No iOS / Android changes
 
 ---
