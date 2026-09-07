@@ -95,6 +95,7 @@ export function CreateClubModal({ open, onClose, currentUserId }: Props) {
   const [shareToFeed, setShareToFeed] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retryable, setRetryable] = useState(false);
   const [limitOpen, setLimitOpen] = useState(false);
 
   useEffect(() => {
@@ -113,6 +114,7 @@ export function CreateClubModal({ open, onClose, currentUserId }: Props) {
     setShareToFeed(true);
     setInviteOpen(false);
     setError(null);
+    setRetryable(false);
     setLimitOpen(false);
   }, [open]);
 
@@ -146,6 +148,7 @@ export function CreateClubModal({ open, onClose, currentUserId }: Props) {
 
     setSubmitting(true);
     setError(null);
+    setRetryable(false);
 
     const result = await createClub({
       name,
@@ -164,6 +167,7 @@ export function CreateClubModal({ open, onClose, currentUserId }: Props) {
         return;
       }
       setError(result.error ?? "Could not create club.");
+      setRetryable(Boolean(result.retryable));
       toast.error(result.error ?? "Could not create club.");
       return;
     }
@@ -430,7 +434,22 @@ export function CreateClubModal({ open, onClose, currentUserId }: Props) {
             </>
           ) : null}
 
-          {error ? <p className="text-sm text-rust">{error}</p> : null}
+          {error ? (
+            <div className="space-y-2" role="alert" aria-live="polite">
+              <p className="text-sm text-rust">{error}</p>
+              {retryable ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={submitting}
+                  onClick={() => void handleCreate()}
+                >
+                  Try Again
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className="flex flex-wrap justify-end gap-2">
             {step === 1 ? (

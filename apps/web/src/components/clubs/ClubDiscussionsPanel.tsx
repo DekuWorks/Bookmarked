@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BookCover } from "@/components/books/BookCover";
@@ -14,11 +14,17 @@ import { ClubDiscussionComposer } from "@/components/clubs/ClubDiscussionCompose
 import { ProfanityBlur } from "@/components/social/ProfanityBlur";
 import { ContentActionsMenu } from "@/components/moderation/ContentActionsMenu";
 import { useClubDiscussionsRealtime } from "@/lib/hooks/useClubDiscussionsRealtime";
-import { useClubDiscussionRepliesRealtime } from "@/lib/hooks/useClubDiscussionRepliesRealtime";
+import {
+  useClubDiscussionRepliesRealtime,
+  type ClubReplyRealtimeChange,
+} from "@/lib/hooks/useClubDiscussionRepliesRealtime";
 import { usePreferredLocale } from "@/lib/hooks/usePreferredLocale";
 import {
+  CLUB_REPLY_SORT_LABEL,
+  CLUB_REPLY_SORT_OPTIONS,
   CLUB_REPLY_SORT_STORAGE_KEY,
   mergeClubReplies,
+  mergeReconnectClubReplies,
   parseClubReplySort,
   removeClubReply,
   sortClubReplies,
@@ -96,6 +102,10 @@ export function ClubDiscussionsPanel({
       return "newest";
     }
   });
+  const replySortRef = useRef(replySort);
+  useEffect(() => {
+    replySortRef.current = replySort;
+  }, [replySort]);
 
   function changeReplySort(next: ClubReplySort) {
     setReplySort(next);
@@ -135,9 +145,9 @@ export function ClubDiscussionsPanel({
         throw new Error("Discussion not found.");
       }
       setActiveDiscussion(discussion);
-      setReplies((current) => mergeClubReplies(current ?? [], replyRows, replySort));
+      setReplies(sortClubReplies(replyRows, replySortRef.current));
     },
-    [clubId, replySort]
+    [clubId]
   );
 
   useEffect(() => {
@@ -189,22 +199,24 @@ export function ClubDiscussionsPanel({
   });
 
   const handleReplyRealtime = useCallback(
-    async (change: { type: "insert" | "update" | "delete"; id: string }) => {
+    async (change: ClubReplyRealtimeChange) => {
       if (!activeId) return;
-      if (change.type === "delete" && change.id) {
+      if (change.type === "delete") {
         setReplies((current) => removeClubReply(current ?? [], change.id));
         return;
       }
-      if (!change.id) {
+      if (change.type === "reconnect") {
         const rows = await listReplies(activeId);
-        setReplies((current) => mergeClubReplies(current ?? [], rows, replySort));
+        setReplies((current) =>
+          mergeReconnectClubReplies(current ?? [], rows, replySortRef.current, activeId)
+        );
         return;
       }
       const row = await getReply(change.id);
       if (!row || row.discussion_id !== activeId) return;
-      setReplies((current) => mergeClubReplies(current ?? [], row, replySort));
+      setReplies((current) => mergeClubReplies(current ?? [], row, replySortRef.current));
     },
-    [activeId, replySort]
+    [activeId]
   );
 
   useClubDiscussionRepliesRealtime(activeId ?? undefined, (change) => {
@@ -466,29 +478,21 @@ export function ClubDiscussionsPanel({
               {sortedReplies.length}{" "}
               {sortedReplies.length === 1 ? "reply" : "replies"}
             </h3>
-            <div className="flex gap-1" role="group" aria-label="Sort replies">
-              {(
-                [
-                  ["newest", "Newest First"],
-                  ["oldest", "Oldest First"],
-                ] as const
-              ).map(([id, label]) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => changeReplySort(id)}
-                  aria-pressed={replySort === id}
-                  className={cn(
-                    "rounded-full px-3 py-1 text-xs font-medium",
-                    replySort === id
-                      ? "bg-puce-red text-white"
-                      : "bg-surface text-text-muted hover:text-primary"
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+            <label className="block">
+              <span className="sr-only">{CLUB_REPLY_SORT_LABEL}</span>
+              <select
+                value={replySort}
+                onChange={(e) => changeReplySort(parseClubReplySort(e.target.value))}
+                aria-label={CLUB_REPLY_SORT_LABEL}
+                className="h-11 rounded-lg border border-border bg-surface px-3 text-sm text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+              >
+                {CLUB_REPLY_SORT_OPTIONS.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
           {replies === null ? (
             <LoadingState message="Loading replies…" />

@@ -2,11 +2,14 @@ import { describe, expect, it } from "vitest";
 import {
   classifyLocalContent,
   combineModerationResults,
+  isServiceUnavailable,
   moderateContent,
+  moderationOutcome,
   MODERATION_BLOCK_MESSAGE,
   MODERATION_UNAVAILABLE_MESSAGE,
   resolveWarnSpans,
   splitTextBySpans,
+  withBoundedBackoff,
   type ModerationProvider,
   type ModerationSpan,
 } from "./contentModeration";
@@ -68,6 +71,12 @@ describe("classifyLocalContent", () => {
     expect(result.reasonCode).toBe("GUIDELINES");
   });
 
+  it("warns on mild profanity in club descriptions instead of blocking", () => {
+    const result = classifyLocalContent("A damn good mystery circle", "BOOK_CLUB_DESCRIPTION");
+    expect(result.status).toBe("warn");
+    expect(result.reasonCode).toBe("MILD_PROFANITY");
+  });
+
   it("defeats zero-width and compatibility tricks", () => {
     const sneaky = "f\u200buck";
     const result = classifyLocalContent(sneaky, "FEED_POST");
@@ -101,10 +110,65 @@ describe("moderateContent + provider", () => {
       text: "hello friends",
       contentType: "FEED_POST",
       provider,
+      retry: { attempts: 2, delaysMs: [0], timeoutMs: 50 },
     });
     expect(result.status).toBe("block");
+    expect(result.outcome).toBe("SERVICE_UNAVAILABLE");
     expect(result.unavailable).toBe(true);
+    expect(isServiceUnavailable(result)).toBe(true);
     expect(result.userMessage).toBe(MODERATION_UNAVAILABLE_MESSAGE);
+  });
+
+  it("returns BLOCK, not SERVICE_UNAVAILABLE, when local rules already reject", async () => {
+    const provider: ModerationProvider = {
+      async moderate() {
+        throw new Error("provider_down");
+      },
+    };
+    const result = await moderateContent({
+      text: "I will kill you tomorrow",
+      contentType: "BOOK_CLUB_NAME",
+      provider,
+    });
+    expect(moderationOutcome(result)).toBe("BLOCK");
+    expect(result.userMessage).toBe(MODERATION_BLOCK_MESSAGE);
+  });
+
+  it("retries transient provider failures then allows", async () => {
+    let calls = 0;
+    const provider: ModerationProvider = {
+      async moderate() {
+        calls += 1;
+        if (calls < 3) throw new Error("moderation_provider_503");
+        return { flagged: false, categories: [] };
+      },
+    };
+    const result = await moderateContent({
+      text: "Sunday mystery club",
+      contentType: "BOOK_CLUB_NAME",
+      provider,
+      retry: { attempts: 3, delaysMs: [0, 0], timeoutMs: 50 },
+    });
+    expect(calls).toBe(3);
+    expect(result.status).toBe("allow");
+    expect(moderationOutcome(result)).toBe("ALLOW");
+  });
+
+  it("does not treat a timeout as a Community Guidelines block", async () => {
+    const provider: ModerationProvider = {
+      async moderate() {
+        await new Promise((resolve) => setTimeout(resolve, 30));
+        return { flagged: false, categories: [] };
+      },
+    };
+    const result = await moderateContent({
+      text: "Cozy readers",
+      contentType: "BOOK_CLUB_DESCRIPTION",
+      provider,
+      retry: { attempts: 1, delaysMs: [], timeoutMs: 5 },
+    });
+    expect(moderationOutcome(result)).toBe("SERVICE_UNAVAILABLE");
+    expect(result.userMessage).not.toBe(MODERATION_BLOCK_MESSAGE);
   });
 
   it("keeps local warn when the provider allows", async () => {
@@ -155,5 +219,21 @@ describe("combineModerationResults", () => {
     ]);
     expect(combined.status).toBe("block");
     expect(combined.reasonCode).toBe("THREATS");
+  });
+});
+
+describe("withBoundedBackoff", () => {
+  it("gives up after the bounded attempt count", async () => {
+    let calls = 0;
+    await expect(
+      withBoundedBackoff(
+        async () => {
+          calls += 1;
+          throw new Error("still_down");
+        },
+        { attempts: 3, delaysMs: [0, 0] }
+      )
+    ).rejects.toThrow("still_down");
+    expect(calls).toBe(3);
   });
 });

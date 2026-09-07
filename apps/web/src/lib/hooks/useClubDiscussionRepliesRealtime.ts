@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { clubReplyRealtimeTopic } from "../../../../../packages/utils/clubReplyThread";
 import { createClient } from "@/lib/supabase/client";
 
-type ReplyChange =
+export type ClubReplyRealtimeChange =
   | { type: "insert" | "update"; id: string }
-  | { type: "delete"; id: string };
+  | { type: "delete"; id: string }
+  | { type: "reconnect" };
 
 /**
  * Subscribe to replies for one discussion only. RLS still gates delivery.
@@ -13,7 +15,7 @@ type ReplyChange =
  */
 export function useClubDiscussionRepliesRealtime(
   discussionId: string | undefined,
-  onChange: (change: ReplyChange) => void
+  onChange: (change: ClubReplyRealtimeChange) => void
 ): void {
   const onChangeRef = useRef(onChange);
 
@@ -26,7 +28,7 @@ export function useClubDiscussionRepliesRealtime(
 
     const supabase = createClient();
     let cancelled = false;
-    const topic = `club_discussion_replies:${discussionId}`;
+    const topic = clubReplyRealtimeTopic(discussionId);
 
     function subscribe() {
       for (const existing of supabase.getChannels()) {
@@ -35,7 +37,7 @@ export function useClubDiscussionRepliesRealtime(
         }
       }
 
-      const channel = supabase
+      return supabase
         .channel(topic)
         .on(
           "postgres_changes",
@@ -60,39 +62,30 @@ export function useClubDiscussionRepliesRealtime(
             });
           }
         )
-        .subscribe((status) => {
-          if (cancelled) return;
-          if (status === "SUBSCRIBED" || status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-            // Caller refetches on reconnect via visibility handler; no-op here.
-          }
-        });
-
-      return channel;
+        .subscribe();
     }
 
     let channel = subscribe();
 
-    function handleVisibility() {
-      if (document.visibilityState !== "visible" || cancelled) return;
-      void supabase.removeChannel(channel);
-      channel = subscribe();
-      onChangeRef.current({ type: "insert", id: "" });
-    }
-
-    function handleOnline() {
+    function resubscribeAndRefetch() {
       if (cancelled) return;
       void supabase.removeChannel(channel);
       channel = subscribe();
-      onChangeRef.current({ type: "insert", id: "" });
+      onChangeRef.current({ type: "reconnect" });
+    }
+
+    function handleVisibility() {
+      if (document.visibilityState !== "visible") return;
+      resubscribeAndRefetch();
     }
 
     document.addEventListener("visibilitychange", handleVisibility);
-    window.addEventListener("online", handleOnline);
+    window.addEventListener("online", resubscribeAndRefetch);
 
     return () => {
       cancelled = true;
       document.removeEventListener("visibilitychange", handleVisibility);
-      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("online", resubscribeAndRefetch);
       void supabase.removeChannel(channel);
     };
   }, [discussionId]);

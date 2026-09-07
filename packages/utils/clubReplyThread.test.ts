@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   mergeClubReplies,
+  mergeReconnectClubReplies,
   parseClubReplySort,
   removeClubReply,
   sortClubReplies,
@@ -54,5 +55,32 @@ describe("club reply sort + dedup", () => {
   it("defaults unknown sort values to newest", () => {
     expect(parseClubReplySort("updated_at")).toBe("newest");
     expect(parseClubReplySort("oldest")).toBe("oldest");
+  });
+
+  it("reconnect merge keeps loaded pages and dedupes by id", () => {
+    const loaded = [
+      reply("page1", "2026-09-06T13:00:00.000Z"),
+      reply("page2", "2026-09-06T11:00:00.000Z"),
+      reply("optimistic", "2026-09-06T14:00:00.000Z"),
+    ];
+    const refetch = [
+      { id: "optimistic", created_at: "2026-09-06T14:00:00.000Z" },
+      { id: "missed", created_at: "2026-09-06T13:30:00.000Z" },
+      { id: "page1", created_at: "2026-09-06T13:00:00.000Z" },
+    ];
+    const merged = mergeReconnectClubReplies(loaded, refetch, "newest");
+    expect(merged.map((row) => row.id)).toEqual(["optimistic", "missed", "page1", "page2"]);
+  });
+
+  it("reconnect merge drops replies from another discussion", () => {
+    const loaded = [
+      { id: "keep", created_at: "2026-09-06T10:00:00.000Z", discussion_id: "d1" },
+      { id: "stale", created_at: "2026-09-06T11:00:00.000Z", discussion_id: "d0" },
+    ];
+    const refetch = [
+      { id: "fresh", created_at: "2026-09-06T12:00:00.000Z", discussion_id: "d1" },
+    ];
+    const merged = mergeReconnectClubReplies(loaded, refetch, "oldest", "d1");
+    expect(merged.map((row) => row.id)).toEqual(["keep", "fresh"]);
   });
 });

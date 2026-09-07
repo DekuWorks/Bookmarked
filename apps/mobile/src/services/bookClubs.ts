@@ -574,17 +574,45 @@ export type CreateClubInput = {
 
 export async function createClub(
   input: CreateClubInput
-): Promise<{ clubId?: string; error?: string }> {
+): Promise<{ clubId?: string; error?: string; retryable?: boolean }> {
   const name = input.name.trim();
   if (!name) return { error: "Club name is required." };
 
-  const nameGate = await requireModeration({ text: name, contentType: "BOOK_CLUB_NAME" });
-  if (nameGate.error) return { error: nameGate.error };
+  const nameGate = await requireModeration({
+    text: name,
+    contentType: "BOOK_CLUB_NAME",
+    clubCreate: true,
+  });
+  if (nameGate.error) return { error: nameGate.error, retryable: nameGate.retryable };
+
+  const description = input.description?.trim() || null;
+  if (description) {
+    const descriptionGate = await requireModeration({
+      text: description,
+      contentType: "BOOK_CLUB_DESCRIPTION",
+      clubCreate: true,
+    });
+    if (descriptionGate.error) {
+      return { error: descriptionGate.error, retryable: descriptionGate.retryable };
+    }
+  }
 
   try {
     const { supabase, user } = await requireUser();
     const visibility = input.visibility ?? "public";
     const joinPolicy = input.joinPolicy ?? defaultJoinPolicy(visibility);
+
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const { data: existing } = await supabase
+      .from("book_clubs")
+      .select("id")
+      .eq("owner_id", user.id)
+      .eq("name", name)
+      .gte("created_at", fiveMinutesAgo)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (existing?.id) return { clubId: existing.id };
 
     const [{ count, error: countError }, { data: subscription }] = await Promise.all([
       supabase
@@ -609,7 +637,7 @@ export async function createClub(
       .insert({
         owner_id: user.id,
         name,
-        description: input.description?.trim() || null,
+        description,
         visibility,
         join_policy: joinPolicy,
         genre_tags: input.genreTags ?? [],
@@ -916,7 +944,18 @@ export async function updateClub(
       if (nameGate.error) return { error: nameGate.error };
       patch.name = name;
     }
-    if (input.description !== undefined) patch.description = input.description?.trim() || null;
+    if (input.description !== undefined) {
+      const description = input.description?.trim() || null;
+      if (description) {
+        const descriptionGate = await requireModeration({
+          text: description,
+          contentType: "BOOK_CLUB_DESCRIPTION",
+          contentId: clubId,
+        });
+        if (descriptionGate.error) return { error: descriptionGate.error };
+      }
+      patch.description = description;
+    }
     if (input.visibility !== undefined) patch.visibility = input.visibility;
     if (input.joinPolicy !== undefined) patch.join_policy = input.joinPolicy;
     if (input.genreTags !== undefined) patch.genre_tags = input.genreTags;

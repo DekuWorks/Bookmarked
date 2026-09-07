@@ -8,6 +8,7 @@ export const MODERATION_CONTENT_TYPES = [
   "COMMENT",
   "PROFILE_BIO",
   "BOOK_CLUB_NAME",
+  "BOOK_CLUB_DESCRIPTION",
   "BOOK_CLUB_DISCUSSION",
   "BOOK_CLUB_REPLY",
   "CHALLENGE_TITLE",
@@ -41,6 +42,24 @@ export const MODERATION_BLOCK_MESSAGE =
 export const MODERATION_UNAVAILABLE_MESSAGE =
   "Content review is temporarily unavailable. Please try again.";
 
+export const MODERATION_CLUB_UNAVAILABLE_MESSAGE =
+  "Content review is temporarily unavailable. Your club details have been saved here. Please try again in a moment.";
+
+export const MODERATION_OUTCOMES = [
+  "ALLOW",
+  "WARN",
+  "BLOCK",
+  "SERVICE_UNAVAILABLE",
+  "ERROR",
+] as const;
+
+export type ModerationOutcome = (typeof MODERATION_OUTCOMES)[number];
+
+export const MODERATION_PROVIDER_TIMEOUT_MS = 4000;
+export const MODERATION_PROVIDER_ATTEMPTS = 3;
+export const MODERATION_PROVIDER_BACKOFF_MS = [300, 700] as const;
+export const MODERATION_CLIENT_TIMEOUT_MS = 15_000;
+
 export type ModerationSpanTreatment = "blur_until_reveal";
 
 export type ModerationSpan = {
@@ -65,6 +84,7 @@ export type ModerationReasonCode =
 
 export type ModerationResult = {
   status: ModerationStatus;
+  outcome?: ModerationOutcome;
   categories: ModerationCategory[];
   spans: ModerationSpan[];
   reasonCode: ModerationReasonCode;
@@ -96,6 +116,11 @@ export type ModerateContentInput = {
   userId?: string | null;
   context?: Record<string, unknown>;
   provider?: ModerationProvider | null;
+  retry?: {
+    attempts?: number;
+    delaysMs?: readonly number[];
+    timeoutMs?: number;
+  };
 };
 
 const ZERO_WIDTH = /[\u200B-\u200D\uFEFF\u2060\u180E\u00AD]/g;
@@ -223,6 +248,71 @@ const PROVIDER_BLOCK_CATEGORIES = new Set([
   "violence/graphic",
   "illicit/violent",
 ]);
+
+export function moderationOutcome(result: Pick<ModerationResult, "status" | "reasonCode" | "unavailable" | "outcome">): ModerationOutcome {
+  if (result.outcome) return result.outcome;
+  if (result.unavailable || result.reasonCode === "PROVIDER_UNAVAILABLE") {
+    return "SERVICE_UNAVAILABLE";
+  }
+  if (result.status === "allow") return "ALLOW";
+  if (result.status === "warn") return "WARN";
+  return "BLOCK";
+}
+
+export function isServiceUnavailable(
+  result: Pick<ModerationResult, "status" | "reasonCode" | "unavailable" | "outcome">
+): boolean {
+  return moderationOutcome(result) === "SERVICE_UNAVAILABLE";
+}
+
+export function isModerationBlock(
+  result: Pick<ModerationResult, "status" | "reasonCode" | "unavailable" | "outcome">
+): boolean {
+  return moderationOutcome(result) === "BLOCK";
+}
+
+export function moderationContentFamily(contentType: ModerationContentType): string {
+  if (contentType.startsWith("BOOK_CLUB")) return "book_club";
+  if (contentType.startsWith("CHALLENGE")) return "challenge";
+  if (contentType === "FEED_POST") return "feed";
+  if (contentType === "COMMENT") return "comment";
+  if (contentType === "PROFILE_BIO") return "profile";
+  return "ugc";
+}
+
+export async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => reject(new Error("moderation_timeout")), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+export async function withBoundedBackoff<T>(
+  run: () => Promise<T>,
+  options?: { attempts?: number; delaysMs?: readonly number[] }
+): Promise<T> {
+  const attempts = options?.attempts ?? MODERATION_PROVIDER_ATTEMPTS;
+  const delays = options?.delaysMs ?? MODERATION_PROVIDER_BACKOFF_MS;
+  let lastError: unknown;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      return await run();
+    } catch (error) {
+      lastError = error;
+      if (attempt >= attempts - 1) break;
+      const delay = delays[attempt] ?? delays[delays.length - 1] ?? 300;
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+  throw lastError;
+}
 
 export function isModerationContentType(value: unknown): value is ModerationContentType {
   return (
@@ -358,6 +448,7 @@ function uniqueCategories(categories: ModerationCategory[]): ModerationCategory[
 function allowResult(): ModerationResult {
   return {
     status: "allow",
+    outcome: "ALLOW",
     categories: [],
     spans: [],
     reasonCode: "ALLOW",
@@ -373,6 +464,7 @@ function blockResult(
 ): ModerationResult {
   return {
     status: "block",
+    outcome: "BLOCK",
     categories: uniqueCategories(categories),
     spans,
     reasonCode,
@@ -384,6 +476,7 @@ function blockResult(
 function warnResult(spans: ModerationSpan[]): ModerationResult {
   return {
     status: "warn",
+    outcome: "WARN",
     categories: ["mild_profanity"],
     spans,
     reasonCode: "MILD_PROFANITY",
@@ -392,13 +485,29 @@ function warnResult(spans: ModerationSpan[]): ModerationResult {
   };
 }
 
-function unavailableResult(): ModerationResult {
+export function unavailableResult(
+  userMessage: string = MODERATION_UNAVAILABLE_MESSAGE
+): ModerationResult {
   return {
     status: "block",
+    outcome: "SERVICE_UNAVAILABLE",
     categories: [],
     spans: [],
     reasonCode: "PROVIDER_UNAVAILABLE",
-    userMessage: MODERATION_UNAVAILABLE_MESSAGE,
+    userMessage,
+    moderationVersion: MODERATION_VERSION,
+    unavailable: true,
+  };
+}
+
+export function errorResult(userMessage: string = MODERATION_UNAVAILABLE_MESSAGE): ModerationResult {
+  return {
+    status: "block",
+    outcome: "ERROR",
+    categories: [],
+    spans: [],
+    reasonCode: "PROVIDER_UNAVAILABLE",
+    userMessage,
     moderationVersion: MODERATION_VERSION,
     unavailable: true,
   };
@@ -501,13 +610,26 @@ export function combineModerationResults(results: ModerationResult[]): Moderatio
 export async function moderateContent(input: ModerateContentInput): Promise<ModerationResult> {
   const local = classifyLocalContent(input.text, input.contentType);
 
+  // Local BLOCK is a trusted fallback. Do not hide a violation behind an outage.
+  if (local.status === "block") return local;
+
   if (!input.provider) {
     return local;
   }
 
   let providerResult: ProviderModerationResult;
   try {
-    providerResult = await input.provider.moderate(input.text);
+    providerResult = await withBoundedBackoff(
+      () =>
+        withTimeout(
+          input.provider!.moderate(input.text),
+          input.retry?.timeoutMs ?? MODERATION_PROVIDER_TIMEOUT_MS
+        ),
+      {
+        attempts: input.retry?.attempts ?? MODERATION_PROVIDER_ATTEMPTS,
+        delaysMs: input.retry?.delaysMs ?? MODERATION_PROVIDER_BACKOFF_MS,
+      }
+    );
   } catch {
     return unavailableResult();
   }
@@ -522,7 +644,6 @@ export async function moderateContent(input: ModerateContentInput): Promise<Mode
     }
   }
 
-  if (local.status === "block") return local;
   if (local.status === "warn" && isStrictContentType(input.contentType)) {
     return blockResult(["guidelines"], "GUIDELINES", local.spans);
   }

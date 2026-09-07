@@ -26,11 +26,17 @@ import {
   useSetDiscussionLocked,
   useSetDiscussionPinned,
 } from "../hooks/useClubs";
-import { useClubDiscussionRepliesRealtime } from "../hooks/useClubDiscussionRepliesRealtime";
+import {
+  useClubDiscussionRepliesRealtime,
+  type ClubReplyRealtimeChange,
+} from "../hooks/useClubDiscussionRepliesRealtime";
 import { getReply, listReplies } from "../services/bookClubs";
 import {
+  CLUB_REPLY_SORT_LABEL,
+  CLUB_REPLY_SORT_OPTIONS,
   CLUB_REPLY_SORT_STORAGE_KEY,
   mergeClubReplies,
+  mergeReconnectClubReplies,
   parseClubReplySort,
   removeClubReply,
   sortClubReplies,
@@ -88,6 +94,7 @@ export function ClubDiscussionThreadSheet({
   const [body, setBody] = useState("");
   const [spoilers, setSpoilers] = useState(false);
   const [replySort, setReplySort] = useState<ClubReplySort>("newest");
+  const [sortOpen, setSortOpen] = useState(false);
   const [liveReplies, setLiveReplies] = useState(replies.data ?? []);
 
   useEffect(() => {
@@ -100,21 +107,27 @@ export function ClubDiscussionThreadSheet({
     });
   }, []);
 
+  useEffect(() => {
+    if (!visible) setSortOpen(false);
+  }, [visible]);
+
   const sortedReplies = useMemo(
     () => sortClubReplies(liveReplies, replySort),
     [liveReplies, replySort]
   );
 
   const handleRealtime = useCallback(
-    async (change: { type: "insert" | "update" | "delete"; id: string }) => {
+    async (change: ClubReplyRealtimeChange) => {
       if (!discussionId) return;
-      if (change.type === "delete" && change.id) {
+      if (change.type === "delete") {
         setLiveReplies((current) => removeClubReply(current, change.id));
         return;
       }
-      if (!change.id) {
+      if (change.type === "reconnect") {
         const rows = await listReplies(discussionId);
-        setLiveReplies((current) => mergeClubReplies(current, rows, replySort));
+        setLiveReplies((current) =>
+          mergeReconnectClubReplies(current, rows, replySort, discussionId)
+        );
         return;
       }
       const row = await getReply(change.id);
@@ -131,6 +144,10 @@ export function ClubDiscussionThreadSheet({
   async function changeReplySort(next: ClubReplySort) {
     setReplySort(next);
     await AsyncStorage.setItem(CLUB_REPLY_SORT_STORAGE_KEY, next);
+  }
+
+  function openReplySortMenu() {
+    setSortOpen(true);
   }
 
   const canPin = canPinDiscussions(viewerRole);
@@ -182,6 +199,7 @@ export function ClubDiscussionThreadSheet({
   }
 
   return (
+    <>
     <Modal visible={visible} animationType="slide" onRequestClose={handleBack}>
       <KeyboardAvoidingView
         className="flex-1 bg-background"
@@ -310,36 +328,17 @@ export function ClubDiscussionThreadSheet({
                   <Text className="text-sm font-semibold text-puce-red">
                     Replies ({sortedReplies.length})
                   </Text>
-                  <View className="flex-row gap-2">
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: replySort === "newest" }}
-                      onPress={() => void changeReplySort("newest")}
-                      className="min-h-[44px] justify-center px-1"
-                    >
-                      <Text
-                        className={`text-xs font-semibold ${
-                          replySort === "newest" ? "text-puce-red" : "text-ink-muted"
-                        }`}
-                      >
-                        Newest First
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: replySort === "oldest" }}
-                      onPress={() => void changeReplySort("oldest")}
-                      className="min-h-[44px] justify-center px-1"
-                    >
-                      <Text
-                        className={`text-xs font-semibold ${
-                          replySort === "oldest" ? "text-puce-red" : "text-ink-muted"
-                        }`}
-                      >
-                        Oldest First
-                      </Text>
-                    </Pressable>
-                  </View>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={CLUB_REPLY_SORT_LABEL}
+                    accessibilityHint="Newest First or Oldest First"
+                    onPress={openReplySortMenu}
+                    className="min-h-[44px] justify-center rounded-full bg-primary/15 px-3 active:opacity-80"
+                  >
+                    <Text className="text-xs font-semibold text-puce-red">
+                      {CLUB_REPLY_SORT_OPTIONS.find((option) => option.id === replySort)?.label}
+                    </Text>
+                  </Pressable>
                 </View>
               </View>
             }
@@ -456,5 +455,39 @@ export function ClubDiscussionThreadSheet({
         ) : null}
       </KeyboardAvoidingView>
     </Modal>
+    <Modal transparent visible={sortOpen} animationType="fade" onRequestClose={() => setSortOpen(false)}>
+      <Pressable className="flex-1 justify-end bg-black/40" onPress={() => setSortOpen(false)}>
+        <Pressable className="rounded-t-3xl border border-brand-border bg-surface px-4 pb-8 pt-4">
+          <Text className="mb-2 text-center text-sm font-medium text-puce-red">
+            {CLUB_REPLY_SORT_LABEL}
+          </Text>
+          {CLUB_REPLY_SORT_OPTIONS.map((option) => {
+            const active = replySort === option.id;
+            return (
+              <Pressable
+                key={option.id}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={option.label}
+                onPress={() => {
+                  void changeReplySort(option.id);
+                  setSortOpen(false);
+                }}
+                className="min-h-[44px] justify-center rounded-xl px-3 py-2 active:bg-primary/10"
+              >
+                <Text
+                  className={`text-sm font-semibold ${
+                    active ? "text-puce-red" : "text-ink-muted"
+                  }`}
+                >
+                  {option.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </Pressable>
+      </Pressable>
+    </Modal>
+    </>
   );
 }
