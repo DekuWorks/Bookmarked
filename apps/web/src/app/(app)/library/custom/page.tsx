@@ -5,7 +5,9 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BookSpine } from "@/components/library/BookSpine";
 import { EmptyShelfMessage } from "@/components/library/EmptyShelfMessage";
-import { ShelfSortSelect } from "@/components/library/ShelfSortSelect";
+import { ShelfActionRow } from "@/components/library/ShelfActionRow";
+import { ShelfOrganizeControls } from "@/components/library/ShelfOrganizeControls";
+import { ShelfStatsPanel } from "@/components/library/ShelfStatsPanel";
 import { DeleteCustomShelfModal } from "@/components/shelves/DeleteCustomShelfModal";
 import { EditCustomShelfModal } from "@/components/shelves/EditCustomShelfModal";
 import { ShelfTitleRow } from "@/components/shelves/ShelfTitleRow";
@@ -26,6 +28,8 @@ import {
   type CustomShelfGroup,
 } from "@/lib/services/customShelves";
 import { sortShelfItems } from "@/lib/utils/shelfSort";
+import { filterItemsByTitleOrAuthor } from "@bookmarked/utils/shelfFilter";
+import { computeShelfStatsFromItems } from "@bookmarked/utils/shelfStats";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 
 function CustomShelfContent() {
@@ -42,10 +46,16 @@ function CustomShelfContent() {
   const [clearOpen, setClearOpen] = useState(false);
   const [clearing, setClearing] = useState(false);
   const { sort, setSort } = useShelfSort(`custom:${slug}`);
+  const [query, setQuery] = useState("");
+
+  const stats = useMemo(
+    () => computeShelfStatsFromItems(shelf?.items ?? [], "custom"),
+    [shelf]
+  );
 
   const displayItems = useMemo(
-    () => (shelf ? sortShelfItems(shelf.items, sort) : []),
-    [shelf, sort]
+    () => (shelf ? sortShelfItems(filterItemsByTitleOrAuthor(shelf.items, query), sort) : []),
+    [shelf, sort, query]
   );
 
   const loadShelf = useCallback(async () => {
@@ -158,29 +168,39 @@ function CustomShelfContent() {
           <p className="mt-2 text-sm font-medium text-text">
             {shelf.items.length} {shelf.items.length === 1 ? "book" : "books"}
           </p>
-          <div className="mt-3 flex justify-center">
-            <CopyLinkButton path={customShelfPath(shelf.slug)} label="Copy shelf link" variant="outline" />
-          </div>
         </div>
+        <ShelfActionRow>
+          <Button type="button" variant="outline" onClick={() => setEditOpen(true)}>
+            Edit
+          </Button>
+          <ButtonLink href="/profile/settings" variant="outline">
+            Privacy
+          </ButtonLink>
+          <CopyLinkButton
+            path={customShelfPath(shelf.slug)}
+            label="Share"
+            size="md"
+            variant="outline"
+          />
+        </ShelfActionRow>
         <ButtonLink href="/search" variant="secondary">
           Add books
         </ButtonLink>
-        <Button type="button" variant="outline" onClick={() => setEditOpen(true)}>
-          Edit shelf
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          className="text-rust hover:bg-rust/10"
-          onClick={() => setDeleteOpen(true)}
-        >
-          Delete shelf
-        </Button>
-        {shelf.items.length > 0 ? (
-          <Button type="button" variant="outline" onClick={() => setClearOpen(true)}>
-            Clear shelf
+        <ShelfActionRow>
+          {shelf.items.length > 0 ? (
+            <Button type="button" variant="outline" onClick={() => setClearOpen(true)}>
+              Clear shelf
+            </Button>
+          ) : null}
+          <Button
+            type="button"
+            variant="ghost"
+            className="text-rust hover:bg-rust/10"
+            onClick={() => setDeleteOpen(true)}
+          >
+            Delete shelf
           </Button>
-        ) : null}
+        </ShelfActionRow>
       </header>
 
       <EditCustomShelfModal
@@ -230,15 +250,23 @@ function CustomShelfContent() {
         </div>
       </Modal>
 
-      <div className="mx-auto w-full max-w-4xl rounded-xl border border-border bg-surface p-4 shadow-sm">
-        <p className="mb-3 text-center text-sm font-medium text-puce-red">Organize shelf</p>
-        <ShelfSortSelect value={sort} onChange={setSort} />
-      </div>
+      <ShelfStatsPanel stats={stats} status="custom" />
+
+      <ShelfOrganizeControls
+        query={query}
+        onQueryChange={setQuery}
+        sort={sort}
+        onSortChange={setSort}
+      />
 
       <section className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
         <div className="bookshelf-back px-4 pb-0 pt-5">
           {shelf.items.length === 0 ? (
             <EmptyShelfMessage className="pb-6" />
+          ) : displayItems.length === 0 ? (
+            <p className="pb-6 text-sm text-text-muted">
+              No books match &ldquo;{query}&rdquo; on this shelf.
+            </p>
           ) : (
             <div className="bookshelf-row scrollbar-thin">
               {displayItems.map((item) => {

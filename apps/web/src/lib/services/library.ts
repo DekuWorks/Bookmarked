@@ -1,6 +1,9 @@
 import { createClient } from "@/lib/supabase/client";
 import { getShelvesInOrder } from "@/lib/constants/shelves";
+import { computeShelfStatsFromItems, type ShelfStats } from "@bookmarked/utils/shelfStats";
 import type { ShelfStatus } from "@/types";
+
+export type { ShelfStats };
 
 export type LibraryBookRow = {
   id: string;
@@ -163,43 +166,7 @@ export async function getShelvedOpenLibraryWorkIds(userId: string): Promise<Set<
   return getShelvedCatalogExternalIds(userId);
 }
 
-export type ShelfStats = {
-  totalBooks: number;
-  averageProgress: number;
-  averageRating: number | null;
-  pagesRead: number;
-  finishedThisMonth: number;
-};
-
 export function computeShelfStats(books: LibraryBookRow[], status: ShelfStatus): ShelfStats {
   const items = books.filter((b) => b.shelf_status === status);
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
-  const withProgress = items.filter((b) => Number(b.progress_percent) > 0);
-  const averageProgress =
-    withProgress.length > 0
-      ? withProgress.reduce((sum, b) => sum + Number(b.progress_percent), 0) / withProgress.length
-      : 0;
-
-  const rated = items.filter((b) => b.rating != null);
-  const averageRating =
-    rated.length > 0
-      ? rated.reduce((sum, b) => sum + Number(b.rating), 0) / rated.length
-      : null;
-
-  const pagesRead = items.reduce((sum, b) => sum + (Number(b.progress_pages) || 0), 0);
-
-  const finishedThisMonth =
-    status === "read"
-      ? items.filter((b) => b.finished_at && new Date(b.finished_at) >= monthStart).length
-      : 0;
-
-  return {
-    totalBooks: items.length,
-    averageProgress,
-    averageRating,
-    pagesRead,
-    finishedThisMonth,
-  };
+  return computeShelfStatsFromItems(items, status);
 }
