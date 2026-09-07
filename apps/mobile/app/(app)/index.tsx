@@ -159,6 +159,9 @@ export default function HomeReadingRoom() {
             Reading Room
           </Text>
           <Text style={{ color: colors.inkMuted }}>Welcome back, {name}.</Text>
+          <Text className="mt-1 text-ink-muted">
+            Your Whole Reading Life — Tracked, Noted and Reviewed.
+          </Text>
         </View>
 
         <SegmentedTabs

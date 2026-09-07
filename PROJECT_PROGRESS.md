@@ -1205,6 +1205,51 @@ Web-only. Compact Posts / Activity and For You / Following pills stay natural wi
 
 ---
 
+## Reading Room — Header subtitle rewrite ✅
+
+Copy-only. Web and iOS Home now share the approved descriptor. No layout, fonts, colours, routes, or navigation changes. No shared constant.
+
+### Exact subtitle
+
+| | Copy |
+|---|------|
+| **Old (live web header)** | Your reading life in one place — Progress, Trail, Notes, Reviews, and History. |
+| **New (web + iPhone + iPad)** | Your Whole Reading Life — Tracked, Noted and Reviewed. |
+
+Em dash, no Oxford comma after Noted. iPhone and iPad share `apps/mobile/app/(app)/index.tsx` — one string, no iPad-specific copy.
+
+### Shared vs duplicated
+
+- No shared constant in `packages/utils/overviewCopy.ts` or elsewhere. None added.
+- Web: `apps/web/src/app/(app)/reading-room/page.tsx` — header subtitle updated to the approved line.
+- iOS Home: `apps/mobile/app/(app)/index.tsx` — added muted subtitle under `Welcome back, {name}.` using BrandHeader’s `mt-1 text-ink-muted` pattern. Greeting kept. `/reading-room` stays a redirect to Home.
+
+### Files
+
+| File | Change |
+|------|--------|
+| `apps/web/src/app/(app)/reading-room/page.tsx` | Header subtitle set to the approved line |
+| `apps/mobile/app/(app)/index.tsx` | Added Reading Room descriptor under Welcome back |
+| `PROJECT_PROGRESS.md` | This section |
+
+No `aria-label` / `accessibilityLabel` duplicated the old or new line. VoiceOver reads the visible subtitle text.
+
+### Left alone on purpose
+
+- Historical “Dashboard – Subtitle Capitalization” section above (records the previous live line)
+- Reading Room SEO `description` in `layout.tsx`: `Your reading-life hub — Progress, Trail, Notes, Reviews, and History.` — related marketing, not the header
+- Site tagline `Your reading life, beautifully organized`
+- Architecture / tab lists (Overview, Progress, Trail, Notes, Reviews, History)
+- Android (out of scope)
+
+### Tests / verification
+
+- No leftover UI string `Your Reading Life In One Place` (historical PROJECT_PROGRESS only)
+- No snapshot / string / UI / a11y test asserted the old subtitle. None updated.
+- No `tsc` (string-only). No `expo run:ios`. No TestFlight
+
+---
+
 ## Next up (recommended)
 
 | Priority | Item | Notes |
