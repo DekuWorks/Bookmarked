@@ -20,7 +20,6 @@ import { BookTrendBadge } from "@/components/books/BookTrendBadge";
 import { CommunityRatingDisplay } from "@/components/books/CommunityRatingDisplay";
 import { AddAnotherReadButton } from "@/components/books/AddAnotherReadButton";
 import { AFFILIATE_DISCLOSURE, isbnSearchUrl } from "@bookmarked/utils/affiliateLinks";
-import { ShelfBadge } from "@/components/shelves/ShelfBadge";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
@@ -182,7 +181,11 @@ function BookDetailsContent() {
       />
       <BookCoverAmbience coverUrl={book.cover_url}>
         <div className="flex flex-wrap items-center justify-center gap-3">
-          <OriginBackNav fallbackLabel="library" fallbackHref="/library/" />
+          <OriginBackNav
+            fallbackLabel="library"
+            fallbackHref="/library/"
+            className="font-semibold text-puce-red"
+          />
           <CopyLinkButton path={bookDetailsPath(book.id)} label="Copy link" variant="outline" />
         </div>
 
@@ -198,7 +201,6 @@ function BookDetailsContent() {
         <div className="mt-6 min-w-0">
           <div className="flex flex-wrap items-center justify-center gap-3">
             <h1 className="font-display text-2xl font-bold text-puce-red sm:text-3xl">{book.title}</h1>
-            {currentShelf ? <ShelfBadge status={currentShelf} /> : null}
           </div>
           {badges.length > 0 ? (
             <div className="mt-3 flex justify-center">

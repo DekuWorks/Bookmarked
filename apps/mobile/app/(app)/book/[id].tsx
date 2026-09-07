@@ -48,6 +48,7 @@ import {
   addBookToCustomShelf,
   listCustomShelfIdsForBook,
   listUserCustomShelves,
+  removeBookFromCustomShelf,
 } from "../../../src/services/customShelves";
 import type { UserShelf } from "../../../src/types";
 import {
@@ -365,6 +366,17 @@ export default function BookScreen() {
     await invalidate();
   }
 
+  async function removeFromCustomCollection(shelf: UserShelf) {
+    if (!book) return;
+    const result = await removeBookFromCustomShelf(shelf.id, book.id);
+    if (result.error) {
+      Alert.alert("Error", result.error);
+      return;
+    }
+    setMemberShelfIds((prev) => prev.filter((id) => id !== shelf.id));
+    await invalidate();
+  }
+
   async function finish() {
     setFinishOpen(true);
   }
@@ -634,11 +646,7 @@ export default function BookScreen() {
               </Text>
             </Pressable>
           ) : null}
-          {presence.kind === "default" && userBook ? (
-            <SavedPill shelf={userBook.shelf_status} />
-          ) : presence.kind === "custom" ? (
-            <SavedPill label={presence.label} />
-          ) : null}
+          {presence.kind === "custom" ? <SavedPill label={presence.label} /> : null}
         </View>
 
         <View className="items-center gap-1.5">
@@ -755,7 +763,9 @@ export default function BookScreen() {
           <Text className="text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
             Your shelf
           </Text>
-          <Text className="text-sm text-ink-muted">{presence.label}</Text>
+          {presence.kind !== "default" ? (
+            <Text className="text-sm text-ink-muted">{presence.label}</Text>
+          ) : null}
           <View className="flex-row gap-2">
             {SHELVES.map((s) => {
               const active = userBook?.shelf_status === s.status;
@@ -807,25 +817,39 @@ export default function BookScreen() {
             {customShelves.map((shelf) => {
               const isMember = memberShelfIds.includes(shelf.id);
               return (
-                <Pressable
+                <View
                   key={shelf.id}
-                  disabled={isMember}
-                  onPress={() => void addToCustomCollection(shelf)}
                   className={`min-h-[44px] flex-row items-center gap-2 rounded-xl border px-4 py-2.5 ${
                     isMember ? "border-primary bg-primary/10" : "border-brand-border bg-surface"
                   }`}
                 >
-                  <ShelfIcon
-                    iconKey={shelf.icon_key}
-                    iconType={shelf.icon_type}
-                    iconEmoji={shelf.icon_emoji}
-                    size="small"
-                  />
-                  <Text className="flex-1 font-semibold text-puce-red">{shelf.name}</Text>
+                  <Pressable
+                    disabled={isMember}
+                    onPress={() => void addToCustomCollection(shelf)}
+                    className="min-w-0 flex-1 flex-row items-center gap-2"
+                  >
+                    <ShelfIcon
+                      iconKey={shelf.icon_key}
+                      iconType={shelf.icon_type}
+                      iconEmoji={shelf.icon_emoji}
+                      size="small"
+                    />
+                    <Text className="flex-1 font-semibold text-puce-red">{shelf.name}</Text>
+                    {isMember ? (
+                      <Text className="text-xs font-semibold text-primary-dark">On shelf</Text>
+                    ) : null}
+                  </Pressable>
                   {isMember ? (
-                    <Text className="text-xs font-semibold text-primary-dark">On shelf</Text>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Remove from ${shelf.name}`}
+                      onPress={() => void removeFromCustomCollection(shelf)}
+                      className="min-h-[44px] justify-center px-1 active:opacity-70"
+                    >
+                      <Text className="text-sm font-semibold text-puce-red">Remove</Text>
+                    </Pressable>
                   ) : null}
-                </Pressable>
+                </View>
               );
             })}
           </View>

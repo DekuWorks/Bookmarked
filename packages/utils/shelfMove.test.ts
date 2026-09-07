@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   ALREADY_IN_LIBRARY_COPY,
+  customCollectionWriteTouchesShelfStatus,
   formatLibraryMemberships,
   parseShelfMoveDestination,
   shelfMovePreservesUserBook,
@@ -35,5 +36,13 @@ describe("shelfMove", () => {
       "Currently on: TBR, Summer, Book Club"
     );
     expect(formatLibraryMemberships(null, [])).toBe("");
+  });
+
+  it("does not treat custom-collection writes as a default-shelf change", () => {
+    expect(customCollectionWriteTouchesShelfStatus()).toBe(false);
+    expect(parseShelfMoveDestination({ kind: "custom", shelfId: "smut" })).toEqual({
+      kind: "custom",
+      shelfId: "smut",
+    });
   });
 });

@@ -35,8 +35,8 @@ export function BackNav({ label, fallbackHref, className, href }: Props) {
         router.push(fallbackHref);
       }}
       className={cn(
-        "text-left text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange",
-        className
+        "text-left text-sm font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange",
+        className ?? "text-primary"
       )}
       aria-label={`Back to ${label}`}
     >

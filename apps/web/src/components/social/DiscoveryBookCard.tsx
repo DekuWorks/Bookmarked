@@ -228,6 +228,9 @@ export function DiscoveryBookCard({ book }: Props) {
         open={customOpen}
         memberShelfIds={memberShelfIds}
         onAdded={(shelfId) => setMemberShelfIds((prev) => [...prev, shelfId])}
+        onRemoved={(shelfId) =>
+          setMemberShelfIds((prev) => prev.filter((id) => id !== shelfId))
+        }
         onClose={() => setCustomOpen(false)}
       />
 

@@ -1292,6 +1292,19 @@ Custom-only books were treated as unshelved. “Your shelf” now uses shared `h
 
 ---
 
+## Book Details — chips, back contrast, collection remove
+
+Voice-note polish: default-shelf **buttons** stay highlighted; redundant status chips are gone. “Back to library” uses the same `text-puce-red` token as **Copy link**. Custom collections have Remove. Adding to a collection does not change `user_books.shelf_status`.
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Redundant shelf chips | ✅ | Removed web `ShelfBadge` on title + Your shelf; iOS default `SavedPill` + default status line. Custom-only pill/copy kept |
+| Back to library contrast | ✅ | Web Book Details: `font-semibold text-puce-red` (Copy link outline token). iOS header was already `text-puce-red` on a solid bar |
+| Remove from collection | ✅ | Web `AddToCustomShelfMenu` Remove; iOS Book Details Remove on member rows. Library Remove unchanged |
+| Finished + custom both | ✅ | `addBookToCustomShelf` / `removeBookFromCustomShelf` write `user_shelf_books` only. `customCollectionWriteTouchesShelfStatus()` is false |
+
+---
+
 ## Next up (recommended)
 
 | Priority | Item | Notes |

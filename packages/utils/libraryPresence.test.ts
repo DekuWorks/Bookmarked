@@ -31,6 +31,22 @@ describe("describeLibraryPresence", () => {
     ).toEqual({ kind: "default", label: "Finished" });
   });
 
+  it("keeps Finished when the book is also in a custom collection", () => {
+    expect(
+      hasLibraryPresence({
+        defaultShelf: "read",
+        customCollectionNames: ["Smut"],
+      })
+    ).toBe(true);
+    expect(
+      describeLibraryPresence({
+        defaultShelf: "read",
+        customShelfIds: ["smut"],
+        customCollectionNames: ["Smut"],
+      })
+    ).toEqual({ kind: "default", label: "Finished" });
+  });
+
   it("uses the collection name when that is the only library presence", () => {
     expect(
       describeLibraryPresence({
