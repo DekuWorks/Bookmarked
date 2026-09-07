@@ -67,7 +67,7 @@ export default function ReadingRoomPage() {
           {displayName}&apos;s Reading Room
         </h1>
         <p className="mx-auto mt-2 max-w-2xl text-pretty text-text-muted">
-          Your reading life in one place — Progress, Trail, Notes, Reviews, and History.
+          Your Whole Reading Life — Tracked, Noted and Reviewed.
         </p>
       </header>
 
