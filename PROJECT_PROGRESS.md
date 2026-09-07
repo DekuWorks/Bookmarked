@@ -778,9 +778,9 @@ Canonical IDs: `want_to_read` (TBR), `currently_reading`, `read` (Finished), `dn
 
 | Default shelf | Logical key | Purple asset |
 |---------------|-------------|--------------|
-| TBR | `stack_of_books` | `want-to-read.png` |
-| Currently Reading | `open_book` | `currently-reading.png` |
-| DNF | `closed_book` | `did-not-finish.png` |
+| TBR | `stack_of_books` | `currently-reading.png` |
+| Currently Reading | `open_book` | `did-not-finish.png` |
+| DNF | `closed_book` | `want-to-read.png` |
 | Finished | `book_with_sparkle` | `finished.png` |
 
 Default icons are **not** user-editable. Same assets on web + iOS. Android not in scope.
@@ -791,9 +791,9 @@ Default icons are **not** user-editable. Same assets on web + iOS. Android not i
 - **Catalog:** `custom_icon_1` … `custom_icon_5`. Writes validate against that list; invalid keys are rejected. Null/missing → `custom_icon_1` (documented fallback, not a random assignment).
 - **Create:** Choose Icon picker; first approved key is preselected; user can change before save.
 - **Edit:** current icon selected; name + privacy + genre + icon; Save persists immediately and refreshes Library / Profile / Add-Move / cached cards (iOS query invalidation).
-- **Sync:** same `icon_key` on web and iOS.
+- **Sync:** same `icon_key` / `icon_type` / `icon_emoji` on web and iOS.
 
-**BLOCKED ASSET ITEM — Leighton final files.** The 5 custom PNGs are **not** in the repo. Architecture and keys are shipped; visual fallback is the approved stack-of-books (`want-to-read.png`). Do **not** mark custom visuals complete until `custom-icon-1.png` … `custom-icon-5.png` are verified on web + iOS.
+**BLOCKED ASSET ITEM — Leighton final files.** The 5 custom PNGs are **not** in the repo. Architecture and keys are shipped; visual fallback is the Bookmarked B-mark (`logo-mark.png`). Do **not** mark custom visuals complete until `custom-icon-1.png` … `custom-icon-5.png` are verified on web + iOS.
 
 ### Surfaces
 
@@ -1245,6 +1245,37 @@ No `aria-label` / `accessibilityLabel` duplicated the old or new line. VoiceOver
 - No leftover UI string `Your Reading Life In One Place` (historical PROJECT_PROGRESS only)
 - No snapshot / string / UI / a11y test asserted the old subtitle. None updated.
 - No `tsc` (string-only). No `expo run:ios`. No TestFlight
+
+---
+
+## Library / shelf polish — icons, emoji, Custom Collections, spine font
+
+Website artwork was one slot off. Applied the user’s cycle (TBR ← CR ← DNF ← TBR; Finished stays). Mapping lives in `packages/utils/shelfIcons.ts` and is used on Library, Profile, pickers, Book Details, Search, and Home/Overview via `ShelfIcon` / `ShelfTitleRow` (canonical IDs, not labels).
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Default ID → icon | ✅ | TBR `currently-reading.png` · Currently Reading `did-not-finish.png` · DNF `want-to-read.png` · Finished `finished.png` |
+| Custom Bookmarked keys | ✅ | `custom_icon_1`…`5` + Bookmarked B-mark fallback (`logo-mark.png`). Leighton PNGs still missing |
+| Custom emoji | ✅ | Additive `icon_type` + `icon_emoji`. Keyboard emoji on iOS; text input on web |
+| Custom Collections heading | ✅ | Exact string for user-created shelves only (`CUSTOM_COLLECTIONS_HEADING`) |
+| Web spine title font | ✅ | Playfair via `--font-playfair` (broke the circular `--font-display`). `.book-spine-title` also has `font-display` |
+| iOS spine titles | ✅ | Still off (PR #20). Not reintroduced |
+
+### Emoji storage
+
+- Keep `icon_key` CHECK (`custom_icon_1`…`5` or null).
+- Add `icon_type` (`bookmarked` \| `emoji`, null = bookmarked) and `icon_emoji` (sanitized grapheme).
+- Writes: approved key **or** one grapheme. Reject paths/blobs. Existing shelves with no icon stay on `custom_icon_1` fallback — no random `custom_icon_N`.
+
+### Tests / verification
+
+- Shared: mapping, grapheme emoji validation, Custom Collections label
+- Web `validateCustomShelfInput` icon writes
+- iOS mapping + emoji + heading
+- Web `vitest`: 79 files, 438 tests pass · `tsc --noEmit` pass
+- iOS `vitest`: 84 files, 418 tests pass · `tsc --noEmit` pass
+- Migration `20260908110000_user_shelves_icon_emoji.sql` dry-run then applied to production (`db push --yes --linked`). No reset, no backfill
+- No `expo run:ios`. Android not in scope. No commit unless asked
 
 ---
 

@@ -10,6 +10,7 @@ import {
   type CustomShelfGroup,
 } from "@/lib/services/customShelves";
 import { customShelfPath } from "@/lib/routes/customShelf";
+import { CUSTOM_COLLECTIONS_HEADING } from "@/lib/constants/shelfIcons";
 import type { UserShelf } from "@/types";
 
 type Props = {
@@ -22,7 +23,7 @@ type Props = {
 
 export function CustomShelfCollectionsPanel({
   userId,
-  title = "Your collections",
+  title = CUSTOM_COLLECTIONS_HEADING,
   description = "Create named shelves to organize books by theme, genre, or mood.",
   showQuickLinks = true,
   className,
@@ -57,6 +58,8 @@ export function CustomShelfCollectionsPanel({
         genre: shelf.genre,
         visibility: shelf.visibility,
         icon_key: shelf.icon_key,
+        icon_type: shelf.icon_type,
+        icon_emoji: shelf.icon_emoji,
         items: [],
       },
     ]);
@@ -78,6 +81,8 @@ export function CustomShelfCollectionsPanel({
               genre: shelf.genre,
               visibility: shelf.visibility,
               icon_key: shelf.icon_key,
+              icon_type: shelf.icon_type,
+              icon_emoji: shelf.icon_emoji,
             }
           : entry
       )
@@ -89,7 +94,7 @@ export function CustomShelfCollectionsPanel({
     <section className={className}>
       <div className="mb-4 flex flex-col items-center gap-3 text-center sm:flex-row sm:justify-between sm:text-left">
         <div>
-          <h2 className="text-xl font-semibold text-puce-red">{title}</h2>
+          <h2 className="font-display text-xl font-semibold text-puce-red">{title}</h2>
           <p className="mt-1 text-sm text-text-muted">{description}</p>
         </div>
         <CreateShelfButton userId={userId} onCreated={handleCreated} variant="secondary" />

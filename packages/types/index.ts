@@ -18,6 +18,10 @@ export interface UserShelf {
   visibility: ShelfVisibility;
   /** Stable custom icon key (`custom_icon_1`…`custom_icon_5`). Null uses documented fallback. */
   icon_key: string | null;
+  /** `bookmarked` (PNG key) or `emoji`. Null is treated as bookmarked. */
+  icon_type: "bookmarked" | "emoji" | null;
+  /** Sanitized emoji grapheme when `icon_type` is `emoji`. */
+  icon_emoji: string | null;
   sort_order: number;
   created_at: string;
   updated_at: string;

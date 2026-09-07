@@ -11,6 +11,7 @@ import {
   listUserCustomShelves,
 } from "../services/customShelves";
 import { useAuthStore } from "../store/authStore";
+import { CUSTOM_COLLECTIONS_HEADING } from "../constants/shelfIcons";
 import { getShelvesInOrder } from "../constants/shelves";
 import { feedBookHref } from "../lib/feedNav";
 import type { FeedDiscoverySectionId } from "../../../../packages/utils";
@@ -97,7 +98,7 @@ function Card({ book, getScrollOffset }: { book: TrendingBook; getScrollOffset?:
       custom = [];
     }
 
-    const options = [...shelves.map((shelf) => shelf.title), "Custom collections…", "Cancel"];
+    const options = [...shelves.map((shelf) => shelf.title), `${CUSTOM_COLLECTIONS_HEADING}…`, "Cancel"];
     ActionSheetIOS.showActionSheetWithOptions(
       {
         options,
@@ -120,7 +121,7 @@ function Card({ book, getScrollOffset }: { book: TrendingBook; getScrollOffset?:
           {
             options: customOptions,
             cancelButtonIndex: customOptions.length - 1,
-            title: "Custom collections",
+            title: CUSTOM_COLLECTIONS_HEADING,
           },
           (customIndex) => {
             if (customIndex < 0 || customIndex >= custom.length) return;

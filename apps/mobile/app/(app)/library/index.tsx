@@ -13,6 +13,7 @@ import { ScreenGradientWash } from "../../../src/components/ScreenGradientWash";
 import { useLibrary } from "../../../src/hooks/useLibrary";
 import { useLibraryViewMode } from "../../../src/hooks/useLibraryViewMode";
 import { TAB_BAR_SPACE, useTabBarScroll } from "../../../src/navigation/TabBarScroll";
+import { CUSTOM_COLLECTIONS_HEADING } from "../../../src/constants/shelfIcons";
 import { getCustomShelfGroupsWithBooks } from "../../../src/services/customShelves";
 import { useAuthStore } from "../../../src/store/authStore";
 
@@ -92,6 +93,11 @@ export default function LibraryScreen() {
                   items={shelf.items}
                 />
               ))}
+              {customShelves.length > 0 ? (
+                <Text className="text-xl font-semibold text-puce-red">
+                  {CUSTOM_COLLECTIONS_HEADING}
+                </Text>
+              ) : null}
               {customShelves.map((shelf) => (
                 <CustomShelfSection key={shelf.id} shelf={shelf} view="bookshelf" />
               ))}
@@ -99,6 +105,11 @@ export default function LibraryScreen() {
           ) : (
             <>
               <LibraryGridView shelves={shelves ?? []} />
+              {customShelves.length > 0 ? (
+                <Text className="text-xl font-semibold text-puce-red">
+                  {CUSTOM_COLLECTIONS_HEADING}
+                </Text>
+              ) : null}
               {customShelves.map((shelf) => (
                 <CustomShelfSection key={shelf.id} shelf={shelf} view="grid" />
               ))}

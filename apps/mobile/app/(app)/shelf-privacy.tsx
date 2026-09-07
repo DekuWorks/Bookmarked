@@ -15,7 +15,10 @@ import { LoadingState } from "../../src/components/LoadingState";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { ShelfIcon } from "../../src/components/ShelfIcon";
 import { ShelfTitleRow } from "../../src/components/ShelfTitleRow";
-import { DEFAULT_CUSTOM_SHELF_ICON_KEY, type CustomShelfIconKey } from "../../src/constants/shelfIcons";
+import {
+  DEFAULT_CUSTOM_SHELF_ICON_SELECTION,
+  type CustomShelfIconSelection,
+} from "../../src/constants/shelfIcons";
 import { getShelvesInOrder } from "../../src/constants/shelves";
 import { SHELF_VISIBILITY_OPTIONS } from "../../src/constants/shelfVisibility";
 import { useProfile } from "../../src/hooks/useProfile";
@@ -64,7 +67,9 @@ export default function ShelfPrivacyScreen() {
   const [newName, setNewName] = useState("");
   const [newGenre, setNewGenre] = useState("");
   const [newVisibility, setNewVisibility] = useState<ShelfVisibility>("public");
-  const [newIconKey, setNewIconKey] = useState<CustomShelfIconKey>(DEFAULT_CUSTOM_SHELF_ICON_KEY);
+  const [newIcon, setNewIcon] = useState<CustomShelfIconSelection>(
+    DEFAULT_CUSTOM_SHELF_ICON_SELECTION
+  );
   const [creating, setCreating] = useState(false);
   const [limitOpen, setLimitOpen] = useState(false);
 
@@ -163,7 +168,9 @@ export default function ShelfPrivacyScreen() {
       name: trimmed,
       genre: newGenre.trim() || null,
       visibility: newVisibility,
-      icon_key: newIconKey,
+      icon_key: newIcon.type === "bookmarked" ? newIcon.value : undefined,
+      icon_type: newIcon.type,
+      icon_emoji: newIcon.type === "emoji" ? newIcon.value : null,
     });
     setCreating(false);
     if (result.error) {
@@ -178,7 +185,7 @@ export default function ShelfPrivacyScreen() {
     setNewName("");
     setNewGenre("");
     setNewVisibility("public");
-    setNewIconKey(DEFAULT_CUSTOM_SHELF_ICON_KEY);
+    setNewIcon(DEFAULT_CUSTOM_SHELF_ICON_SELECTION);
     setCreateOpen(false);
     await Promise.all([refreshCustomShelves(), invalidateCustomShelfViews(queryClient)]);
   }
@@ -226,7 +233,13 @@ export default function ShelfPrivacyScreen() {
             key={shelf.id}
             titleNode={
               <View className="flex-row items-center gap-2">
-                <ShelfIcon iconKey={shelf.icon_key} size="small" labeled />
+                <ShelfIcon
+                  iconKey={shelf.icon_key}
+                  iconType={shelf.icon_type}
+                  iconEmoji={shelf.icon_emoji}
+                  size="small"
+                  labeled
+                />
                 <Text className="font-semibold text-ink">{shelf.name}</Text>
               </View>
             }
@@ -258,8 +271,8 @@ export default function ShelfPrivacyScreen() {
               className="min-h-[44px] rounded-xl border border-brand-border bg-background px-3 py-2 text-ink mb-3"
             />
             <CustomShelfIconPicker
-              value={newIconKey}
-              onChange={setNewIconKey}
+              value={newIcon}
+              onChange={setNewIcon}
               disabled={creating}
             />
             <Text className="text-xs text-ink-muted mb-2">Privacy</Text>
@@ -294,7 +307,7 @@ export default function ShelfPrivacyScreen() {
                     setNewName("");
                     setNewGenre("");
                     setNewVisibility("public");
-                    setNewIconKey(DEFAULT_CUSTOM_SHELF_ICON_KEY);
+                    setNewIcon(DEFAULT_CUSTOM_SHELF_ICON_SELECTION);
                   }}
                   disabled={creating}
                 />

@@ -11,14 +11,16 @@ import {
 } from "@/lib/services/customShelves";
 import { SHELF_VISIBILITY_OPTIONS } from "@/lib/services/shelfVisibility";
 import {
-  resolveCustomShelfIconKey,
-  type CustomShelfIconKey,
+  resolveCustomShelfIcon,
+  type CustomShelfIconSelection,
 } from "@/lib/constants/shelfIcons";
 import type { ShelfVisibility, UserShelf } from "@/types";
 import { cn } from "@/lib/utils/cn";
 
 type ShelfLike = Pick<UserShelf, "id" | "name" | "genre" | "visibility"> & {
   icon_key?: string | null;
+  icon_type?: string | null;
+  icon_emoji?: string | null;
   updated_at?: string;
 };
 
@@ -34,7 +36,7 @@ export function EditCustomShelfModal({ open, shelf, onClose, onSaved }: Props) {
     <Modal open={open} onClose={onClose} title="Edit shelf">
       {shelf ? (
         <EditCustomShelfForm
-          key={`${shelf.id}:${shelf.updated_at ?? shelf.icon_key ?? ""}:${open ? "open" : "closed"}`}
+          key={`${shelf.id}:${shelf.updated_at ?? shelf.icon_key ?? ""}:${shelf.icon_emoji ?? ""}:${open ? "open" : "closed"}`}
           shelf={shelf}
           onClose={onClose}
           onSaved={onSaved}
@@ -56,8 +58,8 @@ function EditCustomShelfForm({
   const [name, setName] = useState(shelf.name);
   const [genre, setGenre] = useState(shelf.genre ?? "");
   const [visibility, setVisibility] = useState<ShelfVisibility>(shelf.visibility);
-  const [iconKey, setIconKey] = useState<CustomShelfIconKey>(
-    resolveCustomShelfIconKey(shelf.icon_key)
+  const [icon, setIcon] = useState<CustomShelfIconSelection>(
+    resolveCustomShelfIcon(shelf)
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,7 +77,9 @@ function EditCustomShelfForm({
       name,
       genre: genre || null,
       visibility,
-      icon_key: iconKey,
+      icon_key: icon.type === "bookmarked" ? icon.value : shelf.icon_key,
+      icon_type: icon.type,
+      icon_emoji: icon.type === "emoji" ? icon.value : null,
     });
     if (!validated.ok) {
       setError(validated.error);
@@ -112,7 +116,7 @@ function EditCustomShelfForm({
         onChange={(e) => setGenre(e.target.value)}
         maxLength={80}
       />
-      <CustomShelfIconPicker value={iconKey} onChange={setIconKey} disabled={saving} />
+      <CustomShelfIconPicker value={icon} onChange={setIcon} disabled={saving} />
       <label className="mb-4 block">
         <span className="mb-1.5 block text-sm font-medium text-text">Privacy</span>
         <select

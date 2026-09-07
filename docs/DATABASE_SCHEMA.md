@@ -29,7 +29,9 @@
 | `reviews` | `(user_id, book_id, read_number)` | Multiple reviews per re-read |
 | `user_shelves` | `(user_id, slug)` | URL-safe shelf identifier |
 | `user_shelves` | `(user_id, lower(trim(name)))` | **Phase 7** — display name dedup |
-| `user_shelves.icon_key` | nullable `custom_icon_1`…`5` | Custom shelf icon; null → client fallback `custom_icon_1` |
+| `user_shelves.icon_key` | nullable `custom_icon_1`…`5` | Custom shelf Bookmarked icon; null → client fallback `custom_icon_1` |
+| `user_shelves.icon_type` | nullable `bookmarked` \| `emoji` | Null treated as bookmarked |
+| `user_shelves.icon_emoji` | nullable grapheme (max 32) | Used when `icon_type = emoji`; never paths/blobs |
 | `user_shelf_books` | `(shelf_id, book_id)` | Book once per custom shelf |
 | `follows` | `(follower_id, following_id)` | No duplicate follows |
 | `conversation_participants` | `(conversation_id, user_id)` | |

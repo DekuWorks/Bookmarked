@@ -85,7 +85,7 @@ export function BookSpine({
 
           <div className="book-spine-overlay absolute inset-0" aria-hidden />
           <div className="absolute inset-0 flex items-center justify-center px-1 py-3">
-            <span className="book-spine-title" aria-label={title}>
+            <span className="book-spine-title font-display" aria-label={title}>
               {title}
             </span>
           </div>

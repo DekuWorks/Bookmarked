@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils/cn";
 type Props = {
   id?: ShelfIconId;
   iconKey?: string | null;
+  iconType?: string | null;
+  iconEmoji?: string | null;
   title: string;
   size?: ShelfIconSize;
   className?: string;
@@ -20,6 +22,8 @@ type Props = {
 export function ShelfTitleRow({
   id,
   iconKey,
+  iconType,
+  iconEmoji,
   title,
   size = "medium",
   className,
@@ -31,7 +35,14 @@ export function ShelfTitleRow({
       {id ? (
         <ShelfIcon id={id} size={size} labeled className="self-center" />
       ) : (
-        <ShelfIcon iconKey={iconKey} size={size} labeled className="self-center" />
+        <ShelfIcon
+          iconKey={iconKey}
+          iconType={iconType}
+          iconEmoji={iconEmoji}
+          size={size}
+          labeled
+          className="self-center"
+        />
       )}
       <span className={cn("min-w-0 leading-tight", titleClassName)}>{title}</span>
       {action}

@@ -13,12 +13,12 @@ Web URLs are served at `/assets/shelves/<name>.png`.
 
 ### Filenames
 
-| File | Maps from design source | DB / product |
+| File | Maps from design source | DB / product (after website shuffle) |
 |------|-------------------------|--------------|
-| `want-to-read.png` | `8.png` | `want_to_read` |
-| `currently-reading.png` | `5.png` | `currently_reading` |
+| `currently-reading.png` | `5.png` | `want_to_read` → **TBR** (stack of books) |
+| `did-not-finish.png` | `6.png` | `currently_reading` (open book) |
 | `finished.png` | `7.png` | `read` → label **Finished** |
-| `did-not-finish.png` | `6.png` | `dnf` flag → label **Did Not Finish** |
+| `want-to-read.png` | `8.png` | `dnf` flag → **DNF** (closed book) |
 
 Do **not** use `read.png` or `dnf.png` as filenames.
 
@@ -32,7 +32,9 @@ Do **not** use `read.png` or `dnf.png` as filenames.
 | `custom_icon_4` | `custom-icon-4.png` | Blocked — not in repo |
 | `custom_icon_5` | `custom-icon-5.png` | Blocked — not in repo |
 
-Until those files land, clients persist the key and render `want-to-read.png` (approved stack of books). Fallback for a missing `icon_key` is `custom_icon_1`, not a random pick. Do not ship emoji.
+Until those files land, clients persist the key and render the Bookmarked B-mark (`logo-mark.png`). Fallback for a missing `icon_key` is `custom_icon_1`, not a random pick. Do not reuse a default-shelf PNG.
+
+Users may also choose a single emoji (`icon_type = emoji`, `icon_emoji` grapheme). That is keyboard input, not a replacement for the five Leighton PNGs.
 
 ## Branding assets
 

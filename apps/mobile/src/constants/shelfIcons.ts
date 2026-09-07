@@ -1,16 +1,23 @@
 import type { ImageSourcePropType } from "react-native";
 import type { ShelfStatus } from "../types";
 import {
+  CUSTOM_COLLECTIONS_HEADING,
   CUSTOM_SHELF_ICON_ASSETS_READY,
   CUSTOM_SHELF_ICON_KEYS,
   DEFAULT_CUSTOM_SHELF_ICON_KEY,
+  DEFAULT_CUSTOM_SHELF_ICON_SELECTION,
   DEFAULT_SHELF_A11Y_LABEL,
   DEFAULT_SHELF_ICON_KEY,
   DEFAULT_SHELF_ICON_LABEL,
   DEFAULT_SHELF_ICON_ORDER,
+  customShelfIconProps,
   getCustomShelfA11yLabel,
+  getCustomShelfIconA11yLabel,
+  parseCustomShelfIconSelection,
   parseCustomShelfIconWrite,
+  resolveCustomShelfIcon,
   resolveCustomShelfIconKey,
+  sanitizeShelfEmoji,
   sortDefaultShelfIconIds,
   type CustomShelfIconKey,
   type DefaultShelfIconId,
@@ -19,18 +26,29 @@ import {
 export type ShelfIconId = DefaultShelfIconId;
 export type {
   CustomShelfIconKey,
+  CustomShelfIconRow,
+  CustomShelfIconSelection,
+  CustomShelfIconType,
+  CustomShelfIconWrite,
   DefaultShelfIconId,
   DefaultShelfIconKey,
 } from "../../../../packages/utils/shelfIcons";
 
 export {
+  CUSTOM_COLLECTIONS_HEADING,
   CUSTOM_SHELF_ICON_ASSETS_READY,
   CUSTOM_SHELF_ICON_KEYS,
   DEFAULT_CUSTOM_SHELF_ICON_KEY,
+  DEFAULT_CUSTOM_SHELF_ICON_SELECTION,
   DEFAULT_SHELF_ICON_ORDER,
+  customShelfIconProps,
   getCustomShelfA11yLabel,
+  getCustomShelfIconA11yLabel,
+  parseCustomShelfIconSelection,
   parseCustomShelfIconWrite,
+  resolveCustomShelfIcon,
   resolveCustomShelfIconKey,
+  sanitizeShelfEmoji,
   sortDefaultShelfIconIds,
 };
 
@@ -66,14 +84,14 @@ export type ShelfIconConfig = {
 export const SHELF_ICON_ORDER: ShelfIconId[] = [...DEFAULT_SHELF_ICON_ORDER];
 
 const DEFAULT_SOURCES: Record<ShelfIconId, ImageSourcePropType> = {
-  want_to_read: require("../../assets/shelves/want-to-read.png"),
-  currently_reading: require("../../assets/shelves/currently-reading.png"),
+  want_to_read: require("../../assets/shelves/currently-reading.png"),
+  currently_reading: require("../../assets/shelves/did-not-finish.png"),
   read: require("../../assets/shelves/finished.png"),
-  dnf: require("../../assets/shelves/did-not-finish.png"),
+  dnf: require("../../assets/shelves/want-to-read.png"),
 };
 
-/** waiting-on-assets: Leighton custom-icon-N.png — use approved stack-of-books until then. */
-const CUSTOM_FALLBACK_SOURCE = DEFAULT_SOURCES.want_to_read;
+/** waiting-on-assets: Leighton custom-icon-N.png — Bookmarked B-mark until then. */
+const CUSTOM_FALLBACK_SOURCE = require("../../assets/brand/logo-mark.png");
 
 export const SHELF_ICONS: Record<ShelfIconId, ShelfIconConfig> = {
   want_to_read: {
