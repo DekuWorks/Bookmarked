@@ -26,6 +26,7 @@ const CORS_HEADERS: Record<string, string> = {
 };
 
 const OPENAI_MODERATION_URL = "https://api.openai.com/v1/moderations";
+const DEFAULT_MODERATION_MODELS = ["omni-moderation-latest", "text-moderation-latest"] as const;
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -58,36 +59,112 @@ function logModerationEvent(event: Record<string, unknown>): void {
   console.log(JSON.stringify({ source: "moderate-ugc", ...event }));
 }
 
-function createOpenAiProvider(apiKey: string, model: string): ModerationProvider {
+const PROVIDER_ERROR_FLAGS = [
+  "quota",
+  "billing",
+  "budget",
+  "rate",
+  "limit",
+  "exceeded",
+  "overloaded",
+  "organization",
+  "project",
+  "permission",
+  "country",
+  "region",
+  "verify",
+  "usage",
+] as const;
+
+function providerErrorCode(payload: unknown): string {
+  if (!payload || typeof payload !== "object") return "";
+  const error = (payload as { error?: { code?: unknown; type?: unknown; message?: unknown } }).error;
+  const code = typeof error?.code === "string" ? error.code : "";
+  const type = typeof error?.type === "string" ? error.type : "";
+  const message = typeof error?.message === "string" ? error.message.toLowerCase() : "";
+  // Classify only. Never persist the raw OpenAI message.
+  if (code) return code.replace(/[^a-z0-9_]/gi, "").slice(0, 40);
+  const hits = PROVIDER_ERROR_FLAGS.filter((flag) => message.includes(flag));
+  if (hits.includes("quota") || hits.includes("billing") || hits.includes("budget")) {
+    return "insufficient_quota";
+  }
+  if (hits.includes("rate") || (hits.includes("limit") && hits.includes("exceeded"))) {
+    return "rate_limit_exceeded";
+  }
+  if (hits.length > 0) return hits.slice(0, 3).join("_");
+  return type.replace(/[^a-z0-9_]/gi, "").slice(0, 40);
+}
+
+function providerErrorMessage(status: number, payload: unknown): string {
+  const code = providerErrorCode(payload);
+  return code ? `moderation_provider_${status}:${code}` : `moderation_provider_${status}`;
+}
+
+function moderationModels(preferred: string): string[] {
+  const ordered = [preferred, ...DEFAULT_MODERATION_MODELS];
+  return [...new Set(ordered.filter(Boolean))];
+}
+
+function persistableUnavailableReason(reason?: string): string | null {
+  if (!reason) return "provider_unavailable";
+  const redacted = reason.replace(/sk-[a-zA-Z0-9_-]+/g, "[redacted]").slice(0, 120);
+  const type = providerErrorType(new Error(redacted));
+  const codeMatch = redacted.match(/moderation_provider_\d+:([a-z0-9_]+)/i);
+  return codeMatch ? `${type}:${codeMatch[1]}` : type;
+}
+
+function createOpenAiProvider(apiKey: string, models: string[]): ModerationProvider {
   return {
     async moderate(text: string, signal?: AbortSignal): Promise<ProviderModerationResult> {
-      try {
-        const response = await fetch(OPENAI_MODERATION_URL, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ model, input: text }),
-          signal,
-        });
-        if (!response.ok) {
-          throw new Error(`moderation_provider_${response.status}`);
+      let lastError: unknown;
+      for (let index = 0; index < models.length; index += 1) {
+        const model = models[index];
+        try {
+          const response = await fetch(OPENAI_MODERATION_URL, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ model, input: text }),
+            signal,
+          });
+          if (response.ok) {
+            const payload = (await response.json()) as {
+              results?: Array<{ flagged?: boolean; categories?: Record<string, boolean> }>;
+            };
+            const first = payload.results?.[0];
+            const categories = Object.entries(first?.categories ?? {})
+              .filter(([, flagged]) => flagged)
+              .map(([name]) => name);
+            return { flagged: Boolean(first?.flagged), categories };
+          }
+          const payload = await response.json().catch(() => null);
+          const error = new Error(providerErrorMessage(response.status, payload));
+          // Same key will fail the same way on the next model.
+          if (response.status === 401 || response.status === 403) throw error;
+          // Invalid / retired model: try the next documented text model.
+          if (response.status === 400 && index < models.length - 1) {
+            lastError = error;
+            continue;
+          }
+          throw error;
+        } catch (error) {
+          if (error instanceof Error && (error.name === "AbortError" || error.message.includes("abort"))) {
+            throw new Error("moderation_timeout");
+          }
+          lastError = error;
+          if (
+            error instanceof Error &&
+            /moderation_provider_400/.test(error.message) &&
+            index < models.length - 1
+          ) {
+            continue;
+          }
+          throw error;
         }
-        const payload = (await response.json()) as {
-          results?: Array<{ flagged?: boolean; categories?: Record<string, boolean> }>;
-        };
-        const first = payload.results?.[0];
-        const categories = Object.entries(first?.categories ?? {})
-          .filter(([, flagged]) => flagged)
-          .map(([name]) => name);
-        return { flagged: Boolean(first?.flagged), categories };
-      } catch (error) {
-        if (error instanceof Error && (error.name === "AbortError" || error.message.includes("abort"))) {
-          throw new Error("moderation_timeout");
-        }
-        throw error;
       }
+      throw lastError instanceof Error ? lastError : new Error("moderation_provider_error");
     },
   };
 }
@@ -172,7 +249,7 @@ Deno.serve(async (req) => {
   }
 
   const admin = createClient(supabaseUrl, serviceKey);
-  const provider = createOpenAiProvider(openaiKey, openaiModel);
+  const provider = createOpenAiProvider(openaiKey, moderationModels(openaiModel));
 
   let result: ModerationResult;
   try {
@@ -201,6 +278,8 @@ Deno.serve(async (req) => {
     decision: result.unavailable ? "unavailable" : result.status,
     categories: result.categories,
     moderation_version: result.moderationVersion,
+    unavailable_reason: result.unavailable ? persistableUnavailableReason(result.unavailableReason) : null,
+    latency_ms: Date.now() - started,
   });
 
   logModerationEvent({

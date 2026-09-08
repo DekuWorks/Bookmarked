@@ -55,7 +55,7 @@ export const MODERATION_OUTCOMES = [
 
 export type ModerationOutcome = (typeof MODERATION_OUTCOMES)[number];
 
-export const MODERATION_PROVIDER_TIMEOUT_MS = 8000;
+export const MODERATION_PROVIDER_TIMEOUT_MS = 12_000;
 export const MODERATION_PROVIDER_ATTEMPTS = 2;
 export const MODERATION_PROVIDER_BACKOFF_MS = [400] as const;
 export const MODERATION_CLIENT_TIMEOUT_MS = 25_000;
@@ -284,7 +284,9 @@ export function moderationContentFamily(contentType: ModerationContentType): str
 export function isRetryableProviderError(error: unknown): boolean {
   if (!(error instanceof Error)) return true;
   const message = error.message;
-  if (message === "moderation_timeout") return true;
+  // A second hop will not be faster than the first if the provider already hung.
+  if (message === "moderation_timeout") return false;
+  if (message.includes("insufficient_quota")) return false;
   if (message.includes("abort") || message.includes("network")) return true;
   const statusMatch = message.match(/moderation_provider_(\d+)/);
   if (!statusMatch) return true;

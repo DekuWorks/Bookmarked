@@ -941,6 +941,40 @@ Book title / meeting frequency are not sent to review. A normal name such as “
 
 ---
 
+## Book Club create – Content Review still failing after PR #37
+
+### Root cause (updated 8 Sep 2026, after v3)
+
+PR #37 / `moderate-ugc` v3 (8s abortable retries) is on `main` and was live. That was **not** the current failure.
+
+Live evidence from prod `xtdfeorhdlpnbxycpone`:
+
+- After v3 (00:24 UTC): testers still got `unavailable` at 00:48 and 00:53 (`BOOK_CLUB_NAME` + `BOOK_CLUB_DESCRIPTION`).
+- Harmless authenticated probe `"Fantasy Readers"` against live `moderate-ugc`: **HTTP 429 from OpenAI in 0.8–1.6s**. Stored `unavailable_reason=http_429` then `http_429:invalid_request_error`. Not a timeout, not 401, not a missing key, not the description trigger, not a stale web cache.
+- `OPENAI_API_KEY` secret name matches what the function reads. A 401 would have been `http_401`. This key is accepted and then rate-limited / rejected as 429.
+- Zero `allow` / `warn` / `block` rows ever. Latest successful `book_clubs` insert is 3 Sep. Create fails at review, before insert. UI copy is the real outage path.
+- Function logs API was not readable with the CLI token (analytics JWT). Reasons now live on `moderation_logs.unavailable_reason` + `latency_ms`.
+
+There is no second provider in the repo. `content_reports` is user-flagged content, not a pending-review queue, so we did **not** local-ALLOW public clubs during the outage.
+
+### What code can do vs what Marcus must do
+
+Code cannot invent a green path while OpenAI returns 429. Check the OpenAI project that owns `OPENAI_API_KEY`: usage, billing, budget, rate limits, org verification. Rotate the key only if the dashboard says the current one is limited or on a spent project. Do not put a key in the client.
+
+### What we changed on `feature/fix-club-create-moderation-live`
+
+- Persist `unavailable_reason` + `latency_ms` (additive migration `20260908140000`, pushed).
+- Do not retry timeouts or `insufficient_quota`. 12s provider hang budget. 400 falls through to `text-moderation-latest`.
+- Classify OpenAI 429 codes when present. BLOCK vs SERVICE_UNAVAILABLE unchanged.
+- Redeployed `moderate-ugc` v7 (2026-09-08 01:11 UTC). No commit / PR.
+
+### Who sees a fix immediately
+
+- **Web:** function is live now. Testers still see the same outage copy until OpenAI stops returning 429. No Pages deploy required for this function-only change.
+- **iOS store / TestFlight:** same. 429 returns in ~1s, so the old 15s client abort is not the blocker. A new binary is not required for this outage.
+
+---
+
 ## Thirteenth Sprint — Feature / polish ✅
 
 Remaining product polish on **web + iOS (iPhone/iPad)**. Android not in scope. No `expo run:ios`. No TestFlight. No commit in this pass.
