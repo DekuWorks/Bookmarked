@@ -160,6 +160,25 @@ describe("moderateContent + provider", () => {
     expect(moderationOutcome(result)).toBe("ALLOW");
   });
 
+  it("does not retry an exhausted OpenAI quota", async () => {
+    let calls = 0;
+    const provider: ModerationProvider = {
+      async moderate() {
+        calls += 1;
+        throw new Error("moderation_provider_429:insufficient_quota");
+      },
+    };
+    const result = await moderateContent({
+      text: "Fantasy Readers",
+      contentType: "BOOK_CLUB_NAME",
+      provider,
+      retry: { attempts: 3, delaysMs: [0, 0], timeoutMs: 50 },
+    });
+    expect(calls).toBe(1);
+    expect(result.outcome).toBe("SERVICE_UNAVAILABLE");
+    expect(result.unavailableReason).toBe("moderation_provider_429:insufficient_quota");
+  });
+
   it("does not retry a provider 401", async () => {
     let calls = 0;
     const provider: ModerationProvider = {
@@ -180,8 +199,10 @@ describe("moderateContent + provider", () => {
   });
 
   it("records the timeout reason when the provider never answers", async () => {
+    let calls = 0;
     const provider: ModerationProvider = {
       async moderate(_text, signal) {
+        calls += 1;
         await new Promise<void>((resolve, reject) => {
           const timer = setTimeout(resolve, 80);
           signal?.addEventListener("abort", () => {
@@ -198,6 +219,7 @@ describe("moderateContent + provider", () => {
       provider,
       retry: { attempts: 2, delaysMs: [0], timeoutMs: 15 },
     });
+    expect(calls).toBe(1);
     expect(result.outcome).toBe("SERVICE_UNAVAILABLE");
     expect(result.unavailableReason).toBe("moderation_timeout");
   });
@@ -301,17 +323,20 @@ describe("withBoundedBackoff", () => {
 });
 
 describe("provider timeout budget", () => {
-  it("keeps the worst-case retry under the client abort", () => {
+  it("keeps one provider attempt plus a fast 429 retry under the client abort", () => {
     const backoff = MODERATION_PROVIDER_BACKOFF_MS.reduce((sum, delay) => sum + delay, 0);
-    const worstCaseMs =
-      MODERATION_PROVIDER_TIMEOUT_MS * MODERATION_PROVIDER_ATTEMPTS + backoff;
+    // Timeouts are not retried. Worst remaining case is a fast 429/503 then one hang.
+    const worstCaseMs = 500 + backoff + MODERATION_PROVIDER_TIMEOUT_MS;
+    expect(MODERATION_PROVIDER_TIMEOUT_MS).toBeLessThan(MODERATION_CLIENT_TIMEOUT_MS);
     expect(worstCaseMs).toBeLessThan(MODERATION_CLIENT_TIMEOUT_MS);
   });
 
-  it("classifies 401 as not retryable and 503/timeout as retryable", () => {
+  it("classifies 401, timeout, and quota exhaustion as not retryable", () => {
     expect(isRetryableProviderError(new Error("moderation_provider_401"))).toBe(false);
     expect(isRetryableProviderError(new Error("moderation_provider_503"))).toBe(true);
-    expect(isRetryableProviderError(new Error("moderation_timeout"))).toBe(true);
+    expect(isRetryableProviderError(new Error("moderation_timeout"))).toBe(false);
+    expect(isRetryableProviderError(new Error("moderation_provider_429:insufficient_quota"))).toBe(false);
+    expect(isRetryableProviderError(new Error("moderation_provider_429"))).toBe(true);
   });
 
   it("aborts the in-flight run when the timeout fires", async () => {
