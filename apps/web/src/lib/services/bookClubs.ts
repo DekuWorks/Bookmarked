@@ -566,23 +566,26 @@ export async function createClub(
   const name = input.name.trim();
   if (!name) return { error: "Club name is required." };
 
-  const nameGate = await requireModeration({
-    text: name,
-    contentType: "BOOK_CLUB_NAME",
-    clubCreate: true,
-  });
-  if (nameGate.error) return { error: nameGate.error, retryable: nameGate.retryable };
-
   const description = input.description?.trim() || null;
-  if (description) {
-    const descriptionGate = await requireModeration({
-      text: description,
-      contentType: "BOOK_CLUB_DESCRIPTION",
+  const [nameGate, descriptionGate] = await Promise.all([
+    requireModeration({
+      text: name,
+      contentType: "BOOK_CLUB_NAME",
       clubCreate: true,
-    });
-    if (descriptionGate.error) {
-      return { error: descriptionGate.error, retryable: descriptionGate.retryable };
-    }
+    }),
+    description
+      ? requireModeration({
+          text: description,
+          contentType: "BOOK_CLUB_DESCRIPTION",
+          clubCreate: true,
+        })
+      : Promise.resolve({} as Awaited<ReturnType<typeof requireModeration>>),
+  ]);
+  const blocked = [nameGate, descriptionGate].find((gate) => gate.error && !gate.retryable);
+  if (blocked?.error) return { error: blocked.error, retryable: false };
+  const unavailable = [nameGate, descriptionGate].find((gate) => gate.error);
+  if (unavailable?.error) {
+    return { error: unavailable.error, retryable: unavailable.retryable };
   }
 
   try {

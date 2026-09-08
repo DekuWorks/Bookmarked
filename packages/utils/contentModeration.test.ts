@@ -2,14 +2,20 @@ import { describe, expect, it } from "vitest";
 import {
   classifyLocalContent,
   combineModerationResults,
+  isRetryableProviderError,
   isServiceUnavailable,
   moderateContent,
   moderationOutcome,
   MODERATION_BLOCK_MESSAGE,
+  MODERATION_CLIENT_TIMEOUT_MS,
+  MODERATION_PROVIDER_ATTEMPTS,
+  MODERATION_PROVIDER_BACKOFF_MS,
+  MODERATION_PROVIDER_TIMEOUT_MS,
   MODERATION_UNAVAILABLE_MESSAGE,
   resolveWarnSpans,
   splitTextBySpans,
   withBoundedBackoff,
+  withTimeout,
   type ModerationProvider,
   type ModerationSpan,
 } from "./contentModeration";
@@ -139,7 +145,7 @@ describe("moderateContent + provider", () => {
     const provider: ModerationProvider = {
       async moderate() {
         calls += 1;
-        if (calls < 3) throw new Error("moderation_provider_503");
+        if (calls < 2) throw new Error("moderation_provider_503");
         return { flagged: false, categories: [] };
       },
     };
@@ -147,11 +153,53 @@ describe("moderateContent + provider", () => {
       text: "Sunday mystery club",
       contentType: "BOOK_CLUB_NAME",
       provider,
-      retry: { attempts: 3, delaysMs: [0, 0], timeoutMs: 50 },
+      retry: { attempts: 2, delaysMs: [0], timeoutMs: 50 },
     });
-    expect(calls).toBe(3);
+    expect(calls).toBe(2);
     expect(result.status).toBe("allow");
     expect(moderationOutcome(result)).toBe("ALLOW");
+  });
+
+  it("does not retry a provider 401", async () => {
+    let calls = 0;
+    const provider: ModerationProvider = {
+      async moderate() {
+        calls += 1;
+        throw new Error("moderation_provider_401");
+      },
+    };
+    const result = await moderateContent({
+      text: "Fantasy Readers",
+      contentType: "BOOK_CLUB_NAME",
+      provider,
+      retry: { attempts: 3, delaysMs: [0, 0], timeoutMs: 50 },
+    });
+    expect(calls).toBe(1);
+    expect(result.outcome).toBe("SERVICE_UNAVAILABLE");
+    expect(result.unavailableReason).toBe("moderation_provider_401");
+  });
+
+  it("records the timeout reason when the provider never answers", async () => {
+    const provider: ModerationProvider = {
+      async moderate(_text, signal) {
+        await new Promise<void>((resolve, reject) => {
+          const timer = setTimeout(resolve, 80);
+          signal?.addEventListener("abort", () => {
+            clearTimeout(timer);
+            reject(new DOMException("The operation was aborted.", "AbortError"));
+          });
+        });
+        return { flagged: false, categories: [] };
+      },
+    };
+    const result = await moderateContent({
+      text: "Cozy readers",
+      contentType: "BOOK_CLUB_NAME",
+      provider,
+      retry: { attempts: 2, delaysMs: [0], timeoutMs: 15 },
+    });
+    expect(result.outcome).toBe("SERVICE_UNAVAILABLE");
+    expect(result.unavailableReason).toBe("moderation_timeout");
   });
 
   it("does not treat a timeout as a Community Guidelines block", async () => {
@@ -235,5 +283,49 @@ describe("withBoundedBackoff", () => {
       )
     ).rejects.toThrow("still_down");
     expect(calls).toBe(3);
+  });
+
+  it("stops immediately when the error is not retryable", async () => {
+    let calls = 0;
+    await expect(
+      withBoundedBackoff(
+        async () => {
+          calls += 1;
+          throw new Error("moderation_provider_401");
+        },
+        { attempts: 3, delaysMs: [0, 0], shouldRetry: isRetryableProviderError }
+      )
+    ).rejects.toThrow("moderation_provider_401");
+    expect(calls).toBe(1);
+  });
+});
+
+describe("provider timeout budget", () => {
+  it("keeps the worst-case retry under the client abort", () => {
+    const backoff = MODERATION_PROVIDER_BACKOFF_MS.reduce((sum, delay) => sum + delay, 0);
+    const worstCaseMs =
+      MODERATION_PROVIDER_TIMEOUT_MS * MODERATION_PROVIDER_ATTEMPTS + backoff;
+    expect(worstCaseMs).toBeLessThan(MODERATION_CLIENT_TIMEOUT_MS);
+  });
+
+  it("classifies 401 as not retryable and 503/timeout as retryable", () => {
+    expect(isRetryableProviderError(new Error("moderation_provider_401"))).toBe(false);
+    expect(isRetryableProviderError(new Error("moderation_provider_503"))).toBe(true);
+    expect(isRetryableProviderError(new Error("moderation_timeout"))).toBe(true);
+  });
+
+  it("aborts the in-flight run when the timeout fires", async () => {
+    let aborted = false;
+    await expect(
+      withTimeout((signal) => {
+        return new Promise((_resolve, reject) => {
+          signal.addEventListener("abort", () => {
+            aborted = true;
+            reject(new DOMException("The operation was aborted.", "AbortError"));
+          });
+        });
+      }, 15)
+    ).rejects.toThrow("moderation_timeout");
+    expect(aborted).toBe(true);
   });
 });
