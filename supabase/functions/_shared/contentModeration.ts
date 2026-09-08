@@ -55,10 +55,10 @@ export const MODERATION_OUTCOMES = [
 
 export type ModerationOutcome = (typeof MODERATION_OUTCOMES)[number];
 
-export const MODERATION_PROVIDER_TIMEOUT_MS = 4000;
-export const MODERATION_PROVIDER_ATTEMPTS = 3;
-export const MODERATION_PROVIDER_BACKOFF_MS = [300, 700] as const;
-export const MODERATION_CLIENT_TIMEOUT_MS = 15_000;
+export const MODERATION_PROVIDER_TIMEOUT_MS = 8000;
+export const MODERATION_PROVIDER_ATTEMPTS = 2;
+export const MODERATION_PROVIDER_BACKOFF_MS = [400] as const;
+export const MODERATION_CLIENT_TIMEOUT_MS = 25_000;
 
 export type ModerationSpanTreatment = "blur_until_reveal";
 
@@ -91,6 +91,7 @@ export type ModerationResult = {
   userMessage: string | null;
   moderationVersion: string;
   unavailable?: boolean;
+  unavailableReason?: string;
 };
 
 export type ModerationMeta = {
@@ -107,7 +108,7 @@ export type ProviderModerationResult = {
 };
 
 export type ModerationProvider = {
-  moderate(text: string): Promise<ProviderModerationResult>;
+  moderate(text: string, signal?: AbortSignal): Promise<ProviderModerationResult>;
 };
 
 export type ModerateContentInput = {
@@ -280,15 +281,40 @@ export function moderationContentFamily(contentType: ModerationContentType): str
   return "ugc";
 }
 
-export async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+export function isRetryableProviderError(error: unknown): boolean {
+  if (!(error instanceof Error)) return true;
+  const message = error.message;
+  if (message === "moderation_timeout") return true;
+  if (message.includes("abort") || message.includes("network")) return true;
+  const statusMatch = message.match(/moderation_provider_(\d+)/);
+  if (!statusMatch) return true;
+  const status = Number(statusMatch[1]);
+  if (status === 429 || status >= 500) return true;
+  return false;
+}
+
+export async function withTimeout<T>(
+  run: Promise<T> | ((signal: AbortSignal) => Promise<T>),
+  timeoutMs: number
+): Promise<T> {
+  const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
+  const work = typeof run === "function" ? run(controller.signal) : run;
   try {
     return await Promise.race([
-      promise,
+      work,
       new Promise<T>((_, reject) => {
-        timer = setTimeout(() => reject(new Error("moderation_timeout")), timeoutMs);
+        timer = setTimeout(() => {
+          controller.abort();
+          reject(new Error("moderation_timeout"));
+        }, timeoutMs);
       }),
     ]);
+  } catch (error) {
+    if (error instanceof Error && (error.name === "AbortError" || error.message.includes("abort"))) {
+      throw new Error("moderation_timeout");
+    }
+    throw error;
   } finally {
     if (timer) clearTimeout(timer);
   }
@@ -296,17 +322,22 @@ export async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Pr
 
 export async function withBoundedBackoff<T>(
   run: () => Promise<T>,
-  options?: { attempts?: number; delaysMs?: readonly number[] }
+  options?: {
+    attempts?: number;
+    delaysMs?: readonly number[];
+    shouldRetry?: (error: unknown) => boolean;
+  }
 ): Promise<T> {
   const attempts = options?.attempts ?? MODERATION_PROVIDER_ATTEMPTS;
   const delays = options?.delaysMs ?? MODERATION_PROVIDER_BACKOFF_MS;
+  const shouldRetry = options?.shouldRetry ?? (() => true);
   let lastError: unknown;
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     try {
       return await run();
     } catch (error) {
       lastError = error;
-      if (attempt >= attempts - 1) break;
+      if (attempt >= attempts - 1 || !shouldRetry(error)) break;
       const delay = delays[attempt] ?? delays[delays.length - 1] ?? 300;
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
@@ -622,16 +653,19 @@ export async function moderateContent(input: ModerateContentInput): Promise<Mode
     providerResult = await withBoundedBackoff(
       () =>
         withTimeout(
-          input.provider!.moderate(input.text),
+          (signal) => input.provider!.moderate(input.text, signal),
           input.retry?.timeoutMs ?? MODERATION_PROVIDER_TIMEOUT_MS
         ),
       {
         attempts: input.retry?.attempts ?? MODERATION_PROVIDER_ATTEMPTS,
         delaysMs: input.retry?.delaysMs ?? MODERATION_PROVIDER_BACKOFF_MS,
+        shouldRetry: isRetryableProviderError,
       }
     );
-  } catch {
-    return unavailableResult();
+  } catch (error) {
+    const result = unavailableResult();
+    result.unavailableReason = error instanceof Error ? error.message : "unknown";
+    return result;
   }
 
   if (providerResult.flagged) {

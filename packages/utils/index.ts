@@ -24,6 +24,7 @@ export {
   errorResult,
   isModerationBlock,
   isModerationContentType,
+  isRetryableProviderError,
   isServiceUnavailable,
   moderateContent,
   moderationContentFamily,

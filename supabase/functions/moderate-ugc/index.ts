@@ -60,26 +60,34 @@ function logModerationEvent(event: Record<string, unknown>): void {
 
 function createOpenAiProvider(apiKey: string, model: string): ModerationProvider {
   return {
-    async moderate(text: string): Promise<ProviderModerationResult> {
-      const response = await fetch(OPENAI_MODERATION_URL, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ model, input: text }),
-      });
-      if (!response.ok) {
-        throw new Error(`moderation_provider_${response.status}`);
+    async moderate(text: string, signal?: AbortSignal): Promise<ProviderModerationResult> {
+      try {
+        const response = await fetch(OPENAI_MODERATION_URL, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ model, input: text }),
+          signal,
+        });
+        if (!response.ok) {
+          throw new Error(`moderation_provider_${response.status}`);
+        }
+        const payload = (await response.json()) as {
+          results?: Array<{ flagged?: boolean; categories?: Record<string, boolean> }>;
+        };
+        const first = payload.results?.[0];
+        const categories = Object.entries(first?.categories ?? {})
+          .filter(([, flagged]) => flagged)
+          .map(([name]) => name);
+        return { flagged: Boolean(first?.flagged), categories };
+      } catch (error) {
+        if (error instanceof Error && (error.name === "AbortError" || error.message.includes("abort"))) {
+          throw new Error("moderation_timeout");
+        }
+        throw error;
       }
-      const payload = (await response.json()) as {
-        results?: Array<{ flagged?: boolean; categories?: Record<string, boolean> }>;
-      };
-      const first = payload.results?.[0];
-      const categories = Object.entries(first?.categories ?? {})
-        .filter(([, flagged]) => flagged)
-        .map(([name]) => name);
-      return { flagged: Boolean(first?.flagged), categories };
     },
   };
 }
@@ -167,7 +175,6 @@ Deno.serve(async (req) => {
   const provider = createOpenAiProvider(openaiKey, openaiModel);
 
   let result: ModerationResult;
-  let lastProviderError: unknown;
   try {
     result = await moderateContent({
       text,
@@ -176,11 +183,16 @@ Deno.serve(async (req) => {
       provider,
     });
   } catch (error) {
-    lastProviderError = error;
     result = unavailableResult();
+    result.unavailableReason = error instanceof Error ? error.message : "unknown";
   }
 
   const outcome = moderationOutcome(result);
+  const providerError = result.unavailableReason
+    ? new Error(result.unavailableReason)
+    : result.unavailable
+      ? new Error("provider_unavailable")
+      : undefined;
 
   await admin.from("moderation_logs").insert({
     content_type: contentType,
@@ -196,8 +208,8 @@ Deno.serve(async (req) => {
     contentType,
     contentFamily,
     outcome,
-    providerErrorType: result.unavailable ? providerErrorType(lastProviderError ?? new Error("provider_unavailable")) : undefined,
-    providerStatus: providerStatusFromError(lastProviderError),
+    providerErrorType: result.unavailable ? providerErrorType(providerError) : undefined,
+    providerStatus: providerStatusFromError(providerError),
     latencyMs: Date.now() - started,
   });
 
