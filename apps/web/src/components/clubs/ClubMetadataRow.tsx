@@ -25,7 +25,7 @@ export function ClubMetadataRow({
     ? "rounded-full bg-black/35 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white"
     : "rounded-full bg-border/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-text-muted";
   const roleChip = onDark
-    ? "rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white"
+    ? "rounded-full bg-[#c45c4a]/px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white"
     : "rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-puce-red";
   const text = onDark ? "text-sm text-white/90" : "text-sm text-text-muted";
 

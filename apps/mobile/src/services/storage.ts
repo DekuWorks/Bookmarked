@@ -66,7 +66,11 @@ function randomId(): string {
  * Launch the OS image library and return a base64-encoded image. Requests
  * media-library permission on demand.
  */
-export async function pickImageFromLibrary(): Promise<{
+export async function pickImageFromLibrary(options?: {
+  /** When set, opens the system crop UI with this width:height ratio (iOS). */
+  aspect?: [number, number];
+  allowsEditing?: boolean;
+}): Promise<{
   image?: PickedImage;
   error?: string;
   canceled?: boolean;
@@ -81,6 +85,8 @@ export async function pickImageFromLibrary(): Promise<{
     base64: true,
     quality: 0.8,
     allowsMultipleSelection: false,
+    allowsEditing: options?.allowsEditing ?? Boolean(options?.aspect),
+    aspect: options?.aspect,
   });
 
   if (result.canceled) return { canceled: true };

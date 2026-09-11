@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Input, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -14,6 +14,7 @@ import {
 import { uploadClubBanner } from "@/lib/services/entityAvatar";
 import { canManageMembers, CLUB_GENRE_OPTIONS } from "@bookmarked/utils/clubPermissions";
 import {
+  BOOK_CLUB_BANNER_FORMAT_HINT,
   DEFAULT_BOOK_CLUB_BANNER_MODE,
   parseBookClubBannerMode,
   type BookClubBannerMode,
@@ -43,6 +44,7 @@ export function ClubSettingsModal({
   onSaved,
 }: Props) {
   const toast = useToast();
+  const bannerFileRef = useRef<HTMLInputElement>(null);
   const canManageBanner = canManageMembers(club.viewer_role);
   const [name, setName] = useState(club.name);
   const [description, setDescription] = useState(club.description ?? "");
@@ -54,6 +56,7 @@ export function ClubSettingsModal({
     parseBookClubBannerMode(club.banner_mode ?? DEFAULT_BOOK_CLUB_BANNER_MODE)
   );
   const [bannerUrl, setBannerUrl] = useState(club.banner_url ?? "");
+  const [bannerCleared, setBannerCleared] = useState(false);
   const [bannerUploading, setBannerUploading] = useState(false);
   const [notifyLevel, setNotifyLevel] = useState<BookClubNotificationLevel>("important");
   const [submitting, setSubmitting] = useState(false);
@@ -68,6 +71,7 @@ export function ClubSettingsModal({
     setGenreTags(club.genre_tags ?? []);
     setBannerMode(parseBookClubBannerMode(club.banner_mode ?? DEFAULT_BOOK_CLUB_BANNER_MODE));
     setBannerUrl(club.banner_url ?? "");
+    setBannerCleared(false);
     void getMemberNotificationLevel(club.id)
       .then(setNotifyLevel)
       .catch(() => setNotifyLevel("important"));
@@ -90,7 +94,15 @@ export function ClubSettingsModal({
     }
     setBannerMode("custom");
     setBannerUrl(uploaded.url);
+    setBannerCleared(false);
     toast.success("Banner uploaded. Save to apply.");
+  }
+
+  function handleRemoveBanner() {
+    setBannerMode("current_read");
+    setBannerUrl("");
+    setBannerCleared(true);
+    toast.success("Custom banner removed. Save to apply Match Current Read.");
   }
 
   async function handleSave() {
@@ -104,14 +116,29 @@ export function ClubSettingsModal({
     }
 
     if (canManageBanner) {
-      const bannerResult = await setClubBanner(club.id, {
-        mode: bannerMode,
-        bannerUrl: bannerMode === "custom" ? bannerUrl.trim() || null : null,
-      });
-      if (bannerResult.error) {
-        setSubmitting(false);
-        toast.error(bannerResult.error);
-        return;
+      if (bannerCleared) {
+        const clearResult = await setClubBanner(club.id, { mode: "custom", bannerUrl: null });
+        if (clearResult.error) {
+          setSubmitting(false);
+          toast.error(clearResult.error);
+          return;
+        }
+        const modeResult = await setClubBanner(club.id, { mode: "current_read" });
+        if (modeResult.error) {
+          setSubmitting(false);
+          toast.error(modeResult.error);
+          return;
+        }
+      } else {
+        const bannerResult = await setClubBanner(club.id, {
+          mode: bannerMode,
+          bannerUrl: bannerMode === "custom" ? bannerUrl.trim() || null : null,
+        });
+        if (bannerResult.error) {
+          setSubmitting(false);
+          toast.error(bannerResult.error);
+          return;
+        }
       }
     }
 
@@ -265,29 +292,59 @@ export function ClubSettingsModal({
             </div>
             {bannerMode === "current_read" ? (
               <p className="text-xs text-text-muted">
-                Matches your current read cover (colour wash on web, cover image on mobile). Falls
-                back to the Bookmarked default when no current read is set. A previously uploaded
-                custom image is kept if you switch back.
+                Banner colours follow your Current Read cover and update when the book changes.
+                Falls back to the Bookmarked default when no Current Read is set. A previously
+                uploaded custom image is kept if you switch back.
               </p>
             ) : (
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-text">
-                  Upload image
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/gif"
-                    className="mt-1 block w-full text-sm"
-                    disabled={bannerUploading}
-                    onChange={(e) => void handleBannerFile(e.target.files?.[0] ?? null)}
+              <div className="space-y-3">
+                {bannerUrl.trim() ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- settings preview; arbitrary upload URL
+                  <img
+                    src={bannerUrl.trim()}
+                    alt="Banner preview"
+                    className="h-24 w-full rounded-lg border border-border object-cover"
                   />
-                </label>
-                <Input
-                  label="Or paste image URL"
-                  value={bannerUrl}
-                  onChange={(e) => setBannerUrl(e.target.value)}
-                  placeholder="https://…"
-                  type="url"
+                ) : (
+                  <div className="flex h-24 items-center justify-center rounded-lg border border-dashed border-border bg-background text-xs text-text-muted">
+                    No custom banner yet
+                  </div>
+                )}
+                <input
+                  ref={bannerFileRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="sr-only"
+                  disabled={bannerUploading}
+                  onChange={(e) => {
+                    void handleBannerFile(e.target.files?.[0] ?? null);
+                    e.target.value = "";
+                  }}
                 />
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    loading={bannerUploading}
+                    disabled={bannerUploading}
+                    onClick={() => bannerFileRef.current?.click()}
+                  >
+                    {bannerUrl.trim() ? "Change photo" : "Upload photo"}
+                  </Button>
+                  {bannerUrl.trim() ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleRemoveBanner}
+                      disabled={bannerUploading}
+                    >
+                      Remove
+                    </Button>
+                  ) : null}
+                </div>
+                <p className="text-xs text-text-muted">{BOOK_CLUB_BANNER_FORMAT_HINT}</p>
               </div>
             )}
           </fieldset>

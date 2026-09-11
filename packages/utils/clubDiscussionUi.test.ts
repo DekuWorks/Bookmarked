@@ -142,6 +142,26 @@ describe("club banner", () => {
       resolveClubBanner({ banner_mode: "custom", banner_url: "https://example.com/b.jpg" }, null)
     ).toEqual({ kind: "image", url: "https://example.com/b.jpg", mode: "custom" });
   });
+
+  it("keeps custom banner when current read is present", () => {
+    expect(
+      resolveClubBanner(
+        { banner_mode: "custom", banner_url: "https://example.com/custom.jpg" },
+        { cover_url: "https://example.com/cover.jpg" }
+      )
+    ).toEqual({
+      kind: "image",
+      url: "https://example.com/custom.jpg",
+      mode: "custom",
+    });
+  });
+
+  it("falls back to gradient when custom mode has no url", () => {
+    expect(resolveClubBanner({ banner_mode: "custom", banner_url: null }, null)).toEqual({
+      kind: "gradient",
+      mode: "custom",
+    });
+  });
 });
 
 describe("bookshelf filter", () => {

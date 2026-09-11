@@ -1,3 +1,7 @@
+export const BOOK_CLUB_BANNER_ACCEPT = "image/jpeg,image/png,image/webp,image/gif";
+export const BOOK_CLUB_BANNER_MAX_BYTES = 5 * 1024 * 1024;
+export const BOOK_CLUB_BANNER_FORMAT_HINT = "JPEG, PNG, WebP, or GIF. Max 5 MB.";
+
 export type BookClubBannerMode = "current_read" | "custom";
 
 export const BOOK_CLUB_BANNER_MODES = ["current_read", "custom"] as const;
