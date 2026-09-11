@@ -13,6 +13,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useQueryClient } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -23,6 +24,7 @@ import { Button } from "../../../src/components/Button";
 import { CircleAvatarPicker } from "../../../src/components/CircleAvatarPicker";
 import { ClubDiscussionCard } from "../../../src/components/ClubDiscussionCard";
 import { ClubDiscussionThreadSheet } from "../../../src/components/ClubDiscussionThreadSheet";
+import { ClubMetadataRow } from "../../../src/components/ClubMetadataRow";
 import { showContentActions } from "../../../src/components/ContentActions";
 import { ClubEventsSection } from "../../../src/components/ClubEventsSection";
 import { ClubPollsPanel } from "../../../src/components/ClubPollsPanel";
@@ -35,6 +37,19 @@ import { LoadingState } from "../../../src/components/LoadingState";
 import { ENTITLEMENT_LIMIT_MESSAGES, isEntitlementLimitError } from "../../../src/utils/subscription";
 import { shareExternally } from "../../../src/services/externalShare";
 import { buildClubShareComposerPayload } from "../../../../../packages/utils/sharePreview";
+import {
+  CLUB_BOOKSHELF_CATEGORIES,
+  clubBookshelfEmptyMessage,
+  filterClubShelfByCategory,
+} from "../../../../../packages/utils/clubBookshelf";
+import {
+  upsertDiscussionCounts,
+} from "../../../../../packages/utils/clubDiscussionUi";
+import {
+  useClubDiscussionsRealtime,
+  type ClubDiscussionRealtimeChange,
+} from "../../../src/hooks/useClubDiscussionsRealtime";
+import { getDiscussion } from "../../../src/services/bookClubs";
 import {
   useAddClubBook,
   useApproveJoinRequest,
@@ -64,11 +79,13 @@ import {
   useUpdateClub,
   useUpdateMemberRole,
 } from "../../../src/hooks/useClubs";
-import { ensureCatalogBook } from "../../../src/services/bookClubs";
+import { ensureCatalogBook, setClubBanner } from "../../../src/services/bookClubs";
 import { TAB_BAR_SPACE } from "../../../src/navigation/TabBarScroll";
 import {
+  pickImageFromLibrary,
   removeClubAvatar,
   uploadClubAvatar,
+  uploadClubBanner,
   type PickedImage,
 } from "../../../src/services/storage";
 import type { CatalogDoc } from "../../../src/services/isbndb";
@@ -79,7 +96,6 @@ import type {
   BookClubJoinPolicy,
   BookClubMemberRole,
   BookClubMemberWithProfile,
-  BookClubShelfBook,
   BookClubVisibility,
 } from "../../../src/types";
 import {
@@ -93,8 +109,14 @@ import {
   isInviteOnlyClub,
   requiresJoinRequest,
   roleLabel,
-  visibilityLabel,
 } from "../../../../../packages/utils/clubPermissions";
+import {
+  BOOK_CLUB_DEFAULT_BANNER_GRADIENT,
+  DEFAULT_BOOK_CLUB_BANNER_MODE,
+  parseBookClubBannerMode,
+  resolveClubBanner,
+  type BookClubBannerMode,
+} from "../../../../../packages/utils/clubBanner";
 import { originBackHref, parseNavOrigin } from "../../../../../packages/utils/navigationOrigin";
 import { canViewClubAnalytics } from "../../../../../packages/utils/clubAnalytics";
 import { useSubscription } from "../../../src/hooks/useSubscription";
@@ -130,13 +152,7 @@ const JOIN_POLICY_OPTIONS: { id: BookClubJoinPolicy; label: string }[] = [
   { id: "invitation_only", label: "Invite only" },
 ];
 
-const BOOK_CATEGORIES: { id: BookClubBookCategory; label: string }[] = [
-  { id: "current_read", label: "Current" },
-  { id: "upcoming", label: "Upcoming" },
-  { id: "previous", label: "Previous" },
-  { id: "suggested", label: "Suggested" },
-  { id: "optional", label: "Optional" },
-];
+const BOOK_CATEGORIES = CLUB_BOOKSHELF_CATEGORIES;
 
 const ROLE_FILTERS: Array<{ id: "all" | BookClubMemberRole; label: string }> = [
   { id: "all", label: "All" },
@@ -178,6 +194,56 @@ export default function ClubDetailRoute() {
   const shelfBooks = useClubBooks(clubId);
   const stats = useClubStats(clubId);
   const joinRequests = useClubJoinRequests(clubId);
+
+  useClubDiscussionsRealtime(clubId || undefined, (change: ClubDiscussionRealtimeChange) => {
+    const key = ["club-discussions", clubId];
+    if (change.type === "reconnect") {
+      void discussions.refetch();
+      return;
+    }
+    if (change.type === "delete") {
+      queryClient.setQueryData<BookClubDiscussionWithAuthor[]>(key, (current) =>
+        (current ?? []).filter((row) => row.id !== change.id)
+      );
+      return;
+    }
+    if (change.type === "update") {
+      if (
+        typeof change.reply_count === "number" &&
+        typeof change.latest_activity_at === "string"
+      ) {
+        queryClient.setQueryData<BookClubDiscussionWithAuthor[]>(key, (current) =>
+          current
+            ? upsertDiscussionCounts(current, {
+                id: change.id,
+                reply_count: change.reply_count!,
+                latest_activity_at: change.latest_activity_at!,
+              })
+            : current
+        );
+        setThreadDiscussion((current) =>
+          current && current.id === change.id
+            ? {
+                ...current,
+                reply_count: change.reply_count!,
+                latest_activity_at: change.latest_activity_at!,
+              }
+            : current
+        );
+        return;
+      }
+    }
+    void getDiscussion(clubId, change.id).then((post) => {
+      if (!post) return;
+      queryClient.setQueryData<BookClubDiscussionWithAuthor[]>(key, (current) => {
+        if (!current) return [post];
+        if (current.some((row) => row.id === post.id)) {
+          return current.map((row) => (row.id === post.id ? post : row));
+        }
+        return [post, ...current];
+      });
+    });
+  });
 
   const joinMutation = useJoinClub(clubId);
   const requestJoinMutation = useRequestToJoin(clubId);
@@ -227,6 +293,10 @@ export default function ClubDetailRoute() {
   const [editDescription, setEditDescription] = useState("");
   const [editVisibility, setEditVisibility] = useState<BookClubVisibility>("public");
   const [editJoinPolicy, setEditJoinPolicy] = useState<BookClubJoinPolicy>("open");
+  const [editBannerMode, setEditBannerMode] = useState<BookClubBannerMode>(
+    DEFAULT_BOOK_CLUB_BANNER_MODE
+  );
+  const [bannerUploading, setBannerUploading] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [limitOpen, setLimitOpen] = useState(false);
 
@@ -236,6 +306,7 @@ export default function ClubDetailRoute() {
       setEditDescription(club.description ?? "");
       setEditVisibility(club.visibility);
       setEditJoinPolicy(club.join_policy);
+      setEditBannerMode(parseBookClubBannerMode(club.banner_mode ?? DEFAULT_BOOK_CLUB_BANNER_MODE));
     }
   }, [editOpen, club]);
 
@@ -274,16 +345,10 @@ export default function ClubDetailRoute() {
     return members.filter((member) => member.role === roleFilter);
   }, [club?.members, roleFilter]);
 
-  const booksByCategory = useMemo(() => {
-    const map = new Map<BookClubBookCategory, BookClubShelfBook[]>();
-    for (const category of BOOK_CATEGORIES) map.set(category.id, []);
-    for (const book of shelfBooks.data ?? []) {
-      const list = map.get(book.category) ?? [];
-      list.push(book);
-      map.set(book.category, list);
-    }
-    return map;
-  }, [shelfBooks.data]);
+  const filteredShelfBooks = useMemo(
+    () => filterClubShelfByCategory(shelfBooks.data ?? [], shelfCategory),
+    [shelfBooks.data, shelfCategory]
+  );
 
   async function handleMembershipAction() {
     if (!club) return;
@@ -366,21 +431,59 @@ export default function ClubDetailRoute() {
   }
 
   async function handleSaveEdit() {
-    if (!editName.trim()) {
+    if (canEdit && !editName.trim()) {
       Alert.alert("Name required", "Give your club a name.");
       return;
     }
-    const result = await updateMutation.mutateAsync({
-      name: editName,
-      description: editDescription,
-      visibility: editVisibility,
-      joinPolicy: editJoinPolicy,
-    });
-    if (result.error) {
-      Alert.alert("Couldn't update club", result.error);
+
+    if (manageMembers) {
+      const bannerResult = await setClubBanner(clubId, { mode: editBannerMode });
+      if (bannerResult.error) {
+        Alert.alert("Couldn't update banner", bannerResult.error);
+        return;
+      }
+    }
+
+    if (canEdit) {
+      const result = await updateMutation.mutateAsync({
+        name: editName,
+        description: editDescription,
+        visibility: editVisibility,
+        joinPolicy: editJoinPolicy,
+      });
+      if (result.error) {
+        Alert.alert("Couldn't update club", result.error);
+        return;
+      }
+    }
+
+    await queryClient.invalidateQueries({ queryKey: ["club", clubId] });
+    setEditOpen(false);
+  }
+
+  async function handleBannerPicked() {
+    const picked = await pickImageFromLibrary();
+    if (picked.error || !picked.image) {
+      if (picked.error) Alert.alert("Couldn't pick image", picked.error);
       return;
     }
-    setEditOpen(false);
+    setBannerUploading(true);
+    const uploaded = await uploadClubBanner(clubId, picked.image);
+    setBannerUploading(false);
+    if (uploaded.error || !uploaded.url) {
+      Alert.alert("Couldn't upload banner", uploaded.error ?? "Upload failed.");
+      return;
+    }
+    const result = await setClubBanner(clubId, {
+      mode: "custom",
+      bannerUrl: uploaded.url,
+    });
+    if (result.error) {
+      Alert.alert("Couldn't save banner", result.error);
+      return;
+    }
+    setEditBannerMode("custom");
+    await queryClient.invalidateQueries({ queryKey: ["club", clubId] });
   }
 
   async function handleAvatarPicked(image: PickedImage) {
@@ -632,7 +735,6 @@ export default function ClubDetailRoute() {
     );
   }
 
-  const memberLabel = `${club.member_count} member${club.member_count === 1 ? "" : "s"}`;
   const actionPending =
     joinMutation.isPending ||
     leaveMutation.isPending ||
@@ -688,16 +790,35 @@ export default function ClubDetailRoute() {
       />
 
       <View className="overflow-hidden rounded-2xl border border-brand-border bg-surface">
-        {club.banner_url ? (
-          <Image
-            source={{ uri: club.banner_url }}
-            className="h-28 w-full"
-            resizeMode="cover"
-            accessibilityIgnoresInvertColors
-          />
-        ) : (
-          <View className="h-20 w-full bg-primary/20" />
-        )}
+        {(() => {
+          const banner = resolveClubBanner(club, club.current_book);
+          if (banner.kind === "image") {
+            return (
+              <View className="relative h-28 w-full overflow-hidden">
+                <Image
+                  source={{ uri: banner.url }}
+                  className="h-28 w-full"
+                  resizeMode="cover"
+                  accessibilityIgnoresInvertColors
+                />
+                <LinearGradient
+                  colors={["transparent", "rgba(0,0,0,0.45)"]}
+                  style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 56 }}
+                  pointerEvents="none"
+                />
+              </View>
+            );
+          }
+          const brand = BOOK_CLUB_DEFAULT_BANNER_GRADIENT;
+          return (
+            <LinearGradient
+              colors={[brand.from, brand.via, brand.to]}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={{ height: 112, width: "100%" }}
+            />
+          );
+        })()}
         <View className="-mt-8 px-4 pb-4">
           <Avatar url={club.image_url} name={club.name} size={72} />
           <View className="mt-3 flex-row items-start gap-2">
@@ -720,14 +841,12 @@ export default function ClubDetailRoute() {
                 <Text className="text-xs font-semibold text-ink-muted">Report</Text>
               </Pressable>
             ) : null}
-            <Text className="mt-1 text-[10px] font-semibold uppercase text-ink-muted">
-              {visibilityLabel(club.visibility)}
-            </Text>
           </View>
-          <Text className="mt-1 text-sm text-ink-muted">
-            {memberLabel}
-            {viewerRole ? ` � ${roleLabel(viewerRole)}` : ""}
-          </Text>
+          <ClubMetadataRow
+            memberCount={club.member_count}
+            visibility={club.visibility}
+            viewerRole={viewerRole}
+          />
           {club.description ? (
             <Text className="mt-3 leading-6 text-ink">{club.description}</Text>
           ) : null}
@@ -772,7 +891,7 @@ export default function ClubDetailRoute() {
                 className="min-w-[90px] flex-1"
               />
             ) : null}
-            {canEdit ? (
+            {canEdit || manageMembers ? (
               <Button
                 title="Settings"
                 variant="ghost"
@@ -1133,141 +1252,125 @@ export default function ClubDetailRoute() {
               </Pressable>
             ) : null}
           </View>
-          {manageBooks ? (
-            <View className="mb-3 flex-row flex-wrap gap-2">
-              {BOOK_CATEGORIES.map((category) => {
-                const active = shelfCategory === category.id;
-                return (
-                  <Pressable
-                    key={category.id}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
-                    onPress={() => setShelfCategory(category.id)}
-                    className={`min-h-[44px] justify-center rounded-full px-3 ${
-                      active ? "bg-puce-red" : "bg-primary/15"
+          <View className="mb-3 flex-row flex-wrap gap-2">
+            {BOOK_CATEGORIES.map((category) => {
+              const active = shelfCategory === category.id;
+              return (
+                <Pressable
+                  key={category.id}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  onPress={() => setShelfCategory(category.id)}
+                  className={`min-h-[44px] justify-center rounded-full px-3 ${
+                    active ? "bg-puce-red" : "bg-primary/15"
+                  }`}
+                >
+                  <Text
+                    className={`text-xs font-semibold ${
+                      active ? "text-white" : "text-puce-red"
                     }`}
                   >
-                    <Text
-                      className={`text-xs font-semibold ${
-                        active ? "text-white" : "text-puce-red"
-                      }`}
+                    {category.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          {filteredShelfBooks.length === 0 ? (
+            <Text className="py-4 text-center text-sm text-ink-muted">
+              {clubBookshelfEmptyMessage(shelfCategory)}
+            </Text>
+          ) : (
+            <View className="gap-2">
+              {filteredShelfBooks.map((item) =>
+                item.book ? (
+                  <View
+                    key={item.id}
+                    className="flex-row items-center gap-3 rounded-xl bg-background p-2"
+                  >
+                    <Pressable
+                      onPress={() => router.push(`/book/${item.book!.id}`)}
+                      className="flex-1 flex-row items-center gap-3 active:opacity-80"
                     >
-                      Add to {category.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          ) : null}
-          {BOOK_CATEGORIES.map((category) => {
-            const items = booksByCategory.get(category.id) ?? [];
-            if (!items.length) return null;
-            return (
-              <View key={category.id} className="mb-4">
-                <Text className="mb-2 text-sm font-semibold text-ink-muted">
-                  {category.label}
-                </Text>
-                <View className="gap-2">
-                  {items.map((item) =>
-                    item.book ? (
-                      <View
-                        key={item.id}
-                        className="flex-row items-center gap-3 rounded-xl bg-background p-2"
-                      >
-                        <Pressable
-                          onPress={() => router.push(`/book/${item.book!.id}`)}
-                          className="flex-1 flex-row items-center gap-3 active:opacity-80"
-                        >
-                          <BookCover
-                            url={item.book.cover_url}
-                            title={item.book.title}
-                            sizeClassName="h-20 w-14"
-                          />
-                          <View className="flex-1">
-                            <Text className="font-semibold text-ink" numberOfLines={1}>
-                              {item.book.title}
-                            </Text>
-                            {item.book.author ? (
-                              <Text
-                                className="mt-1 text-sm text-ink-muted"
-                                numberOfLines={1}
-                              >
-                                {item.book.author}
-                              </Text>
-                            ) : null}
-                          </View>
-                        </Pressable>
-                        {manageBooks ? (
-                          <View className="gap-1">
-                            {category.id !== "current_read" ? (
-                              <Pressable
-                                accessibilityRole="button"
-                                onPress={() =>
-                                  void setCurrentRead
-                                    .mutateAsync({ bookId: item.book_id })
-                                    .then((result) => {
-                                      if (result.error)
-                                        Alert.alert("Couldn't set read", result.error);
-                                    })
-                                }
-                                className="min-h-[44px] justify-center px-1"
-                              >
-                                <Text className="text-[11px] font-semibold text-puce-red">
-                                  Set current
-                                </Text>
-                              </Pressable>
-                            ) : null}
-                            <Pressable
-                              accessibilityRole="button"
-                              onPress={() => {
-                                const next =
-                                  category.id === "upcoming"
-                                    ? "previous"
-                                    : category.id === "previous"
-                                      ? "suggested"
-                                      : "upcoming";
-                                void setBookCategory
-                                  .mutateAsync({
-                                    shelfBookId: item.id,
-                                    category: next,
-                                  })
-                                  .then((result) => {
-                                    if (result.error)
-                                      Alert.alert("Couldn't move", result.error);
-                                  });
-                              }}
-                              className="min-h-[44px] justify-center px-1"
-                            >
-                              <Text className="text-[11px] text-ink-muted">Move</Text>
-                            </Pressable>
-                            <Pressable
-                              accessibilityRole="button"
-                              onPress={() =>
-                                void removeClubBook
-                                  .mutateAsync(item.id)
-                                  .then((result) => {
-                                    if (result.error)
-                                      Alert.alert("Couldn't remove", result.error);
-                                  })
-                              }
-                              className="min-h-[44px] justify-center px-1"
-                            >
-                              <Text className="text-[11px] text-ink-muted">Remove</Text>
-                            </Pressable>
-                          </View>
+                      <BookCover
+                        url={item.book.cover_url}
+                        title={item.book.title}
+                        sizeClassName="h-20 w-14"
+                      />
+                      <View className="flex-1">
+                        <Text className="font-semibold text-ink" numberOfLines={1}>
+                          {item.book.title}
+                        </Text>
+                        {item.book.author ? (
+                          <Text className="mt-1 text-sm text-ink-muted" numberOfLines={1}>
+                            {item.book.author}
+                          </Text>
                         ) : null}
                       </View>
-                    ) : null
-                  )}
-                </View>
-              </View>
-            );
-          })}
-          {!shelfBooks.data?.length ? (
-            <Text className="text-sm text-ink-muted">
-              Add books to build the club bookshelf.
-            </Text>
-          ) : null}
+                    </Pressable>
+                    {manageBooks ? (
+                      <View className="gap-1">
+                        {item.category !== "current_read" ? (
+                          <Pressable
+                            accessibilityRole="button"
+                            onPress={() =>
+                              void setCurrentRead
+                                .mutateAsync({ bookId: item.book_id })
+                                .then((result) => {
+                                  if (result.error)
+                                    Alert.alert("Couldn't set read", result.error);
+                                  else setShelfCategory("current_read");
+                                })
+                            }
+                            className="min-h-[44px] justify-center px-1"
+                          >
+                            <Text className="text-[11px] font-semibold text-puce-red">
+                              Set current
+                            </Text>
+                          </Pressable>
+                        ) : null}
+                        <Pressable
+                          accessibilityRole="button"
+                          onPress={() => {
+                            const next =
+                              item.category === "upcoming"
+                                ? "previous"
+                                : item.category === "previous"
+                                  ? "suggested"
+                                  : "upcoming";
+                            void setBookCategory
+                              .mutateAsync({
+                                shelfBookId: item.id,
+                                category: next,
+                              })
+                              .then((result) => {
+                                if (result.error)
+                                  Alert.alert("Couldn't move", result.error);
+                              });
+                          }}
+                          className="min-h-[44px] justify-center px-1"
+                        >
+                          <Text className="text-[11px] text-ink-muted">Move</Text>
+                        </Pressable>
+                        <Pressable
+                          accessibilityRole="button"
+                          onPress={() =>
+                            void removeClubBook.mutateAsync(item.id).then((result) => {
+                              if (result.error)
+                                Alert.alert("Couldn't remove", result.error);
+                            })
+                          }
+                          className="min-h-[44px] justify-center px-1"
+                        >
+                          <Text className="text-[11px] text-ink-muted">Remove</Text>
+                        </Pressable>
+                      </View>
+                    ) : null}
+                  </View>
+                ) : null
+              )}
+            </View>
+          )}
         </View>
       ) : null}
 
@@ -1563,98 +1666,153 @@ export default function ClubDetailRoute() {
             </View>
 
             <ScrollView keyboardShouldPersistTaps="handled">
-              <CircleAvatarPicker
-                imageUrl={club.image_url}
-                fallbackLabel={editName || club.name}
-                disabled={avatarUploading || updateMutation.isPending}
-                onImagePicked={(image) => void handleAvatarPicked(image)}
-                onRemove={() => void handleAvatarRemove()}
-              />
+              {canEdit ? (
+                <>
+                  <CircleAvatarPicker
+                    imageUrl={club.image_url}
+                    fallbackLabel={editName || club.name}
+                    disabled={avatarUploading || updateMutation.isPending}
+                    onImagePicked={(image) => void handleAvatarPicked(image)}
+                    onRemove={() => void handleAvatarRemove()}
+                  />
 
-              <Input
-                label="Club name"
-                value={editName}
-                onChangeText={setEditName}
-                placeholder="Club name"
-              />
-              <Input
-                label="Description"
-                value={editDescription}
-                onChangeText={setEditDescription}
-                placeholder="What's this club about?"
-                multiline
-                className="min-h-[90px]"
-                style={{ textAlignVertical: "top" }}
-              />
+                  <Input
+                    label="Club name"
+                    value={editName}
+                    onChangeText={setEditName}
+                    placeholder="Club name"
+                  />
+                  <Input
+                    label="Description"
+                    value={editDescription}
+                    onChangeText={setEditDescription}
+                    placeholder="What's this club about?"
+                    multiline
+                    className="min-h-[90px]"
+                    style={{ textAlignVertical: "top" }}
+                  />
 
-              <View className="mb-3">
-                <Text className="mb-1 text-sm font-medium text-ink">Visibility</Text>
-                <View className="flex-row flex-wrap gap-2">
-                  {VISIBILITY_OPTIONS.map((option) => {
-                    const isActive = editVisibility === option.id;
-                    return (
-                      <Pressable
-                        key={option.id}
-                        accessibilityRole="button"
-                        onPress={() => setEditVisibility(option.id)}
-                        className={`min-h-[44px] justify-center rounded-xl px-4 ${
-                          isActive ? "bg-puce-red" : "bg-primary/15"
-                        }`}
-                      >
-                        <Text
-                          className={`text-sm font-semibold ${
-                            isActive ? "text-white" : "text-puce-red"
+                  <View className="mb-3">
+                    <Text className="mb-1 text-sm font-medium text-ink">Visibility</Text>
+                    <View className="flex-row flex-wrap gap-2">
+                      {VISIBILITY_OPTIONS.map((option) => {
+                        const isActive = editVisibility === option.id;
+                        return (
+                          <Pressable
+                            key={option.id}
+                            accessibilityRole="button"
+                            onPress={() => setEditVisibility(option.id)}
+                            className={`min-h-[44px] justify-center rounded-xl px-4 ${
+                              isActive ? "bg-puce-red" : "bg-primary/15"
+                            }`}
+                          >
+                            <Text
+                              className={`text-sm font-semibold ${
+                                isActive ? "text-white" : "text-puce-red"
+                              }`}
+                            >
+                              {option.label}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </View>
+
+                  <View className="mb-4">
+                    <Text className="mb-1 text-sm font-medium text-ink">Join policy</Text>
+                    <View className="flex-row flex-wrap gap-2">
+                      {JOIN_POLICY_OPTIONS.map((option) => {
+                        const isActive = editJoinPolicy === option.id;
+                        return (
+                          <Pressable
+                            key={option.id}
+                            accessibilityRole="button"
+                            onPress={() => setEditJoinPolicy(option.id)}
+                            className={`min-h-[44px] justify-center rounded-xl px-4 ${
+                              isActive ? "bg-puce-red" : "bg-primary/15"
+                            }`}
+                          >
+                            <Text
+                              className={`text-sm font-semibold ${
+                                isActive ? "text-white" : "text-puce-red"
+                              }`}
+                            >
+                              {option.label}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </View>
+                </>
+              ) : null}
+
+              {manageMembers ? (
+                <View className="mb-4">
+                  <Text className="mb-2 text-sm font-medium text-ink">Club banner</Text>
+                  <View className="mb-2 flex-row flex-wrap gap-2">
+                    {(
+                      [
+                        ["current_read", "Match Current Read"],
+                        ["custom", "Upload Banner Image"],
+                      ] as const
+                    ).map(([value, label]) => {
+                      const active = editBannerMode === value;
+                      return (
+                        <Pressable
+                          key={value}
+                          accessibilityRole="button"
+                          onPress={() => setEditBannerMode(value)}
+                          className={`min-h-[44px] justify-center rounded-xl px-3 ${
+                            active ? "bg-puce-red" : "bg-primary/15"
                           }`}
                         >
-                          {option.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
+                          <Text
+                            className={`text-xs font-semibold ${
+                              active ? "text-white" : "text-puce-red"
+                            }`}
+                          >
+                            {label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                  {editBannerMode === "custom" ? (
+                    <Button
+                      title={bannerUploading ? "Uploading…" : "Choose banner image"}
+                      variant="secondary"
+                      loading={bannerUploading}
+                      onPress={() => void handleBannerPicked()}
+                    />
+                  ) : (
+                    <Text className="text-xs text-ink-muted">
+                      Uses the current read cover. Falls back to the Bookmarked default when none is
+                      set.
+                    </Text>
+                  )}
                 </View>
-              </View>
-
-              <View className="mb-4">
-                <Text className="mb-1 text-sm font-medium text-ink">Join policy</Text>
-                <View className="flex-row flex-wrap gap-2">
-                  {JOIN_POLICY_OPTIONS.map((option) => {
-                    const isActive = editJoinPolicy === option.id;
-                    return (
-                      <Pressable
-                        key={option.id}
-                        accessibilityRole="button"
-                        onPress={() => setEditJoinPolicy(option.id)}
-                        className={`min-h-[44px] justify-center rounded-xl px-4 ${
-                          isActive ? "bg-puce-red" : "bg-primary/15"
-                        }`}
-                      >
-                        <Text
-                          className={`text-sm font-semibold ${
-                            isActive ? "text-white" : "text-puce-red"
-                          }`}
-                        >
-                          {option.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </View>
+              ) : null}
 
               <Button
                 title="Save changes"
                 variant="primary"
                 loading={updateMutation.isPending}
-                disabled={!editName.trim()}
+                disabled={canEdit && !editName.trim()}
                 onPress={() => void handleSaveEdit()}
               />
-              <View className="h-3" />
-              <Button
-                title="Delete club"
-                variant="ghost"
-                loading={deleteClubMutation.isPending}
-                onPress={confirmDeleteClub}
-              />
+              {canEdit ? (
+                <>
+                  <View className="h-3" />
+                  <Button
+                    title="Delete club"
+                    variant="ghost"
+                    loading={deleteClubMutation.isPending}
+                    onPress={confirmDeleteClub}
+                  />
+                </>
+              ) : null}
             </ScrollView>
           </View>
         </View>

@@ -941,7 +941,24 @@ Book title / meeting frequency are not sent to review. A normal name such as “
 
 ---
 
-## Book Club create – Content Review still failing after PR #37
+## Book Clubs sprint — discussions, replies, shelf, banner ✅
+
+| # | Item | Status | Notes |
+|---|------|--------|-------|
+| 1 | Live discussion reply counts | ✅ | Extended `useClubDiscussionsRealtime` to UPDATE/DELETE + reconnect; optimistic + reconcile via `reply_count` / `latest_activity_at`; shared `formatReplyCount` |
+| 2 | Reply ••• menu + permissions | ✅ | `ReplyActionsMenu` / `showReplyActionsMenu`; author edit+delete; host/mod delete only; no Report/Block on own; `updateReply` + RLS author-only UPDATE; confirm delete |
+| 3 | Bookshelf category filters | ✅ | Filter chips show only selected category; category empty states; instant switch (web + iOS) |
+| 4 | Customizable club banner | ✅ | Migration `banner_mode` (`current_read` default / migrate); `set_book_club_banner` RPC for owner/host; custom upload preserved; web cover-colour wash via `useCoverPalette`; mobile cover + scrim / brand gradient |
+| 5 | Home status tag placement | ✅ | Title alone; `ClubMetadataRow` = members + Public/Private + Owner/Host |
+| 6 | Clubs Home → real discussions | ✅ | `listRecentDiscussionsForViewer` + `RecentDiscussionCard`; deep-link to thread; empty “No discussions yet.” |
+
+**Migration:** `supabase/migrations/20260908180000_book_club_banner_mode_reply_perms.sql` — **applied to linked prod** (`xtdfeorhdlpnbxycpone`) on 11 Sep 2026.
+
+**Branch:** `feature/book-clubs-sprint-discussions-banner` (work still uncommitted until asked)
+
+**Intentional gap:** Mobile has no canvas colour sampling; `current_read` uses cover-as-banner + bottom scrim (not pixel palette). Web samples cover colours when CORS allows, else falls back to cover image / brand gradient.
+
+---
 
 ### Root cause (updated 8 Sep 2026, after v3)
 

@@ -288,6 +288,20 @@ export async function uploadClubAvatar(
   return { url: result.url };
 }
 
+/** Upload club banner; caller should persist via setClubBanner. */
+export async function uploadClubBanner(
+  clubId: string,
+  image: PickedImage
+): Promise<{ url?: string; error?: string }> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be signed in." };
+
+  const path = `clubs/${clubId}/banner.${extForMime(image.mimeType)}`;
+  return uploadAvatarImage(path, image);
+}
+
 export async function removeClubAvatar(clubId: string): Promise<{ error?: string }> {
   const prefix = `clubs/${clubId}`;
   const { data: files, error: listError } = await supabase.storage.from(AVATAR_BUCKET).list(prefix);

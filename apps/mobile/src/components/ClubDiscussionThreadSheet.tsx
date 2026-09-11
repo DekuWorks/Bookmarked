@@ -25,6 +25,7 @@ import {
   useDeleteReply,
   useSetDiscussionLocked,
   useSetDiscussionPinned,
+  useUpdateReply,
 } from "../hooks/useClubs";
 import {
   useClubDiscussionRepliesRealtime,
@@ -42,6 +43,7 @@ import {
   sortClubReplies,
   type ClubReplySort,
 } from "../../../../packages/utils/clubReplyThread";
+import { formatReplyCount } from "../../../../packages/utils/clubDiscussionUi";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { timeAgo } from "../utils";
 import type {
@@ -52,6 +54,7 @@ import {
   canModerateDiscussions,
   canPinDiscussions,
 } from "../../../../packages/utils/clubPermissions";
+import { showReplyActionsMenu } from "./ReplyActionsMenu";
 
 type Props = {
   visible: boolean;
@@ -88,6 +91,7 @@ export function ClubDiscussionThreadSheet({
   const replies = useClubDiscussionReplies(discussionId);
   const createReply = useCreateReply(clubId, discussionId);
   const deleteReply = useDeleteReply(clubId, discussionId);
+  const updateReplyMutation = useUpdateReply(clubId, discussionId);
   const pinMutation = useSetDiscussionPinned(clubId);
   const lockMutation = useSetDiscussionLocked(clubId);
 
@@ -96,6 +100,8 @@ export function ClubDiscussionThreadSheet({
   const [replySort, setReplySort] = useState<ClubReplySort>("newest");
   const [sortOpen, setSortOpen] = useState(false);
   const [liveReplies, setLiveReplies] = useState(replies.data ?? []);
+  const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
+  const [editBody, setEditBody] = useState("");
 
   useEffect(() => {
     setLiveReplies(replies.data ?? []);
@@ -183,19 +189,28 @@ export function ClubDiscussionThreadSheet({
   }
 
   function confirmDeleteReply(replyId: string) {
-    Alert.alert("Delete reply?", "This cannot be undone.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () => {
-          void deleteReply.mutateAsync(replyId).then((result) => {
-            if (result.error) Alert.alert("Couldn't delete", result.error);
-            else setLiveReplies((current) => removeClubReply(current, replyId));
-          });
-        },
-      },
-    ]);
+    void deleteReply.mutateAsync(replyId).then((result) => {
+      if (result.error) Alert.alert("Couldn't delete", result.error);
+      else setLiveReplies((current) => removeClubReply(current, replyId));
+    });
+  }
+
+  async function saveEditReply(replyId: string) {
+    if (!editBody.trim()) return;
+    const result = await updateReplyMutation.mutateAsync({
+      replyId,
+      body: editBody.trim(),
+    });
+    if (result.error) {
+      Alert.alert("Couldn't update", result.error);
+      return;
+    }
+    setEditingReplyId(null);
+    setEditBody("");
+    const row = await getReply(replyId);
+    if (row) {
+      setLiveReplies((current) => mergeClubReplies(current, row, replySort));
+    }
   }
 
   return (
@@ -326,7 +341,7 @@ export function ClubDiscussionThreadSheet({
 
                 <View className="mt-4 flex-row items-center justify-between">
                   <Text className="text-sm font-semibold text-puce-red">
-                    Replies ({sortedReplies.length})
+                    {formatReplyCount(sortedReplies.length)}
                   </Text>
                   <Pressable
                     accessibilityRole="button"
@@ -358,43 +373,62 @@ export function ClubDiscussionThreadSheet({
                       {timeAgo(item.created_at)}
                     </Text>
                   </View>
-                  {item.user_id !== viewerId ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Report reply"
-                      onPress={() =>
-                        showContentActions({
-                          contentType: "club_reply",
-                          contentId: item.id,
-                          reportedUserId: item.user_id,
-                          reportedUserName: authorName(item.author),
-                        })
-                      }
-                      className="min-h-[44px] justify-center px-2"
-                    >
-                      <Text className="text-xs font-semibold text-ink-muted">Report</Text>
-                    </Pressable>
-                  ) : null}
-                  {item.user_id === viewerId ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Delete reply"
-                      onPress={() => confirmDeleteReply(item.id)}
-                      className="min-h-[44px] justify-center px-2"
-                    >
-                      {deleteReply.isPending ? (
-                        <ActivityIndicator size="small" color="#642F37" />
-                      ) : (
-                        <Text className="text-xs font-semibold text-puce-red">Delete</Text>
-                      )}
-                    </Pressable>
-                  ) : null}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Reply options"
+                    onPress={() =>
+                      showReplyActionsMenu({
+                        replyId: item.id,
+                        replyAuthorId: item.user_id,
+                        replyAuthorName: authorName(item.author),
+                        viewerId,
+                        viewerRole,
+                        onEdit: () => {
+                          setEditingReplyId(item.id);
+                          setEditBody(item.body);
+                        },
+                        onDelete: () => confirmDeleteReply(item.id),
+                      })
+                    }
+                    className="min-h-[44px] justify-center px-2"
+                  >
+                    <Text className="text-lg font-semibold text-ink-muted">⋯</Text>
+                  </Pressable>
                 </View>
-                <SpoilerReveal enabled={item.contains_spoilers} className="mt-2">
-                  <ProfanityBlur text={item.body} meta={item.moderation_meta ?? null}>
-                    <Text className="leading-5 text-ink">{item.body}</Text>
-                  </ProfanityBlur>
-                </SpoilerReveal>
+                {editingReplyId === item.id ? (
+                  <View className="mt-2 gap-2">
+                    <TextInput
+                      value={editBody}
+                      onChangeText={setEditBody}
+                      multiline
+                      className="min-h-[44px] rounded-2xl border border-brand-border bg-surface px-3 py-2 text-base text-ink"
+                      style={{ textAlignVertical: "top" }}
+                    />
+                    <View className="flex-row gap-2">
+                      <Button
+                        title="Save"
+                        loading={updateReplyMutation.isPending}
+                        onPress={() => void saveEditReply(item.id)}
+                        className="flex-1"
+                      />
+                      <Button
+                        title="Cancel"
+                        variant="ghost"
+                        onPress={() => {
+                          setEditingReplyId(null);
+                          setEditBody("");
+                        }}
+                        className="flex-1"
+                      />
+                    </View>
+                  </View>
+                ) : (
+                  <SpoilerReveal enabled={item.contains_spoilers} className="mt-2">
+                    <ProfanityBlur text={item.body} meta={item.moderation_meta ?? null}>
+                      <Text className="leading-5 text-ink">{item.body}</Text>
+                    </ProfanityBlur>
+                  </SpoilerReveal>
+                )}
               </View>
             )}
             ListEmptyComponent={

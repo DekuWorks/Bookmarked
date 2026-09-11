@@ -33,6 +33,7 @@ import {
   canManageMembers,
   roleLabel,
 } from "@bookmarked/utils/clubPermissions";
+import { formatReplyCount } from "@bookmarked/utils/clubDiscussionUi";
 import type {
   BookClubAnnouncementWithAuthor,
   BookClubCurrentRead,
@@ -299,7 +300,7 @@ export function ClubOverviewPanel({
                 >
                   <p className="truncate font-medium text-puce-red">{post.title}</p>
                   <p className="truncate text-xs text-text-muted">
-                    {post.reply_count} replies
+                    {formatReplyCount(post.reply_count)}
                     {post.is_pinned ? " · Pinned" : ""}
                     {post.contains_spoilers ? " · Spoilers" : ""}
                   </p>

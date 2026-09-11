@@ -458,6 +458,8 @@ export type BookClubBook = {
   cover_url: string | null;
 };
 
+export type BookClubBannerMode = "current_read" | "custom";
+
 export interface BookClub {
   id: string;
   owner_id: string;
@@ -466,6 +468,8 @@ export interface BookClub {
   moderation_meta?: ModerationMeta | null;
   image_url: string | null;
   banner_url: string | null;
+  /** current_read derives from cover; custom uses banner_url without overwriting on read changes. */
+  banner_mode?: BookClubBannerMode;
   current_book_id: string | null;
   visibility: BookClubVisibility;
   join_policy: BookClubJoinPolicy;

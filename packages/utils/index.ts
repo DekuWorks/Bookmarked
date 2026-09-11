@@ -67,6 +67,33 @@ export {
 } from "./clubReplyThread";
 
 export {
+  adjustDiscussionReplyCount,
+  formatReplyCount,
+  getClubReplyActionPermissions,
+  upsertDiscussionCounts,
+  type ClubReplyActionPermissions,
+  type DiscussionCountFields,
+} from "./clubDiscussionUi";
+
+export {
+  BOOK_CLUB_BANNER_MODES,
+  BOOK_CLUB_DEFAULT_BANNER_GRADIENT,
+  DEFAULT_BOOK_CLUB_BANNER_MODE,
+  parseBookClubBannerMode,
+  resolveClubBanner,
+  type BookClubBannerMode,
+  type ClubBannerCurrentBook,
+  type ClubBannerSource,
+  type ResolvedClubBanner,
+} from "./clubBanner";
+
+export {
+  CLUB_BOOKSHELF_CATEGORIES,
+  clubBookshelfEmptyMessage,
+  filterClubShelfByCategory,
+} from "./clubBookshelf";
+
+export {
   clubCreateUnavailableMessage,
   dedupeAsync,
   fetchWithTimeout,

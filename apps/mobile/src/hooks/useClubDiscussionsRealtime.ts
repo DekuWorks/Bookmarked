@@ -1,7 +1,6 @@
-"use client";
-
 import { useEffect, useRef } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { AppState, type AppStateStatus } from "react-native";
+import { supabase } from "../services/supabase";
 
 export type ClubDiscussionRealtimeChange =
   | { type: "insert"; id: string }
@@ -14,10 +13,6 @@ export type ClubDiscussionRealtimeChange =
   | { type: "delete"; id: string }
   | { type: "reconnect" };
 
-/**
- * Subscribe to discussion INSERT/UPDATE/DELETE for a club.
- * UPDATE delivers maintained reply_count / latest_activity_at from the reply trigger.
- */
 export function useClubDiscussionsRealtime(
   clubId: string | undefined,
   onChange: (change: ClubDiscussionRealtimeChange) => void
@@ -31,7 +26,6 @@ export function useClubDiscussionsRealtime(
   useEffect(() => {
     if (!clubId) return;
 
-    const supabase = createClient();
     let cancelled = false;
     const topic = `club_discussions:${clubId}`;
 
@@ -82,25 +76,18 @@ export function useClubDiscussionsRealtime(
 
     let channel = subscribe();
 
-    function resubscribeAndRefetch() {
-      if (cancelled) return;
+    function handleAppState(next: AppStateStatus) {
+      if (next !== "active" || cancelled) return;
       void supabase.removeChannel(channel);
       channel = subscribe();
       onChangeRef.current({ type: "reconnect" });
     }
 
-    function handleVisibility() {
-      if (document.visibilityState !== "visible") return;
-      resubscribeAndRefetch();
-    }
-
-    document.addEventListener("visibilitychange", handleVisibility);
-    window.addEventListener("online", resubscribeAndRefetch);
+    const sub = AppState.addEventListener("change", handleAppState);
 
     return () => {
       cancelled = true;
-      document.removeEventListener("visibilitychange", handleVisibility);
-      window.removeEventListener("online", resubscribeAndRefetch);
+      sub.remove();
       void supabase.removeChannel(channel);
     };
   }, [clubId]);

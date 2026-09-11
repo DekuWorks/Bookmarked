@@ -11,9 +11,13 @@ import { LoadingState } from "@/components/ui/LoadingState";
 import { useToast } from "@/components/ui/Toast";
 import { ClubDiscussionCard } from "@/components/clubs/ClubDiscussionCard";
 import { ClubDiscussionComposer } from "@/components/clubs/ClubDiscussionComposer";
+import { ReplyActionsMenu } from "@/components/clubs/ReplyActionsMenu";
 import { ProfanityBlur } from "@/components/social/ProfanityBlur";
 import { ContentActionsMenu } from "@/components/moderation/ContentActionsMenu";
-import { useClubDiscussionsRealtime } from "@/lib/hooks/useClubDiscussionsRealtime";
+import {
+  useClubDiscussionsRealtime,
+  type ClubDiscussionRealtimeChange,
+} from "@/lib/hooks/useClubDiscussionsRealtime";
 import {
   useClubDiscussionRepliesRealtime,
   type ClubReplyRealtimeChange,
@@ -31,6 +35,11 @@ import {
   type ClubReplySort,
 } from "../../../../../packages/utils/clubReplyThread";
 import {
+  adjustDiscussionReplyCount,
+  formatReplyCount,
+  upsertDiscussionCounts,
+} from "@bookmarked/utils/clubDiscussionUi";
+import {
   createReply,
   deleteDiscussion,
   deleteReply,
@@ -40,6 +49,7 @@ import {
   listReplies,
   setDiscussionLocked,
   setDiscussionPinned,
+  updateReply,
 } from "@/lib/services/bookClubs";
 import { bookDetailsPath } from "@/lib/routes/book";
 import { authorPagePath } from "@/lib/routes/author";
@@ -93,6 +103,8 @@ export function ClubDiscussionsPanel({
   const [replyBody, setReplyBody] = useState("");
   const [replySpoilers, setReplySpoilers] = useState(false);
   const [pending, setPending] = useState(false);
+  const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
+  const [editBody, setEditBody] = useState("");
   const [fromDeepLink, setFromDeepLink] = useState(Boolean(initialDiscussionId));
   const [replySort, setReplySort] = useState<ClubReplySort>(() => {
     if (typeof window === "undefined") return "newest";
@@ -179,21 +191,68 @@ export function ClubDiscussionsPanel({
     }
   }, [initialDiscussionId]);
 
-  const handleRealtimeInsert = useCallback(
-    async (postId: string) => {
-      const post = await getDiscussion(clubId, postId);
+  const handleDiscussionRealtime = useCallback(
+    async (change: ClubDiscussionRealtimeChange) => {
+      if (change.type === "reconnect") {
+        await loadList();
+        return;
+      }
+      if (change.type === "delete") {
+        setDiscussions((current) => current?.filter((row) => row.id !== change.id) ?? current);
+        if (activeId === change.id) clearActiveDiscussion();
+        return;
+      }
+      if (change.type === "update") {
+        if (
+          typeof change.reply_count === "number" &&
+          typeof change.latest_activity_at === "string"
+        ) {
+          setDiscussions((current) =>
+            current
+              ? upsertDiscussionCounts(current, {
+                  id: change.id,
+                  reply_count: change.reply_count!,
+                  latest_activity_at: change.latest_activity_at!,
+                })
+              : current
+          );
+          setActiveDiscussion((current) =>
+            current && current.id === change.id
+              ? {
+                  ...current,
+                  reply_count: change.reply_count!,
+                  latest_activity_at: change.latest_activity_at!,
+                }
+              : current
+          );
+          return;
+        }
+        const post = await getDiscussion(clubId, change.id);
+        if (!post) return;
+        setDiscussions((current) =>
+          current
+            ? upsertDiscussionCounts(current, post).map((row) =>
+                row.id === post.id ? { ...row, ...post } : row
+              )
+            : current
+        );
+        return;
+      }
+      const post = await getDiscussion(clubId, change.id);
       if (!post) return;
       setDiscussions((current) => {
         if (!current) return current;
-        if (current.some((existing) => existing.id === post.id)) return current;
+        if (current.some((existing) => existing.id === post.id)) {
+          return current.map((row) => (row.id === post.id ? post : row));
+        }
         return [post, ...current];
       });
     },
-    [clubId]
+    [activeId, clubId, loadList]
   );
 
-  useClubDiscussionsRealtime(clubId, (postId) => {
-    void handleRealtimeInsert(postId).catch((err) => {
+  useClubDiscussionsRealtime(clubId, (change) => {
+    void handleDiscussionRealtime(change).catch((err) => {
       console.warn("[club] realtime hydrate failed:", err);
     });
   });
@@ -202,21 +261,54 @@ export function ClubDiscussionsPanel({
     async (change: ClubReplyRealtimeChange) => {
       if (!activeId) return;
       if (change.type === "delete") {
-        setReplies((current) => removeClubReply(current ?? [], change.id));
+        setReplies((current) => {
+          const had = (current ?? []).some((row) => row.id === change.id);
+          const next = removeClubReply(current ?? [], change.id);
+          if (had) {
+            setDiscussions((rows) =>
+              rows ? adjustDiscussionReplyCount(rows, activeId, -1) : rows
+            );
+          }
+          return next;
+        });
         return;
       }
       if (change.type === "reconnect") {
-        const rows = await listReplies(activeId);
+        const [rows, discussion] = await Promise.all([
+          listReplies(activeId),
+          getDiscussion(clubId, activeId),
+        ]);
         setReplies((current) =>
           mergeReconnectClubReplies(current ?? [], rows, replySortRef.current, activeId)
         );
+        if (discussion) {
+          setActiveDiscussion(discussion);
+          setDiscussions((current) =>
+            current
+              ? upsertDiscussionCounts(current, discussion).map((row) =>
+                  row.id === discussion.id ? { ...row, ...discussion } : row
+                )
+              : current
+          );
+        }
         return;
       }
       const row = await getReply(change.id);
       if (!row || row.discussion_id !== activeId) return;
-      setReplies((current) => mergeClubReplies(current ?? [], row, replySortRef.current));
+      setReplies((current) => {
+        const existed = (current ?? []).some((item) => item.id === row.id);
+        const next = mergeClubReplies(current ?? [], row, replySortRef.current);
+        if (!existed && change.type === "insert") {
+          setDiscussions((rows) =>
+            rows
+              ? adjustDiscussionReplyCount(rows, activeId, 1, row.created_at)
+              : rows
+          );
+        }
+        return next;
+      });
     },
-    [activeId]
+    [activeId, clubId]
   );
 
   useClubDiscussionRepliesRealtime(activeId ?? undefined, (change) => {
@@ -270,10 +362,20 @@ export function ClubDiscussionsPanel({
     if (result.replyId) {
       const row = await getReply(result.replyId);
       if (row) {
-        setReplies((current) => mergeClubReplies(current ?? [], row, replySort));
+        setReplies((current) => {
+          const existed = (current ?? []).some((item) => item.id === row.id);
+          const next = mergeClubReplies(current ?? [], row, replySort);
+          if (!existed) {
+            setDiscussions((rows) =>
+              rows
+                ? adjustDiscussionReplyCount(rows, activeId, 1, row.created_at)
+                : rows
+            );
+          }
+          return next;
+        });
       }
     }
-    await loadList();
   }
 
   async function handleDeleteDiscussion(discussionId: string) {
@@ -299,8 +401,34 @@ export function ClubDiscussionsPanel({
       return;
     }
     toast.success("Reply deleted.");
-    setReplies((current) => removeClubReply(current ?? [], replyId));
-    await loadList();
+    setReplies((current) => {
+      const had = (current ?? []).some((row) => row.id === replyId);
+      const next = removeClubReply(current ?? [], replyId);
+      if (had && activeId) {
+        setDiscussions((rows) =>
+          rows ? adjustDiscussionReplyCount(rows, activeId, -1) : rows
+        );
+      }
+      return next;
+    });
+  }
+
+  async function handleSaveEditReply(replyId: string) {
+    if (!editBody.trim()) return;
+    setPending(true);
+    const result = await updateReply(replyId, editBody);
+    setPending(false);
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+    toast.success("Reply updated.");
+    setEditingReplyId(null);
+    setEditBody("");
+    const row = await getReply(replyId);
+    if (row) {
+      setReplies((current) => mergeClubReplies(current ?? [], row, replySort));
+    }
   }
 
   if (activeId && activeDiscussion) {
@@ -475,8 +603,7 @@ export function ClubDiscussionsPanel({
         <div>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-sm font-semibold text-text-muted">
-              {sortedReplies.length}{" "}
-              {sortedReplies.length === 1 ? "reply" : "replies"}
+              {formatReplyCount(sortedReplies.length)}
             </h3>
             <label className="block">
               <span className="sr-only">{CLUB_REPLY_SORT_LABEL}</span>
@@ -504,7 +631,7 @@ export function ClubDiscussionsPanel({
                 const replyHref = reply.author.username
                   ? readerProfilePath(reply.author.username)
                   : null;
-                const canDeleteReply = reply.user_id === viewerId || canModerate;
+                const isEditing = editingReplyId === reply.id;
                 return (
                   <li
                     key={reply.id}
@@ -540,31 +667,62 @@ export function ClubDiscussionsPanel({
                           </span>
                         ) : null}
                       </div>
-                      {canDeleteReply ? (
-                        <button
-                          type="button"
-                          onClick={() => void handleDeleteReply(reply.id)}
-                          className="text-xs text-text-muted hover:text-rust"
-                        >
-                          Delete
-                        </button>
-                      ) : null}
-                      {reply.user_id !== viewerId ? (
-                        <ContentActionsMenu
-                          contentType="club_reply"
-                          contentId={reply.id}
-                          reportedUserId={reply.user_id}
-                          reportedUserName={authorLabel(reply.author)}
-                        />
-                      ) : null}
+                      <ReplyActionsMenu
+                        replyId={reply.id}
+                        replyAuthorId={reply.user_id}
+                        replyAuthorName={authorLabel(reply.author)}
+                        viewerId={viewerId}
+                        viewerRole={viewerRole}
+                        onEdit={() => {
+                          setEditingReplyId(reply.id);
+                          setEditBody(reply.body);
+                        }}
+                        onDelete={() => void handleDeleteReply(reply.id)}
+                      />
                     </div>
-                    <ProfanityBlur
-                      text={reply.body}
-                      meta={reply.moderation_meta ?? null}
-                      className="mt-2 text-left"
-                    >
-                      <p className="whitespace-pre-wrap text-left text-sm text-text">{reply.body}</p>
-                    </ProfanityBlur>
+                    {isEditing ? (
+                      <div className="mt-2 space-y-2">
+                        <Textarea
+                          label="Edit reply"
+                          value={editBody}
+                          onChange={(e) => setEditBody(e.target.value)}
+                          rows={3}
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="primary"
+                            size="sm"
+                            loading={pending}
+                            disabled={!editBody.trim()}
+                            onClick={() => void handleSaveEditReply(reply.id)}
+                          >
+                            Save
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setEditingReplyId(null);
+                              setEditBody("");
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <ProfanityBlur
+                        text={reply.body}
+                        meta={reply.moderation_meta ?? null}
+                        className="mt-2 text-left"
+                      >
+                        <p className="whitespace-pre-wrap text-left text-sm text-text">
+                          {reply.body}
+                        </p>
+                      </ProfanityBlur>
+                    )}
                   </li>
                 );
               })}

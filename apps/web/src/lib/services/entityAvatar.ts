@@ -26,6 +26,10 @@ function clubAvatarPath(clubId: string, mime: string): string {
   return `clubs/${clubId}/avatar.${extensionForMime(mime)}`;
 }
 
+function clubBannerPath(clubId: string, mime: string): string {
+  return `clubs/${clubId}/banner.${extensionForMime(mime)}`;
+}
+
 function challengeCoverPath(mime: string): string {
   const stamp = Date.now();
   return `challenges/covers/${stamp}.${extensionForMime(mime)}`;
@@ -119,6 +123,15 @@ export async function uploadClubAvatar(
 
   if (error) return { error: error.message };
   return { url: result.url };
+}
+
+/** Upload club banner image; caller should persist via setClubBanner (host/owner RPC). */
+export async function uploadClubBanner(
+  clubId: string,
+  file: File
+): Promise<{ url?: string; error?: string }> {
+  const path = clubBannerPath(clubId, file.type);
+  return uploadEntityAvatar(path, file);
 }
 
 export async function removeClubAvatar(clubId: string): Promise<{ error?: string }> {
