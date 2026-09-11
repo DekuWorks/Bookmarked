@@ -111,6 +111,7 @@ import {
   roleLabel,
 } from "../../../../../packages/utils/clubPermissions";
 import {
+  BOOK_CLUB_BANNER_FORMAT_HINT,
   BOOK_CLUB_DEFAULT_BANNER_GRADIENT,
   DEFAULT_BOOK_CLUB_BANNER_MODE,
   parseBookClubBannerMode,
@@ -295,6 +296,8 @@ export default function ClubDetailRoute() {
   const [editBannerMode, setEditBannerMode] = useState<BookClubBannerMode>(
     DEFAULT_BOOK_CLUB_BANNER_MODE
   );
+  const [editBannerUrl, setEditBannerUrl] = useState("");
+  const [bannerCleared, setBannerCleared] = useState(false);
   const [bannerUploading, setBannerUploading] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [limitOpen, setLimitOpen] = useState(false);
@@ -306,6 +309,8 @@ export default function ClubDetailRoute() {
       setEditVisibility(club.visibility);
       setEditJoinPolicy(club.join_policy);
       setEditBannerMode(parseBookClubBannerMode(club.banner_mode ?? DEFAULT_BOOK_CLUB_BANNER_MODE));
+      setEditBannerUrl(club.banner_url ?? "");
+      setBannerCleared(false);
     }
   }, [editOpen, club]);
 
@@ -436,10 +441,26 @@ export default function ClubDetailRoute() {
     }
 
     if (manageMembers) {
-      const bannerResult = await setClubBanner(clubId, { mode: editBannerMode });
-      if (bannerResult.error) {
-        Alert.alert("Couldn't update banner", bannerResult.error);
-        return;
+      if (bannerCleared) {
+        const clearResult = await setClubBanner(clubId, { mode: "custom", bannerUrl: null });
+        if (clearResult.error) {
+          Alert.alert("Couldn't update banner", clearResult.error);
+          return;
+        }
+        const modeResult = await setClubBanner(clubId, { mode: "current_read" });
+        if (modeResult.error) {
+          Alert.alert("Couldn't update banner", modeResult.error);
+          return;
+        }
+      } else {
+        const bannerResult = await setClubBanner(clubId, {
+          mode: editBannerMode,
+          bannerUrl: editBannerMode === "custom" ? editBannerUrl.trim() || null : null,
+        });
+        if (bannerResult.error) {
+          Alert.alert("Couldn't update banner", bannerResult.error);
+          return;
+        }
       }
     }
 
@@ -461,7 +482,7 @@ export default function ClubDetailRoute() {
   }
 
   async function handleBannerPicked() {
-    const picked = await pickImageFromLibrary();
+    const picked = await pickImageFromLibrary({ allowsEditing: true, aspect: [3, 1] });
     if (picked.error || !picked.image) {
       if (picked.error) Alert.alert("Couldn't pick image", picked.error);
       return;
@@ -482,7 +503,15 @@ export default function ClubDetailRoute() {
       return;
     }
     setEditBannerMode("custom");
+    setEditBannerUrl(uploaded.url);
+    setBannerCleared(false);
     await queryClient.invalidateQueries({ queryKey: ["club", clubId] });
+  }
+
+  async function handleBannerRemove() {
+    setEditBannerMode("current_read");
+    setEditBannerUrl("");
+    setBannerCleared(true);
   }
 
   async function handleAvatarPicked(image: PickedImage) {
@@ -791,66 +820,86 @@ export default function ClubDetailRoute() {
       <View className="overflow-hidden rounded-2xl border border-brand-border bg-surface">
         {(() => {
           const banner = resolveClubBanner(club, club.current_book);
-          if (banner.kind === "image") {
-            return (
-              <View className="relative h-28 w-full overflow-hidden">
+          const brand = BOOK_CLUB_DEFAULT_BANNER_GRADIENT;
+          const thumbUrl = club.current_book?.cover_url || club.image_url || null;
+          return (
+            <View className="relative h-40 w-full overflow-hidden">
+              {banner.kind === "image" ? (
                 <Image
                   source={{ uri: banner.url }}
-                  className="h-28 w-full"
+                  className="absolute inset-0 h-40 w-full"
                   resizeMode="cover"
                   accessibilityIgnoresInvertColors
                 />
+              ) : (
                 <LinearGradient
-                  colors={["transparent", "rgba(0,0,0,0.45)"]}
-                  style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 56 }}
-                  pointerEvents="none"
+                  colors={[brand.from, brand.via, brand.to]}
+                  start={{ x: 0, y: 0.5 }}
+                  end={{ x: 1, y: 0.5 }}
+                  style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
                 />
+              )}
+              <LinearGradient
+                colors={["rgba(0,0,0,0.15)", "rgba(0,0,0,0.35)", "rgba(0,0,0,0.72)"]}
+                style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
+                pointerEvents="none"
+              />
+              <View className="absolute bottom-0 left-0 right-0 flex-row items-end gap-3 px-4 pb-3 pt-10">
+                {thumbUrl ? (
+                  <Image
+                    source={{ uri: thumbUrl }}
+                    className="h-[72px] w-12 rounded-md border-2 border-white/40"
+                    resizeMode="cover"
+                    accessibilityIgnoresInvertColors
+                  />
+                ) : (
+                  <View className="h-[72px] w-12 items-center justify-center rounded-md border-2 border-white/40 bg-black/40">
+                    <Text className="text-xs font-bold text-white">
+                      {club.name.slice(0, 2).toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+                <View className="min-w-0 flex-1 pb-0.5">
+                  <View className="flex-row items-start gap-2">
+                    <Text className="flex-1 text-2xl font-bold text-white" numberOfLines={2}>
+                      {club.name}
+                    </Text>
+                    {userId && userId !== club.owner_id ? (
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Report club"
+                        onPress={() =>
+                          showContentActions({
+                            contentType: "club",
+                            contentId: club.id,
+                            reportedUserId: club.owner_id,
+                            reportedUserName: club.name,
+                            hideBlock: true,
+                          })
+                        }
+                        className="min-h-[44px] justify-center px-2"
+                      >
+                        <Text className="text-xs font-semibold text-white/80">Report</Text>
+                      </Pressable>
+                    ) : null}
+                  </View>
+                  <ClubMetadataRow
+                    memberCount={club.member_count}
+                    visibility={club.visibility}
+                    viewerRole={viewerRole}
+                    onDark
+                  />
+                </View>
               </View>
-            );
-          }
-          const brand = BOOK_CLUB_DEFAULT_BANNER_GRADIENT;
-          return (
-            <LinearGradient
-              colors={[brand.from, brand.via, brand.to]}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={{ height: 112, width: "100%" }}
-            />
+            </View>
           );
         })()}
-        <View className="-mt-8 px-4 pb-4">
-          <Avatar url={club.image_url} name={club.name} size={72} />
-          <View className="mt-3 flex-row items-start gap-2">
-            <Text className="flex-1 text-2xl font-bold text-puce-red">{club.name}</Text>
-            {userId && userId !== club.owner_id ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Report club"
-                onPress={() =>
-                  showContentActions({
-                    contentType: "club",
-                    contentId: club.id,
-                    reportedUserId: club.owner_id,
-                    reportedUserName: club.name,
-                    hideBlock: true,
-                  })
-                }
-                className="min-h-[44px] justify-center px-2"
-              >
-                <Text className="text-xs font-semibold text-ink-muted">Report</Text>
-              </Pressable>
-            ) : null}
-          </View>
-          <ClubMetadataRow
-            memberCount={club.member_count}
-            visibility={club.visibility}
-            viewerRole={viewerRole}
-          />
+        <View className="px-4 pb-4 pt-4">
           {club.description ? (
-            <Text className="mt-3 leading-6 text-ink">{club.description}</Text>
+            <Text className="leading-6 text-ink">{club.description}</Text>
           ) : null}
           {club.genre_tags?.length ? (
-            <View className="mt-3 flex-row flex-wrap gap-2">
+            <View className={`${club.description ? "mt-3" : ""} flex-row flex-wrap gap-2`}>
               {club.genre_tags.map((tag) => (
                 <Text
                   key={tag}
@@ -1776,7 +1825,10 @@ export default function ClubDetailRoute() {
                         <Pressable
                           key={value}
                           accessibilityRole="button"
-                          onPress={() => setEditBannerMode(value)}
+                          onPress={() => {
+                            setEditBannerMode(value);
+                            if (value === "custom") setBannerCleared(false);
+                          }}
                           className={`min-h-[44px] justify-center rounded-xl px-3 ${
                             active ? "bg-puce-red" : "bg-primary/15"
                           }`}
@@ -1793,16 +1845,48 @@ export default function ClubDetailRoute() {
                     })}
                   </View>
                   {editBannerMode === "custom" ? (
-                    <Button
-                      title={bannerUploading ? "Uploading…" : "Choose banner image"}
-                      variant="secondary"
-                      loading={bannerUploading}
-                      onPress={() => void handleBannerPicked()}
-                    />
+                    <View>
+                      {editBannerUrl.trim() ? (
+                        <Image
+                          source={{ uri: editBannerUrl.trim() }}
+                          className="mb-3 h-24 w-full rounded-xl border border-brand-border"
+                          resizeMode="cover"
+                          accessibilityIgnoresInvertColors
+                        />
+                      ) : (
+                        <View className="mb-3 h-24 items-center justify-center rounded-xl border border-dashed border-brand-border bg-background">
+                          <Text className="text-xs text-ink-muted">No custom banner yet</Text>
+                        </View>
+                      )}
+                      <View className="flex-row flex-wrap gap-2">
+                        <Button
+                          title={
+                            bannerUploading
+                              ? "Uploading…"
+                              : editBannerUrl.trim()
+                                ? "Change photo"
+                                : "Upload photo"
+                          }
+                          variant="secondary"
+                          loading={bannerUploading}
+                          onPress={() => void handleBannerPicked()}
+                          className="flex-1"
+                        />
+                        {editBannerUrl.trim() ? (
+                          <Button
+                            title="Remove"
+                            variant="ghost"
+                            disabled={bannerUploading}
+                            onPress={handleBannerRemove}
+                          />
+                        ) : null}
+                      </View>
+                      <Text className="mt-2 text-xs text-ink-muted">{BOOK_CLUB_BANNER_FORMAT_HINT}</Text>
+                    </View>
                   ) : (
                     <Text className="text-xs text-ink-muted">
-                      Uses the current read cover. Falls back to the Bookmarked default when none is
-                      set.
+                      Banner follows your Current Read cover and updates when the book changes.
+                      Falls back to the Bookmarked default when none is set.
                     </Text>
                   )}
                 </View>

@@ -288,28 +288,28 @@ function ClubDetailContent() {
       </p>
 
       <header className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
-        <ClubBannerHero banner={banner} />
-
-        <div className="px-5 pb-5 pt-0 sm:px-6">
-          <div className="-mt-10 flex flex-wrap items-end gap-4 sm:-mt-12">
-            {club.image_url ? (
+        <ClubBannerHero banner={banner}>
+          <div className="flex flex-wrap items-end gap-3 sm:gap-4">
+            {club.current_book?.cover_url || club.image_url ? (
               <Image
-                src={club.image_url}
+                src={club.current_book?.cover_url || club.image_url || ""}
                 alt=""
-                width={96}
-                height={96}
-                className="h-20 w-20 shrink-0 rounded-full border-4 border-surface object-cover sm:h-24 sm:w-24"
+                width={72}
+                height={108}
+                className="h-[4.5rem] w-12 shrink-0 rounded-md border-2 border-white/40 object-cover shadow-md sm:h-24 sm:w-16"
                 unoptimized
               />
             ) : (
-              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-4 border-surface bg-royal-orange/20 text-xl font-bold text-puce-red sm:h-24 sm:w-24">
+              <div className="flex h-[4.5rem] w-12 shrink-0 items-center justify-center rounded-md border-2 border-white/40 bg-black/35 text-xs font-bold text-white sm:h-24 sm:w-16">
                 {club.name.slice(0, 2).toUpperCase()}
               </div>
             )}
 
-            <div className="min-w-0 flex-1 pb-1">
+            <div className="min-w-0 flex-1 pb-0.5">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl font-bold text-puce-red sm:text-3xl">{club.name}</h1>
+                <h1 className="text-2xl font-bold text-white drop-shadow-sm sm:text-3xl">
+                  {club.name}
+                </h1>
                 {user && user.id !== club.owner_id ? (
                   <ContentActionsMenu
                     contentType="club"
@@ -324,12 +324,15 @@ function ClubDetailContent() {
                 memberCount={club.member_count}
                 visibility={club.visibility}
                 viewerRole={club.viewer_role}
+                onDark
               />
             </div>
           </div>
+        </ClubBannerHero>
 
+        <div className="px-5 pb-5 pt-4 sm:px-6">
           {club.description ? (
-            <p className="mt-4 leading-relaxed text-text">{club.description}</p>
+            <p className="leading-relaxed text-text">{club.description}</p>
           ) : null}
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
