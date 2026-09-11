@@ -11,9 +11,10 @@ import { LoadingState } from "@/components/ui/LoadingState";
 import { useToast } from "@/components/ui/Toast";
 import { ClubDiscussionCard } from "@/components/clubs/ClubDiscussionCard";
 import { ClubDiscussionComposer } from "@/components/clubs/ClubDiscussionComposer";
+import { DiscussionActionsMenu } from "@/components/clubs/DiscussionActionsMenu";
+import { EditDiscussionModal } from "@/components/clubs/EditDiscussionModal";
 import { ReplyActionsMenu } from "@/components/clubs/ReplyActionsMenu";
 import { ProfanityBlur } from "@/components/social/ProfanityBlur";
-import { ContentActionsMenu } from "@/components/moderation/ContentActionsMenu";
 import {
   useClubDiscussionsRealtime,
   type ClubDiscussionRealtimeChange,
@@ -37,6 +38,8 @@ import {
 import {
   adjustDiscussionReplyCount,
   formatReplyCount,
+  isDiscussionEdited,
+  patchDiscussionContent,
   upsertDiscussionCounts,
 } from "@bookmarked/utils/clubDiscussionUi";
 import {
@@ -56,7 +59,6 @@ import { authorPagePath } from "@/lib/routes/author";
 import { readerProfilePath } from "@/lib/routes/reader";
 import { formatFeedTimestamp } from "@/lib/utils/locale";
 import {
-  canModerateDiscussions,
   canPinDiscussions,
 } from "@bookmarked/utils/clubPermissions";
 import type {
@@ -91,7 +93,6 @@ export function ClubDiscussionsPanel({
   const router = useRouter();
   const locale = usePreferredLocale();
   const canPin = canPinDiscussions(viewerRole);
-  const canModerate = canModerateDiscussions(viewerRole);
 
   const [discussions, setDiscussions] = useState<BookClubDiscussionWithAuthor[] | null>(null);
   const [filter, setFilter] = useState<SortFilter>("activity");
@@ -105,6 +106,7 @@ export function ClubDiscussionsPanel({
   const [pending, setPending] = useState(false);
   const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
   const [editBody, setEditBody] = useState("");
+  const [editDiscussionOpen, setEditDiscussionOpen] = useState(false);
   const [fromDeepLink, setFromDeepLink] = useState(Boolean(initialDiscussionId));
   const [replySort, setReplySort] = useState<ClubReplySort>(() => {
     if (typeof window === "undefined") return "newest";
@@ -203,38 +205,24 @@ export function ClubDiscussionsPanel({
         return;
       }
       if (change.type === "update") {
-        if (
-          typeof change.reply_count === "number" &&
-          typeof change.latest_activity_at === "string"
-        ) {
-          setDiscussions((current) =>
-            current
-              ? upsertDiscussionCounts(current, {
-                  id: change.id,
-                  reply_count: change.reply_count!,
-                  latest_activity_at: change.latest_activity_at!,
-                })
-              : current
-          );
-          setActiveDiscussion((current) =>
-            current && current.id === change.id
-              ? {
-                  ...current,
-                  reply_count: change.reply_count!,
-                  latest_activity_at: change.latest_activity_at!,
-                }
-              : current
-          );
-          return;
-        }
-        const post = await getDiscussion(clubId, change.id);
-        if (!post) return;
+        const patch = {
+          id: change.id,
+          ...(typeof change.reply_count === "number" ? { reply_count: change.reply_count } : {}),
+          ...(typeof change.latest_activity_at === "string"
+            ? { latest_activity_at: change.latest_activity_at }
+            : {}),
+          ...(typeof change.title === "string" ? { title: change.title } : {}),
+          ...(typeof change.body === "string" ? { body: change.body } : {}),
+          ...(typeof change.updated_at === "string" ? { updated_at: change.updated_at } : {}),
+          ...(change.edited_at !== undefined ? { edited_at: change.edited_at } : {}),
+          ...(typeof change.is_pinned === "boolean" ? { is_pinned: change.is_pinned } : {}),
+          ...(typeof change.is_locked === "boolean" ? { is_locked: change.is_locked } : {}),
+        };
         setDiscussions((current) =>
-          current
-            ? upsertDiscussionCounts(current, post).map((row) =>
-                row.id === post.id ? { ...row, ...post } : row
-              )
-            : current
+          current ? patchDiscussionContent(current, patch) : current
+        );
+        setActiveDiscussion((current) =>
+          current && current.id === change.id ? { ...current, ...patch } : current
         );
         return;
       }
@@ -432,10 +420,10 @@ export function ClubDiscussionsPanel({
   }
 
   if (activeId && activeDiscussion) {
-    const isOwn = activeDiscussion.user_id === viewerId;
     const profileHref = activeDiscussion.author.username
       ? readerProfilePath(activeDiscussion.author.username)
       : null;
+    const showEdited = isDiscussionEdited(activeDiscussion);
 
     return (
       <section className="space-y-4 pt-6 text-left scroll-mt-[var(--app-nav-clearance)]">
@@ -471,7 +459,7 @@ export function ClubDiscussionsPanel({
                   </span>
                 ) : null}
               </div>
-              <div className="mt-2 flex items-center gap-2 text-sm text-text-muted">
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-text-muted">
                 {profileHref ? (
                   <Link href={profileHref} className="flex items-center gap-2 hover:text-primary">
                     <ProfileAvatar profile={activeDiscussion.author} size="sm" />
@@ -486,10 +474,15 @@ export function ClubDiscussionsPanel({
                 <time suppressHydrationWarning dateTime={activeDiscussion.created_at}>
                   {formatFeedTimestamp(activeDiscussion.created_at, locale)}
                 </time>
+                {showEdited ? (
+                  <span className="text-xs text-text-muted" aria-label="Edited">
+                    · Edited
+                  </span>
+                ) : null}
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap items-center gap-1">
               {canPin ? (
                 <Button
                   type="button"
@@ -534,25 +527,15 @@ export function ClubDiscussionsPanel({
                   {activeDiscussion.is_locked ? "Unlock" : "Lock"}
                 </Button>
               ) : null}
-              {isOwn || canModerate ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  loading={pending}
-                  onClick={() => void handleDeleteDiscussion(activeDiscussion.id)}
-                >
-                  Delete
-                </Button>
-              ) : null}
-              {!isOwn ? (
-                <ContentActionsMenu
-                  contentType="club_discussion"
-                  contentId={activeDiscussion.id}
-                  reportedUserId={activeDiscussion.user_id}
-                  reportedUserName={authorLabel(activeDiscussion.author)}
-                />
-              ) : null}
+              <DiscussionActionsMenu
+                discussionId={activeDiscussion.id}
+                creatorId={activeDiscussion.user_id}
+                creatorName={authorLabel(activeDiscussion.author)}
+                viewerId={viewerId}
+                viewerRole={viewerRole}
+                onEdit={() => setEditDiscussionOpen(true)}
+                onDelete={() => void handleDeleteDiscussion(activeDiscussion.id)}
+              />
             </div>
           </div>
 
@@ -599,6 +582,29 @@ export function ClubDiscussionsPanel({
             </div>
           ) : null}
         </article>
+
+        <EditDiscussionModal
+          open={editDiscussionOpen}
+          discussionId={activeDiscussion.id}
+          initialTitle={activeDiscussion.title}
+          initialBody={activeDiscussion.body}
+          onClose={() => setEditDiscussionOpen(false)}
+          onSaved={(values) => {
+            const patch = {
+              id: activeDiscussion.id,
+              title: values.title,
+              body: values.body,
+              updated_at: values.updated_at,
+              edited_at: values.edited_at,
+            };
+            setActiveDiscussion((current) =>
+              current && current.id === patch.id ? { ...current, ...patch } : current
+            );
+            setDiscussions((current) =>
+              current ? patchDiscussionContent(current, patch) : current
+            );
+          }}
+        />
 
         <div>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">

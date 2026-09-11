@@ -4,7 +4,7 @@ import { Avatar } from "./Avatar";
 import { BookCover } from "./BookCover";
 import { ProfanityBlur } from "./ProfanityBlur";
 import { SpoilerReveal } from "./SpoilerReveal";
-import { formatReplyCount } from "../../../../packages/utils/clubDiscussionUi";
+import { formatReplyCount, isDiscussionEdited } from "../../../../packages/utils/clubDiscussionUi";
 import { timeAgo } from "../utils";
 import type { BookClubDiscussionWithAuthor, BookClubPostWithAuthor } from "../types";
 
@@ -46,6 +46,7 @@ export function ClubDiscussionCard({
   const locked = forum ? post.is_locked : false;
   const spoilers = forum ? post.contains_spoilers : false;
   const activityAt = forum ? post.latest_activity_at : post.created_at;
+  const edited = forum ? isDiscussionEdited(post) : false;
 
   return (
     <Pressable
@@ -124,6 +125,14 @@ export function ClubDiscussionCard({
             {spoilers ? (
               <Text className="rounded-full bg-primary/20 px-2 py-0.5 text-[11px] font-semibold text-puce-red">
                 Spoilers
+              </Text>
+            ) : null}
+            {edited ? (
+              <Text
+                className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-ink-muted"
+                accessibilityLabel="Edited"
+              >
+                Edited
               </Text>
             ) : null}
             {typeof replyCount === "number" ? (

@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   adjustDiscussionReplyCount,
+  canEditDiscussion,
   formatReplyCount,
+  getClubDiscussionActionPermissions,
   getClubReplyActionPermissions,
+  isDiscussionEdited,
   upsertDiscussionCounts,
+  validateDiscussionFields,
 } from "./clubDiscussionUi";
 import { parseBookClubBannerMode, resolveClubBanner } from "./clubBanner";
 import { filterClubShelfByCategory, clubBookshelfEmptyMessage } from "./clubBookshelf";
@@ -60,6 +64,64 @@ describe("reply action permissions", () => {
         viewerRole: "member",
       })
     ).toEqual({ canEdit: false, canDelete: false, canReport: true, canBlock: true });
+  });
+});
+
+describe("discussion edit permissions", () => {
+  it("canEditDiscussion is creator-id only", () => {
+    expect(canEditDiscussion("u1", "u1")).toBe(true);
+    expect(canEditDiscussion("host", "u1")).toBe(false);
+    expect(canEditDiscussion(null, "u1")).toBe(false);
+    expect(canEditDiscussion("u1", undefined)).toBe(false);
+  });
+
+  it("discussion ••• matrix: host cannot edit others", () => {
+    expect(
+      getClubDiscussionActionPermissions({
+        viewerId: "u1",
+        creatorId: "u1",
+        viewerRole: "member",
+      })
+    ).toEqual({ canEdit: true, canDelete: true, canReport: false, canBlock: false });
+
+    expect(
+      getClubDiscussionActionPermissions({
+        viewerId: "host",
+        creatorId: "u2",
+        viewerRole: "host",
+      })
+    ).toEqual({ canEdit: false, canDelete: true, canReport: true, canBlock: true });
+  });
+
+  it("isDiscussionEdited prefers edited_at", () => {
+    expect(
+      isDiscussionEdited({
+        created_at: "2026-01-01T00:00:00.000Z",
+        updated_at: "2026-01-02T00:00:00.000Z",
+        edited_at: null,
+      })
+    ).toBe(false);
+
+    expect(
+      isDiscussionEdited({
+        created_at: "2026-01-01T00:00:00.000Z",
+        updated_at: "2026-01-01T00:00:00.000Z",
+        edited_at: "2026-01-03T00:00:00.000Z",
+      })
+    ).toBe(true);
+
+    expect(
+      isDiscussionEdited({
+        created_at: "2026-01-01T00:00:00.000Z",
+        updated_at: "2026-01-02T00:00:00.000Z",
+      })
+    ).toBe(true);
+  });
+
+  it("validateDiscussionFields matches create rules", () => {
+    expect(validateDiscussionFields("  ", "body")).toEqual({ error: "Title is required." });
+    expect(validateDiscussionFields("Title", "  ")).toEqual({ error: "Body is required." });
+    expect(validateDiscussionFields("Hi", "Hello")).toEqual({ title: "Hi", body: "Hello" });
   });
 });
 

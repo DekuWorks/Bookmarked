@@ -43,7 +43,7 @@ import {
   filterClubShelfByCategory,
 } from "../../../../../packages/utils/clubBookshelf";
 import {
-  upsertDiscussionCounts,
+  patchDiscussionContent,
 } from "../../../../../packages/utils/clubDiscussionUi";
 import {
   useClubDiscussionsRealtime,
@@ -208,30 +208,26 @@ export default function ClubDetailRoute() {
       return;
     }
     if (change.type === "update") {
-      if (
-        typeof change.reply_count === "number" &&
-        typeof change.latest_activity_at === "string"
-      ) {
-        queryClient.setQueryData<BookClubDiscussionWithAuthor[]>(key, (current) =>
-          current
-            ? upsertDiscussionCounts(current, {
-                id: change.id,
-                reply_count: change.reply_count!,
-                latest_activity_at: change.latest_activity_at!,
-              })
-            : current
-        );
-        setThreadDiscussion((current) =>
-          current && current.id === change.id
-            ? {
-                ...current,
-                reply_count: change.reply_count!,
-                latest_activity_at: change.latest_activity_at!,
-              }
-            : current
-        );
-        return;
-      }
+      const patch = {
+        id: change.id,
+        ...(typeof change.reply_count === "number" ? { reply_count: change.reply_count } : {}),
+        ...(typeof change.latest_activity_at === "string"
+          ? { latest_activity_at: change.latest_activity_at }
+          : {}),
+        ...(typeof change.title === "string" ? { title: change.title } : {}),
+        ...(typeof change.body === "string" ? { body: change.body } : {}),
+        ...(typeof change.updated_at === "string" ? { updated_at: change.updated_at } : {}),
+        ...(change.edited_at !== undefined ? { edited_at: change.edited_at } : {}),
+        ...(typeof change.is_pinned === "boolean" ? { is_pinned: change.is_pinned } : {}),
+        ...(typeof change.is_locked === "boolean" ? { is_locked: change.is_locked } : {}),
+      };
+      queryClient.setQueryData<BookClubDiscussionWithAuthor[]>(key, (current) =>
+        current ? patchDiscussionContent(current, patch) : current
+      );
+      setThreadDiscussion((current) =>
+        current && current.id === change.id ? { ...current, ...patch } : current
+      );
+      return;
     }
     void getDiscussion(clubId, change.id).then((post) => {
       if (!post) return;
@@ -242,6 +238,9 @@ export default function ClubDetailRoute() {
         }
         return [post, ...current];
       });
+      setThreadDiscussion((current) =>
+        current && current.id === post.id ? post : current
+      );
     });
   });
 
@@ -1640,6 +1639,20 @@ export default function ClubDetailRoute() {
         onClose={() => {
           setThreadDiscussion(null);
           setOpenedFromDeepLink(false);
+        }}
+        onDiscussionUpdated={(next) => {
+          setThreadDiscussion(next);
+          queryClient.setQueryData<BookClubDiscussionWithAuthor[]>(
+            ["club-discussions", clubId],
+            (current) => (current ? patchDiscussionContent(current, next) : [next])
+          );
+        }}
+        onDiscussionDeleted={(discussionId) => {
+          setThreadDiscussion(null);
+          queryClient.setQueryData<BookClubDiscussionWithAuthor[]>(
+            ["club-discussions", clubId],
+            (current) => (current ?? []).filter((row) => row.id !== discussionId)
+          );
         }}
       />
 

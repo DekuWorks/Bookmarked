@@ -15,6 +15,7 @@ import {
   canShareClubToFeed,
   canSelfJoin,
 } from "../../../../packages/utils/clubPermissions";
+import { validateDiscussionFields } from "../../../../packages/utils/clubDiscussionUi";
 import type {
   BookClub,
   BookClubAnnouncementWithAuthor,
@@ -69,6 +70,7 @@ const DISCUSSION_SELECT = [
   "latest_activity_at",
   "created_at",
   "updated_at",
+  "edited_at",
   `profiles!${DISCUSSION_PROFILE_FK} (${PROFILE_SELECT})`,
 ].join(", ");
 
@@ -104,6 +106,7 @@ type DiscussionRow = {
   latest_activity_at: string;
   created_at: string;
   updated_at: string;
+  edited_at?: string | null;
   profiles: PostAuthor | null;
 };
 
@@ -144,6 +147,7 @@ function mapDiscussion(
     latest_activity_at: row.latest_activity_at,
     created_at: row.created_at,
     updated_at: row.updated_at,
+    edited_at: row.edited_at ?? null,
     author: row.profiles ?? fallbackProfile(row.user_id),
     book: bookId ? bookById.get(bookId) ?? null : null,
   };
@@ -1186,69 +1190,44 @@ export async function createDiscussion(
 }
 
 export type UpdateDiscussionInput = {
-  title?: string;
-  body?: string;
-  bookId?: string | null;
-  chapterReference?: string | null;
-  pageReference?: string | null;
-  containsSpoilers?: boolean;
+  title: string;
+  body: string;
 };
 
 export async function updateDiscussion(
   discussionId: string,
   input: UpdateDiscussionInput
 ): Promise<{ error?: string }> {
+  const validated = validateDiscussionFields(input.title, input.body);
+  if ("error" in validated) return { error: validated.error };
+
   try {
-    const { supabase } = await requireUser();
-    const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    const { supabase, user } = await requireUser();
 
-    if (input.title !== undefined) {
-      const title = input.title.trim();
-      if (!title) return { error: "Title is required." };
-      patch.title = title;
-    }
-    if (input.body !== undefined) {
-      const body = input.body.trim();
-      if (!body) return { error: "Body is required." };
-      patch.body = body;
-    }
-    if (input.bookId !== undefined) {
-      patch.book_id = input.bookId;
-      patch.related_book_id = input.bookId;
-    }
-    if (input.chapterReference !== undefined) {
-      patch.chapter_reference = input.chapterReference?.trim() || null;
-    }
-    if (input.pageReference !== undefined) {
-      patch.page_reference = input.pageReference?.trim() || null;
-    }
-    if (input.containsSpoilers !== undefined) {
-      patch.contains_spoilers = input.containsSpoilers;
-    }
+    const gate = await requireModeration({
+      text: validated.body,
+      title: validated.title,
+      contentType: "BOOK_CLUB_DISCUSSION",
+      contentId: discussionId,
+    });
+    if (gate.error) return { error: gate.error };
 
-    if (input.title !== undefined || input.body !== undefined) {
-      const { data: existing } = await supabase
-        .from("book_club_discussions")
-        .select("title, body")
-        .eq("id", discussionId)
-        .maybeSingle();
-      const nextTitle = (patch.title as string | undefined) ?? existing?.title ?? "";
-      const nextBody = (patch.body as string | undefined) ?? existing?.body ?? "";
-      const gate = await requireModeration({
-        text: nextBody,
-        title: nextTitle,
-        contentType: "BOOK_CLUB_DISCUSSION",
-        contentId: discussionId,
-      });
-      if (gate.error) return { error: gate.error };
-    }
-
-    const { error } = await supabase
+    const now = new Date().toISOString();
+    const { data, error } = await supabase
       .from("book_club_discussions")
-      .update(patch)
-      .eq("id", discussionId);
+      .update({
+        title: validated.title,
+        body: validated.body,
+        updated_at: now,
+        edited_at: now,
+      })
+      .eq("id", discussionId)
+      .eq("user_id", user.id)
+      .select("id")
+      .maybeSingle();
 
     if (error) return { error: error.message };
+    if (!data) return { error: "You can only edit your own discussion." };
     return {};
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Could not update discussion." };
@@ -1277,10 +1256,10 @@ export async function setDiscussionPinned(
 ): Promise<{ error?: string }> {
   try {
     const { supabase } = await requireUser();
-    const { error } = await supabase
-      .from("book_club_discussions")
-      .update({ is_pinned: isPinned, updated_at: new Date().toISOString() })
-      .eq("id", discussionId);
+    const { error } = await supabase.rpc("set_book_club_discussion_pinned", {
+      p_discussion_id: discussionId,
+      p_is_pinned: isPinned,
+    });
     if (error) return { error: error.message };
     return {};
   } catch (error) {
@@ -1294,10 +1273,10 @@ export async function setDiscussionLocked(
 ): Promise<{ error?: string }> {
   try {
     const { supabase } = await requireUser();
-    const { error } = await supabase
-      .from("book_club_discussions")
-      .update({ is_locked: isLocked, updated_at: new Date().toISOString() })
-      .eq("id", discussionId);
+    const { error } = await supabase.rpc("set_book_club_discussion_locked", {
+      p_discussion_id: discussionId,
+      p_is_locked: isLocked,
+    });
     if (error) return { error: error.message };
     return {};
   } catch (error) {

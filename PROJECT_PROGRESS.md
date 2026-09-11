@@ -960,6 +960,22 @@ Book title / meeting frequency are not sent to review. A normal name such as “
 
 ---
 
+## Book Clubs → Discussions — Edit Original Discussion Post ✅
+
+| # | Item | Status | Notes |
+|---|------|--------|-------|
+| 1 | Creator-only edit | ✅ | `canEditDiscussion(userId, creatorId)`; host/mod cannot edit others; Delete stays separate |
+| 2 | Discussion ••• menu | ✅ | Web `DiscussionActionsMenu` + mobile `showDiscussionActionsMenu`; “Edit Discussion” only for creator |
+| 3 | Edit UI | ✅ | Web `EditDiscussionModal` / `EditDiscussionForm`; mobile `EditDiscussionSheet`; create-parity validation + UGC moderation |
+| 4 | Server / RLS | ✅ | Migration `20260911140000_book_club_discussion_edit_perms.sql`: author-only UPDATE; `edited_at`; pin/lock RPCs for hosts/mods |
+| 5 | Realtime + Edited | ✅ | Discussion UPDATE pipeline syncs title/body/edited_at; subtle Edited badge; list order stays reply-activity based |
+
+**Branch:** `feature/book-clubs-edit-discussion` (uncommitted until asked)
+
+**Apply migration before QA:** `supabase/migrations/20260911140000_book_club_discussion_edit_perms.sql` — not applied to prod from this agent pass.
+
+---
+
 ### Root cause (updated 8 Sep 2026, after v3)
 
 PR #37 / `moderate-ugc` v3 (8s abortable retries) is on `main` and was live. That was **not** the current failure.
