@@ -3,7 +3,7 @@
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { usePreferredLocale } from "@/lib/hooks/usePreferredLocale";
 import { formatFeedTimestamp } from "@/lib/utils/locale";
-import { formatReplyCount } from "@bookmarked/utils/clubDiscussionUi";
+import { formatReplyCount, isDiscussionEdited } from "@bookmarked/utils/clubDiscussionUi";
 import type { BookClubDiscussionWithAuthor } from "@/types";
 
 type Props = {
@@ -20,6 +20,7 @@ function authorLabel(author: BookClubDiscussionWithAuthor["author"]): string {
 export function ClubDiscussionCard({ discussion, onOpen, secondaryLabel }: Props) {
   const locale = usePreferredLocale();
   const label = authorLabel(discussion.author);
+  const edited = isDiscussionEdited(discussion);
 
   return (
     <article className="rounded-xl border border-border bg-surface p-4 text-left shadow-sm transition-colors hover:border-primary/40">
@@ -48,6 +49,11 @@ export function ClubDiscussionCard({ discussion, onOpen, secondaryLabel }: Props
               {discussion.contains_spoilers ? (
                 <span className="rounded-full bg-rust/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rust">
                   Spoilers
+                </span>
+              ) : null}
+              {edited ? (
+                <span className="text-[10px] font-medium uppercase tracking-wide text-text-muted">
+                  Edited
                 </span>
               ) : null}
             </div>

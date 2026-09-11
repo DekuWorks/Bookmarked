@@ -10,13 +10,19 @@ export type ClubDiscussionRealtimeChange =
       id: string;
       reply_count?: number;
       latest_activity_at?: string;
+      title?: string;
+      body?: string;
+      updated_at?: string;
+      edited_at?: string | null;
+      is_pinned?: boolean;
+      is_locked?: boolean;
     }
   | { type: "delete"; id: string }
   | { type: "reconnect" };
 
 /**
  * Subscribe to discussion INSERT/UPDATE/DELETE for a club.
- * UPDATE delivers maintained reply_count / latest_activity_at from the reply trigger.
+ * UPDATE includes reply counts and content fields (title/body/edited_at).
  */
 export function useClubDiscussionsRealtime(
   clubId: string | undefined,
@@ -63,6 +69,12 @@ export function useClubDiscussionsRealtime(
               id?: string;
               reply_count?: number;
               latest_activity_at?: string;
+              title?: string;
+              body?: string;
+              updated_at?: string;
+              edited_at?: string | null;
+              is_pinned?: boolean;
+              is_locked?: boolean;
             } | null;
             if (!row?.id) return;
             if (payload.eventType === "UPDATE") {
@@ -71,6 +83,12 @@ export function useClubDiscussionsRealtime(
                 id: row.id,
                 reply_count: row.reply_count,
                 latest_activity_at: row.latest_activity_at,
+                title: row.title,
+                body: row.body,
+                updated_at: row.updated_at,
+                edited_at: row.edited_at,
+                is_pinned: row.is_pinned,
+                is_locked: row.is_locked,
               });
               return;
             }

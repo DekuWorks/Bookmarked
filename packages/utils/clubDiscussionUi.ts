@@ -8,6 +8,45 @@ export function formatReplyCount(count: number): string {
   return `${safe} Replies`;
 }
 
+/** Ownership is immutable user id only — never role-based. */
+export function canEditDiscussion(
+  userId: string | null | undefined,
+  creatorId: string | null | undefined
+): boolean {
+  return Boolean(userId && creatorId && userId === creatorId);
+}
+
+export type DiscussionEditFields = {
+  created_at: string;
+  updated_at: string;
+  edited_at?: string | null;
+};
+
+/**
+ * Prefer `edited_at` when the column is present (including null).
+ * Reply triggers bump `updated_at`, so null edited_at must not show Edited.
+ * Legacy fallback only when `edited_at` is omitted from the row.
+ */
+export function isDiscussionEdited(discussion: DiscussionEditFields): boolean {
+  if (discussion.edited_at !== undefined) {
+    if (discussion.edited_at == null || discussion.edited_at === "") return false;
+    return new Date(discussion.edited_at).getTime() > new Date(discussion.created_at).getTime();
+  }
+  return new Date(discussion.updated_at).getTime() > new Date(discussion.created_at).getTime();
+}
+
+export function validateDiscussionFields(
+  title: string,
+  body: string
+): { title: string; body: string } | { error: string } {
+  const trimmedTitle = title.trim();
+  const trimmedBody = body.trim();
+  if (!trimmedTitle) return { error: "Title is required." };
+  if (trimmedTitle.length > 120) return { error: "Title must be 120 characters or fewer." };
+  if (!trimmedBody) return { error: "Body is required." };
+  return { title: trimmedTitle, body: trimmedBody };
+}
+
 export type DiscussionCountFields = {
   id: string;
   reply_count: number;
@@ -83,4 +122,38 @@ export function getClubReplyActionPermissions(input: {
     canReport: !isOwn,
     canBlock: !isOwn,
   };
+}
+
+export type ClubDiscussionActionPermissions = ClubReplyActionPermissions;
+
+/**
+ * Discussion ••• matrix (same ownership rules as replies):
+ * - Creator: Edit YES, Delete YES; no Report/Block
+ * - Host/mod other: Edit NO, Delete YES
+ * - Other members: Edit NO, Delete NO; Report/Block YES
+ */
+export function getClubDiscussionActionPermissions(input: {
+  viewerId: string;
+  creatorId: string;
+  viewerRole: BookClubMemberRole | null | undefined;
+}): ClubDiscussionActionPermissions {
+  const canEdit = canEditDiscussion(input.viewerId, input.creatorId);
+  const canModerate = canModerateDiscussions(input.viewerRole);
+  return {
+    canEdit,
+    canDelete: canEdit || canModerate,
+    canReport: !canEdit,
+    canBlock: !canEdit,
+  };
+}
+
+/** Patch discussion fields into a list without reordering by edit. */
+export function patchDiscussionContent<T extends { id: string }>(
+  existing: T[],
+  incoming: Pick<T, "id"> & Partial<Omit<T, "id">>
+): T[] {
+  return existing.map((row) => {
+    if (row.id !== incoming.id) return row;
+    return { ...row, ...incoming };
+  });
 }

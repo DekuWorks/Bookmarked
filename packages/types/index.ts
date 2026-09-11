@@ -526,6 +526,8 @@ export interface BookClubDiscussion {
   latest_activity_at: string;
   created_at: string;
   updated_at: string;
+  /** Set when creator edits title/body; null until first content edit. */
+  edited_at?: string | null;
 }
 
 export type BookClubDiscussionWithAuthor = BookClubDiscussion & {

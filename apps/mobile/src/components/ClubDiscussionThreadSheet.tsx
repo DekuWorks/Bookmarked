@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   FlatList,
   KeyboardAvoidingView,
@@ -17,14 +16,15 @@ import { Avatar } from "./Avatar";
 import { Button } from "./Button";
 import { LoadingState } from "./LoadingState";
 import { ProfanityBlur } from "./ProfanityBlur";
-import { showContentActions } from "./ContentActions";
 import { SpoilerReveal } from "./SpoilerReveal";
 import {
   useClubDiscussionReplies,
   useCreateReply,
+  useDeleteDiscussion,
   useDeleteReply,
   useSetDiscussionLocked,
   useSetDiscussionPinned,
+  useUpdateDiscussion,
   useUpdateReply,
 } from "../hooks/useClubs";
 import {
@@ -43,7 +43,7 @@ import {
   sortClubReplies,
   type ClubReplySort,
 } from "../../../../packages/utils/clubReplyThread";
-import { formatReplyCount } from "../../../../packages/utils/clubDiscussionUi";
+import { formatReplyCount, isDiscussionEdited } from "../../../../packages/utils/clubDiscussionUi";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { timeAgo } from "../utils";
 import type {
@@ -55,6 +55,8 @@ import {
   canPinDiscussions,
 } from "../../../../packages/utils/clubPermissions";
 import { showReplyActionsMenu } from "./ReplyActionsMenu";
+import { showDiscussionActionsMenu } from "./DiscussionActionsMenu";
+import { EditDiscussionSheet } from "./EditDiscussionSheet";
 
 type Props = {
   visible: boolean;
@@ -66,6 +68,8 @@ type Props = {
   /** When true, Back also leaves the club screen (deep link from Feed/share). */
   exitClubOnClose?: boolean;
   onClose: () => void;
+  onDiscussionUpdated?: (discussion: BookClubDiscussionWithAuthor) => void;
+  onDiscussionDeleted?: (discussionId: string) => void;
 };
 
 function authorName(author: {
@@ -84,6 +88,8 @@ export function ClubDiscussionThreadSheet({
   isMember,
   exitClubOnClose = false,
   onClose,
+  onDiscussionUpdated,
+  onDiscussionDeleted,
 }: Props) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -92,9 +98,12 @@ export function ClubDiscussionThreadSheet({
   const createReply = useCreateReply(clubId, discussionId);
   const deleteReply = useDeleteReply(clubId, discussionId);
   const updateReplyMutation = useUpdateReply(clubId, discussionId);
+  const updateDiscussionMutation = useUpdateDiscussion(clubId);
+  const deleteDiscussionMutation = useDeleteDiscussion(clubId);
   const pinMutation = useSetDiscussionPinned(clubId);
   const lockMutation = useSetDiscussionLocked(clubId);
 
+  const [liveDiscussion, setLiveDiscussion] = useState(discussion);
   const [body, setBody] = useState("");
   const [spoilers, setSpoilers] = useState(false);
   const [replySort, setReplySort] = useState<ClubReplySort>("newest");
@@ -102,6 +111,11 @@ export function ClubDiscussionThreadSheet({
   const [liveReplies, setLiveReplies] = useState(replies.data ?? []);
   const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
   const [editBody, setEditBody] = useState("");
+  const [editDiscussionOpen, setEditDiscussionOpen] = useState(false);
+
+  useEffect(() => {
+    setLiveDiscussion(discussion);
+  }, [discussion]);
 
   useEffect(() => {
     setLiveReplies(replies.data ?? []);
@@ -158,7 +172,8 @@ export function ClubDiscussionThreadSheet({
 
   const canPin = canPinDiscussions(viewerRole);
   const canModerate = canModerateDiscussions(viewerRole);
-  const locked = Boolean(discussion?.is_locked);
+  const locked = Boolean(liveDiscussion?.is_locked);
+  const showEdited = liveDiscussion ? isDiscussionEdited(liveDiscussion) : false;
 
   function handleBack() {
     onClose();
@@ -169,7 +184,7 @@ export function ClubDiscussionThreadSheet({
   }
 
   async function handleReply() {
-    if (!discussion || !body.trim()) return;
+    if (!liveDiscussion || !body.trim()) return;
     const result = await createReply.mutateAsync({
       body: body.trim(),
       containsSpoilers: spoilers,
@@ -213,6 +228,40 @@ export function ClubDiscussionThreadSheet({
     }
   }
 
+  async function saveEditDiscussion(values: { title: string; body: string }) {
+    if (!liveDiscussion) return;
+    const result = await updateDiscussionMutation.mutateAsync({
+      discussionId: liveDiscussion.id,
+      input: values,
+    });
+    if (result.error) {
+      Alert.alert("Couldn't update", result.error);
+      return;
+    }
+    const now = new Date().toISOString();
+    const next = {
+      ...liveDiscussion,
+      title: values.title,
+      body: values.body,
+      updated_at: now,
+      edited_at: now,
+    };
+    setLiveDiscussion(next);
+    onDiscussionUpdated?.(next);
+    setEditDiscussionOpen(false);
+  }
+
+  async function handleDeleteDiscussion() {
+    if (!liveDiscussion) return;
+    const result = await deleteDiscussionMutation.mutateAsync(liveDiscussion.id);
+    if (result.error) {
+      Alert.alert("Couldn't delete", result.error);
+      return;
+    }
+    onDiscussionDeleted?.(liveDiscussion.id);
+    onClose();
+  }
+
   return (
     <>
     <Modal visible={visible} animationType="slide" onRequestClose={handleBack}>
@@ -231,30 +280,33 @@ export function ClubDiscussionThreadSheet({
             <Text className="text-2xl text-puce-red">‹</Text>
           </Pressable>
           <Text className="flex-1 text-lg font-bold text-puce-red" numberOfLines={1}>
-            {discussion?.title?.trim() || "Discussion"}
+            {liveDiscussion?.title?.trim() || "Discussion"}
           </Text>
-          {discussion && discussion.user_id !== viewerId ? (
+          {liveDiscussion ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Report discussion"
+              accessibilityLabel="Discussion options"
               onPress={() =>
-                showContentActions({
-                  contentType: "club_discussion",
-                  contentId: discussion.id,
-                  reportedUserId: discussion.user_id,
-                  reportedUserName: authorName(discussion.author),
+                showDiscussionActionsMenu({
+                  discussionId: liveDiscussion.id,
+                  creatorId: liveDiscussion.user_id,
+                  creatorName: authorName(liveDiscussion.author),
+                  viewerId,
+                  viewerRole,
+                  onEdit: () => setEditDiscussionOpen(true),
+                  onDelete: () => void handleDeleteDiscussion(),
                 })
               }
-              className="min-h-[44px] justify-center px-2"
+              className="min-h-[44px] min-w-[44px] items-center justify-center"
             >
-              <Text className="text-xs font-semibold text-ink-muted">Report</Text>
+              <Text className="text-lg font-semibold text-ink-muted">⋯</Text>
             </Pressable>
           ) : (
             <View className="w-11" />
           )}
         </View>
 
-        {!discussion ? (
+        {!liveDiscussion ? (
           <LoadingState message="Loading discussion…" />
         ) : (
           <FlatList
@@ -265,34 +317,42 @@ export function ClubDiscussionThreadSheet({
             ListHeaderComponent={
               <View className="mb-4 rounded-2xl border border-brand-border bg-surface p-4">
                 <View className="mb-2 flex-row flex-wrap gap-2">
-                  {discussion.is_pinned ? (
+                  {liveDiscussion.is_pinned ? (
                     <Text className="rounded-full bg-primary/20 px-2 py-0.5 text-[11px] font-semibold text-puce-red">
                       Pinned
                     </Text>
                   ) : null}
-                  {discussion.is_locked ? (
+                  {liveDiscussion.is_locked ? (
                     <Text className="rounded-full bg-primary/20 px-2 py-0.5 text-[11px] font-semibold text-puce-red">
                       Locked
                     </Text>
                   ) : null}
-                  {discussion.contains_spoilers ? (
+                  {liveDiscussion.contains_spoilers ? (
                     <Text className="rounded-full bg-primary/20 px-2 py-0.5 text-[11px] font-semibold text-puce-red">
                       Spoilers
                     </Text>
                   ) : null}
+                  {showEdited ? (
+                    <Text
+                      className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-ink-muted"
+                      accessibilityLabel="Edited"
+                    >
+                      Edited
+                    </Text>
+                  ) : null}
                 </View>
                 <Text className="text-left text-xs text-ink-muted">
-                  {authorName(discussion.author)} · {timeAgo(discussion.created_at)}
+                  {authorName(liveDiscussion.author)} · {timeAgo(liveDiscussion.created_at)}
                 </Text>
                 <SpoilerReveal
-                  enabled={discussion.contains_spoilers}
+                  enabled={liveDiscussion.contains_spoilers}
                   className="mt-3"
                 >
                   <ProfanityBlur
-                    text={discussion.body}
-                    meta={discussion.moderation_meta ?? null}
+                    text={liveDiscussion.body}
+                    meta={liveDiscussion.moderation_meta ?? null}
                   >
-                    <Text className="text-left leading-6 text-ink">{discussion.body}</Text>
+                    <Text className="text-left leading-6 text-ink">{liveDiscussion.body}</Text>
                   </ProfanityBlur>
                 </SpoilerReveal>
 
@@ -302,18 +362,18 @@ export function ClubDiscussionThreadSheet({
                       <Pressable
                         accessibilityRole="button"
                         accessibilityLabel={
-                          discussion.is_pinned ? "Unpin discussion" : "Pin discussion"
+                          liveDiscussion.is_pinned ? "Unpin discussion" : "Pin discussion"
                         }
                         onPress={() =>
                           void pinMutation.mutateAsync({
-                            discussionId: discussion.id,
-                            isPinned: !discussion.is_pinned,
+                            discussionId: liveDiscussion.id,
+                            isPinned: !liveDiscussion.is_pinned,
                           })
                         }
                         className="min-h-[44px] justify-center rounded-full bg-primary/15 px-3 active:opacity-80"
                       >
                         <Text className="text-xs font-semibold text-puce-red">
-                          {discussion.is_pinned ? "Unpin" : "Pin"}
+                          {liveDiscussion.is_pinned ? "Unpin" : "Pin"}
                         </Text>
                       </Pressable>
                     ) : null}
@@ -321,18 +381,18 @@ export function ClubDiscussionThreadSheet({
                       <Pressable
                         accessibilityRole="button"
                         accessibilityLabel={
-                          discussion.is_locked ? "Unlock discussion" : "Lock discussion"
+                          liveDiscussion.is_locked ? "Unlock discussion" : "Lock discussion"
                         }
                         onPress={() =>
                           void lockMutation.mutateAsync({
-                            discussionId: discussion.id,
-                            isLocked: !discussion.is_locked,
+                            discussionId: liveDiscussion.id,
+                            isLocked: !liveDiscussion.is_locked,
                           })
                         }
                         className="min-h-[44px] justify-center rounded-full bg-primary/15 px-3 active:opacity-80"
                       >
                         <Text className="text-xs font-semibold text-puce-red">
-                          {discussion.is_locked ? "Unlock" : "Lock"}
+                          {liveDiscussion.is_locked ? "Unlock" : "Lock"}
                         </Text>
                       </Pressable>
                     ) : null}
@@ -443,7 +503,7 @@ export function ClubDiscussionThreadSheet({
           />
         )}
 
-        {isMember && discussion && !locked ? (
+        {isMember && liveDiscussion && !locked ? (
           <View className="border-t border-brand-border px-4 pt-3">
             <TextInput
               value={body}
@@ -522,6 +582,14 @@ export function ClubDiscussionThreadSheet({
         </Pressable>
       </Pressable>
     </Modal>
+    <EditDiscussionSheet
+      visible={editDiscussionOpen}
+      initialTitle={liveDiscussion?.title ?? ""}
+      initialBody={liveDiscussion?.body ?? ""}
+      submitting={updateDiscussionMutation.isPending}
+      onClose={() => setEditDiscussionOpen(false)}
+      onSubmit={saveEditDiscussion}
+    />
     </>
   );
 }
