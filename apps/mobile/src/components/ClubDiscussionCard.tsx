@@ -4,6 +4,7 @@ import { Avatar } from "./Avatar";
 import { BookCover } from "./BookCover";
 import { ProfanityBlur } from "./ProfanityBlur";
 import { SpoilerReveal } from "./SpoilerReveal";
+import { formatReplyCount } from "../../../../packages/utils/clubDiscussionUi";
 import { timeAgo } from "../utils";
 import type { BookClubDiscussionWithAuthor, BookClubPostWithAuthor } from "../types";
 
@@ -25,6 +26,7 @@ type Props = {
   deleting?: boolean;
   onDelete?: () => void;
   onPress?: () => void;
+  secondaryLabel?: string | null;
 };
 
 export function ClubDiscussionCard({
@@ -33,6 +35,7 @@ export function ClubDiscussionCard({
   deleting,
   onDelete,
   onPress,
+  secondaryLabel,
 }: Props) {
   const router = useRouter();
   const username = post.author.username?.trim();
@@ -42,6 +45,7 @@ export function ClubDiscussionCard({
   const pinned = forum ? post.is_pinned : false;
   const locked = forum ? post.is_locked : false;
   const spoilers = forum ? post.contains_spoilers : false;
+  const activityAt = forum ? post.latest_activity_at : post.created_at;
 
   return (
     <Pressable
@@ -100,6 +104,12 @@ export function ClubDiscussionCard({
             </Text>
           ) : null}
 
+          {secondaryLabel ? (
+            <Text className="mt-0.5 text-left text-xs text-ink-muted" numberOfLines={1}>
+              {secondaryLabel}
+            </Text>
+          ) : null}
+
           <View className="mt-2 flex-row flex-wrap gap-2">
             {pinned ? (
               <Text className="rounded-full bg-primary/20 px-2 py-0.5 text-[11px] font-semibold text-puce-red">
@@ -118,10 +128,16 @@ export function ClubDiscussionCard({
             ) : null}
             {typeof replyCount === "number" ? (
               <Text className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-ink-muted">
-                {replyCount} {replyCount === 1 ? "reply" : "replies"}
+                {formatReplyCount(replyCount)}
               </Text>
             ) : null}
           </View>
+
+          {typeof replyCount === "number" ? (
+            <Text className="mt-1 text-left text-[11px] text-ink-muted">
+              {timeAgo(activityAt)}
+            </Text>
+          ) : null}
 
           <SpoilerReveal enabled={spoilers} className="mt-3">
             <ProfanityBlur text={post.body}>

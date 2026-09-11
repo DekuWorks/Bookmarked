@@ -20,6 +20,7 @@ import { ClubStatsPanel } from "@/components/clubs/ClubStatsPanel";
 import { ClubPollsPanel } from "@/components/clubs/ClubPollsPanel";
 import { ClubInviteModal } from "@/components/clubs/ClubInviteModal";
 import { ClubSettingsModal } from "@/components/clubs/ClubSettingsModal";
+import { ClubBannerHero } from "@/components/clubs/ClubBannerHero";
 import { ContentActionsMenu } from "@/components/moderation/ContentActionsMenu";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { ENTITLEMENT_LIMIT_MESSAGES, isEntitlementLimitError } from "@/lib/utils/subscription";
@@ -42,9 +43,9 @@ import {
   canSelfJoin,
   canShareClubToFeed,
   requiresJoinRequest,
-  roleLabel,
-  visibilityLabel,
 } from "@bookmarked/utils/clubPermissions";
+import { resolveClubBanner } from "@bookmarked/utils/clubBanner";
+import { ClubMetadataRow } from "@/components/clubs/ClubMetadataRow";
 import type { BookClubWithDetails } from "@/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -247,12 +248,12 @@ function ClubDetailContent() {
   const isMember = club.viewer_is_member;
   const canEdit = canEditClub(club.viewer_role);
   const canInvite = canManageMembers(club.viewer_role);
-  const memberLabel = `${club.member_count} member${club.member_count === 1 ? "" : "s"}`;
   const selfJoin = canSelfJoin({
     visibility: club.visibility,
     joinPolicy: club.join_policy,
   });
   const needsRequest = requiresJoinRequest({ joinPolicy: club.join_policy });
+  const banner = resolveClubBanner(club, club.current_book);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 text-left">
@@ -287,23 +288,7 @@ function ClubDetailContent() {
       </p>
 
       <header className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
-        {club.banner_url ? (
-          <div className="relative h-36 w-full bg-background sm:h-44">
-            <Image
-              src={club.banner_url}
-              alt=""
-              fill
-              className="object-cover"
-              unoptimized
-              sizes="(max-width: 768px) 100vw, 768px"
-            />
-          </div>
-        ) : (
-          <div
-            className="h-24 w-full bg-gradient-to-r from-primary/25 via-royal-orange/20 to-puce-red/20 sm:h-28"
-            aria-hidden
-          />
-        )}
+        <ClubBannerHero banner={banner} />
 
         <div className="px-5 pb-5 pt-0 sm:px-6">
           <div className="-mt-10 flex flex-wrap items-end gap-4 sm:-mt-12">
@@ -334,16 +319,12 @@ function ClubDetailContent() {
                     hideBlock
                   />
                 ) : null}
-                <span className="rounded-full bg-border/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-text-muted">
-                  {visibilityLabel(club.visibility)}
-                </span>
-                {club.viewer_role ? (
-                  <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-puce-red">
-                    {roleLabel(club.viewer_role)}
-                  </span>
-                ) : null}
               </div>
-              <p className="mt-1 text-sm text-text-muted">{memberLabel}</p>
+              <ClubMetadataRow
+                memberCount={club.member_count}
+                visibility={club.visibility}
+                viewerRole={club.viewer_role}
+              />
             </div>
           </div>
 

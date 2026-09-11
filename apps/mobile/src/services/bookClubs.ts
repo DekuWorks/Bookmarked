@@ -233,8 +233,15 @@ async function summarizeClubs(
 
   return clubs.map((club) => {
     const viewerRole = viewerRoleByClub.get(club.id) ?? null;
+    const bannerMode =
+      club.banner_mode === "custom" || club.banner_mode === "current_read"
+        ? club.banner_mode
+        : club.banner_url
+          ? "custom"
+          : "current_read";
     return {
       ...club,
+      banner_mode: bannerMode,
       member_count: typeof club.member_count === "number" ? club.member_count : 0,
       viewer_is_member: viewerRole !== null,
       viewer_role: viewerRole,
@@ -646,6 +653,7 @@ export async function createClub(
         genre_tags: input.genreTags ?? [],
         image_url: input.imageUrl?.trim() || null,
         banner_url: input.bannerUrl?.trim() || null,
+        banner_mode: input.bannerUrl?.trim() ? "custom" : "current_read",
         meeting_frequency: input.meetingFrequency?.trim() || null,
         current_book_id: input.currentBookId ?? null,
         member_count: 1,
@@ -925,6 +933,7 @@ export type UpdateClubInput = {
   genreTags?: string[];
   imageUrl?: string | null;
   bannerUrl?: string | null;
+  bannerMode?: "current_read" | "custom";
   meetingFrequency?: string | null;
 };
 
@@ -964,6 +973,7 @@ export async function updateClub(
     if (input.genreTags !== undefined) patch.genre_tags = input.genreTags;
     if (input.imageUrl !== undefined) patch.image_url = input.imageUrl?.trim() || null;
     if (input.bannerUrl !== undefined) patch.banner_url = input.bannerUrl?.trim() || null;
+    if (input.bannerMode !== undefined) patch.banner_mode = input.bannerMode;
     if (input.meetingFrequency !== undefined) {
       patch.meeting_frequency = input.meetingFrequency?.trim() || null;
     }
@@ -973,6 +983,24 @@ export async function updateClub(
     return {};
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Could not update club." };
+  }
+}
+
+export async function setClubBanner(
+  clubId: string,
+  input: { mode: "current_read" | "custom"; bannerUrl?: string | null }
+): Promise<{ error?: string }> {
+  try {
+    const { supabase } = await requireUser();
+    const { error } = await supabase.rpc("set_book_club_banner", {
+      p_club_id: clubId,
+      p_banner_mode: input.mode,
+      p_banner_url: input.mode === "custom" ? input.bannerUrl?.trim() || null : null,
+    });
+    if (error) return { error: error.message };
+    return {};
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Could not update banner." };
   }
 }
 
@@ -1413,6 +1441,96 @@ export async function deleteReply(replyId: string): Promise<{ error?: string }> 
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Could not delete reply." };
   }
+}
+
+export async function updateReply(
+  replyId: string,
+  body: string,
+  options?: { containsSpoilers?: boolean }
+): Promise<{ error?: string }> {
+  const trimmed = body.trim();
+  if (!trimmed) return { error: "Write a reply." };
+
+  const gate = await requireModeration({
+    text: trimmed,
+    contentType: "BOOK_CLUB_REPLY",
+    contentId: replyId,
+  });
+  if (gate.error) return { error: gate.error };
+
+  try {
+    const { supabase, user } = await requireUser();
+    const patch: Record<string, unknown> = {
+      body: trimmed,
+      updated_at: new Date().toISOString(),
+    };
+    if (options?.containsSpoilers !== undefined) {
+      patch.contains_spoilers = options.containsSpoilers;
+    }
+
+    const { error } = await supabase
+      .from("book_club_discussion_replies")
+      .update(patch)
+      .eq("id", replyId)
+      .eq("user_id", user.id);
+
+    if (error) return { error: error.message };
+    return {};
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Could not update reply." };
+  }
+}
+
+export type RecentClubDiscussion = BookClubDiscussionWithAuthor & {
+  club: { id: string; name: string; image_url: string | null };
+};
+
+export async function listRecentDiscussionsForViewer(
+  viewerId: string,
+  limit = 8
+): Promise<RecentClubDiscussion[]> {
+  const { data: memberships, error: memberError } = await supabase
+    .from("book_club_members")
+    .select("club_id")
+    .eq("user_id", viewerId)
+    .eq("membership_status", "active");
+
+  if (memberError) throw memberError;
+  const clubIds = (memberships ?? []).map((row) => row.club_id);
+  if (!clubIds.length) return [];
+
+  const { data, error } = await supabase
+    .from("book_club_discussions")
+    .select(DISCUSSION_SELECT)
+    .in("club_id", clubIds)
+    .order("latest_activity_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+
+  const rows = (data ?? []) as unknown as DiscussionRow[];
+  const uniqueClubIds = [...new Set(rows.map((row) => row.club_id))];
+  const { data: clubs, error: clubsError } = await supabase
+    .from("book_clubs")
+    .select("id, name, image_url")
+    .in("id", uniqueClubIds);
+  if (clubsError) throw clubsError;
+
+  const clubById = new Map(
+    ((clubs ?? []) as Array<{ id: string; name: string; image_url: string | null }>).map(
+      (club) => [club.id, club]
+    )
+  );
+
+  const bookById = await hydrateBooks(
+    supabase,
+    rows.map((row) => resolveDiscussionBookId(row)).filter((id): id is string => Boolean(id))
+  );
+
+  return rows.map((row) => ({
+    ...mapDiscussion(row, bookById),
+    club: clubById.get(row.club_id) ?? { id: row.club_id, name: "Club", image_url: null },
+  }));
 }
 
 export type ToggleReactionTarget =

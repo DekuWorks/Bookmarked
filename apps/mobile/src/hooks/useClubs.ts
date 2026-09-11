@@ -44,6 +44,7 @@ import {
   updateClub,
   updateDiscussion,
   updateMemberRole,
+  updateReply,
   type CreateAnnouncementInput,
   type CreateClubInput,
   type CreateDiscussionInput,
@@ -242,6 +243,21 @@ export function useDeleteReply(clubId: string, discussionId: string) {
   const invalidate = useInvalidateClubs(clubId);
   return useMutation({
     mutationFn: (replyId: string) => deleteReply(replyId),
+    onSuccess: (result) => {
+      if (!result.error) {
+        invalidate();
+        queryClient.invalidateQueries({ queryKey: ["club-discussion-replies", discussionId] });
+      }
+    },
+  });
+}
+
+export function useUpdateReply(clubId: string, discussionId: string) {
+  const queryClient = useQueryClient();
+  const invalidate = useInvalidateClubs(clubId);
+  return useMutation({
+    mutationFn: (input: { replyId: string; body: string; containsSpoilers?: boolean }) =>
+      updateReply(input.replyId, input.body, { containsSpoilers: input.containsSpoilers }),
     onSuccess: (result) => {
       if (!result.error) {
         invalidate();

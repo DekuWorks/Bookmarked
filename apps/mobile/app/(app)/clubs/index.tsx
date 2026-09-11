@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Alert, Pressable, RefreshControl, Text, TextInput, View } from "react-native";
 import Animated from "react-native-reanimated";
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { BrandHeader } from "../../../src/components/BrandHeader";
 import { Button } from "../../../src/components/Button";
 import { ClubCard } from "../../../src/components/ClubCard";
 import { EmptyState } from "../../../src/components/EmptyState";
 import { LoadingState } from "../../../src/components/LoadingState";
+import { RecentDiscussionCard } from "../../../src/components/RecentDiscussionCard";
 import { SegmentedTabs } from "../../../src/components/SegmentedTabs";
 import {
   useAcceptInvitation,
@@ -19,7 +20,11 @@ import {
   useClubInvitations,
 } from "../../../src/hooks/useClubs";
 import { useUpcomingEvents } from "../../../src/hooks/useClubEvents";
-import { listJoinRequests, searchClubs } from "../../../src/services/bookClubs";
+import {
+  listJoinRequests,
+  listRecentDiscussionsForViewer,
+  searchClubs,
+} from "../../../src/services/bookClubs";
 import { formatEventDateTime } from "../../../src/services/clubEvents";
 import { TAB_BAR_SPACE, useTabBarScroll } from "../../../src/navigation/TabBarScroll";
 import { useAuthStore } from "../../../src/store/authStore";
@@ -41,6 +46,11 @@ export default function ClubsRoute() {
   const mine = useMyClubs();
   const invitations = useClubInvitations();
   const upcoming = useUpcomingEvents();
+  const recentDiscussions = useQuery({
+    queryKey: ["clubs", "recent-discussions", userId],
+    queryFn: () => listRecentDiscussionsForViewer(userId as string, 6),
+    enabled: Boolean(userId),
+  });
   const acceptInvitation = useAcceptInvitation();
   const declineInvitation = useDeclineInvitation();
 
@@ -113,13 +123,15 @@ export default function ClubsRoute() {
     discover.isRefetching ||
     mine.isRefetching ||
     invitations.isRefetching ||
-    upcoming.isRefetching;
+    upcoming.isRefetching ||
+    recentDiscussions.isRefetching;
 
   function refetchAll() {
     void discover.refetch();
     void mine.refetch();
     void invitations.refetch();
     void upcoming.refetch();
+    void recentDiscussions.refetch();
     for (const query of joinRequestQueries) {
       void query.refetch();
     }
@@ -172,6 +184,26 @@ export default function ClubsRoute() {
             {upcoming.data?.length ? ` (${upcoming.data.length})` : ""}
           </Text>
         </Pressable>
+
+        {tab === "mine" ? (
+          <View className="rounded-2xl border border-brand-border bg-surface p-3">
+            <Text className="mb-1 text-sm font-semibold text-puce-red">Discussions</Text>
+            <Text className="mb-2 text-[11px] text-ink-muted">
+              Recent threads across your clubs
+            </Text>
+            {recentDiscussions.isLoading ? (
+              <Text className="text-sm text-ink-muted">Loading discussions…</Text>
+            ) : !(recentDiscussions.data ?? []).length ? (
+              <Text className="text-sm text-ink-muted">No discussions yet.</Text>
+            ) : (
+              <View className="gap-2">
+                {(recentDiscussions.data ?? []).map((discussion) => (
+                  <RecentDiscussionCard key={discussion.id} discussion={discussion} />
+                ))}
+              </View>
+            )}
+          </View>
+        ) : null}
       </View>
 
       {tab === "discover" ? (

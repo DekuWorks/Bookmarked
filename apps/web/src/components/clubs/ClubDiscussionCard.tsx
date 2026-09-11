@@ -3,18 +3,21 @@
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { usePreferredLocale } from "@/lib/hooks/usePreferredLocale";
 import { formatFeedTimestamp } from "@/lib/utils/locale";
+import { formatReplyCount } from "@bookmarked/utils/clubDiscussionUi";
 import type { BookClubDiscussionWithAuthor } from "@/types";
 
 type Props = {
   discussion: BookClubDiscussionWithAuthor;
   onOpen?: () => void;
+  /** Optional secondary line (e.g. club name on hub cards). */
+  secondaryLabel?: string | null;
 };
 
 function authorLabel(author: BookClubDiscussionWithAuthor["author"]): string {
   return author.display_name?.trim() || author.username?.trim() || "Reader";
 }
 
-export function ClubDiscussionCard({ discussion, onOpen }: Props) {
+export function ClubDiscussionCard({ discussion, onOpen, secondaryLabel }: Props) {
   const locale = usePreferredLocale();
   const label = authorLabel(discussion.author);
 
@@ -48,8 +51,11 @@ export function ClubDiscussionCard({ discussion, onOpen }: Props) {
                 </span>
               ) : null}
             </div>
+            {secondaryLabel ? (
+              <p className="mt-0.5 text-left text-xs text-text-muted">{secondaryLabel}</p>
+            ) : null}
             <p className="mt-1 text-left text-xs text-text-muted">
-              {discussion.reply_count} {discussion.reply_count === 1 ? "reply" : "replies"}
+              {formatReplyCount(discussion.reply_count)}
               <span aria-hidden> · </span>
               <time suppressHydrationWarning dateTime={discussion.latest_activity_at}>
                 {formatFeedTimestamp(discussion.latest_activity_at, locale)}

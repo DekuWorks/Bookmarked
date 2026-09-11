@@ -22,11 +22,14 @@ import {
   getMyClubs,
   listInvitations,
   listJoinRequests,
+  listRecentDiscussionsForViewer,
   searchClubs,
+  type RecentClubDiscussion,
 } from "@/lib/services/bookClubs";
 import { formatEventDateTime, listUpcomingEvents } from "@/lib/services/clubEvents";
 import { clubDetailPath, eventsPath } from "@/lib/routes/clubs";
-import { canManageMembers, roleLabel, visibilityLabel } from "@bookmarked/utils/clubPermissions";
+import { canManageMembers, visibilityLabel } from "@bookmarked/utils/clubPermissions";
+import { RecentDiscussionCard } from "@/components/clubs/RecentDiscussionCard";
 import type {
   BookClubEventWithClub,
   BookClubInvitationWithDetails,
@@ -55,6 +58,7 @@ function ClubsPageContent() {
   const [invitations, setInvitations] = useState<BookClubInvitationWithDetails[] | null>(null);
   const [joinRequests, setJoinRequests] = useState<JoinRequestRow[] | null>(null);
   const [upcomingEvents, setUpcomingEvents] = useState<BookClubEventWithClub[] | null>(null);
+  const [recentDiscussions, setRecentDiscussions] = useState<RecentClubDiscussion[] | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [discoverFilter, setDiscoverFilter] = useState<DiscoverFilter>("all");
@@ -67,14 +71,16 @@ function ClubsPageContent() {
   async function loadHub(viewerId: string) {
     setLoadError(null);
     try {
-      const [myClubs, discovered, invites, events, trendingClubs, yoursClubs] = await Promise.all([
-        getMyClubs(viewerId),
-        discoverClubs(viewerId),
-        listInvitations(viewerId),
-        listUpcomingEvents(5),
-        discoverTrendingClubs(viewerId, 6),
-        discoverClubsReadingYourBooks(viewerId, 6),
-      ]);
+      const [myClubs, discovered, invites, events, trendingClubs, yoursClubs, recentThreads] =
+        await Promise.all([
+          getMyClubs(viewerId),
+          discoverClubs(viewerId),
+          listInvitations(viewerId),
+          listUpcomingEvents(5),
+          discoverTrendingClubs(viewerId, 6),
+          discoverClubsReadingYourBooks(viewerId, 6),
+          listRecentDiscussionsForViewer(viewerId, 6),
+        ]);
 
       setMine(myClubs);
       setDiscover(discovered);
@@ -82,6 +88,7 @@ function ClubsPageContent() {
       setUpcomingEvents(events);
       setTrending(trendingClubs);
       setReadingYours(yoursClubs);
+      setRecentDiscussions(recentThreads);
 
       const managedClubs = myClubs.filter((club) => canManageMembers(club.viewer_role));
       if (!managedClubs.length) {
@@ -109,6 +116,7 @@ function ClubsPageContent() {
       setInvitations((prev) => prev ?? []);
       setJoinRequests((prev) => prev ?? []);
       setUpcomingEvents((prev) => prev ?? []);
+      setRecentDiscussions((prev) => prev ?? []);
     }
   }
 
@@ -311,42 +319,32 @@ function ClubsPageContent() {
         </section>
 
         <section className="rounded-xl border border-border bg-surface p-4 text-left shadow-sm">
-          <h2 className="font-semibold text-puce-red">Discussions</h2>
-          <p className="mt-0.5 text-xs text-text-muted">Jump into a club conversation</p>
-          {!mine ? (
-            <p className="mt-3 text-sm text-text-muted">Loading clubs…</p>
-          ) : mine.length === 0 ? (
-            <p className="mt-3 text-sm text-text-muted">
-              Join a club to start discussing books with other readers.
-            </p>
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <h2 className="font-semibold text-puce-red">Discussions</h2>
+              <p className="mt-0.5 text-xs text-text-muted">Recent threads across your clubs</p>
+            </div>
+            {mine && mine.length > 0 ? (
+              <button
+                type="button"
+                className="text-sm font-medium text-primary hover:underline"
+                onClick={() => setSection("mine")}
+              >
+                View all
+              </button>
+            ) : null}
+          </div>
+          {recentDiscussions === null ? (
+            <p className="mt-3 text-sm text-text-muted">Loading discussions…</p>
+          ) : recentDiscussions.length === 0 ? (
+            <p className="mt-3 text-sm text-text-muted">No discussions yet.</p>
           ) : (
             <ul className="mt-3 space-y-2">
-              {mine.slice(0, 3).map((club) => (
-                <li key={club.id}>
-                  <Link
-                    href={clubDetailPath(club.id)}
-                    className="block rounded-lg px-2 py-1.5 text-sm font-medium text-primary transition hover:bg-background hover:underline"
-                  >
-                    {club.name}
-                    {club.viewer_role ? (
-                      <span className="ml-2 text-xs font-normal text-text-muted">
-                        {roleLabel(club.viewer_role)}
-                      </span>
-                    ) : null}
-                  </Link>
-                </li>
+              {recentDiscussions.map((discussion) => (
+                <RecentDiscussionCard key={discussion.id} discussion={discussion} />
               ))}
             </ul>
           )}
-          {mine && mine.length > 0 ? (
-            <button
-              type="button"
-              className="mt-2 text-sm font-medium text-primary hover:underline"
-              onClick={() => setSection("mine")}
-            >
-              Open My Clubs
-            </button>
-          ) : null}
         </section>
       </div>
 
