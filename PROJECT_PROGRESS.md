@@ -1477,6 +1477,17 @@ Web + iOS (no Android). Icon picker was already shipped in PR #34 — not rebuil
 
 ---
 
+## Book Clubs → Bookshelf — remove header dropdown filter ✅
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Web header dropdown removed | ✅ | Removed category `<select>` next to **Add book** in `ClubBookshelfPanel`. Pill filters remain the only category filter. Add book uses the active pill category (parity with iOS `shelfCategory`). Per-book category `<select>` kept. |
+| iOS | ✅ | Already had no header dropdown; bookshelf tab uses pills only. No code change. |
+
+**Branch:** `feature/club-bookshelf-remove-dropdown-filter`
+
+---
+
 ## Next up (recommended)
 
 | Priority | Item | Notes |

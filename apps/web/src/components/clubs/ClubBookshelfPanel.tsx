@@ -38,7 +38,6 @@ export function ClubBookshelfPanel({ clubId, viewerId, viewerRole, onChanged }: 
   const [books, setBooks] = useState<BookClubShelfBook[] | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [filter, setFilter] = useState<BookClubBookCategory>("current_read");
-  const [addCategory, setAddCategory] = useState<BookClubBookCategory>("suggested");
   const [pendingId, setPendingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -62,14 +61,13 @@ export function ClubBookshelfPanel({ clubId, viewerId, viewerRole, onChanged }: 
     CLUB_BOOKSHELF_CATEGORIES.find((row) => row.id === filter)?.label ?? filter;
 
   async function handleAdd(book: BookSearchResult) {
-    const result = await addClubBook(clubId, book.id, addCategory);
+    const result = await addClubBook(clubId, book.id, filter);
     if (result.error) {
       toast.error(result.error);
       return;
     }
     toast.success("Book added to club shelf.");
     setPickerOpen(false);
-    setFilter(addCategory);
     await load();
     onChanged?.();
   }
@@ -140,23 +138,9 @@ export function ClubBookshelfPanel({ clubId, viewerId, viewerRole, onChanged }: 
           </p>
         </div>
         {canManage ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={addCategory}
-              onChange={(e) => setAddCategory(e.target.value as BookClubBookCategory)}
-              aria-label="Category for new book"
-              className="rounded-lg border border-border bg-surface px-2 py-2 text-sm text-text"
-            >
-              {CLUB_BOOKSHELF_CATEGORIES.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.label}
-                </option>
-              ))}
-            </select>
-            <Button type="button" variant="primary" size="sm" onClick={() => setPickerOpen(true)}>
-              Add book
-            </Button>
-          </div>
+          <Button type="button" variant="primary" size="sm" onClick={() => setPickerOpen(true)}>
+            Add book
+          </Button>
         ) : null}
       </div>
 
