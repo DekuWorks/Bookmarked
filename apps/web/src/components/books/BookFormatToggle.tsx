@@ -24,7 +24,12 @@ const OPTIONS: { value: "book" | "audiobook"; label: string; icon: string }[] = 
 export function BookFormatToggle({ bookId, format = "book", onShelf = true, onFormatChange }: Props) {
   const toast = useToast();
   const [optimisticFormat, setOptimisticFormat] = useState(format);
+  const [syncedFormat, setSyncedFormat] = useState(format);
   const [pending, setPending] = useState(false);
+  if (format !== syncedFormat) {
+    setSyncedFormat(format);
+    setOptimisticFormat(format);
+  }
   const isAudiobook = optimisticFormat === "audiobook";
 
   async function selectFormat(next: "book" | "audiobook") {

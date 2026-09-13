@@ -24,6 +24,7 @@ import {
   formatListeningTimeSpoken,
   parseListeningTime,
   validateListeningProgress,
+  validateListeningSession,
 } from "@bookmarked/utils/listeningTime";
 
 const initial: BookActionState = {};
@@ -232,6 +233,8 @@ export function ReadingProgressPanel({
   const isFinished = Boolean(finishedAt);
   const parsedCurrent = isAudiobook ? parseListeningTime(currentTime) : null;
   const parsedTotal = isAudiobook ? parseListeningTime(totalTime) : null;
+  const parsedSessionStart = isAudiobook ? parseListeningTime(sessionStart) : null;
+  const parsedSessionEnd = isAudiobook ? parseListeningTime(sessionEnd) : null;
   const cur = isAudiobook
     ? parsedCurrent?.ok
       ? parsedCurrent.seconds
@@ -423,7 +426,18 @@ export function ReadingProgressPanel({
         <form
           action={submitSession}
           className="mt-6 space-y-3 border-t border-border pt-4"
-          onSubmit={() => setSessionError(null)}
+          onSubmit={(event) => {
+            setSessionError(null);
+            const validated = validateListeningSession({
+              start: sessionStart,
+              end: sessionEnd,
+              total: totalListeningSeconds > 0 ? totalListeningSeconds : totalTime || undefined,
+            });
+            if (!validated.ok) {
+              event.preventDefault();
+              setSessionError(validated.error);
+            }
+          }}
         >
           <h3 className="text-sm font-semibold text-puce-red">Log listening session</h3>
           <input type="hidden" name="book_id" value={bookId} />
@@ -435,6 +449,11 @@ export function ReadingProgressPanel({
               placeholder="1:45"
               hint="Hours and minutes, such as 1:45."
               value={sessionStart}
+              aria-label={
+                parsedSessionStart?.ok
+                  ? `Starting listening position, ${formatListeningTimeSpoken(parsedSessionStart.seconds)}`
+                  : "Starting listening position"
+              }
               onChange={(e) => {
                 setSessionStart(e.target.value);
                 setSessionError(null);
@@ -449,6 +468,11 @@ export function ReadingProgressPanel({
               placeholder="2:30"
               hint="Hours and minutes, such as 2:30."
               value={sessionEnd}
+              aria-label={
+                parsedSessionEnd?.ok
+                  ? `Ending listening position, ${formatListeningTimeSpoken(parsedSessionEnd.seconds)}`
+                  : "Ending listening position"
+              }
               onChange={(e) => {
                 setSessionEnd(e.target.value);
                 setSessionError(null);

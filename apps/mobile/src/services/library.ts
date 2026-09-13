@@ -519,7 +519,16 @@ export async function updateReadingProgress(
 
   await recordBookActivity(userId, "progress_updated", userBook?.id ?? null, book, {
     progress_percent: progressPercent,
-    ...(isAudiobook ? { format: "audiobook", listening_seconds: listeningProgressSeconds } : {}),
+    ...(isAudiobook
+      ? {
+          format: "audiobook",
+          listening_seconds: Math.max(0, listeningProgressSeconds - previousListening),
+          listening_start_seconds: previousListening,
+          listening_end_seconds: listeningProgressSeconds,
+          current_listening_seconds: listeningProgressSeconds,
+          total_listening_seconds: totalListeningSeconds,
+        }
+      : {}),
   });
   return {};
 }
@@ -611,6 +620,10 @@ export async function logListeningSession(
     progress_percent: nextPercent,
     format: "audiobook",
     listening_seconds: validated.durationSeconds,
+    listening_start_seconds: validated.startSeconds,
+    listening_end_seconds: validated.endSeconds,
+    current_listening_seconds: nextCurrent,
+    total_listening_seconds: totalSeconds,
   });
   return {};
 }

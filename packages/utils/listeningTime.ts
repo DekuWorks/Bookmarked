@@ -217,11 +217,16 @@ export function formatAudiobookProgressLabel(
   currentSeconds: number,
   totalSeconds: number
 ): string {
-  return `${formatListeningTime(currentSeconds)} of ${formatListeningTime(totalSeconds)}`;
+  return `${formatListeningTime(currentSeconds)} / ${formatListeningTime(totalSeconds)}`;
 }
 
 export function formatListeningDurationLabel(seconds: number): string {
   return formatListeningTimeSpoken(seconds);
+}
+
+/** Prose elapsed duration for activity/Trail, e.g. "Listened for 45 minutes". */
+export function formatListenedFor(seconds: number): string {
+  return `Listened for ${formatListeningTimeSpoken(seconds)}`;
 }
 
 export function formatListeningRange(startSeconds: number, endSeconds: number): string {
@@ -242,7 +247,10 @@ export function formatListeningSessionSummary(input: {
   const duration = Number.isFinite(explicitDuration)
     ? Math.max(0, explicitDuration)
     : calculateAudiobookSessionDuration(start, end);
-  return `${formatListeningRange(start, end)} · ${formatListeningDurationLabel(duration)}`;
+  if (start === 0 && end === 0 && duration > 0) {
+    return formatListenedFor(duration);
+  }
+  return `${formatListeningRange(start, end)} · ${formatListenedFor(duration)}`;
 }
 
 export function formatHistorySessionDetail(input: {
@@ -253,14 +261,49 @@ export function formatHistorySessionDetail(input: {
   listening_seconds?: number | null;
 }): string {
   if (input.session_format === "audiobook") {
-    return formatListeningDurationLabel(
-      Number(input.listening_seconds) ||
-        calculateAudiobookSessionDuration(
-          Number(input.listening_start_seconds) || 0,
-          Number(input.listening_end_seconds) || 0
-        )
-    );
+    return formatListeningSessionSummary(input);
   }
   const pages = Number(input.pages_read) || 0;
   return pages === 1 ? "1 page" : `${pages} pages`;
+}
+
+/** Recent Activity / feed copy for an audiobook progress or session event. */
+export function formatAudiobookActivityDetail(metadata: {
+  format?: unknown;
+  listening_start_seconds?: unknown;
+  listening_end_seconds?: unknown;
+  listening_seconds?: unknown;
+  current_listening_seconds?: unknown;
+  total_listening_seconds?: unknown;
+  progress_percent?: unknown;
+} | null): string | null {
+  if (!metadata || metadata.format !== "audiobook") return null;
+
+  const start = Number(metadata.listening_start_seconds);
+  const end = Number(metadata.listening_end_seconds);
+  const duration = Number(metadata.listening_seconds);
+  const current = Number(metadata.current_listening_seconds);
+  const total = Number(metadata.total_listening_seconds);
+
+  if (Number.isFinite(start) && Number.isFinite(end) && end >= start) {
+    const elapsed = Number.isFinite(duration)
+      ? Math.max(0, duration)
+      : calculateAudiobookSessionDuration(start, end);
+    return `${formatListeningRange(start, end)} · ${formatListenedFor(elapsed)}`;
+  }
+
+  if (Number.isFinite(duration) && duration > 0) {
+    return formatListenedFor(duration);
+  }
+
+  if (Number.isFinite(current) && Number.isFinite(total) && total > 0) {
+    return `Listened to ${formatAudiobookProgressLabel(current, total)}`;
+  }
+
+  const percent = Number(metadata.progress_percent);
+  if (Number.isFinite(percent)) {
+    return `updated listening progress (${percent}%)`;
+  }
+
+  return "updated listening progress";
 }

@@ -562,7 +562,16 @@ export async function updateReadingProgress(
     metadata_json: activityMetadata(book.title, {
       ...bookActivityContext(book),
       progress_percent: finalPercent,
-      ...(isAudiobook ? { listening_seconds: currentListeningSeconds, format: "audiobook" } : {}),
+      ...(isAudiobook
+        ? {
+            format: "audiobook",
+            listening_seconds: Math.max(0, currentListeningSeconds - previousListening),
+            listening_start_seconds: previousListening,
+            listening_end_seconds: currentListeningSeconds,
+            current_listening_seconds: currentListeningSeconds,
+            total_listening_seconds: totalListeningSeconds,
+          }
+        : {}),
     }),
   });
 
@@ -652,8 +661,12 @@ export async function logListeningSession(
     metadata_json: activityMetadata(book.title, {
       ...bookActivityContext(book),
       progress_percent: nextPercent,
-      listening_seconds: validated.durationSeconds,
       format: "audiobook",
+      listening_seconds: validated.durationSeconds,
+      listening_start_seconds: validated.startSeconds,
+      listening_end_seconds: validated.endSeconds,
+      current_listening_seconds: nextCurrent,
+      total_listening_seconds: totalSeconds,
     }),
   });
 
