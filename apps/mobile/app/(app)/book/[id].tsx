@@ -190,6 +190,7 @@ export default function BookScreen() {
   const router = useRouter();
   const { width: windowWidth } = useWindowDimensions();
   const listeningSheetWidth = windowWidth >= 768 ? Math.min(420, windowWidth - 64) : 320;
+  const listeningFieldsSideBySide = windowWidth >= 768;
 
   const scrollRef = useRef<ScrollView>(null);
   const reviewsY = useRef(0);
@@ -481,6 +482,27 @@ export default function BookScreen() {
     if (result.error) {
       Alert.alert("Error", result.error);
       return;
+    }
+    const queryKey = ["book-details", bookId, userId] as const;
+    const nextCurrent = result.currentListeningSeconds;
+    const nextTotal = result.totalListeningSeconds;
+    const nextPercent = result.progressPercent;
+    if (typeof nextCurrent === "number" && typeof nextTotal === "number") {
+      queryClient.setQueryData(queryKey, (current: typeof details.data) => {
+        if (!current?.userBook) return current;
+        return {
+          ...current,
+          userBook: {
+            ...current.userBook,
+            listening_progress_seconds: nextCurrent,
+            // Preserve existing duration; session save must never clear total.
+            audiobook_duration_seconds:
+              nextTotal > 0 ? nextTotal : current.userBook.audiobook_duration_seconds,
+            progress_percent: nextPercent ?? current.userBook.progress_percent,
+          },
+        };
+      });
+      fillListeningFields(nextCurrent, nextTotal > 0 ? nextTotal : totalListeningSeconds);
     }
     setSessionOpen(false);
     setSessionEndHours("");
@@ -1075,8 +1097,9 @@ export default function BookScreen() {
           >
             <Text className="mb-3 text-lg font-bold text-puce-red">Update progress</Text>
             {isAudiobook ? (
-              <View className="gap-4">
+              <View className={listeningFieldsSideBySide ? "flex-row gap-3" : "gap-4"}>
                 <ListeningTimeInput
+                  aligned={listeningFieldsSideBySide}
                   label="Current Listening Time"
                   hint="Enter your current listening position in hours and minutes."
                   hours={currentHours}
@@ -1095,6 +1118,7 @@ export default function BookScreen() {
                   }}
                 />
                 <ListeningTimeInput
+                  aligned={listeningFieldsSideBySide}
                   label="Total Listening Time"
                   hint="Enter the audiobook's total length in hours and minutes."
                   hours={totalHours}
@@ -1148,8 +1172,9 @@ export default function BookScreen() {
             onPress={(event) => event.stopPropagation()}
           >
             <Text className="mb-3 text-lg font-bold text-puce-red">Log listening session</Text>
-            <View className="gap-4">
+            <View className={listeningFieldsSideBySide ? "flex-row gap-3" : "gap-4"}>
               <ListeningTimeInput
+                aligned={listeningFieldsSideBySide}
                 label="Starting Listening Position"
                 hint="Hours and minutes, such as 1:45."
                 hours={sessionStartHours}
@@ -1168,6 +1193,7 @@ export default function BookScreen() {
                 }}
               />
               <ListeningTimeInput
+                aligned={listeningFieldsSideBySide}
                 label="Ending Listening Position"
                 hint="Hours and minutes, such as 2:30."
                 hours={sessionEndHours}

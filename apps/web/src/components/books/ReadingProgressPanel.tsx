@@ -8,6 +8,7 @@ import { MarkFinishedDialog } from "@/components/books/MarkFinishedDialog";
 import { RateBookPrompt } from "@/components/books/RateBookPrompt";
 import { CompletionCelebration } from "@/components/books/CompletionCelebration";
 import { TransferReadingStatsModal } from "@/components/books/TransferReadingStatsModal";
+import { AudiobookTimeInput } from "@/components/books/AudiobookTimeInput";
 import { cn } from "@/lib/utils/cn";
 import {
   logListeningSession,
@@ -145,6 +146,8 @@ export function ReadingProgressPanel({
     };
 
     if (!propsChanged || editing) return;
+    /* Prop → controlled field sync for progress inputs (intentional). */
+    /* eslint-disable react-hooks/set-state-in-effect -- sync form fields from server props */
     setPage(String(currentPage || ""));
     setTotal(String(totalPages || ""));
     setCurrentTime(
@@ -152,11 +155,17 @@ export function ReadingProgressPanel({
         ? formatListeningTime(currentListeningSeconds)
         : ""
     );
-    setTotalTime(totalListeningSeconds > 0 ? formatListeningTime(totalListeningSeconds) : "");
+    // Never blank a known total when a refetch briefly omits duration.
+    if (totalListeningSeconds > 0) {
+      setTotalTime(formatListeningTime(totalListeningSeconds));
+    } else if (prev.totalListeningSeconds <= 0) {
+      setTotalTime("");
+    }
     setSessionStart(
       currentListeningSeconds > 0 ? formatListeningTime(currentListeningSeconds) : ""
     );
     setDisplayPercent(progressPercent);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [
     currentPage,
     totalPages,
@@ -170,8 +179,29 @@ export function ReadingProgressPanel({
     onProgressChangeRef.current?.();
   });
   useActionToast(sessionAction, () => {
-    onProgressChangeRef.current?.();
+    // Apply authoritative session progress immediately so Total never flashes empty.
+    if (
+      typeof sessionAction.currentListeningSeconds === "number" &&
+      typeof sessionAction.totalListeningSeconds === "number"
+    ) {
+      const nextCurrent = formatListeningTime(sessionAction.currentListeningSeconds);
+      setCurrentTime(nextCurrent);
+      setSessionStart(nextCurrent);
+      if (sessionAction.totalListeningSeconds > 0) {
+        setTotalTime(formatListeningTime(sessionAction.totalListeningSeconds));
+      }
+      if (typeof sessionAction.progressPercent === "number") {
+        setDisplayPercent(sessionAction.progressPercent);
+      }
+      lastSynced.current = {
+        ...lastSynced.current,
+        currentListeningSeconds: sessionAction.currentListeningSeconds,
+        totalListeningSeconds: sessionAction.totalListeningSeconds,
+        progressPercent: sessionAction.progressPercent ?? lastSynced.current.progressPercent,
+      };
+    }
     setSessionEnd("");
+    onProgressChangeRef.current?.();
   });
 
   function handleFinished(
@@ -245,9 +275,7 @@ export function ReadingProgressPanel({
       ? parsedTotal.seconds
       : totalListeningSeconds
     : Number(total) || totalPages || 0;
-  const pageCountUnavailable = isAudiobook
-    ? tot <= 0
-    : !(totalPages) && !total;
+  const pageCountUnavailable = isAudiobook ? tot <= 0 : !totalPages && !total;
   const atFullProgress = !editing && tot > 0 && cur >= tot && !isFinished;
   const progressAboveTotal = !editing && cur > 0 && tot > 0 && cur > tot;
   const livePercent = isAudiobook
@@ -311,20 +339,19 @@ export function ReadingProgressPanel({
       >
         <input type="hidden" name="book_id" value={bookId} />
         <input type="hidden" name="format" value={isAudiobook ? "audiobook" : "book"} />
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 sm:items-start">
           {isAudiobook ? (
             <>
-              <Input
+              <AudiobookTimeInput
                 label="Current Listening Time"
                 name="current_listening_time"
-                inputMode="numeric"
                 placeholder="2:30"
                 hint="Enter your current listening position in hours and minutes."
                 value={currentTime}
-                aria-label={
+                spokenValue={
                   parsedCurrent?.ok
                     ? formatListeningTimeSpoken(parsedCurrent.seconds)
-                    : "Current listening time"
+                    : undefined
                 }
                 onFocus={() => setEditing(true)}
                 onChange={(e) => {
@@ -338,13 +365,15 @@ export function ReadingProgressPanel({
                 }}
                 error={clientError ?? undefined}
               />
-              <Input
+              <AudiobookTimeInput
                 label="Total Listening Time"
                 name="total_listening_time"
-                inputMode="numeric"
                 placeholder="20:30"
                 hint="Enter the audiobook's total length in hours and minutes."
                 value={totalTime}
+                spokenValue={
+                  parsedTotal?.ok ? formatListeningTimeSpoken(parsedTotal.seconds) : undefined
+                }
                 onFocus={() => setEditing(true)}
                 onChange={(e) => {
                   setEditing(true);
@@ -441,18 +470,17 @@ export function ReadingProgressPanel({
         >
           <h3 className="text-sm font-semibold text-puce-red">Log listening session</h3>
           <input type="hidden" name="book_id" value={bookId} />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Input
+          <div className="grid gap-4 sm:grid-cols-2 sm:items-start">
+            <AudiobookTimeInput
               label="Starting Listening Position"
               name="listening_start_time"
-              inputMode="numeric"
               placeholder="1:45"
               hint="Hours and minutes, such as 1:45."
               value={sessionStart}
-              aria-label={
+              spokenValue={
                 parsedSessionStart?.ok
-                  ? `Starting listening position, ${formatListeningTimeSpoken(parsedSessionStart.seconds)}`
-                  : "Starting listening position"
+                  ? formatListeningTimeSpoken(parsedSessionStart.seconds)
+                  : undefined
               }
               onChange={(e) => {
                 setSessionStart(e.target.value);
@@ -461,17 +489,16 @@ export function ReadingProgressPanel({
               onBlur={() => setSessionStart(normalizeTime(sessionStart))}
               error={sessionError ?? undefined}
             />
-            <Input
+            <AudiobookTimeInput
               label="Ending Listening Position"
               name="listening_end_time"
-              inputMode="numeric"
               placeholder="2:30"
               hint="Hours and minutes, such as 2:30."
               value={sessionEnd}
-              aria-label={
+              spokenValue={
                 parsedSessionEnd?.ok
-                  ? `Ending listening position, ${formatListeningTimeSpoken(parsedSessionEnd.seconds)}`
-                  : "Ending listening position"
+                  ? formatListeningTimeSpoken(parsedSessionEnd.seconds)
+                  : undefined
               }
               onChange={(e) => {
                 setSessionEnd(e.target.value);
@@ -530,32 +557,6 @@ export function ReadingProgressPanel({
       />
 
       <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-4">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            document.getElementById("reading-trail")?.scrollIntoView({
-              behavior: "smooth",
-              block: "start",
-            });
-          }}
-        >
-          Trail
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            document.getElementById("reading-notes")?.scrollIntoView({
-              behavior: "smooth",
-              block: "start",
-            });
-          }}
-        >
-          Reading notes
-        </Button>
         <Button
           type="button"
           variant="outline"

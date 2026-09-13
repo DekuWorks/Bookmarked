@@ -189,6 +189,58 @@ export function nextListeningProgressAfterSession(
   return Math.max(Math.max(0, currentSeconds), Math.max(0, sessionEndSeconds));
 }
 
+/**
+ * Authoritative progress after a manual listening session.
+ * Advances current to the session end when needed, always preserves total,
+ * and recalculates percent from current/total.
+ */
+export function progressAfterListeningSession(input: {
+  currentSeconds: number;
+  totalSeconds: number;
+  sessionEndSeconds: number;
+}): {
+  currentSeconds: number;
+  totalSeconds: number;
+  progressPercent: number;
+} {
+  const totalSeconds = Math.max(0, Number(input.totalSeconds) || 0);
+  const currentSeconds = nextListeningProgressAfterSession(
+    input.currentSeconds,
+    input.sessionEndSeconds
+  );
+  return {
+    currentSeconds,
+    totalSeconds,
+    progressPercent:
+      totalSeconds > 0 ? calculateAudiobookProgress(currentSeconds, totalSeconds) : 0,
+  };
+}
+
+/**
+ * PATCH fields for a listening-session progress write.
+ * Never includes `audiobook_duration_seconds` — session save must not clear total.
+ */
+export function buildListeningSessionProgressPatch(input: {
+  currentSeconds: number;
+  progressPercent: number;
+  startedAt?: string | null;
+  now?: string;
+  shelfStatus?: string | null;
+  finishedAt?: string | null;
+}): Record<string, unknown> {
+  const now = input.now ?? new Date().toISOString();
+  return {
+    tracking_format: "audiobook",
+    listening_progress_seconds: Math.max(0, input.currentSeconds),
+    progress_percent: input.progressPercent,
+    started_at: input.startedAt ?? now,
+    updated_at: now,
+    ...(input.shelfStatus !== "currently_reading" && !input.finishedAt
+      ? { shelf_status: "currently_reading" }
+      : {}),
+  };
+}
+
 export function resolveTrackingFormat(input: {
   userFormat?: string | null;
   catalogFormat?: string | null;
@@ -200,17 +252,18 @@ export function resolveTrackingFormat(input: {
   return "book";
 }
 
+function positiveSeconds(value: number | null | undefined): number {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+}
+
 export function resolveAudiobookDurationSeconds(input: {
   userDurationSeconds?: number | null;
   catalogDurationSeconds?: number | null;
 }): number {
-  if (input.userDurationSeconds && input.userDurationSeconds > 0) {
-    return input.userDurationSeconds;
-  }
-  if (input.catalogDurationSeconds && input.catalogDurationSeconds > 0) {
-    return input.catalogDurationSeconds;
-  }
-  return 0;
+  const user = positiveSeconds(input.userDurationSeconds);
+  if (user > 0) return user;
+  return positiveSeconds(input.catalogDurationSeconds);
 }
 
 export function formatAudiobookProgressLabel(

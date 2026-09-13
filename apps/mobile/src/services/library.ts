@@ -10,8 +10,9 @@ import {
 } from "./activity";
 import { buildUserBookShelfPatch } from "../../../../packages/utils/shelfStatus";
 import {
+  buildListeningSessionProgressPatch,
   calculateAudiobookProgress,
-  nextListeningProgressAfterSession,
+  progressAfterListeningSession,
   resolveAudiobookDurationSeconds,
   validateListeningProgress,
   validateListeningSession,
@@ -548,10 +549,17 @@ export async function logListeningSession(
     currentListeningSeconds?: number;
     totalListeningSeconds?: number;
   }
-): Promise<{ error?: string }> {
+): Promise<{
+  error?: string;
+  currentListeningSeconds?: number;
+  totalListeningSeconds?: number;
+  progressPercent?: number;
+}> {
   const { data: existing } = await supabase
     .from("user_books")
-    .select("id, listening_progress_seconds, audiobook_duration_seconds, read_count, started_at, shelf_status, finished_at")
+    .select(
+      "id, listening_progress_seconds, audiobook_duration_seconds, progress_percent, read_count, started_at, shelf_status, finished_at"
+    )
     .eq("user_id", userId)
     .eq("book_id", book.id)
     .maybeSingle();
@@ -571,8 +579,11 @@ export async function logListeningSession(
 
   const currentSeconds =
     Number(existing.listening_progress_seconds) || input.currentListeningSeconds || 0;
-  const nextCurrent = nextListeningProgressAfterSession(currentSeconds, validated.endSeconds);
-  const nextPercent = totalSeconds > 0 ? calculateAudiobookProgress(nextCurrent, totalSeconds) : 0;
+  const nextProgress = progressAfterListeningSession({
+    currentSeconds,
+    totalSeconds,
+    sessionEndSeconds: validated.endSeconds,
+  });
   const now = new Date().toISOString();
 
   const session = await createReadingSession({
@@ -580,7 +591,7 @@ export async function logListeningSession(
     userBookId: existing.id,
     pageStart: 0,
     pageEnd: 0,
-    percentComplete: nextPercent,
+    percentComplete: nextProgress.progressPercent,
     activityKind: "progress",
     readNumber: Number(existing.read_count) || 1,
     sessionFormat: "audiobook",
@@ -599,33 +610,42 @@ export async function logListeningSession(
     });
   }
 
-  if (nextCurrent !== currentSeconds) {
+  // PATCH current/percent only — never send audiobook_duration_seconds.
+  const previousPercent = Number(existing.progress_percent) || 0;
+  if (
+    nextProgress.currentSeconds !== currentSeconds ||
+    nextProgress.progressPercent !== previousPercent
+  ) {
     const { error } = await supabase
       .from("user_books")
-      .update({
-        tracking_format: "audiobook",
-        listening_progress_seconds: nextCurrent,
-        progress_percent: nextPercent,
-        started_at: existing.started_at ?? now,
-        updated_at: now,
-        ...(existing.shelf_status !== "currently_reading" && !existing.finished_at
-          ? { shelf_status: "currently_reading" }
-          : {}),
-      })
+      .update(
+        buildListeningSessionProgressPatch({
+          currentSeconds: nextProgress.currentSeconds,
+          progressPercent: nextProgress.progressPercent,
+          startedAt: existing.started_at,
+          now,
+          shelfStatus: existing.shelf_status,
+          finishedAt: existing.finished_at,
+        })
+      )
       .eq("id", existing.id);
     if (error) return { error: error.message };
   }
 
   await recordBookActivity(userId, "progress_updated", existing.id, book, {
-    progress_percent: nextPercent,
+    progress_percent: nextProgress.progressPercent,
     format: "audiobook",
     listening_seconds: validated.durationSeconds,
     listening_start_seconds: validated.startSeconds,
     listening_end_seconds: validated.endSeconds,
-    current_listening_seconds: nextCurrent,
-    total_listening_seconds: totalSeconds,
+    current_listening_seconds: nextProgress.currentSeconds,
+    total_listening_seconds: nextProgress.totalSeconds,
   });
-  return {};
+  return {
+    currentListeningSeconds: nextProgress.currentSeconds,
+    totalListeningSeconds: nextProgress.totalSeconds,
+    progressPercent: nextProgress.progressPercent,
+  };
 }
 
 export async function markFinished(
