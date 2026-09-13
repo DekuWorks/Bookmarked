@@ -11,7 +11,8 @@ describe("NotesBookFilter cover presentation", () => {
       "utf8"
     );
     expect(source).toContain("<BookCover");
-    expect(source).not.toMatch(/\bbookmarked\b/);
-    expect(source).not.toMatch(/bookmarkBadgeSize/);
+    expect(source).not.toContain("bookmarkBadgeSize");
+    // JSX prop on its own line — package import `@bookmarked/utils` is fine.
+    expect(source).not.toMatch(/^\s+bookmarked\b/m);
   });
 });
