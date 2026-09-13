@@ -227,6 +227,16 @@ Additive migration: `20260906180000_eighth_sprint_audiobook_user_edition.sql` ad
 
 **2026-09-13 polish (`feature/audiobook-hhmm-progress`):** tightened activity/History copy to HH:MM + “Listened for…”, client session validation on web/iOS, iPad sheet widths, calendar `session_format` select. Storage unit unchanged (INTEGER seconds).
 
+**2026-09-13 persistence + UI cleanup (`feature/audiobook-total-persistence`):**
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Audiobook Progress – Total Listening Time Being Cleared | ✅ | Session save PATCHes current/percent only via `buildListeningSessionProgressPatch` (never sends `audiobook_duration_seconds`). Shared `progressAfterListeningSession` preserves total + recalculates %. Web/iOS apply authoritative progress from the session response and refuse to blank a known total on a transient empty refetch. |
+| Audiobook Progress – Field Alignment | ✅ | Web `AudiobookTimeInput` with equal label-height containers; side-by-side from `sm`, stack on narrow. iOS `ListeningTimeInput` aligned labels; side-by-side on iPad (`width >= 768`), stack on iPhone. |
+| Reading Room – Remove Duplicate Trail & Reading Notes Links | ✅ | Removed scroll-to Trail / Reading notes buttons under Reading Room on the book page. Trail + Notes sections/tabs/routes unchanged. |
+
+Out of scope unchanged: **no listening timer**, **no Audible/Spotify**.
+
 ---
 
 ## Sprint 9 — Goodreads CSV import improvements ✅

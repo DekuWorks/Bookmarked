@@ -13,8 +13,10 @@ import {
   formatListeningSessionSummary,
   formatListeningTime,
   formatListeningTimeSpoken,
+  buildListeningSessionProgressPatch,
   nextListeningProgressAfterSession,
   parseListeningTime,
+  progressAfterListeningSession,
   resolveAudiobookDurationSeconds,
   resolveTrackingFormat,
   validateListeningProgress,
@@ -144,6 +146,59 @@ describe("nextListeningProgressAfterSession", () => {
   });
 });
 
+describe("progressAfterListeningSession", () => {
+  it("preserves total while advancing current and recalculating percent", () => {
+    // 22:18 total, 2:30 → 3:00 session
+    expect(
+      progressAfterListeningSession({
+        currentSeconds: 9000,
+        totalSeconds: 80280,
+        sessionEndSeconds: 10800,
+      })
+    ).toEqual({
+      currentSeconds: 10800,
+      totalSeconds: 80280,
+      progressPercent: calculateAudiobookProgress(10800, 80280),
+    });
+  });
+
+  it("does not clear total when percent cannot be calculated yet", () => {
+    expect(
+      progressAfterListeningSession({
+        currentSeconds: 9000,
+        totalSeconds: 0,
+        sessionEndSeconds: 10800,
+      })
+    ).toEqual({
+      currentSeconds: 10800,
+      totalSeconds: 0,
+      progressPercent: 0,
+    });
+  });
+});
+
+describe("buildListeningSessionProgressPatch", () => {
+  it("patches current/percent only and never includes total duration", () => {
+    const patch = buildListeningSessionProgressPatch({
+      currentSeconds: 10800,
+      progressPercent: 13.5,
+      startedAt: "2026-01-01T00:00:00.000Z",
+      now: "2026-01-02T00:00:00.000Z",
+      shelfStatus: "want_to_read",
+      finishedAt: null,
+    });
+    expect(patch).toEqual({
+      tracking_format: "audiobook",
+      listening_progress_seconds: 10800,
+      progress_percent: 13.5,
+      started_at: "2026-01-01T00:00:00.000Z",
+      updated_at: "2026-01-02T00:00:00.000Z",
+      shelf_status: "currently_reading",
+    });
+    expect(patch).not.toHaveProperty("audiobook_duration_seconds");
+  });
+});
+
 describe("resolveTrackingFormat", () => {
   it("prefers the user-book format over the catalog", () => {
     expect(resolveTrackingFormat({ userFormat: "audiobook", catalogFormat: "book" })).toBe(
@@ -170,6 +225,21 @@ describe("resolveAudiobookDurationSeconds", () => {
         catalogDurationSeconds: 9000,
       })
     ).toBe(9000);
+  });
+
+  it("coerces numeric strings and ignores non-positive values", () => {
+    expect(
+      resolveAudiobookDurationSeconds({
+        userDurationSeconds: "80280" as unknown as number,
+        catalogDurationSeconds: 9000,
+      })
+    ).toBe(80280);
+    expect(
+      resolveAudiobookDurationSeconds({
+        userDurationSeconds: 0,
+        catalogDurationSeconds: null,
+      })
+    ).toBe(0);
   });
 });
 

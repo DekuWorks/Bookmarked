@@ -19,8 +19,8 @@ import { sanitizeRatingEmoji } from "@/lib/constants/reviewEmojis";
 import { buildUserBookShelfPatch } from "../../../../../packages/utils/shelfStatus";
 import { validatePageProgress } from "../../../../../packages/utils/pageProgress";
 import {
-  calculateAudiobookProgress,
-  nextListeningProgressAfterSession,
+  buildListeningSessionProgressPatch,
+  progressAfterListeningSession,
   resolveAudiobookDurationSeconds,
   validateListeningProgress,
   validateListeningSession,
@@ -65,6 +65,10 @@ export type BookActionState = {
   bookCoverUrl?: string | null;
   rating?: number | null;
   reviewBody?: string | null;
+  /** Authoritative audiobook progress returned after a listening session. */
+  currentListeningSeconds?: number;
+  totalListeningSeconds?: number;
+  progressPercent?: number;
 };
 
 type UserBookRow = {
@@ -73,6 +77,7 @@ type UserBookRow = {
   started_at?: string | null;
   finished_at?: string | null;
   progress_pages?: number;
+  progress_percent?: number;
   is_favorite?: boolean;
   read_count?: number;
   completion_tags?: string[] | null;
@@ -606,9 +611,11 @@ export async function logListeningSession(
   if (!validated.ok) return { error: validated.error };
 
   const currentSeconds = Number(userBook.listening_progress_seconds) || 0;
-  const nextCurrent = nextListeningProgressAfterSession(currentSeconds, validated.endSeconds);
-  const nextPercent =
-    totalSeconds > 0 ? calculateAudiobookProgress(nextCurrent, totalSeconds) : 0;
+  const nextProgress = progressAfterListeningSession({
+    currentSeconds,
+    totalSeconds,
+    sessionEndSeconds: validated.endSeconds,
+  });
   const now = new Date().toISOString();
 
   const sessionResult = await createReadingSessionWithClient(supabase, {
@@ -616,7 +623,7 @@ export async function logListeningSession(
     userBookId: userBook.id,
     pageStart: 0,
     pageEnd: 0,
-    percentComplete: nextPercent,
+    percentComplete: nextProgress.progressPercent,
     activityKind: "progress",
     readNumber: Number(userBook.read_count) || 1,
     sessionFormat: "audiobook",
@@ -636,19 +643,24 @@ export async function logListeningSession(
     });
   }
 
-  if (nextCurrent !== currentSeconds) {
+  // PATCH current/percent only — never send audiobook_duration_seconds (null or otherwise).
+  const previousPercent = Number(userBook.progress_percent) || 0;
+  if (
+    nextProgress.currentSeconds !== currentSeconds ||
+    nextProgress.progressPercent !== previousPercent
+  ) {
     const { error } = await supabase
       .from("user_books")
-      .update({
-        tracking_format: "audiobook",
-        listening_progress_seconds: nextCurrent,
-        progress_percent: nextPercent,
-        started_at: userBook.started_at ?? now,
-        updated_at: now,
-        ...(userBook.shelf_status !== "currently_reading" && !userBook.finished_at
-          ? { shelf_status: "currently_reading" }
-          : {}),
-      })
+      .update(
+        buildListeningSessionProgressPatch({
+          currentSeconds: nextProgress.currentSeconds,
+          progressPercent: nextProgress.progressPercent,
+          startedAt: userBook.started_at,
+          now,
+          shelfStatus: userBook.shelf_status,
+          finishedAt: userBook.finished_at,
+        })
+      )
       .eq("id", userBook.id);
     if (error) return { error: error.message };
   }
@@ -660,17 +672,22 @@ export async function logListeningSession(
     entity_id: userBook.id,
     metadata_json: activityMetadata(book.title, {
       ...bookActivityContext(book),
-      progress_percent: nextPercent,
+      progress_percent: nextProgress.progressPercent,
       format: "audiobook",
       listening_seconds: validated.durationSeconds,
       listening_start_seconds: validated.startSeconds,
       listening_end_seconds: validated.endSeconds,
-      current_listening_seconds: nextCurrent,
-      total_listening_seconds: totalSeconds,
+      current_listening_seconds: nextProgress.currentSeconds,
+      total_listening_seconds: nextProgress.totalSeconds,
     }),
   });
 
-  return { success: "Listening session saved" };
+  return {
+    success: "Listening session saved",
+    currentListeningSeconds: nextProgress.currentSeconds,
+    totalListeningSeconds: nextProgress.totalSeconds,
+    progressPercent: nextProgress.progressPercent,
+  };
 }
 
 export async function markBookFinished(
