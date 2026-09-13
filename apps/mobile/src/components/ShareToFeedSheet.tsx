@@ -4,21 +4,16 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BookCover } from "./BookCover";
 import { Button } from "./Button";
 import { createPost } from "../services/posts";
-import type { FeedSourceType } from "../../../../packages/utils/feedShare";
+import {
+  withOptionalCaption,
+  type FeedSharePreview,
+} from "../../../../packages/utils/feedSharePreview";
 
-export type ShareToFeedPreview = {
-  sourceType: FeedSourceType;
-  sourceId: string;
-  bookId?: string | null;
-  bookTitle?: string | null;
-  bookCoverUrl?: string | null;
-  rating?: number | null;
-  body: string;
-};
+export type { FeedSharePreview as ShareToFeedPreview };
 
 type Props = {
   visible: boolean;
-  preview: ShareToFeedPreview | null;
+  preview: FeedSharePreview | null;
   onClose: () => void;
   onShared?: () => void;
 };
@@ -31,16 +26,21 @@ export function ShareToFeedSheet({ visible, preview, onClose, onShared }: Props)
   async function share() {
     if (!preview) return;
     setSaving(true);
-    const captionText = caption.trim();
     const result = await createPost({
-      body: captionText ? `${captionText}\n\n${preview.body}` : preview.body,
+      body: withOptionalCaption(preview.body, caption),
       bookId: preview.bookId,
       sourceType: preview.sourceType,
       sourceId: preview.sourceId,
     });
     setSaving(false);
     if (result.error) {
-      Alert.alert("Couldn't share", result.error);
+      // Keep caption/draft. Distinguish technical outage vs guidelines.
+      Alert.alert(
+        result.retryable ? "Content review unavailable" : "Couldn't share",
+        result.retryable
+          ? `${result.error}\n\nYour draft is still here.`
+          : result.error
+      );
       return;
     }
     setCaption("");
@@ -81,6 +81,7 @@ export function ShareToFeedSheet({ visible, preview, onClose, onShared }: Props)
               value={caption}
               onChangeText={setCaption}
               placeholder="Add a note for your feed…"
+              placeholderTextColor="#8A7A96"
               multiline
               className="min-h-[88px] rounded-xl border border-brand-border bg-surface px-3 py-3 text-base text-ink"
             />

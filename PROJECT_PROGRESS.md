@@ -1500,6 +1500,40 @@ Web + iOS (no Android). Icon picker was already shipped in PR #34 — not rebuil
 
 ---
 
+## Completion / Notifications / Streaks / Share sprint ✅
+
+Branch: `feature/completion-notifications-streaks-share` @ `66f5916`. Web + iOS. Android out of scope. No push/PR/deploy in this pass.
+
+| # | Item | Status | Rules / notes |
+|---|------|--------|----------------|
+| 1 | Book Completion Dark Mode | ✅ | Same layout/animation. Light unchanged (`#642F37` / gold / white). Dark: deep plum/burgundy/charcoal-purple, high-contrast text, brighter `#FFD27A` sparkles, readable Celebrate CTA. Web CSS + iOS `CompletionCelebration`. |
+| 2 | Standard Notifications whitelist | ✅ | Source stop: RPC + client allowlist. Message, follow, post like/comment/reply, post_published (opt-in), clubs, challenges. Mentions + comment reactions no-op on web **and** iOS. Review/shelf/start/finish/progress/rating never create bell rows. Feed activity may remain. |
+| 3 | Profile Post Notifications | ✅ | Followed profiles: Turn On/Off. `post_notification_preferences` + RLS. Genuine Feed posts only. **Unfollow cleans subscription** (DB trigger + client). Review publish alone does not notify; Share to Feed does. |
+| 4 | Reading Streaks | ✅ | `session` / `progress` with pages or listening on `session_date` only. Not shelf, finish-alone, import, notes, ratings, format, share. |
+| 5 | Remember Me (secure) | ✅ | Email when checked; session in localStorage / iOS Keychain. Unchecked: clear email on logout. Never password. Explicit logout ends session. |
+| 6 | Reviews — Share to Feed | ✅ | Public new publish → prompt → preview → Share/Skip. No auto-post. Private: no prompt. Later private deletes linked posts. |
+| 7 | Notes — Share to Feed | ✅ | Per-note preview + caption. Quote vs note. Audiobook timestamps HH:MM via `formatNoteLocation`. |
+| 8 | Content Review error | ✅ | Root cause: OpenAI 429/quota on `moderate-ugc`. Client: ALLOW/WARN/BLOCK/SERVICE_UNAVAILABLE/ERROR; share outage copy; draft kept; bounded retry; no silent bypass; policy vs technical copy. |
+
+### Migration
+
+- `supabase/migrations/20260913150000_completion_notifications_streaks_share.sql` — unfollow cleanup; `posts.source_id` text; challenge source types; activity notify no-op reaffirm.
+
+### Sharing / streak cross-rules
+
+- Shared review/note Feed posts may trigger Post Notifications; review publish alone must not.
+- Sharing never counts toward streak.
+
+### Tests / verification
+
+- Web `tsc --noEmit`: pass
+- iOS `tsc --noEmit`: pass
+- Web vitest (streak/notif/share/remember/moderation): 7 files, 27 tests pass
+- iOS vitest (same + thirteenth sprint): 5 files, 21 tests pass
+- Migration not applied/pushed — included on branch for later prod apply
+
+---
+
 ## Next up (recommended)
 
 | Priority | Item | Notes |

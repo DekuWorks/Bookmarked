@@ -42,8 +42,15 @@ export const MODERATION_BLOCK_MESSAGE =
 export const MODERATION_UNAVAILABLE_MESSAGE =
   "Content review is temporarily unavailable. Please try again.";
 
+/** Share-to-Feed / note / review publish: outage ≠ guidelines violation; draft kept. */
+export const MODERATION_SHARE_UNAVAILABLE_MESSAGE =
+  "Content review is temporarily unavailable. Your draft is still here — please try again in a moment.";
+
 export const MODERATION_CLUB_UNAVAILABLE_MESSAGE =
   "Content review is temporarily unavailable. Your club details have been saved here. Please try again in a moment.";
+
+/** Max automatic client retries for transient provider outages (bounded). */
+export const MODERATION_CLIENT_RETRY_ATTEMPTS = 2;
 
 export const MODERATION_OUTCOMES = [
   "ALLOW",

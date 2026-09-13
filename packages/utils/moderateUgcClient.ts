@@ -5,7 +5,9 @@ import {
   isServiceUnavailable,
   MODERATION_BLOCK_MESSAGE,
   MODERATION_CLUB_UNAVAILABLE_MESSAGE,
+  MODERATION_CLIENT_RETRY_ATTEMPTS,
   MODERATION_CLIENT_TIMEOUT_MS,
+  MODERATION_SHARE_UNAVAILABLE_MESSAGE,
   MODERATION_UNAVAILABLE_MESSAGE,
   moderationOutcome,
   unavailableResult,
@@ -58,6 +60,8 @@ export function parseModerationResponse(body: unknown): ModerateUgcParsed {
     userMessage: typeof row.userMessage === "string" ? row.userMessage : null,
     moderationVersion: typeof row.moderationVersion === "string" ? row.moderationVersion : "",
     unavailable: Boolean(row.unavailable),
+    unavailableReason:
+      typeof row.unavailableReason === "string" ? row.unavailableReason : undefined,
   };
 
   if (!row.status && (row.error || row.userMessage)) {
@@ -94,13 +98,16 @@ export function parseModerationResponse(body: unknown): ModerateUgcParsed {
 
 export function gateFromModeration(
   parsed: ModerateUgcParsed,
-  options?: { clubCreate?: boolean }
+  options?: { clubCreate?: boolean; feedShare?: boolean }
 ): { error?: string; retryable?: boolean; outcome?: ModerationOutcome; result?: ModerationResult } {
   if (isServiceUnavailable(parsed) || parsed.outcome === "ERROR" || parsed.retryable) {
+    const technical = options?.clubCreate
+      ? MODERATION_CLUB_UNAVAILABLE_MESSAGE
+      : options?.feedShare
+        ? MODERATION_SHARE_UNAVAILABLE_MESSAGE
+        : parsed.error ?? parsed.userMessage ?? MODERATION_UNAVAILABLE_MESSAGE;
     return {
-      error: options?.clubCreate
-        ? MODERATION_CLUB_UNAVAILABLE_MESSAGE
-        : parsed.error ?? parsed.userMessage ?? MODERATION_UNAVAILABLE_MESSAGE,
+      error: technical,
       retryable: true,
       outcome: parsed.outcome === "ERROR" ? "ERROR" : "SERVICE_UNAVAILABLE",
     };
@@ -134,8 +141,26 @@ export async function fetchWithTimeout(
   }
 }
 
+/** Bounded retries for transient outages only — never bypass moderation. */
+export async function withModerationRetries<T extends { retryable?: boolean; error?: string }>(
+  run: () => Promise<T>,
+  attempts: number = MODERATION_CLIENT_RETRY_ATTEMPTS
+): Promise<T> {
+  let last = await run();
+  for (let i = 1; i < attempts; i += 1) {
+    if (!last.retryable || !last.error) return last;
+    await new Promise((resolve) => setTimeout(resolve, 400 * i));
+    last = await run();
+  }
+  return last;
+}
+
 export function clubCreateUnavailableMessage(): string {
   return MODERATION_CLUB_UNAVAILABLE_MESSAGE;
+}
+
+export function feedShareUnavailableMessage(): string {
+  return MODERATION_SHARE_UNAVAILABLE_MESSAGE;
 }
 
 export function isModerationContentTypeSafe(value: unknown): value is ModerationContentType {

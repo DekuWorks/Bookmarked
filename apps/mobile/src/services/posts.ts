@@ -303,7 +303,7 @@ async function notifyMentions(
 
 export async function createPost(
   input: CreatePostInput
-): Promise<{ post?: PostWithAuthor; error?: string }> {
+): Promise<{ post?: PostWithAuthor; error?: string; retryable?: boolean }> {
   const viewerId = await getViewerId();
   if (!viewerId) return { error: "You must be signed in." };
 
@@ -312,8 +312,12 @@ export async function createPost(
   if (!body && !imageUrl) return { error: "Post cannot be empty." };
 
   if (body) {
-    const gate = await requireModeration({ text: body, contentType: "FEED_POST" });
-    if (gate.error) return { error: gate.error };
+    const gate = await requireModeration({
+      text: body,
+      contentType: "FEED_POST",
+      feedShare: Boolean(input.sourceType),
+    });
+    if (gate.error) return { error: gate.error, retryable: gate.retryable };
   }
 
   const { data, error } = await supabase

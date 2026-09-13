@@ -178,7 +178,8 @@ export async function createFollowNotification(input: {
   });
 }
 
-export async function createMentionNotification(input: {
+/** Mentions stay on Feed activity — not standard bell notifications. */
+export async function createMentionNotification(_input: {
   recipientId: string;
   actorId: string;
   actorDisplayName: string;
@@ -187,19 +188,7 @@ export async function createMentionNotification(input: {
   dedupKey: string;
   postId?: string;
 }): Promise<void> {
-  await createNotification({
-    recipientId: input.recipientId,
-    type: "feed",
-    title: `${input.actorDisplayName} mentioned you`,
-    body: input.preview.slice(0, 160),
-    actorId: input.actorId,
-    linkUrl: input.linkUrl,
-    metadata: {
-      notification_kind: "mention",
-      dedup_key: input.dedupKey,
-      ...(input.postId ? { post_id: input.postId } : {}),
-    },
-  });
+  return;
 }
 
 export async function createPostLikeNotification(input: {
@@ -247,27 +236,15 @@ export async function createPostCommentNotification(input: {
   });
 }
 
-export async function createPostCommentReactionNotification(input: {
+/** Comment reactions are not standard bell notifications. */
+export async function createPostCommentReactionNotification(_input: {
   recipientId: string;
   actorId: string;
   actorDisplayName: string;
   postId: string;
   commentId: string;
 }): Promise<void> {
-  await createNotification({
-    recipientId: input.recipientId,
-    type: "feed",
-    title: `${input.actorDisplayName} reacted to your comment`,
-    body: "Tap to view the comment.",
-    actorId: input.actorId,
-    linkUrl: postFeedPath(input.postId),
-    metadata: {
-      post_id: input.postId,
-      comment_id: input.commentId,
-      notification_kind: "post_comment_reaction",
-      dedup_key: `post_comment_reaction:${input.commentId}:${input.actorId}`,
-    },
-  });
+  return;
 }
 
 export async function createPostCommentReplyNotification(input: {

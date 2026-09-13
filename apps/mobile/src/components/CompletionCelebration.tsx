@@ -21,12 +21,13 @@ export function CompletionCelebration({ visible, bookTitle, onClose, challengeUp
     return () => sub.remove();
   }, []);
 
-  const overlay = isDark ? colors.background : "#642F37";
-  const kicker = isDark ? colors.primary : "#F7C767";
-  const title = isDark ? colors.ink : "#FFFFFF";
-  const body = isDark ? colors.inkMuted : "rgba(255,255,255,0.85)";
-  const buttonBg = isDark ? colors.primary : "#FFFFFF";
-  const buttonText = isDark ? colors.background : "#642F37";
+  // Light Mode stays burgundy/gold/white. Dark Mode: deep plum / charcoal-purple / brighter sparkles.
+  const overlay = isDark ? "#241018" : "#642F37";
+  const kicker = isDark ? "#FFD27A" : "#F7C767";
+  const title = isDark ? "#F8F1F4" : "#FFFFFF";
+  const body = isDark ? "#E8DCE4" : "rgba(255,255,255,0.85)";
+  const buttonBg = isDark ? "#F0D4DA" : "#FFFFFF";
+  const buttonText = isDark ? "#1A0F18" : "#642F37";
 
   return (
     <Modal
@@ -65,7 +66,7 @@ export function CompletionCelebration({ visible, bookTitle, onClose, challengeUp
           ) : null}
           <View className="mt-7 rounded-full px-5 py-3" style={{ backgroundColor: buttonBg }}>
             <Text className="font-bold" style={{ color: buttonText }}>
-              Tap anywhere to celebrate
+              Celebrate
             </Text>
           </View>
         </View>
