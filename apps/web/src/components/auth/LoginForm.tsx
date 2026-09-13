@@ -4,6 +4,7 @@ import { useActionState, useEffect, useState } from "react";
 import { login, type AuthActionState } from "@/lib/auth/actions";
 import { getRememberedEmail, isRememberMeEnabled } from "@/lib/auth/rememberMe";
 import { staticRedirect } from "@/lib/navigation/staticRedirect";
+import { PasswordField } from "@/components/auth/PasswordField";
 import { RememberMeField } from "@/components/auth/RememberMeField";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -42,13 +43,7 @@ export function LoginForm({ redirect }: Props) {
         required
         defaultValue={rememberedEmail}
       />
-      <Input
-        label="Password"
-        name="password"
-        type="password"
-        autoComplete="current-password"
-        required
-      />
+      <PasswordField name="password" autoComplete="current-password" required />
       <RememberMeField defaultChecked={rememberDefault} />
       {state.error ? (
         <p className="mb-4 text-sm text-rust" role="alert">

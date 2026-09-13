@@ -578,12 +578,12 @@ Tracking against the Free/Plus/Reading DNA master spec (Phases 1–42). Distinct
 
 | # | Item | Status | Notes |
 |---|------|--------|-------|
-| 1 | Login Remember Me | ✅ | Web `rememberMe` localStorage vs sessionStorage. iOS preference + SecureStore/keychain tokens (not password). Logout clears. |
+| 1 | Login Remember Me | ✅ | Audited 2026-09-13: web `rememberMe` localStorage vs sessionStorage + email key; iOS preference + SecureStore/keychain tokens (not password). Logout clears session always; email cleared when Remember Me off. Form order Email → Password → Remember Me → Log In. |
 | 2 | Quick Action alignment | ✅ | Icon then text, shared size/spacing. Custom purple SVG icons. 3 cards only. |
 | 3 | Title Case | ✅ skipped-already-done | Overview copy in `overviewCopy.ts`. User-generated text unchanged. |
 | 4 | Bookmark placement | ✅ | Left of cover/spine on web + iOS `BookCover` / `BookSpine`. |
 | 5 | Favorites View All | ✅ | Favorites-only listing. Origin `home_overview`. |
-| 6 | Overview View Shelf back | ✅ | `origin=home_overview` vs Library. |
+| 6 | Overview View Shelf back | ✅ | Single top origin-aware back (`origin=home_overview` vs Library). Removed redundant in-body “Back to Overview” on mobile Reading/Finished shelves. |
 | 7 | Trail session notes + list/grid | ✅ | Separate session-notes view. List/Grid toggle stays on Trail. |
 | 8 | Home Notes Recent Notes | ✅ | 5 recent books × 1 latest note. Not the book-title filter. |
 | 9 | Reviews filters | ✅ | All / Star Rating Only / Written Review Only / **Private Reviews** / Spoiler Reviews. Fixed-height chips so tabs do not resize. |
@@ -1570,6 +1570,27 @@ Branch: `feature/feed-sync-mood-dropdown-quote-vault`. Web + iPhone + iPad. Andr
 
 - `supabase/migrations/20260913200000_feed_moods_quote_vault.sql`
 - Applied to linked prod (`xtdfeorhdlpnbxycpone`) on 13 Sep 2026 (`db push --yes --linked`). Adds `posts.quote_graphic_id`, `reading_sessions.moods`, and owner-only `quote_graphics` vault. No reset.
+
+---
+
+## Twelfth Sprint — remaining polish repairs ✅
+
+Branch: `cursor/twelfth-sprint-remaining-1bf6`. Web + native iPhone/iPad. Android out of scope. No merge/deploy in this pass.
+
+| # | Item | Status | Notes |
+|---|------|--------|-------|
+| 1 | Log In – Remember Me | ✅ audited | Already met spec on web + iOS after PR #45 / prior Remember Me work. Email retained when ON; session via Supabase refresh + localStorage (web) / SecureStore (iOS). Never stores password. Logout always ends session; email cleared when Remember Me was OFF. |
+| 2 | Log In – Show/Hide Password | ✅ | `PasswordField` on web + iOS. Eye inside field, hidden by default, a11y “Show password” / “Hide password”. Bookmarked icon system (SVG / Ionicons). Form order Email → Password [eye] → Remember Me → Log In. |
+| 3 | Trail / Reading Calendar sessions | ✅ | **Root cause (E):** mobile Book Page created `reading_sessions` correctly, but Home Tabs stayed mounted with stale Trail state and Calendar `useEffect` deps; Progress pull-to-refresh never reloaded the calendar. **Fix:** React Query keys for Trail + Calendar, invalidate on progress save + Home `useFocusEffect`, Progress refresh invalidates calendar. Canonical gate `shouldCreateProgressReadingSession` skips no-op (100→100) and backward correction (130→120); no duplicate reconstruction. |
+| 4 | Overview → View Shelf duplicate back | ✅ | Mobile Reading/Finished had header back + in-body “Back to Overview”. Removed body link; single origin-aware `ScreenHeader` back. Favorites unchanged. Deep-link fallback Library (not `/home`). Web already single back. |
+| 5 | Notes → Filter by Books bookmark | ✅ | Removed oversized bookmark overlay only on Notes filter selectors (`NotesBookFilter` web, `NotesBookFilterSheet` iOS). Covers stay 40×56 / `w-10 h-14`. Library shelves/spines untouched. |
+
+### Tests / verification
+
+- Shared: `progressSession` no-op / correction / forward
+- Web: PasswordField order + a11y, NotesBookFilter no bookmark, progress session gate, rememberMe suite
+- iOS: PasswordField, reading-session query invalidation, shelf single back, Notes filter no `saved` badge
+- Android: skipped
 
 ---
 

@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import {
   READING_CALENDAR_COPY,
   addCalendarMonths,
   buildReadingCalendarMonth,
 } from "../../../../packages/utils/readingCalendar";
+import { readingCalendarQueryKey } from "../constants/readingSessionQueries";
 import { listSessionsForCalendar } from "../services/readingSessions";
 import { BookCover } from "./BookCover";
 import { LoadingState } from "./LoadingState";
@@ -18,29 +20,22 @@ export function ReadingCalendar({ userId }: Props) {
   const colors = useThemeColors();
   const now = new Date();
   const [cursor, setCursor] = useState({ year: now.getFullYear(), month: now.getMonth() + 1 });
-  const [sessions, setSessions] = useState<Awaited<ReturnType<typeof listSessionsForCalendar>> | null>(
-    null
-  );
 
   const startDate = `${cursor.year}-${String(cursor.month).padStart(2, "0")}-01`;
   const next = addCalendarMonths(cursor, 1);
   const endDate = `${next.year}-${String(next.month).padStart(2, "0")}-01`;
 
-  useEffect(() => {
-    let cancelled = false;
-    setSessions(null);
-    void listSessionsForCalendar(userId, startDate, endDate).then((rows) => {
-      if (!cancelled) setSessions(rows);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [userId, startDate, endDate]);
+  const sessionsQuery = useQuery({
+    queryKey: readingCalendarQueryKey(userId, startDate, endDate),
+    queryFn: () => listSessionsForCalendar(userId, startDate, endDate),
+  });
 
   const month = useMemo(
-    () => buildReadingCalendarMonth(sessions ?? [], cursor.year, cursor.month),
-    [sessions, cursor]
+    () => buildReadingCalendarMonth(sessionsQuery.data ?? [], cursor.year, cursor.month),
+    [sessionsQuery.data, cursor]
   );
+
+  const showLoading = sessionsQuery.isLoading && !sessionsQuery.data;
 
   return (
     <View className="gap-3">
@@ -77,7 +72,7 @@ export function ReadingCalendar({ userId }: Props) {
           </Text>
         </Pressable>
       </View>
-      {sessions === null ? (
+      {showLoading ? (
         <LoadingState message="Loading calendar…" />
       ) : (
         <View>

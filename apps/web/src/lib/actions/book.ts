@@ -18,6 +18,7 @@ import {
 import { sanitizeRatingEmoji } from "@/lib/constants/reviewEmojis";
 import { buildUserBookShelfPatch } from "../../../../../packages/utils/shelfStatus";
 import { validatePageProgress } from "../../../../../packages/utils/pageProgress";
+import { shouldCreateProgressReadingSession } from "../../../../../packages/utils/progressSession";
 import {
   buildListeningSessionProgressPatch,
   progressAfterListeningSession,
@@ -521,11 +522,18 @@ export async function updateReadingProgress(
 
   if (error) return { error: error.message };
 
-  const shouldLogAudiobookSession =
-    isAudiobook && currentListeningSeconds > previousListening;
-  const shouldLogPageSession = !isAudiobook;
+  const shouldLogAudiobookSession = shouldCreateProgressReadingSession({
+    format: "audiobook",
+    previousPosition: previousListening,
+    nextPosition: currentListeningSeconds,
+  }).create;
+  const shouldLogPageSession = shouldCreateProgressReadingSession({
+    format: "book",
+    previousPosition: previousPage,
+    nextPosition: finalPage,
+  }).create;
 
-  if (shouldLogPageSession || shouldLogAudiobookSession) {
+  if ((isAudiobook && shouldLogAudiobookSession) || (!isAudiobook && shouldLogPageSession)) {
     const sessionResult = await createReadingSessionWithClient(supabase, {
       userId: user.id,
       userBookId: userBook.id,

@@ -17,6 +17,7 @@ import {
   validateListeningProgress,
   validateListeningSession,
 } from "../../../../packages/utils/listeningTime";
+import { shouldCreateProgressReadingSession } from "../../../../packages/utils/progressSession";
 import type { ShelfMoveDestination } from "../../../../packages/utils/shelfMove";
 import type { ShelfStatus, UserBook } from "../types";
 import { addBookToCustomShelf } from "./customShelves";
@@ -467,34 +468,46 @@ export async function updateReadingProgress(
 
   if (error) return { error: error.message };
 
-  if (isAudiobook && userBook?.id && listeningProgressSeconds > previousListening) {
-    const session = await createReadingSession({
-      userId,
-      userBookId: userBook.id,
-      pageStart: 0,
-      pageEnd: 0,
-      percentComplete: progressPercent,
-      activityKind: "progress",
-      readNumber: Number(existing?.read_count) || 1,
-      sessionFormat: "audiobook",
-      listeningStartSeconds: previousListening,
-      listeningEndSeconds: listeningProgressSeconds,
+  if (isAudiobook && userBook?.id) {
+    const decision = shouldCreateProgressReadingSession({
+      format: "audiobook",
+      previousPosition: previousListening,
+      nextPosition: listeningProgressSeconds,
     });
-    if (session.error) return { error: session.error };
-    if (session.session?.id) {
-      void evaluateProgressForChallenges({
+    if (decision.create) {
+      const session = await createReadingSession({
         userId,
         userBookId: userBook.id,
-        qualifyingEventId: session.session.id,
-        qualifyingDate: new Date().toISOString(),
-        pagesInEvent: 0,
-        listeningSecondsInEvent: listeningProgressSeconds - previousListening,
+        pageStart: 0,
+        pageEnd: 0,
+        percentComplete: progressPercent,
+        activityKind: "progress",
+        readNumber: Number(existing?.read_count) || 1,
+        sessionFormat: "audiobook",
+        listeningStartSeconds: previousListening,
+        listeningEndSeconds: listeningProgressSeconds,
       });
+      if (session.error) return { error: session.error };
+      if (session.session?.id) {
+        void evaluateProgressForChallenges({
+          userId,
+          userBookId: userBook.id,
+          qualifyingEventId: session.session.id,
+          qualifyingDate: new Date().toISOString(),
+          pagesInEvent: 0,
+          listeningSecondsInEvent: decision.delta,
+        });
+      }
     }
   } else if (!isAudiobook && userBook?.id) {
     const previousPage = Number(existing?.progress_pages) || 0;
     const nextPage = input.progressPages ?? 0;
-    if (nextPage > previousPage) {
+    const decision = shouldCreateProgressReadingSession({
+      format: "book",
+      previousPosition: previousPage,
+      nextPosition: nextPage,
+    });
+    if (decision.create) {
       const session = await createReadingSession({
         userId,
         userBookId: userBook.id,
@@ -511,7 +524,7 @@ export async function updateReadingProgress(
           userBookId: userBook.id,
           qualifyingEventId: session.session.id,
           qualifyingDate: new Date().toISOString(),
-          pagesInEvent: nextPage - previousPage,
+          pagesInEvent: decision.delta,
           listeningSecondsInEvent: 0,
         });
       }

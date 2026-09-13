@@ -254,6 +254,8 @@ export default function BookScreen() {
     await queryClient.invalidateQueries({ queryKey: ["book-details", bookId, userId] });
     await queryClient.invalidateQueries({ queryKey: ["library"] });
     await queryClient.invalidateQueries({ queryKey: ["home-feed"] });
+    await queryClient.invalidateQueries({ queryKey: ["reading-sessions"] });
+    await queryClient.invalidateQueries({ queryKey: ["reading-calendar"] });
   }
 
   const data = details.data;

@@ -4,6 +4,7 @@ import { Pressable, Text, View } from "react-native";
 import { BookmarkedLogo } from "../components/BookmarkedLogo";
 import { Button } from "../components/Button";
 import { Input } from "../components/Input";
+import { PasswordField } from "../components/PasswordField";
 import { ScreenContainer } from "../components/ScreenContainer";
 import {
   getRememberedEmail,
@@ -77,13 +78,7 @@ export function LoginScreen() {
         value={email}
         onChangeText={setEmail}
       />
-      <Input
-        label="Password"
-        secureTextEntry
-        autoComplete="password"
-        value={password}
-        onChangeText={setPassword}
-      />
+      <PasswordField value={password} onChangeText={setPassword} />
 
       <Pressable
         onPress={() => setRememberMeChecked((current) => !current)}

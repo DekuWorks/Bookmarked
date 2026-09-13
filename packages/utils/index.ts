@@ -655,6 +655,11 @@ export {
 } from "./pageProgress";
 
 export {
+  shouldCreateProgressReadingSession,
+  type ProgressSessionDecision,
+} from "./progressSession";
+
+export {
   CURRENT_EXCEEDS_TOTAL_ERROR,
   LISTENING_TIME_ERROR,
   SESSION_END_BEFORE_START_ERROR,
