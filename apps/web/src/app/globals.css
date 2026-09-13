@@ -537,7 +537,7 @@ body {
   animation: fade-in 0.4s ease-out both;
 }
 
-/* Book complete celebration — light look is pinned; dark uses existing tokens. */
+/* Book complete celebration — light look is pinned; dark is deep plum/burgundy. */
 .completion-celebration-overlay {
   background: color-mix(in srgb, #642f37 90%, transparent);
   color: #ffffff;
@@ -551,16 +551,28 @@ body {
   color: #642f37;
 }
 :root[data-theme="dark"] .completion-celebration-overlay {
-  background: color-mix(in srgb, var(--color-background) 94%, var(--color-primary));
-  color: var(--color-text);
+  /* Charcoal-purple → deep plum → burgundy; high-contrast ink. */
+  background: linear-gradient(
+    165deg,
+    #1a1326 0%,
+    #2a1520 42%,
+    #3d1a28 78%,
+    #241018 100%
+  );
+  color: #f8f1f4;
 }
 :root[data-theme="dark"] .completion-celebration-kicker,
 :root[data-theme="dark"] .completion-celebration-sparkle {
-  color: var(--color-primary);
+  color: #ffd27a;
 }
 :root[data-theme="dark"] .completion-celebration-button {
-  background: var(--color-primary);
-  color: var(--color-background);
+  background: #f0d4da;
+  color: #1a0f18;
+}
+:root[data-theme="dark"] .completion-celebration-overlay .opacity-85,
+:root[data-theme="dark"] .completion-celebration-overlay .opacity-90,
+:root[data-theme="dark"] .completion-celebration-overlay .opacity-80 {
+  color: #e8dce4;
 }
 @media (prefers-reduced-motion: reduce) {
   .completion-celebration-sparkle {

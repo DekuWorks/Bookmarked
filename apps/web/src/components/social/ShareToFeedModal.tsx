@@ -8,21 +8,16 @@ import { useToast } from "@/components/ui/Toast";
 import { createPost } from "@/lib/services/posts";
 import { Z_CLASS } from "@/lib/constants/zIndex";
 import { cn } from "@/lib/utils/cn";
-import type { FeedSourceType } from "@bookmarked/utils/feedShare";
+import {
+  withOptionalCaption,
+  type FeedSharePreview,
+} from "@bookmarked/utils/feedSharePreview";
 
-export type ShareToFeedPreview = {
-  sourceType: FeedSourceType;
-  sourceId: string;
-  bookId?: string | null;
-  bookTitle?: string | null;
-  bookCoverUrl?: string | null;
-  rating?: number | null;
-  body: string;
-};
+export type { FeedSharePreview as ShareToFeedPreview };
 
 type Props = {
   open: boolean;
-  preview: ShareToFeedPreview | null;
+  preview: FeedSharePreview | null;
   onClose: () => void;
   onShared?: () => void;
 };
@@ -31,26 +26,33 @@ export function ShareToFeedModal({ open, preview, onClose, onShared }: Props) {
   const toast = useToast();
   const [caption, setCaption] = useState("");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [retryable, setRetryable] = useState(false);
 
   if (!open || !preview) return null;
 
   async function share() {
     if (!preview) return;
     setSaving(true);
-    const captionText = caption.trim();
+    setError(null);
+    setRetryable(false);
     const result = await createPost({
-      body: captionText ? `${captionText}\n\n${preview.body}` : preview.body,
+      body: withOptionalCaption(preview.body, caption),
       bookId: preview.bookId,
       sourceType: preview.sourceType,
       sourceId: preview.sourceId,
     });
     setSaving(false);
     if (result.error) {
+      // Keep caption/draft. Outage ≠ guidelines violation.
+      setError(result.error);
+      setRetryable(Boolean(result.retryable));
       toast.error(result.error);
       return;
     }
     toast.success("Shared to your feed.");
     setCaption("");
+    setError(null);
     onShared?.();
     onClose();
   }
@@ -95,9 +97,15 @@ export function ShareToFeedModal({ open, preview, onClose, onShared }: Props) {
           onChange={(event) => setCaption(event.target.value)}
           placeholder="Add a note for your feed…"
         />
+        {error ? (
+          <p className="text-sm text-text-muted" role="alert">
+            {error}
+            {retryable ? " You can try again without losing your draft." : ""}
+          </p>
+        ) : null}
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="primary" loading={saving} onClick={() => void share()}>
-            Share to Feed
+            {retryable ? "Try again" : "Share to Feed"}
           </Button>
           <Button type="button" variant="ghost" onClick={onClose}>
             Skip

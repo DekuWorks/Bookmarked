@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   MODERATION_BLOCK_MESSAGE,
   MODERATION_CLUB_UNAVAILABLE_MESSAGE,
+  MODERATION_SHARE_UNAVAILABLE_MESSAGE,
   MODERATION_UNAVAILABLE_MESSAGE,
 } from "./contentModeration";
 import { gateFromModeration, parseModerationResponse } from "./moderateUgcClient";
@@ -64,6 +65,27 @@ describe("gateFromModeration", () => {
     expect(gate.retryable).toBe(true);
     expect(gate.outcome).toBe("SERVICE_UNAVAILABLE");
     expect(gate.error).toBe(MODERATION_CLUB_UNAVAILABLE_MESSAGE);
+    expect(gate.error).not.toContain("Community Guidelines");
+  });
+
+  it("uses feed-share outage copy and keeps guidelines separate", () => {
+    const gate = gateFromModeration(
+      {
+        status: "block",
+        outcome: "SERVICE_UNAVAILABLE",
+        categories: [],
+        spans: [],
+        reasonCode: "PROVIDER_UNAVAILABLE",
+        userMessage: MODERATION_UNAVAILABLE_MESSAGE,
+        moderationVersion: "2026.09.1",
+        unavailable: true,
+        retryable: true,
+      },
+      { feedShare: true }
+    );
+    expect(gate.retryable).toBe(true);
+    expect(gate.outcome).toBe("SERVICE_UNAVAILABLE");
+    expect(gate.error).toBe(MODERATION_SHARE_UNAVAILABLE_MESSAGE);
     expect(gate.error).not.toContain("Community Guidelines");
   });
 

@@ -275,5 +275,13 @@ export async function unfollowUser(followingId: string): Promise<{ error?: strin
     .eq("following_id", followingId);
 
   if (error) return { error: error.message };
+
+  // Belt-and-braces with DB trigger: unfollow always drops post alerts.
+  await supabase
+    .from("post_notification_preferences")
+    .delete()
+    .eq("subscriber_id", user.id)
+    .eq("creator_id", followingId);
+
   return {};
 }

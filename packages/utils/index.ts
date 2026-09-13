@@ -8,12 +8,14 @@ export {
   MODERATION_BLOCK_MESSAGE,
   MODERATION_CATEGORIES,
   MODERATION_CLUB_UNAVAILABLE_MESSAGE,
+  MODERATION_CLIENT_RETRY_ATTEMPTS,
   MODERATION_CLIENT_TIMEOUT_MS,
   MODERATION_CONTENT_TYPES,
   MODERATION_OUTCOMES,
   MODERATION_PROVIDER_ATTEMPTS,
   MODERATION_PROVIDER_BACKOFF_MS,
   MODERATION_PROVIDER_TIMEOUT_MS,
+  MODERATION_SHARE_UNAVAILABLE_MESSAGE,
   MODERATION_STATUSES,
   MODERATION_UNAVAILABLE_MESSAGE,
   MODERATION_VERSION,
@@ -99,10 +101,12 @@ export {
 export {
   clubCreateUnavailableMessage,
   dedupeAsync,
+  feedShareUnavailableMessage,
   fetchWithTimeout,
   gateFromModeration,
   moderationRequestKey,
   parseModerationResponse,
+  withModerationRetries,
   type ModerateUgcParsed,
 } from "./moderateUgcClient";
 
@@ -882,6 +886,11 @@ export {
   type ChallengeFeedSourceType,
   type FeedSourceType,
 } from "./feedShare";
+
+export {
+  withOptionalCaption,
+  type FeedSharePreview,
+} from "./feedSharePreview";
 
 export {
   CHALLENGE_RULE_TYPES,

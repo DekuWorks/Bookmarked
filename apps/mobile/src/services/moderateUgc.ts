@@ -5,6 +5,7 @@ import {
   isModerationContentType,
   moderationRequestKey,
   parseModerationResponse,
+  withModerationRetries,
   MODERATION_CLIENT_TIMEOUT_MS,
   MODERATION_UNAVAILABLE_MESSAGE,
   type ModerationContentType,
@@ -91,6 +92,15 @@ async function callModerateUgc(input: ModerateUgcInput): Promise<ModerateUgcResp
     );
 
     const body = await response.json().catch(() => null);
+    if (!body) {
+      return parseModerationResponse({
+        status: "block",
+        outcome: "SERVICE_UNAVAILABLE",
+        unavailable: true,
+        reasonCode: "PROVIDER_UNAVAILABLE",
+        userMessage: MODERATION_UNAVAILABLE_MESSAGE,
+      });
+    }
     return parseModerationResponse(body);
   } catch {
     return parseModerationResponse({
@@ -109,7 +119,7 @@ export function moderateUgc(input: ModerateUgcInput): Promise<ModerateUgcRespons
 }
 
 export async function requireModeration(
-  input: ModerateUgcInput & { clubCreate?: boolean }
+  input: ModerateUgcInput & { clubCreate?: boolean; feedShare?: boolean }
 ): Promise<{
   error?: string;
   retryable?: boolean;
@@ -118,6 +128,17 @@ export async function requireModeration(
 }> {
   const trimmed = input.text.trim();
   if (!trimmed && !input.title?.trim()) return {};
-  const result = await moderateUgc({ ...input, persistDecision: true });
-  return gateFromModeration(result, { clubCreate: input.clubCreate });
+
+  const run = async () => {
+    const result = await moderateUgc({ ...input, persistDecision: true });
+    return gateFromModeration(result, {
+      clubCreate: input.clubCreate,
+      feedShare: input.feedShare,
+    });
+  };
+
+  if (input.feedShare || input.clubCreate) {
+    return withModerationRetries(run);
+  }
+  return run();
 }
