@@ -1500,9 +1500,9 @@ Web + iOS (no Android). Icon picker was already shipped in PR #34 — not rebuil
 
 ---
 
-## Completion / Notifications / Streaks / Share sprint 🔄
+## Completion / Notifications / Streaks / Share sprint ✅
 
-Branch: `feature/completion-notifications-streaks-share`. Web + iOS. Android out of scope. No push/PR/deploy in this pass.
+Branch: `feature/completion-notifications-streaks-share` @ `66f5916`. Web + iOS. Android out of scope. No push/PR/deploy in this pass.
 
 | # | Item | Status | Rules / notes |
 |---|------|--------|----------------|
@@ -1523,6 +1523,14 @@ Branch: `feature/completion-notifications-streaks-share`. Web + iOS. Android out
 
 - Shared review/note Feed posts may trigger Post Notifications; review publish alone must not.
 - Sharing never counts toward streak.
+
+### Tests / verification
+
+- Web `tsc --noEmit`: pass
+- iOS `tsc --noEmit`: pass
+- Web vitest (streak/notif/share/remember/moderation): 7 files, 27 tests pass
+- iOS vitest (same + thirteenth sprint): 5 files, 21 tests pass
+- Migration not applied/pushed — included on branch for later prod apply
 
 ---
 
