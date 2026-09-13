@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { originBackHref, originBackLink, parseNavOrigin } from "../../../../../packages/utils/navigationOrigin";
+import { useLocalSearchParams } from "expo-router";
+import { originBackHref, parseNavOrigin } from "../../../../../packages/utils/navigationOrigin";
 import { filterItemsByTitleOrAuthor } from "../../../../../packages/utils/shelfFilter";
 import { DEFAULT_SHELF_SORT, sortShelfItems, type ShelfSortMode } from "../../../../../packages/utils/shelfSort";
 import { computeShelfStatsFromItems } from "../../../../../packages/utils/shelfStats";
 import { useQueryClient } from "@tanstack/react-query";
-import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, ScrollView, Text, View } from "react-native";
 import { Button } from "../../../src/components/Button";
 import { BookSpine } from "../../../src/components/library/BookSpine";
 import { LibraryCoverGrid } from "../../../src/components/library/LibraryCoverGrid";
@@ -29,14 +29,9 @@ export default function LibraryShelfScreen() {
     origin?: string;
   }>();
   const origin = parseNavOrigin(typeof originParam === "string" ? originParam : null);
-  const back = originBackLink(origin, "mobile", {
-    href: "/library",
-    label: "← Back to Library",
-  });
   const backHref = originBackHref(origin, "mobile") ?? "/library";
   const shelfSlug = decodeURIComponent(String(shelfSlugParam ?? ""));
   const config = getShelfConfigBySlug(shelfSlug);
-  const router = useRouter();
   const userId = useAuthStore((s) => s.user?.id);
   const queryClient = useQueryClient();
   const { data: shelves, isLoading, isError } = useLibrary();
@@ -119,10 +114,6 @@ export default function LibraryShelfScreen() {
         left={<ShelfIcon id={config.status} size="small" labeled />}
       />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120, gap: 16 }}>
-        <Pressable onPress={() => router.replace(backHref as never)} className="active:opacity-70">
-          <Text className="text-sm text-primary-dark">{back.label}</Text>
-        </Pressable>
-
         <View>
           <ShelfTitleRow id={config.status} title={config.title} titleClassName="text-2xl text-puce-red" />
           <Text className="mt-1 text-sm text-ink-muted">{config.description}</Text>

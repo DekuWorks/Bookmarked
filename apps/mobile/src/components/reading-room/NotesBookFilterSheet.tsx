@@ -121,7 +121,6 @@ export function NotesBookFilterSheet({
                   url={option.coverUrl}
                   title={option.title}
                   sizeClassName="w-10 h-14"
-                  saved
                 />
                 <View className="min-w-0 flex-1">
                   <Text className="text-sm font-semibold text-ink" numberOfLines={2}>

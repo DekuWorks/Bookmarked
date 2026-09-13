@@ -131,8 +131,6 @@ export function NotesBookFilter({
                       coverUrl={option.coverUrl}
                       className="h-full w-full"
                       sizes="40px"
-                      bookmarked
-                      bookmarkBadgeSize="small"
                     />
                   </div>
                   <span className="min-w-0 flex-1">

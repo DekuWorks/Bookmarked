@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { Pressable, RefreshControl, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { parseReadingRoomTab } from "../../../../packages/utils/readingRoomTabs";
@@ -22,6 +22,10 @@ import {
   READING_ROOM_TAB_OPTIONS,
   type ReadingRoomTab,
 } from "../../src/constants/readingRoomTabs";
+import {
+  READING_CALENDAR_QUERY_KEY,
+  readingSessionsQueryKey,
+} from "../../src/constants/readingSessionQueries";
 import { useProfile } from "../../src/hooks/useProfile";
 import { getUserLibraryBooks } from "../../src/services/library";
 import { loadReadingAnalytics } from "../../src/services/analytics";
@@ -60,9 +64,6 @@ export default function HomeReadingRoom() {
     if (tab !== "notes") setNotesPickerOpen(false);
   }, [tab]);
 
-  const [sessions, setSessions] = useState<Awaited<ReturnType<typeof listUserReadingSessions>> | null>(
-    null
-  );
   const [reviews, setReviews] = useState<Awaited<ReturnType<typeof listUserReviews>> | null>(null);
   const [notesRefreshId, setNotesRefreshId] = useState(0);
 
@@ -83,11 +84,11 @@ export default function HomeReadingRoom() {
     enabled: Boolean(userId) && tab === "progress" && library.data != null,
   });
 
-  const loadSessions = useCallback(async () => {
-    if (!userId) return;
-    const rows = await listUserReadingSessions(userId);
-    setSessions(rows);
-  }, [userId]);
+  const sessionsQuery = useQuery({
+    queryKey: readingSessionsQueryKey(userId ?? ""),
+    queryFn: () => listUserReadingSessions(userId as string),
+    enabled: Boolean(userId) && (tab === "trail" || tab === "history"),
+  });
 
   const loadReviews = useCallback(async () => {
     if (!userId) return;
@@ -95,11 +96,15 @@ export default function HomeReadingRoom() {
     setReviews(rows);
   }, [userId]);
 
-  useEffect(() => {
-    if (tab === "trail" || tab === "history") {
-      void loadSessions();
-    }
-  }, [tab, loadSessions]);
+  useFocusEffect(
+    useCallback(() => {
+      if (!userId) return;
+      void queryClient.invalidateQueries({ queryKey: [READING_CALENDAR_QUERY_KEY] });
+      if (tab === "trail" || tab === "history") {
+        void queryClient.invalidateQueries({ queryKey: readingSessionsQueryKey(userId) });
+      }
+    }, [queryClient, tab, userId])
+  );
 
   useEffect(() => {
     if (tab === "reviews") {
@@ -108,6 +113,7 @@ export default function HomeReadingRoom() {
   }, [tab, loadReviews]);
 
   const books = library.data ?? [];
+  const sessions = sessionsQuery.data ?? null;
   const currentlyReading = useMemo(
     () => books.filter((b) => b.shelf_status === "currently_reading"),
     [books]
@@ -118,8 +124,15 @@ export default function HomeReadingRoom() {
   function refreshAll() {
     library.refetch();
     void refetchProfile();
-    if (tab === "progress") void analytics.refetch();
-    if (tab === "trail" || tab === "history") void loadSessions();
+    if (tab === "progress") {
+      void analytics.refetch();
+      void queryClient.invalidateQueries({ queryKey: [READING_CALENDAR_QUERY_KEY] });
+    }
+    if (tab === "trail" || tab === "history") {
+      void queryClient.invalidateQueries({
+        queryKey: readingSessionsQueryKey(userId ?? ""),
+      });
+    }
     if (tab === "reviews") void loadReviews();
     if (tab === "notes") setNotesRefreshId((id) => id + 1);
   }
