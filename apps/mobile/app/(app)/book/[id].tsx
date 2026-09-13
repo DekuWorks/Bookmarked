@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { originBackHref, parseNavOrigin } from "../../../../../packages/utils/navigationOrigin";
-import { Alert, Linking, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Alert, Linking, Modal, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { AFFILIATE_DISCLOSURE, isbnSearchUrl } from "../../../../../packages/utils/affiliateLinks";
 import { BookCoverAmbience } from "../../../src/components/BookCoverAmbience";
 import { BookCover } from "../../../src/components/BookCover";
@@ -62,6 +62,8 @@ import {
   parseListeningTime,
   resolveAudiobookDurationSeconds,
   resolveTrackingFormat,
+  validateListeningProgress,
+  validateListeningSession,
 } from "../../../../../packages/utils/listeningTime";
 import { needsMissingPageCountPrompt } from "../../../src/services/completeReadingSession";
 import {
@@ -186,6 +188,8 @@ export default function BookScreen() {
   const userId = useAuthStore((s) => s.user?.id);
   const queryClient = useQueryClient();
   const router = useRouter();
+  const { width: windowWidth } = useWindowDimensions();
+  const listeningSheetWidth = windowWidth >= 768 ? Math.min(420, windowWidth - 64) : 320;
 
   const scrollRef = useRef<ScrollView>(null);
   const reviewsY = useRef(0);
@@ -402,11 +406,21 @@ export default function BookScreen() {
   async function saveProgress() {
     if (!userId || !book) return;
     if (isAudiobook) {
+      const currentListeningTime = combineListeningTimeParts(currentHours, currentMinutes);
+      const totalListeningTime = combineListeningTimeParts(totalHours, totalMinutes);
+      const validated = validateListeningProgress({
+        current: currentListeningTime,
+        total: totalListeningTime,
+      });
+      if (!validated.ok) {
+        Alert.alert("Invalid listening time", validated.error);
+        return;
+      }
       const result = await updateReadingProgress(userId, book, {
-        progressPercent: 0,
+        progressPercent: validated.percent,
         format: "audiobook",
-        currentListeningTime: combineListeningTimeParts(currentHours, currentMinutes),
-        totalListeningTime: combineListeningTimeParts(totalHours, totalMinutes),
+        currentListeningTime,
+        totalListeningTime,
       });
       setProgressOpen(false);
       if (result.error) Alert.alert("Error", result.error);
@@ -447,9 +461,20 @@ export default function BookScreen() {
 
   async function saveListeningSession() {
     if (!userId || !book) return;
+    const startTime = combineListeningTimeParts(sessionStartHours, sessionStartMinutes);
+    const endTime = combineListeningTimeParts(sessionEndHours, sessionEndMinutes);
+    const validated = validateListeningSession({
+      start: startTime,
+      end: endTime,
+      total: totalListeningSeconds > 0 ? totalListeningSeconds : undefined,
+    });
+    if (!validated.ok) {
+      Alert.alert("Invalid listening session", validated.error);
+      return;
+    }
     const result = await logListeningSession(userId, book, {
-      startTime: combineListeningTimeParts(sessionStartHours, sessionStartMinutes),
-      endTime: combineListeningTimeParts(sessionEndHours, sessionEndMinutes),
+      startTime,
+      endTime,
       currentListeningSeconds: data?.userBook?.listening_progress_seconds,
       totalListeningSeconds,
     });
@@ -1043,7 +1068,11 @@ export default function BookScreen() {
       {/* Progress modal */}
       <Modal transparent visible={progressOpen} animationType="fade" onRequestClose={() => setProgressOpen(false)}>
         <Pressable className="flex-1 items-center justify-center bg-black/30" onPress={() => setProgressOpen(false)}>
-          <Pressable className="w-80 rounded-2xl bg-surface p-5" onPress={(event) => event.stopPropagation()}>
+          <Pressable
+            style={{ width: listeningSheetWidth }}
+            className="max-w-full rounded-2xl bg-surface p-5"
+            onPress={(event) => event.stopPropagation()}
+          >
             <Text className="mb-3 text-lg font-bold text-puce-red">Update progress</Text>
             {isAudiobook ? (
               <View className="gap-4">
@@ -1113,7 +1142,11 @@ export default function BookScreen() {
 
       <Modal transparent visible={sessionOpen} animationType="fade" onRequestClose={() => setSessionOpen(false)}>
         <Pressable className="flex-1 items-center justify-center bg-black/30" onPress={() => setSessionOpen(false)}>
-          <Pressable className="w-80 rounded-2xl bg-surface p-5" onPress={(event) => event.stopPropagation()}>
+          <Pressable
+            style={{ width: listeningSheetWidth }}
+            className="max-w-full rounded-2xl bg-surface p-5"
+            onPress={(event) => event.stopPropagation()}
+          >
             <Text className="mb-3 text-lg font-bold text-puce-red">Log listening session</Text>
             <View className="gap-4">
               <ListeningTimeInput

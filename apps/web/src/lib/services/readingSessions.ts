@@ -141,7 +141,7 @@ export async function listSessionsForCalendar(
   const supabase = createClient();
   const { data, error } = await supabase
     .from("reading_sessions")
-    .select("id, user_id, user_book_id, session_date, activity_kind, pages_read, listening_seconds, listening_start_seconds, listening_end_seconds, created_at, user_books(book_id, books(title, author, cover_url))")
+    .select("id, user_id, user_book_id, session_date, activity_kind, pages_read, session_format, listening_seconds, listening_start_seconds, listening_end_seconds, created_at, user_books(book_id, books(title, author, cover_url))")
     .eq("user_id", userId)
     .gte("session_date", startDate)
     .lt("session_date", endDate)

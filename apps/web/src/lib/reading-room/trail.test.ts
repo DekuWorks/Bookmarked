@@ -91,7 +91,7 @@ describe("sessionSummary", () => {
           listening_seconds: 2700,
         })
       )
-    ).toBe("Listened from 1:45 to 2:30 · 45 minutes");
+    ).toBe("Listened from 1:45 to 2:30 · Listened for 45 minutes");
   });
 
   it("formats page ranges and single-page sessions", () => {

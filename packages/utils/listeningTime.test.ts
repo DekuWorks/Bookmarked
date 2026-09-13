@@ -6,8 +6,10 @@ import {
   SESSION_END_EXCEEDS_TOTAL_ERROR,
   calculateAudiobookProgress,
   calculateAudiobookSessionDuration,
+  formatAudiobookActivityDetail,
   formatAudiobookProgressLabel,
   formatHistorySessionDetail,
+  formatListenedFor,
   formatListeningSessionSummary,
   formatListeningTime,
   formatListeningTimeSpoken,
@@ -30,6 +32,11 @@ describe("parseListeningTime", () => {
     });
     expect(parseListeningTime("20:30")).toMatchObject({ ok: true, seconds: 73800, display: "20:30" });
     expect(parseListeningTime("0:30")).toMatchObject({ ok: true, seconds: 1800, display: "0:30" });
+    expect(parseListeningTime("100:00")).toMatchObject({
+      ok: true,
+      seconds: 360_000,
+      display: "100:00",
+    });
   });
 
   it("normalizes unpadded minutes on parse", () => {
@@ -46,6 +53,7 @@ describe("parseListeningTime", () => {
     expect(parseListeningTime("2:60")).toEqual({ ok: false, error: LISTENING_TIME_ERROR });
     expect(parseListeningTime("2")).toEqual({ ok: false, error: LISTENING_TIME_ERROR });
     expect(parseListeningTime("")).toEqual({ ok: false, error: LISTENING_TIME_ERROR });
+    expect(parseListeningTime("-2:30")).toEqual({ ok: false, error: LISTENING_TIME_ERROR });
   });
 });
 
@@ -173,15 +181,37 @@ describe("session copy", () => {
         listening_end_seconds: 9000,
         listening_seconds: 2700,
       })
-    ).toBe("Listened from 1:45 to 2:30 · 45 minutes");
-    expect(formatAudiobookProgressLabel(9000, 73800)).toBe("2:30 of 20:30");
+    ).toBe("Listened from 1:45 to 2:30 · Listened for 45 minutes");
+    expect(formatListenedFor(2700)).toBe("Listened for 45 minutes");
+    expect(formatAudiobookProgressLabel(9000, 73800)).toBe("2:30 / 20:30");
     expect(
       formatHistorySessionDetail({
         session_format: "audiobook",
         pages_read: 0,
+        listening_start_seconds: 6300,
+        listening_end_seconds: 9000,
         listening_seconds: 2700,
       })
-    ).toBe("45 minutes");
+    ).toBe("Listened from 1:45 to 2:30 · Listened for 45 minutes");
     expect(formatHistorySessionDetail({ session_format: "book", pages_read: 12 })).toBe("12 pages");
+  });
+
+  it("formats Recent Activity audiobook details without raw seconds", () => {
+    expect(
+      formatAudiobookActivityDetail({
+        format: "audiobook",
+        listening_start_seconds: 6300,
+        listening_end_seconds: 9000,
+        listening_seconds: 2700,
+      })
+    ).toBe("Listened from 1:45 to 2:30 · Listened for 45 minutes");
+    expect(
+      formatAudiobookActivityDetail({
+        format: "audiobook",
+        current_listening_seconds: 9000,
+        total_listening_seconds: 73800,
+      })
+    ).toBe("Listened to 2:30 / 20:30");
+    expect(formatAudiobookActivityDetail({ format: "book", progress_percent: 10 })).toBeNull();
   });
 });

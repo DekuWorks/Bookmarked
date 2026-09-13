@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { formatAudiobookActivityDetail } from "@bookmarked/utils/listeningTime";
 
 export type ActivityEventType =
   | "book_added"
@@ -117,10 +118,18 @@ function formatWithSubject(
       return shelf
         ? `${subject} moved ${title} to ${shelf}`
         : `${subject} updated ${title}`;
-    case "progress_updated":
+    case "progress_updated": {
+      const audiobookDetail = formatAudiobookActivityDetail(metadata);
+      if (audiobookDetail?.startsWith("Listened")) {
+        return `${subject} · ${title} — ${audiobookDetail}`;
+      }
+      if (audiobookDetail) {
+        return `${subject} ${audiobookDetail} on ${title}`;
+      }
       return percent != null
         ? `${subject} updated progress on ${title} (${percent}%)`
         : `${subject} updated progress on ${title}`;
+    }
     case "book_finished":
     case "reading_finished": {
       const pending = metadata?.page_count_pending === true;
