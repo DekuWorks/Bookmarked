@@ -8,6 +8,8 @@ import { FeedDiscoveryCard } from "./FeedDiscoveryCard";
 import { FeedPostCard } from "./FeedPostCard";
 import { LoadingState } from "./LoadingState";
 import { useHomeFeed, type FeedTab } from "../hooks/useFeed";
+import { usePostsRealtime } from "../hooks/usePostsRealtime";
+import { useAuthStore } from "../store/authStore";
 import { useProfile } from "../hooks/useProfile";
 import { TAB_BAR_SPACE } from "../navigation/TabBarScroll";
 import { SANS_FONT } from "../constants/theme";
@@ -65,6 +67,10 @@ export function FeedTabPanel({ tab, width, onScroll, highlightedPostId, restoreS
   const listRef = useRef<FlatList<FeedListRow>>(null);
   const scrollOffsetRef = useRef(0);
   const { data: feed, isLoading, isError, error, refetch, isRefetching } = useHomeFeed(tab);
+  const userId = useAuthStore((s) => s.user?.id);
+  usePostsRealtime(userId, true, () => {
+    void refetch();
+  });
 
   const rows = useMemo<FeedListRow[]>(() => {
     const items = feed ?? [];

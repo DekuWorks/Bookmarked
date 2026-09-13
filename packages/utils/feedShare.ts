@@ -1,6 +1,7 @@
 export const FEED_SOURCE_TYPES = [
   "review",
   "note",
+  "quote_graphic",
   "challenge_complete",
   "challenge_goal",
   "challenge_badge",

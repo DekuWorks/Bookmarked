@@ -5,7 +5,8 @@ import { updateReadingSession } from "@/lib/services/readingSessions";
 import { Button } from "@/components/ui/Button";
 import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 import { useToast } from "@/components/ui/Toast";
-import { SessionMoodPicker, SessionMoodChip } from "@/components/books/SessionMoodPicker";
+import { SessionMoodPicker, SessionMoodChips } from "@/components/books/SessionMoodPicker";
+import { sessionMoodsFromRow } from "@bookmarked/utils/sessionMoods";
 import type { ReadingSession } from "@/types";
 import { formatListeningSessionSummary } from "@bookmarked/utils/listeningTime";
 
@@ -62,12 +63,12 @@ function SessionNoteEditor({ session, onSaved }: SessionNoteEditorProps) {
   const toast = useToast();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(session.note ?? "");
-  const [mood, setMood] = useState(session.mood ?? null);
+  const [moods, setMoods] = useState(sessionMoodsFromRow(session));
   const [saving, setSaving] = useState(false);
 
   async function handleSave() {
     setSaving(true);
-    const result = await updateReadingSession(session.id, { note: draft, mood });
+    const result = await updateReadingSession(session.id, { note: draft, moods });
     setSaving(false);
 
     if (result.error) {
@@ -80,9 +81,9 @@ function SessionNoteEditor({ session, onSaved }: SessionNoteEditorProps) {
     toast.success("Trail entry saved");
   }
 
-  async function handleMoodChange(nextMood: string | null) {
-    setMood(nextMood);
-    const result = await updateReadingSession(session.id, { mood: nextMood });
+  async function handleMoodChange(nextMoods: string[]) {
+    setMoods(nextMoods);
+    const result = await updateReadingSession(session.id, { moods: nextMoods });
     if (result.error) {
       toast.error(result.error);
       return;
@@ -90,10 +91,12 @@ function SessionNoteEditor({ session, onSaved }: SessionNoteEditorProps) {
     if (result.session) onSaved(result.session);
   }
 
-  if (!editing && !session.note && !session.mood) {
+  const savedMoods = sessionMoodsFromRow(session);
+
+  if (!editing && !session.note && savedMoods.length === 0) {
     return (
       <div className="mt-2 space-y-2">
-        <SessionMoodPicker value={mood} onChange={(value) => void handleMoodChange(value)} />
+        <SessionMoodPicker values={moods} onChange={(value) => void handleMoodChange(value)} />
         <button
           type="button"
           onClick={() => setEditing(true)}
@@ -108,16 +111,16 @@ function SessionNoteEditor({ session, onSaved }: SessionNoteEditorProps) {
   if (!editing) {
     return (
       <div className="mt-1 space-y-2">
-        {session.mood ? <SessionMoodChip mood={session.mood} /> : null}
+        <SessionMoodChips moods={savedMoods} />
         {session.note ? (
           <p className="text-sm italic text-text-muted">&ldquo;{session.note}&rdquo;</p>
         ) : null}
-        <SessionMoodPicker value={mood} onChange={(value) => void handleMoodChange(value)} />
+        <SessionMoodPicker values={moods} onChange={(value) => void handleMoodChange(value)} />
         <button
           type="button"
           onClick={() => {
             setDraft(session.note ?? "");
-            setMood(session.mood ?? null);
+            setMoods(sessionMoodsFromRow(session));
             setEditing(true);
           }}
           className="text-xs font-medium text-primary hover:underline"
@@ -130,7 +133,7 @@ function SessionNoteEditor({ session, onSaved }: SessionNoteEditorProps) {
 
   return (
     <div className="mt-2 space-y-2">
-      <SessionMoodPicker value={mood} onChange={setMood} disabled={saving} />
+      <SessionMoodPicker values={moods} onChange={setMoods} disabled={saving} />
       <textarea
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
@@ -149,7 +152,7 @@ function SessionNoteEditor({ session, onSaved }: SessionNoteEditorProps) {
           variant="ghost"
           onClick={() => {
             setDraft(session.note ?? "");
-            setMood(session.mood ?? null);
+            setMoods(sessionMoodsFromRow(session));
             setEditing(false);
           }}
         >

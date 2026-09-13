@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { BookCover } from "@/components/books/BookCover";
-import { authorPagePath } from "@/lib/routes/author";
 import { bookDetailsPath, type BookPathOrigin } from "@/lib/routes/book";
 import { cn } from "@/lib/utils/cn";
 
@@ -17,6 +16,7 @@ type Props = {
   /** Compact for repost previews; default for feed posts. */
   variant?: "default" | "compact";
   originExtras?: BookPathOrigin;
+  interactive?: boolean;
 };
 
 export function FeedBookAttachment({
@@ -24,22 +24,28 @@ export function FeedBookAttachment({
   className,
   variant = "default",
   originExtras,
+  interactive = true,
 }: Props) {
   const compact = variant === "compact";
   const coverClass = compact ? "h-20 w-14" : "h-28 w-[4.5rem]";
 
+  const href = bookDetailsPath(book.id, originExtras);
+  const label = book.author ? `${book.title} by ${book.author}` : book.title;
+  const Wrapper = interactive ? Link : "div";
+  const wrapperProps = interactive
+    ? { href, "aria-label": label }
+    : { role: "group", "aria-label": label };
+
   return (
-    <div
+    <Wrapper
+      {...(wrapperProps as { href: string; "aria-label": string })}
       className={cn(
-        "overflow-visible rounded-xl border border-primary/30 bg-gradient-to-br from-primary/20 via-primary/10 to-surface transition hover:border-primary/45 hover:shadow-sm",
+        "block overflow-visible rounded-xl border border-primary/30 bg-gradient-to-br from-primary/20 via-primary/10 to-surface transition hover:border-primary/45 hover:shadow-sm",
         className
       )}
     >
       <div className={cn("flex items-stretch gap-4", compact ? "p-2.5" : "p-3.5")}>
-        <Link
-          href={bookDetailsPath(book.id, originExtras)}
-          className={cn("relative shrink-0 overflow-visible rounded-lg shadow-sm", coverClass)}
-        >
+        <div className={cn("relative shrink-0 overflow-visible rounded-lg shadow-sm", coverClass)}>
           <BookCover
             title={book.title}
             coverUrl={book.cover_url}
@@ -47,33 +53,31 @@ export function FeedBookAttachment({
             bookmarked
             bookmarkBadgeSize={compact ? "small" : "medium"}
           />
-        </Link>
+        </div>
         <div className="flex min-w-0 flex-1 flex-col justify-center py-0.5">
           <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-royal-orange">
             Book
           </p>
-          <Link
-            href={bookDetailsPath(book.id, originExtras)}
+          <p
             className={cn(
-              "mt-1 font-semibold leading-snug text-puce-red hover:underline",
+              "mt-1 font-semibold leading-snug text-puce-red",
               compact ? "line-clamp-2 text-sm" : "line-clamp-3 text-base"
             )}
           >
             {book.title}
-          </Link>
+          </p>
           {book.author ? (
-            <Link
-              href={authorPagePath(book.author)}
+            <p
               className={cn(
-                "mt-1 text-text-muted hover:text-primary hover:underline",
+                "mt-1 text-text-muted",
                 compact ? "line-clamp-1 text-xs" : "line-clamp-2 text-sm"
               )}
             >
               {book.author}
-            </Link>
+            </p>
           ) : null}
         </div>
       </div>
-    </div>
+    </Wrapper>
   );
 }

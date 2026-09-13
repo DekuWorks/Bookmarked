@@ -12,6 +12,7 @@ import {
   type PlusInsightSession,
 } from "@bookmarked/utils/plusInsights";
 import { computeMoodAnalytics } from "@bookmarked/utils/moodAnalytics";
+import { flattenSessionMoodsForAnalytics } from "@bookmarked/utils/sessionMoods";
 
 export async function loadPlusInsightSessions(userId: string): Promise<PlusInsightSession[]> {
   const sessions = await listUserReadingSessions(userId, 800);
@@ -26,6 +27,7 @@ export async function loadPlusInsightSessions(userId: string): Promise<PlusInsig
     session_format: session.session_format,
     activity_kind: session.activity_kind,
     mood: session.mood,
+    moods: session.moods,
     bookAuthor: session.bookAuthor,
   }));
 }
@@ -65,7 +67,9 @@ export async function loadPlusInsightsDashboard(userId: string) {
     pagesByWeek: computePagesByWeek(sessions),
     pagesByMonth: computePagesByMonth(sessions),
     habits: computeReadingHabits(sessions),
-    moods: computeMoodAnalytics(sessions.map((session) => session.mood)),
+    moods: computeMoodAnalytics(
+      flattenSessionMoodsForAnalytics(sessions)
+    ),
     yearOverYear: computeYearOverYear({ years, currentYear }),
   };
 }

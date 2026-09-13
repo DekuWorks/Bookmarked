@@ -46,6 +46,7 @@ export type {
   NotificationWithActor,
   Post,
   PostDraft,
+  QuoteGraphic,
   PostComment,
   PostCommentWithAuthor,
   PostCommentReply,

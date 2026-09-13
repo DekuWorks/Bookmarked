@@ -109,7 +109,7 @@ export function NotesPanel({ userId }: Props) {
         </Link>
         <Link
           href="/quote-graphics/"
-          className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-primary px-6 py-3 text-base font-bold text-on-primary"
+          className="inline-flex min-h-[44px] items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary"
         >
           Quote Graphics
         </Link>

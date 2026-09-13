@@ -10,6 +10,7 @@ import {
 } from "@/lib/services/notifications";
 import { extractMentionUsernames } from "@/lib/utils/mentions";
 import { normalizeCommentAttachmentUrl } from "@/lib/utils/attachments";
+import { withQuoteGraphicSelect } from "@bookmarked/utils/schemaCompat";
 import type {
   Post,
   PostAuthor,
@@ -17,9 +18,6 @@ import type {
   PostCommentWithAuthor,
   PostWithAuthor,
 } from "@/types";
-
-const POST_SELECT =
-  "id, user_id, body, image_url, book_id, repost_of_post_id, source_type, source_id, moderation_meta, created_at, updated_at";
 
 const AUTHOR_SELECT = "id, username, display_name, avatar_url";
 
@@ -40,6 +38,7 @@ export type CreatePostInput = {
   body: string;
   bookId?: string | null;
   imageUrl?: string | null;
+  quoteGraphicId?: string | null;
   sourceType?: import("@bookmarked/utils/feedShare").FeedSourceType | null;
   sourceId?: string | null;
 };
@@ -90,6 +89,11 @@ async function fetchAuthors(userIds: string[]): Promise<Map<string, PostAuthor>>
       },
     ])
   );
+}
+
+export async function getFeedBook(bookId: string) {
+  const books = await fetchBooks([bookId]);
+  return books.get(bookId) ?? null;
 }
 
 async function fetchBooks(bookIds: string[]) {
@@ -201,21 +205,34 @@ async function hydratePosts(
 
   const postIds = rows.map((row) => row.id);
 
-  const [authors, books, engagement, repostRows] = await Promise.all([
+  const graphicIds = [
+    ...new Set(
+      rows
+        .map((row) => row.quote_graphic_id)
+        .filter((id): id is string => Boolean(id))
+    ),
+  ];
+
+  const [authors, books, engagement, repostRows, graphics] = await Promise.all([
     fetchAuthors(authorIds),
     fetchBooks(bookIds),
     fetchEngagement(postIds, viewerId),
     repostIds.length
       ? (async () => {
           const supabase = createClient();
-          const { data, error } = await supabase
-            .from("posts")
-            .select(POST_SELECT)
-            .in("id", repostIds);
-          if (error) throw error;
+          const { data, error } = await withQuoteGraphicSelect((columns) =>
+            supabase.from("posts").select(columns).in("id", repostIds)
+          );
+          if (error) throw new Error(error.message ?? "Could not load posts.");
           return (data ?? []) as RawPostRow[];
         })()
       : Promise.resolve([]),
+    graphicIds.length
+      ? (async () => {
+          const { fetchQuoteGraphicsByIds } = await import("@/lib/services/quoteGraphics");
+          return fetchQuoteGraphicsByIds(graphicIds);
+        })()
+      : Promise.resolve(new Map()),
   ]);
 
   const repostAuthors = repostRows.length
@@ -284,6 +301,9 @@ async function hydratePosts(
     viewer_has_liked: engagement.likedSet.has(row.id),
     viewer_has_reposted: engagement.repostedSet.has(row.id),
     book: row.book_id ? books.get(row.book_id) ?? null : null,
+    quote_graphic: row.quote_graphic_id
+      ? graphics.get(row.quote_graphic_id) ?? null
+      : null,
     repost_of: row.repost_of_post_id
       ? repostById.get(row.repost_of_post_id) ?? null
       : null,
@@ -386,7 +406,10 @@ export async function createPost(input: CreatePostInput): Promise<{
 
   const body = trimBody(input.body);
   const imageUrl = input.imageUrl?.trim() || null;
-  if (!body && !imageUrl) return { error: "Post cannot be empty." };
+  const bookId = input.bookId ?? null;
+  if (!body && !imageUrl && !bookId && !input.quoteGraphicId) {
+    return { error: "Post cannot be empty." };
+  }
 
   if (body) {
     const gate = await requireModeration({
@@ -398,18 +421,20 @@ export async function createPost(input: CreatePostInput): Promise<{
   }
 
   const supabase = createClient();
-  const { data, error } = await supabase
-    .from("posts")
-    .insert({
-      user_id: viewerId,
-      body,
-      book_id: input.bookId ?? null,
-      image_url: imageUrl,
-      source_type: input.sourceType ?? null,
-      source_id: input.sourceId ?? null,
-    })
-    .select(POST_SELECT)
-    .single();
+  const payload: Record<string, unknown> = {
+    user_id: viewerId,
+    body,
+    book_id: bookId,
+    image_url: imageUrl,
+    source_type: input.sourceType ?? null,
+    source_id: input.sourceId ?? null,
+  };
+  if (input.quoteGraphicId) {
+    payload.quote_graphic_id = input.quoteGraphicId;
+  }
+  const { data, error } = await withQuoteGraphicSelect((columns) =>
+    supabase.from("posts").insert(payload).select(columns).single()
+  );
 
   if (error) {
     if (error.code === "23505" && input.sourceId) {
@@ -463,17 +488,22 @@ export async function listFeedPosts(
   const followingIds = await getFollowingIds(viewerId);
   const authorIds = [...new Set([viewerId, ...followingIds])];
 
-  if (!authorIds.length) return [];
+  if (mode === "following" && !authorIds.length) return [];
 
   const supabase = createClient();
-  const { data, error } = await supabase
-    .from("posts")
-    .select(POST_SELECT)
-    .in("user_id", authorIds)
-    .order("created_at", { ascending: false })
-    .limit(limit);
-
-  if (error) throw error;
+  const { data, error } = await withQuoteGraphicSelect((columns) => {
+    let query = supabase
+      .from("posts")
+      .select(columns)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    // Following: viewer + people they follow. For You: RLS (own + follows + reposts).
+    if (mode === "following") {
+      query = query.in("user_id", authorIds);
+    }
+    return query;
+  });
+  if (error) throw new Error(error.message ?? "Could not load posts.");
 
   const rows = (data ?? []) as RawPostRow[];
   if (!rows.length) return [];
@@ -490,12 +520,14 @@ export async function listPostsByUser(
   limit = 20
 ): Promise<PostWithAuthor[]> {
   const supabase = createClient();
-  const { data, error } = await supabase
-    .from("posts")
-    .select(POST_SELECT)
-    .eq("user_id", profileUserId)
-    .order("created_at", { ascending: false })
-    .limit(limit);
+  const { data, error } = await withQuoteGraphicSelect((columns) =>
+    supabase
+      .from("posts")
+      .select(columns)
+      .eq("user_id", profileUserId)
+      .order("created_at", { ascending: false })
+      .limit(limit)
+  );
 
   if (error) throw error;
 
@@ -510,11 +542,9 @@ export async function getPostById(
   viewerId: string
 ): Promise<PostWithAuthor | null> {
   const supabase = createClient();
-  const { data, error } = await supabase
-    .from("posts")
-    .select(POST_SELECT)
-    .eq("id", postId)
-    .maybeSingle();
+  const { data, error } = await withQuoteGraphicSelect((columns) =>
+    supabase.from("posts").select(columns).eq("id", postId).maybeSingle()
+  );
 
   if (error) throw error;
   if (!data) return null;
@@ -779,17 +809,19 @@ export async function repostPost(
 
   if (existing?.id) return { error: "You already reposted this." };
 
-  const { data, error } = await supabase
-    .from("posts")
-    .insert({
-      user_id: viewerId,
-      body: trimmed,
-      image_url: imageUrl,
-      book_id: input.book_id ?? null,
-      repost_of_post_id: postId,
-    })
-    .select(POST_SELECT)
-    .single();
+  const { data, error } = await withQuoteGraphicSelect((columns) =>
+    supabase
+      .from("posts")
+      .insert({
+        user_id: viewerId,
+        body: trimmed,
+        image_url: imageUrl,
+        book_id: input.book_id ?? null,
+        repost_of_post_id: postId,
+      })
+      .select(columns)
+      .single()
+  );
 
   if (error) return { error: error.message };
 
@@ -839,12 +871,9 @@ export async function updatePost(
 
   const supabase = createClient();
 
-  const { data: existing, error: existingError } = await supabase
-    .from("posts")
-    .select(POST_SELECT)
-    .eq("id", postId)
-    .eq("user_id", viewerId)
-    .maybeSingle();
+  const { data: existing, error: existingError } = await withQuoteGraphicSelect((columns) =>
+    supabase.from("posts").select(columns).eq("id", postId).eq("user_id", viewerId).maybeSingle()
+  );
 
   if (existingError) return { error: existingError.message };
   if (!existing) return { error: "Post not found." };
@@ -893,13 +922,15 @@ export async function updatePost(
     return { post };
   }
 
-  const { data, error } = await supabase
-    .from("posts")
-    .update(updates)
-    .eq("id", postId)
-    .eq("user_id", viewerId)
-    .select(POST_SELECT)
-    .single();
+  const { data, error } = await withQuoteGraphicSelect((columns) =>
+    supabase
+      .from("posts")
+      .update(updates)
+      .eq("id", postId)
+      .eq("user_id", viewerId)
+      .select(columns)
+      .single()
+  );
 
   if (error) return { error: error.message };
 

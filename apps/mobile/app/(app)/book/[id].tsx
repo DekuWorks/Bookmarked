@@ -71,6 +71,7 @@ import {
   hasLibraryPresence,
 } from "../../../../../packages/utils/libraryPresence";
 import { TAB_BAR_SPACE } from "../../../src/navigation/TabBarScroll";
+import { mobileComposeHref } from "../../../../../packages/utils/feedComposer";
 import { useAuthStore } from "../../../src/store/authStore";
 import type { Review, ReadingSession, ShelfStatus } from "../../../src/types";
 
@@ -647,6 +648,14 @@ export default function BookScreen() {
               priority
             />
             <Text className="mt-4 text-center text-xl font-bold text-ink">{book.title}</Text>
+            <Pressable
+              onPress={() => router.push(mobileComposeHref({ bookId: book.id }))}
+              accessibilityRole="button"
+              accessibilityLabel="Share to Feed"
+              className="mt-3 min-h-[44px] justify-center rounded-full border border-brand-border px-4 active:opacity-80"
+            >
+              <Text className="text-sm font-semibold text-puce-red">Share to Feed</Text>
+            </Pressable>
             {book.author ? (
               <Pressable onPress={() => router.push(`/author/${encodeURIComponent(book.author!)}`)}>
                 <Text className="mt-0.5 text-center text-ink-muted underline">{book.author}</Text>
@@ -1023,6 +1032,7 @@ export default function BookScreen() {
             <ReadingNotesSection
               userId={userId as string}
               userBookId={userBook.id}
+              book={{ id: book.id, title: book.title, cover_url: book.cover_url }}
               initialNotes={data?.notes ?? []}
               onChanged={invalidate}
             />

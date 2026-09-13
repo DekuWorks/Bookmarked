@@ -338,7 +338,25 @@ export type NotificationPreferences = {
 
 export type PostAuthor = MessageProfile;
 
-export type PostSourceType = "review" | "note" | "post";
+export type PostSourceType = "review" | "note" | "post" | "quote_graphic";
+
+export interface QuoteGraphic {
+  id: string;
+  user_id: string;
+  reading_note_id: string | null;
+  book_id: string | null;
+  user_book_id: string | null;
+  quote_text: string;
+  attribution: string | null;
+  image_url: string | null;
+  created_at: string;
+  book?: {
+    id: string;
+    title: string;
+    author: string | null;
+    cover_url: string | null;
+  } | null;
+}
 
 export interface Post {
   id: string;
@@ -346,6 +364,7 @@ export interface Post {
   body: string;
   image_url: string | null;
   book_id: string | null;
+  quote_graphic_id?: string | null;
   repost_of_post_id: string | null;
   source_type?: PostSourceType | null;
   source_id?: string | null;
@@ -387,6 +406,7 @@ export type PostWithAuthor = Post & {
     author: string | null;
     cover_url: string | null;
   } | null;
+  quote_graphic?: QuoteGraphic | null;
   repost_of?: PostWithAuthor | null;
   like_count: number;
   comment_count: number;
@@ -820,6 +840,7 @@ export interface ReadingSession {
   percent_complete: number;
   note: string | null;
   mood: string | null;
+  moods?: string[];
   read_number: number;
   total_pages: number | null;
   page_count_status: PageCountStatus | null;

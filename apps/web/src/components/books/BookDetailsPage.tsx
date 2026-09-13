@@ -27,6 +27,7 @@ import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import { OriginBackNav } from "@/components/navigation/OriginBackNav";
 import { ShareHead } from "@/components/seo/ShareHead";
 import { bookDetailsPath } from "@/lib/routes/book";
+import { webFeedComposerHref } from "@bookmarked/utils/feedComposer";
 import { authorPagePath } from "@/lib/routes/author";
 import { seriesPagePath } from "@/lib/routes/series";
 import { refreshBookFromCatalog } from "@/lib/services/bookMetadata";
@@ -187,6 +188,9 @@ function BookDetailsContent() {
             className="font-semibold text-puce-red"
           />
           <CopyLinkButton path={bookDetailsPath(book.id)} label="Copy link" variant="outline" />
+          <ButtonLink href={webFeedComposerHref({ bookId: book.id })} variant="outline">
+            Share to Feed
+          </ButtonLink>
         </div>
 
         <BookCover
@@ -395,7 +399,10 @@ function BookDetailsContent() {
             onDatesChange={loadBookDetails}
           />
           <ReadingJournalSection sessions={readingSessions} />
-          <ReadingNotesSection userBookId={userBook.id} />
+          <ReadingNotesSection
+            userBookId={userBook.id}
+            book={{ id: book.id, title: book.title, cover_url: book.cover_url }}
+          />
         </div>
       ) : null}
 

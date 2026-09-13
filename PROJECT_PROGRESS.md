@@ -1534,6 +1534,45 @@ Branch: `feature/completion-notifications-streaks-share` @ `66f5916`. Web + iOS.
 
 ---
 
+## Feed tagging / sync / Mood Tags / Quote Graphics Vault ✅
+
+Branch: `feature/feed-sync-mood-dropdown-quote-vault`. Web + iPhone + iPad. Android out of scope.
+
+| Track | Status | Notes |
+|-------|--------|-------|
+| Feed Sharing – Tag Book from Book Details | ✅ | Book Details **Share to Feed** opens Create Post with the current catalog book pre-attached (`attachBook` / `bookId`). Caption edits do not drop `book_id`. Notes on Book Details now pass the same `FeedSharePreview.bookId` as Overview → Notes. Feed book card is one tap to canonical Book Details. |
+| Feed – Cross-Platform Post Sync | ✅ | Same `posts` table and insert shape. Web For You now matches iOS (RLS, not following-only). iOS subscribes to `posts` / `post_likes` / `post_comments` and invalidates `home-feed` + `profile-posts`. Server `created_at`. RLS unchanged (own + follows + blocks). |
+| Mood Tags on Reading Trail | ✅ | Chip wall replaced by **Mood Tags** multi-select dropdown (web) / page sheet (iOS). Stays open for add/remove. Create Custom Mood Tag kept. `reading_sessions.moods text[]`; `mood` remains first-tag snapshot. Trail still shows compact chips. |
+| Quote Graphics Page – Updates & Cleanup | ✅ | Exact page subtitle. Inner **Quote Graphics** centered; duplicate inner subtitle removed. Exact monthly-limit copy. Manual Favorite/Quote/Attribution fields removed. Book → all saved quotes (favorite status ignored). Attribution from book/author. Quote Scanner link hidden (routes/edge function kept). Notes Quote Graphics button matches adjacent size, keeps primary color. |
+| Quote Graphics Vault – Share to Feed | ✅ | `quote_graphics` table + owner RLS. Generate persists then consumes Free quota (3/month). Vault list + view without regen. Share to Feed / composer **Quote Graphics Vault** attach existing `quote_graphic_id` + `image_url`. No second generation, no extra quota. |
+
+### FEED
+
+- Canonical post: `posts` (`id`, `user_id`, `body`, `image_url`, `book_id`, `quote_graphic_id`, `source_type`, `source_id`, server `created_at` / `updated_at`). No `post_type` / visibility column — visibility is RLS.
+- Book attachment: `posts.book_id` → `books` (`id`, `title`, `author`, `cover_url`) via `FeedBookAttachment`.
+- Realtime: web `usePostsRealtime`; iOS `usePostsRealtime` invalidates React Query.
+
+### MOOD TAGS
+
+- Multi-select; dropdown/sheet stays open. Custom tags still private (`user_mood_tags`).
+- Saved trail entry renders selected tags as chips.
+
+### QUOTE GRAPHICS
+
+- Book (notes with quotes only) → Quote (all saved quotes for that book) → Generate.
+- Quota increments only after the vault row is persisted. Failed generate / vault open / share / attach do not count.
+
+### VAULT SHARING
+
+- Reuses stored asset. Opens normal Create Post. Removing the attachment does not delete the vault item.
+
+### Migration
+
+- `supabase/migrations/20260913200000_feed_moods_quote_vault.sql`
+- Applied to linked prod (`xtdfeorhdlpnbxycpone`) on 13 Sep 2026 (`db push --yes --linked`). Adds `posts.quote_graphic_id`, `reading_sessions.moods`, and owner-only `quote_graphics` vault. No reset.
+
+---
+
 ## Next up (recommended)
 
 | Priority | Item | Notes |

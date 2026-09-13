@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Alert, Pressable, Text, TextInput, View } from "react-native";
 import { Button } from "./Button";
 import { SectionCard } from "./SectionCard";
-import { SessionMoodChip, SessionMoodPicker } from "./SessionMoodPicker";
+import { SessionMoodChips, SessionMoodPicker } from "./SessionMoodPicker";
+import { sessionMoodsFromRow } from "../../../../packages/utils/sessionMoods";
 import { updateReadingSession } from "../services/readingSessions";
 import type { ReadingSession } from "../types";
 import { formatListeningSessionSummary } from "../../../../packages/utils/listeningTime";
@@ -59,12 +60,12 @@ type SessionNoteEditorProps = {
 function SessionNoteEditor({ session, onSaved }: SessionNoteEditorProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(session.note ?? "");
-  const [mood, setMood] = useState(session.mood ?? null);
+  const [moods, setMoods] = useState(sessionMoodsFromRow(session));
   const [saving, setSaving] = useState(false);
 
   async function handleSave() {
     setSaving(true);
-    const result = await updateReadingSession(session.id, { note: draft, mood });
+    const result = await updateReadingSession(session.id, { note: draft, moods });
     setSaving(false);
 
     if (result.error) {
@@ -76,9 +77,9 @@ function SessionNoteEditor({ session, onSaved }: SessionNoteEditorProps) {
     setEditing(false);
   }
 
-  async function handleMoodChange(nextMood: string | null) {
-    setMood(nextMood);
-    const result = await updateReadingSession(session.id, { mood: nextMood });
+  async function handleMoodChange(nextMoods: string[]) {
+    setMoods(nextMoods);
+    const result = await updateReadingSession(session.id, { moods: nextMoods });
     if (result.error) {
       Alert.alert("Error", result.error);
       return;
@@ -86,10 +87,12 @@ function SessionNoteEditor({ session, onSaved }: SessionNoteEditorProps) {
     if (result.session) onSaved(result.session);
   }
 
-  if (!editing && !session.note && !session.mood) {
+  const savedMoods = sessionMoodsFromRow(session);
+
+  if (!editing && !session.note && savedMoods.length === 0) {
     return (
       <View className="mt-2 gap-2">
-        <SessionMoodPicker value={mood} onChange={(value) => void handleMoodChange(value)} />
+        <SessionMoodPicker values={moods} onChange={(value) => void handleMoodChange(value)} />
         <Pressable onPress={() => setEditing(true)} className="active:opacity-80">
           <Text className="text-xs font-medium text-primary-dark">Add note</Text>
         </Pressable>
@@ -100,15 +103,15 @@ function SessionNoteEditor({ session, onSaved }: SessionNoteEditorProps) {
   if (!editing) {
     return (
       <View className="mt-1 gap-2">
-        {session.mood ? <SessionMoodChip mood={session.mood} /> : null}
+        <SessionMoodChips moods={savedMoods} />
         {session.note ? (
           <Text className="text-sm italic text-ink-muted">“{session.note}”</Text>
         ) : null}
-        <SessionMoodPicker value={mood} onChange={(value) => void handleMoodChange(value)} />
+        <SessionMoodPicker values={moods} onChange={(value) => void handleMoodChange(value)} />
         <Pressable
           onPress={() => {
             setDraft(session.note ?? "");
-            setMood(session.mood ?? null);
+            setMoods(sessionMoodsFromRow(session));
             setEditing(true);
           }}
           className="active:opacity-80"
@@ -121,7 +124,7 @@ function SessionNoteEditor({ session, onSaved }: SessionNoteEditorProps) {
 
   return (
     <View className="mt-2 gap-2">
-      <SessionMoodPicker value={mood} onChange={setMood} disabled={saving} />
+      <SessionMoodPicker values={moods} onChange={setMoods} disabled={saving} />
       <TextInput
         value={draft}
         onChangeText={setDraft}
@@ -141,7 +144,7 @@ function SessionNoteEditor({ session, onSaved }: SessionNoteEditorProps) {
             variant="ghost"
             onPress={() => {
               setDraft(session.note ?? "");
-              setMood(session.mood ?? null);
+              setMoods(sessionMoodsFromRow(session));
               setEditing(false);
             }}
           />

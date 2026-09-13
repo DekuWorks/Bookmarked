@@ -1,12 +1,29 @@
 "use client";
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { MentionComposer } from "@/components/social/MentionComposer";
 import { useToast } from "@/components/ui/Toast";
 import { getUserLibraryBooks, type LibraryBookRow } from "@/lib/services/library";
-import { createPost, uploadPostImage, validatePostImageFile } from "@/lib/services/posts";
+import {
+  createPost,
+  getFeedBook,
+  uploadPostImage,
+  validatePostImageFile,
+} from "@/lib/services/posts";
+import { getQuoteGraphic } from "@/lib/services/quoteGraphics";
+import { FeedBookAttachment } from "@/components/social/FeedBookAttachment";
+import { QuoteGraphicCard } from "@/components/quotes/QuoteGraphicCard";
+import { QuoteGraphicsVaultPicker } from "@/components/quotes/QuoteGraphicsVaultPicker";
+import {
+  FEED_ATTACH_BOOK_PARAM,
+  FEED_ATTACH_GRAPHIC_PARAM,
+  parseFeedComposerPrefill,
+  type FeedBookAttachment as FeedBookRef,
+} from "@bookmarked/utils/feedComposer";
+import type { QuoteGraphic } from "@/types";
 import {
   clearComposerAutosave,
   deleteDraft,
@@ -58,6 +75,7 @@ function draftPreview(draft: PostDraft): string {
 
 export function PostComposer({ userId, onPostCreated }: Props) {
   const toast = useToast();
+  const searchParams = useSearchParams();
   const inputId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -76,6 +94,9 @@ export function PostComposer({ userId, onPostCreated }: Props) {
   const [drafts, setDrafts] = useState<PostDraft[]>([]);
   const [draftsOpen, setDraftsOpen] = useState(false);
   const [draftsLoading, setDraftsLoading] = useState(false);
+  const [attachedBook, setAttachedBook] = useState<FeedBookRef | null>(null);
+  const [attachedGraphic, setAttachedGraphic] = useState<QuoteGraphic | null>(null);
+  const [vaultOpen, setVaultOpen] = useState(false);
 
   const refreshDrafts = useCallback(async () => {
     try {
@@ -93,20 +114,53 @@ export function PostComposer({ userId, onPostCreated }: Props) {
   }, [userId]);
 
   useEffect(() => {
-    void refreshDrafts();
+    const handle = window.setTimeout(() => {
+      void refreshDrafts();
+    }, 0);
+    return () => window.clearTimeout(handle);
   }, [refreshDrafts]);
+
+  useEffect(() => {
+    const prefill = parseFeedComposerPrefill({
+      attachBook: searchParams.get(FEED_ATTACH_BOOK_PARAM),
+      quoteGraphic: searchParams.get(FEED_ATTACH_GRAPHIC_PARAM),
+    });
+    void (async () => {
+      if (prefill.bookId) {
+        setSelectedBookId(prefill.bookId);
+        setBookInput(prefill.bookId);
+        const book = await getFeedBook(prefill.bookId);
+        if (book) setAttachedBook(book);
+      }
+      if (prefill.quoteGraphicId) {
+        const graphic = await getQuoteGraphic(prefill.quoteGraphicId, userId);
+        if (!graphic) return;
+        setAttachedGraphic(graphic);
+        if (graphic.image_url) {
+          setRemoteImageUrl(graphic.image_url);
+          setImagePreview(graphic.image_url);
+        }
+        if (graphic.book_id) {
+          setSelectedBookId(graphic.book_id);
+          setBookInput(graphic.book_id);
+          if (graphic.book) setAttachedBook(graphic.book);
+        }
+      }
+    })();
+  }, [searchParams, userId]);
 
   useEffect(() => {
     const saved = loadComposerAutosave(userId);
     if (!saved) return;
-
-    setBody(saved.body);
-    setBookInput(saved.bookInput);
-    setSelectedBookId(saved.selectedBookId);
-    setGifUrl(saved.gifUrl);
-    setGifInput(saved.gifInput);
-    setRemoteImageUrl(saved.remoteImageUrl);
-    setActiveDraftId(saved.activeDraftId);
+    queueMicrotask(() => {
+      setBody(saved.body);
+      setBookInput(saved.bookInput);
+      setSelectedBookId(saved.selectedBookId);
+      setGifUrl(saved.gifUrl);
+      setGifInput(saved.gifInput);
+      setRemoteImageUrl(saved.remoteImageUrl);
+      setActiveDraftId(saved.activeDraftId);
+    });
   }, [userId]);
 
   useEffect(() => {
@@ -152,6 +206,8 @@ export function PostComposer({ userId, onPostCreated }: Props) {
     setBody("");
     setBookInput("");
     setSelectedBookId(null);
+    setAttachedBook(null);
+    setAttachedGraphic(null);
     clearImage();
     clearGif();
     setActiveDraftId(null);
@@ -306,8 +362,9 @@ export function PostComposer({ userId, onPostCreated }: Props) {
 
   async function handleSubmit() {
     const trimmed = body.trim();
-    if (!trimmed && !imageFile && !gifUrl && !remoteImageUrl) {
-      toast.error("Write something or attach an image or GIF before posting.");
+    const bookId = selectedBookId ?? extractBookId(bookInput) ?? attachedBook?.id ?? null;
+    if (!trimmed && !imageFile && !gifUrl && !remoteImageUrl && !bookId) {
+      toast.error("Write something or attach a book, image, or GIF before posting.");
       return;
     }
     setSubmitting(true);
@@ -319,11 +376,13 @@ export function PostComposer({ userId, onPostCreated }: Props) {
       return;
     }
 
-    const bookId = selectedBookId ?? extractBookId(bookInput);
     const result = await createPost({
       body: trimmed,
       bookId,
-      imageUrl: imageResult.url,
+      imageUrl: imageResult.url ?? attachedGraphic?.image_url ?? null,
+      quoteGraphicId: attachedGraphic?.id ?? null,
+      sourceType: attachedGraphic ? "quote_graphic" : null,
+      sourceId: attachedGraphic?.id ?? null,
     });
     setSubmitting(false);
 
@@ -342,7 +401,9 @@ export function PostComposer({ userId, onPostCreated }: Props) {
     onPostCreated?.();
   }
 
-  const hasAttachment = Boolean(imageFile || gifUrl || remoteImageUrl);
+  const hasAttachment = Boolean(
+    imageFile || gifUrl || remoteImageUrl || selectedBookId || attachedBook || attachedGraphic
+  );
   const canSubmit = Boolean(body.trim() || hasAttachment);
 
   return (
@@ -410,6 +471,42 @@ export function PostComposer({ userId, onPostCreated }: Props) {
           ) : null}
         </div>
       </div>
+
+      {attachedBook ? (
+        <div className="relative mb-3">
+          <FeedBookAttachment book={attachedBook} interactive={false} />
+          <button
+            type="button"
+            onClick={() => {
+              setAttachedBook(null);
+              setSelectedBookId(null);
+              setBookInput("");
+              scheduleAutosave();
+            }}
+            className="absolute -right-2 -top-2 rounded-full bg-surface px-2 py-0.5 text-xs shadow-sm ring-1 ring-border"
+            aria-label="Remove book"
+          >
+            Remove
+          </button>
+        </div>
+      ) : null}
+
+      {attachedGraphic && !attachedGraphic.image_url ? (
+        <div className="relative mb-3">
+          <QuoteGraphicCard
+            quote={attachedGraphic.quote_text}
+            attribution={attachedGraphic.attribution}
+          />
+          <button
+            type="button"
+            onClick={() => setAttachedGraphic(null)}
+            className="absolute -right-2 -top-2 rounded-full bg-surface px-2 py-0.5 text-xs shadow-sm ring-1 ring-border"
+            aria-label="Remove quote graphic"
+          >
+            Remove
+          </button>
+        </div>
+      ) : null}
 
       <MentionComposer
         viewerId={userId}
@@ -499,6 +596,16 @@ export function PostComposer({ userId, onPostCreated }: Props) {
                         onClick={() => {
                           setSelectedBookId(selected ? null : book.id);
                           setBookInput(selected ? "" : book.id);
+                          setAttachedBook(
+                            selected
+                              ? null
+                              : {
+                                  id: book.id,
+                                  title: book.title,
+                                  author: book.author,
+                                  cover_url: book.cover_url,
+                                }
+                          );
                           scheduleAutosave();
                         }}
                         className={cn(
@@ -552,6 +659,16 @@ export function PostComposer({ userId, onPostCreated }: Props) {
             type="button"
             variant="ghost"
             size="sm"
+            onClick={() => setVaultOpen(true)}
+            disabled={submitting}
+            aria-label="Quote Graphics Vault"
+          >
+            Quote Graphics Vault
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
             loading={savingDraft}
             disabled={submitting}
             onClick={() => void handleSaveDraft()}
@@ -570,6 +687,25 @@ export function PostComposer({ userId, onPostCreated }: Props) {
           {submitting ? "Checking…" : "Post"}
         </Button>
       </div>
+      <QuoteGraphicsVaultPicker
+        userId={userId}
+        open={vaultOpen}
+        onClose={() => setVaultOpen(false)}
+        onSelect={(graphic) => {
+          setAttachedGraphic(graphic);
+          if (graphic.image_url) {
+            clearGif();
+            clearImage();
+            setRemoteImageUrl(graphic.image_url);
+            setImagePreview(graphic.image_url);
+          }
+          if (graphic.book) {
+            setAttachedBook(graphic.book);
+            setSelectedBookId(graphic.book.id);
+            setBookInput(graphic.book.id);
+          }
+        }}
+      />
     </section>
   );
 }

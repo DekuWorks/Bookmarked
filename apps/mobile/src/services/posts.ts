@@ -9,6 +9,7 @@ import {
 } from "./notifications";
 import { extractMentionUsernames } from "../utils/mentions";
 import { normalizeCommentAttachmentUrl } from "../utils/attachments";
+import { withQuoteGraphicSelect } from "../../../../packages/utils/schemaCompat";
 import type {
   PostAuthor,
   PostComment,
@@ -24,8 +25,6 @@ import type {
  * reposts), likes, comments, reposts/quote-reposts, and delete.
  */
 
-const POST_SELECT =
-  "id, user_id, body, image_url, book_id, repost_of_post_id, source_type, source_id, moderation_meta, created_at, updated_at";
 const AUTHOR_SELECT = "id, username, display_name, avatar_url";
 const COMMENT_SELECT =
   "id, post_id, user_id, body, attachment_url, moderation_meta, created_at, updated_at";
@@ -34,6 +33,7 @@ export type CreatePostInput = {
   body: string;
   bookId?: string | null;
   imageUrl?: string | null;
+  quoteGraphicId?: string | null;
   sourceType?: import("../../../../packages/utils/feedShare").FeedSourceType | null;
   sourceId?: string | null;
 };
@@ -50,6 +50,9 @@ type RawPostRow = {
   body: string;
   image_url: string | null;
   book_id: string | null;
+  quote_graphic_id?: string | null;
+  source_type?: string | null;
+  source_id?: string | null;
   repost_of_post_id: string | null;
   created_at: string;
   updated_at: string;
@@ -82,6 +85,11 @@ async function fetchAuthors(userIds: string[]): Promise<Map<string, PostAuthor>>
     });
   }
   return map;
+}
+
+export async function getFeedBook(bookId: string) {
+  const books = await fetchBooks([bookId]);
+  return books.get(bookId) ?? null;
 }
 
 async function fetchBooks(bookIds: string[]): Promise<Map<string, BookLite>> {
@@ -202,6 +210,9 @@ function toPostWithAuthor(
     body: row.body,
     image_url: row.image_url,
     book_id: row.book_id,
+    quote_graphic_id: row.quote_graphic_id ?? null,
+    source_type: row.source_type as PostWithAuthor["source_type"],
+    source_id: row.source_id ?? null,
     repost_of_post_id: row.repost_of_post_id,
     created_at: row.created_at,
     updated_at: row.updated_at,
@@ -238,10 +249,9 @@ async function hydratePosts(
   // Fetch quoted/reposted originals (one level deep), then hydrate them too.
   let repostById = new Map<string, PostWithAuthor>();
   if (repostIds.length) {
-    const { data: originalRows } = await supabase
-      .from("posts")
-      .select(POST_SELECT)
-      .in("id", repostIds);
+    const { data: originalRows } = await withQuoteGraphicSelect((columns) =>
+      supabase.from("posts").select(columns).in("id", repostIds)
+    );
     const originals = (originalRows ?? []) as RawPostRow[];
     if (originals.length) {
       const oAuthors = await fetchAuthors(originals.map((r) => r.user_id));
@@ -309,7 +319,10 @@ export async function createPost(
 
   const body = trimBody(input.body);
   const imageUrl = input.imageUrl?.trim() || null;
-  if (!body && !imageUrl) return { error: "Post cannot be empty." };
+  const bookId = input.bookId ?? null;
+  if (!body && !imageUrl && !bookId && !input.quoteGraphicId) {
+    return { error: "Post cannot be empty." };
+  }
 
   if (body) {
     const gate = await requireModeration({
@@ -320,18 +333,20 @@ export async function createPost(
     if (gate.error) return { error: gate.error, retryable: gate.retryable };
   }
 
-  const { data, error } = await supabase
-    .from("posts")
-    .insert({
-      user_id: viewerId,
-      body,
-      book_id: input.bookId ?? null,
-      image_url: imageUrl,
-      source_type: input.sourceType ?? null,
-      source_id: input.sourceId ?? null,
-    })
-    .select(POST_SELECT)
-    .single();
+  const payload: Record<string, unknown> = {
+    user_id: viewerId,
+    body,
+    book_id: bookId,
+    image_url: imageUrl,
+    source_type: input.sourceType ?? null,
+    source_id: input.sourceId ?? null,
+  };
+  if (input.quoteGraphicId) {
+    payload.quote_graphic_id = input.quoteGraphicId;
+  }
+  const { data, error } = await withQuoteGraphicSelect((columns) =>
+    supabase.from("posts").insert(payload).select(columns).single()
+  );
   if (error) {
     if (error.code === "23505" && input.sourceId) {
       return { error: "Already shared to your feed." };
@@ -370,17 +385,19 @@ export async function repostPost(
     if (gate.error) return { error: gate.error };
   }
 
-  const { data, error } = await supabase
-    .from("posts")
-    .insert({
-      user_id: viewerId,
-      body,
-      image_url: imageUrl,
-      book_id: input.bookId ?? null,
-      repost_of_post_id: postId,
-    })
-    .select(POST_SELECT)
-    .single();
+  const { data, error } = await withQuoteGraphicSelect((columns) =>
+    supabase
+      .from("posts")
+      .insert({
+        user_id: viewerId,
+        body,
+        image_url: imageUrl,
+        book_id: input.bookId ?? null,
+        repost_of_post_id: postId,
+      })
+      .select(columns)
+      .single()
+  );
   if (error) return { error: error.message };
 
   const row = data as RawPostRow;
@@ -410,12 +427,14 @@ export async function listPostsByUser(
   viewerId: string,
   limit = 20
 ): Promise<PostWithAuthor[]> {
-  const { data, error } = await supabase
-    .from("posts")
-    .select(POST_SELECT)
-    .eq("user_id", profileUserId)
-    .order("created_at", { ascending: false })
-    .limit(limit);
+  const { data, error } = await withQuoteGraphicSelect((columns) =>
+    supabase
+      .from("posts")
+      .select(columns)
+      .eq("user_id", profileUserId)
+      .order("created_at", { ascending: false })
+      .limit(limit)
+  );
 
   if (error) return [];
   const rows = (data ?? []) as RawPostRow[];
@@ -436,14 +455,15 @@ export async function listFeedPosts(
     if (!authorIds.length) return [];
   }
 
-  let query = supabase
-    .from("posts")
-    .select(POST_SELECT)
-    .order("created_at", { ascending: false })
-    .limit(limit);
-  if (authorIds) query = query.in("user_id", authorIds);
-
-  const { data, error } = await query;
+  const { data, error } = await withQuoteGraphicSelect((columns) => {
+    let query = supabase
+      .from("posts")
+      .select(columns)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    if (authorIds) query = query.in("user_id", authorIds);
+    return query;
+  });
   if (error) return [];
   return hydratePosts((data ?? []) as RawPostRow[], viewerId);
 }
@@ -452,11 +472,9 @@ export async function getPostById(
   postId: string,
   viewerId: string
 ): Promise<PostWithAuthor | null> {
-  const { data, error } = await supabase
-    .from("posts")
-    .select(POST_SELECT)
-    .eq("id", postId)
-    .maybeSingle();
+  const { data, error } = await withQuoteGraphicSelect((columns) =>
+    supabase.from("posts").select(columns).eq("id", postId).maybeSingle()
+  );
   if (error || !data) return null;
   const [post] = await hydratePosts([data as RawPostRow], viewerId, true);
   return post ?? null;

@@ -16,7 +16,11 @@ import { Avatar } from "../../src/components/Avatar";
 import { GifPicker } from "../../src/components/GifPicker";
 import { RepostPreview } from "../../src/components/RepostPreview";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
-import { createPost, getPostById, repostPost } from "../../src/services/posts";
+import { createPost, getFeedBook, getPostById, repostPost } from "../../src/services/posts";
+import { getQuoteGraphic, listQuoteGraphics } from "../../src/services/quoteGraphics";
+import { parseFeedComposerPrefill, FEED_QUERY_KEYS } from "../../../../packages/utils/feedComposer";
+import type { QuoteGraphic } from "../../src/types";
+import type { FeedBookAttachment } from "../../../../packages/utils/feedComposer";
 import { getUserLibraryBooks, type LibraryBookRow } from "../../src/services/library";
 import { deleteDraft, listDrafts, saveDraft } from "../../src/services/postDrafts";
 import { searchProfiles, type ProfileSearchResult } from "../../src/services/profile";
@@ -32,7 +36,12 @@ const MAX = 1000;
 export default function ComposeRoute() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { repostOf } = useLocalSearchParams<{ repostOf?: string }>();
+  const { repostOf, attachBook, quoteGraphic, bookId: bookIdParam } = useLocalSearchParams<{
+    repostOf?: string;
+    attachBook?: string;
+    quoteGraphic?: string;
+    bookId?: string;
+  }>();
   const viewerId = useAuthStore((s) => s.user?.id);
 
   const [body, setBody] = useState("");
@@ -48,12 +57,19 @@ export default function ComposeRoute() {
   const [drafts, setDrafts] = useState<PostDraft[]>([]);
   const [draftsOpen, setDraftsOpen] = useState(false);
   const [original, setOriginal] = useState<PostWithAuthor | null>(null);
+  const [attachedBook, setAttachedBook] = useState<FeedBookAttachment | null>(null);
+  const [attachedGraphic, setAttachedGraphic] = useState<QuoteGraphic | null>(null);
+  const [vaultOpen, setVaultOpen] = useState(false);
+  const [vaultItems, setVaultItems] = useState<QuoteGraphic[] | null>(null);
 
   const [mentionResults, setMentionResults] = useState<ProfileSearchResult[]>([]);
   const mentionDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isQuote = Boolean(repostOf);
-  const selectedBook = libraryBooks.find((row) => row.books?.id === selectedBookId)?.books ?? null;
+  const selectedBook =
+    attachedBook ??
+    libraryBooks.find((row) => row.books?.id === selectedBookId)?.books ??
+    null;
 
   useEffect(() => {
     if (!repostOf) return;
@@ -74,6 +90,31 @@ export default function ComposeRoute() {
       .then((rows) => setLibraryBooks(rows.filter((row) => row.books?.id)))
       .catch(() => setLibraryBooks([]));
   }, [viewerId]);
+
+  useEffect(() => {
+    const prefill = parseFeedComposerPrefill({
+      attachBook,
+      quoteGraphic,
+      bookId: bookIdParam,
+    });
+    if (prefill.bookId) {
+      setSelectedBookId(prefill.bookId);
+      void getFeedBook(prefill.bookId).then((book) => {
+        if (book) setAttachedBook(book);
+      });
+    }
+    if (prefill.quoteGraphicId && viewerId) {
+      void getQuoteGraphic(prefill.quoteGraphicId, viewerId).then((graphic) => {
+        if (!graphic) return;
+        setAttachedGraphic(graphic);
+        if (graphic.image_url) setImageUrl(graphic.image_url);
+        if (graphic.book) {
+          setAttachedBook(graphic.book);
+          setSelectedBookId(graphic.book.id);
+        }
+      });
+    }
+  }, [attachBook, quoteGraphic, bookIdParam, viewerId]);
 
   const mentionQuery = useMemo(
     () => activeMentionQuery(body.slice(0, selection.start)),
@@ -129,14 +170,22 @@ export default function ComposeRoute() {
     setSaving(true);
     const result = isQuote
       ? await repostPost(String(repostOf), { body, imageUrl })
-      : await createPost({ body, imageUrl, bookId: selectedBookId });
+      : await createPost({
+          body,
+          imageUrl: imageUrl ?? attachedGraphic?.image_url ?? null,
+          bookId: selectedBookId,
+          quoteGraphicId: attachedGraphic?.id ?? null,
+          sourceType: attachedGraphic ? "quote_graphic" : null,
+          sourceId: attachedGraphic?.id ?? null,
+        });
     setSaving(false);
     if (result.error) {
       Alert.alert("Couldn't post", result.error);
       return;
     }
     if (draftId) await deleteDraft(draftId);
-    queryClient.invalidateQueries({ queryKey: ["home-feed"] });
+    queryClient.invalidateQueries({ queryKey: [FEED_QUERY_KEYS.home] });
+    queryClient.invalidateQueries({ queryKey: [FEED_QUERY_KEYS.profilePosts] });
     router.replace("/feed");
   }
 
@@ -273,11 +322,41 @@ export default function ComposeRoute() {
 
             {selectedBook ? (
               <View className="mt-3 flex-row items-center justify-between rounded-xl border border-primary/30 bg-primary/10 px-3 py-2">
-                <Text className="flex-1 text-sm font-medium text-ink" numberOfLines={1}>
-                  {selectedBook.title}
-                </Text>
-                <Pressable onPress={() => setSelectedBookId(null)}>
+                <View className="flex-1">
+                  <Text className="text-[10px] font-bold uppercase text-royal-orange">Book</Text>
+                  <Text className="text-sm font-medium text-ink" numberOfLines={1}>
+                    {selectedBook.title}
+                  </Text>
+                  {selectedBook.author ? (
+                    <Text className="text-xs text-ink-muted" numberOfLines={1}>
+                      {selectedBook.author}
+                    </Text>
+                  ) : null}
+                </View>
+                <Pressable
+                  onPress={() => {
+                    setSelectedBookId(null);
+                    setAttachedBook(null);
+                  }}
+                  accessibilityLabel="Remove book"
+                >
                   <Text className="text-xs font-semibold text-puce-red">Remove</Text>
+                </Pressable>
+              </View>
+            ) : null}
+
+            {attachedGraphic ? (
+              <View className="mt-3 rounded-xl bg-puce-red p-4">
+                <Text className="text-white">“{attachedGraphic.quote_text}”</Text>
+                <Pressable
+                  onPress={() => {
+                    setAttachedGraphic(null);
+                    if (imageUrl === attachedGraphic.image_url) setImageUrl(null);
+                  }}
+                  accessibilityLabel="Remove quote graphic"
+                  className="mt-2 self-start"
+                >
+                  <Text className="text-xs font-semibold text-white">Remove</Text>
                 </Pressable>
               </View>
             ) : null}
@@ -334,6 +413,18 @@ export default function ComposeRoute() {
               >
                 <Text className="text-xs font-bold text-puce-red">Tag a Book</Text>
               </Pressable>
+              <Pressable
+                accessibilityLabel="Quote Graphics Vault"
+                onPress={() => {
+                  setVaultOpen((open) => !open);
+                  if (!vaultItems && viewerId) {
+                    void listQuoteGraphics(viewerId).then(setVaultItems);
+                  }
+                }}
+                className="h-10 items-center justify-center rounded-full bg-primary/15 px-3 active:opacity-70"
+              >
+                <Text className="text-xs font-bold text-puce-red">Vault</Text>
+              </Pressable>
               <View className="flex-1" />
               <Text className="text-xs text-ink-muted">
                 {body.length}/{MAX}
@@ -366,6 +457,40 @@ export default function ComposeRoute() {
         </ScrollView>
       </KeyboardAvoidingView>
 
+      {vaultOpen ? (
+        <View className="absolute inset-x-0 bottom-0 max-h-[60%] rounded-t-3xl border border-brand-border bg-surface p-4">
+          <View className="mb-2 flex-row items-center justify-between">
+            <Text className="text-sm font-semibold text-puce-red">Quote Graphics Vault</Text>
+            <Pressable onPress={() => setVaultOpen(false)}>
+              <Text className="text-sm text-primary-dark">Close</Text>
+            </Pressable>
+          </View>
+          <ScrollView>
+            {(vaultItems ?? []).map((graphic) => (
+              <Pressable
+                key={graphic.id}
+                onPress={() => {
+                  setAttachedGraphic(graphic);
+                  if (graphic.image_url) setImageUrl(graphic.image_url);
+                  if (graphic.book) {
+                    setAttachedBook(graphic.book);
+                    setSelectedBookId(graphic.book.id);
+                  }
+                  setVaultOpen(false);
+                }}
+                className="mb-2 rounded-xl border border-brand-border p-3"
+              >
+                <Text className="text-sm text-ink" numberOfLines={3}>
+                  “{graphic.quote_text}”
+                </Text>
+                <Text className="mt-1 text-xs text-ink-muted">
+                  {graphic.book?.title ?? "Saved graphic"}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      ) : null}
       <GifPicker visible={gifOpen} onClose={() => setGifOpen(false)} onSelect={setImageUrl} />
     </View>
   );

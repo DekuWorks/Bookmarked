@@ -13,10 +13,15 @@ export const READING_NOTES_PREVIEW_LIMIT = 5;
 
 type Props = {
   userBookId: string;
+  book?: { id: string; title: string; cover_url?: string | null } | null;
   loading?: boolean;
 };
 
-export function ReadingNotesSection({ userBookId, loading: externalLoading }: Props) {
+export function ReadingNotesSection({
+  userBookId,
+  book,
+  loading: externalLoading,
+}: Props) {
   const [notes, setNotes] = useState<ReadingNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(false);
@@ -74,6 +79,7 @@ export function ReadingNotesSection({ userBookId, loading: externalLoading }: Pr
                 key={note.id}
                 note={note}
                 userBookId={userBookId}
+                book={book}
                 onChange={() => void loadNotes()}
               />
             ))}

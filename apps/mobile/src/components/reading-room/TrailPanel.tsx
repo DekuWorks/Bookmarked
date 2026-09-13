@@ -7,6 +7,7 @@ import { LoadingState } from "../LoadingState";
 import { SectionCard } from "../SectionCard";
 import { useThemeColors } from "../../store/themeStore";
 import type { UserReadingSession } from "../../services/readingSessions";
+import { sessionMoodsFromRow } from "../../../../../packages/utils/sessionMoods";
 import {
   formatSessionDate,
   groupSessionsByBook,
@@ -159,8 +160,10 @@ export function TrailPanel({ sessions }: Props) {
           ) : (
             <Text className="mt-4 text-sm italic text-ink-muted">No note for this session.</Text>
           )}
-          {activeSession.mood ? (
-            <Text className="mt-3 text-xs text-ink-muted">Mood: {activeSession.mood}</Text>
+          {sessionMoodsFromRow(activeSession).length ? (
+            <Text className="mt-3 text-xs text-ink-muted">
+              Mood: {sessionMoodsFromRow(activeSession).join(" · ")}
+            </Text>
           ) : null}
           {activeBook.bookId ? (
             <Pressable

@@ -22,6 +22,7 @@ export function useToggleReviewLike() {
     mutationFn: (reviewId: string) => toggleReviewLike(reviewId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["home-feed"] });
+      queryClient.invalidateQueries({ queryKey: ["profile-posts"] });
     },
   });
 }
@@ -33,6 +34,7 @@ export function useTogglePostLike() {
       liked ? unlikePost(postId) : likePost(postId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["home-feed"] });
+      queryClient.invalidateQueries({ queryKey: ["profile-posts"] });
     },
   });
 }
@@ -44,6 +46,7 @@ export function useRepostPost() {
       repostPost(postId, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["home-feed"] });
+      queryClient.invalidateQueries({ queryKey: ["profile-posts"] });
     },
   });
 }
