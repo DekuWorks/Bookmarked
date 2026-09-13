@@ -34,6 +34,7 @@ export type {
   PostAuthor,
   Post,
   PostDraft,
+  QuoteGraphic,
   PostComment,
   PostCommentWithAuthor,
   PostWithAuthor,

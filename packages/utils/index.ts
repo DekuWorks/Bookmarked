@@ -739,6 +739,65 @@ export {
 } from "./customMoodTags";
 
 export {
+  MAX_MOOD_TAG_LENGTH,
+  MAX_SESSION_MOODS,
+  flattenSessionMoodsForAnalytics,
+  normalizeSessionMoods,
+  primarySessionMood,
+  renameSessionMood,
+  sessionMoodsFromRow,
+  sessionMoodsPatch,
+  sessionMoodsWritePatch,
+  toggleSessionMood,
+  withSessionMoodsWrite,
+} from "./sessionMoods";
+
+export {
+  QUOTE_GRAPHICS_EMPTY_COPY,
+  QUOTE_GRAPHICS_MONTHLY_LIMIT_COPY,
+  QUOTE_GRAPHICS_OPEN_VAULT_LABEL,
+  QUOTE_GRAPHICS_PAGE_SUBTITLE,
+  QUOTE_GRAPHICS_PLUS_LIMIT_COPY,
+  QUOTE_GRAPHICS_SELECT_BOOK_FIRST,
+  QUOTE_GRAPHICS_VAULT_LABEL,
+  buildQuoteGraphicAttribution,
+  buildQuoteGraphicBookOptions,
+  isQuoteGraphicEligibleNote,
+  monthlyLimitCopy,
+  quoteGraphicSnippet,
+  quotesForSelectedBook,
+  searchQuoteGraphicBooks,
+  type QuoteGraphicBookOption,
+  type QuoteGraphicSourceNote,
+} from "./quoteGraphics";
+
+export {
+  POST_SELECT_CORE,
+  POST_SELECT_WITH_QUOTE_GRAPHIC,
+  disableQuoteGraphicColumn,
+  disableSessionMoodsColumn,
+  isMissingMoodsColumn,
+  isMissingNamedSchema,
+  isMissingQuoteGraphicSchema,
+  isQuoteGraphicColumnEnabled,
+  isSessionMoodsColumnEnabled,
+  postSelectColumns,
+  withQuoteGraphicSelect,
+} from "./schemaCompat";
+
+export {
+  FEED_ATTACH_BOOK_PARAM,
+  FEED_ATTACH_GRAPHIC_PARAM,
+  FEED_QUERY_KEYS,
+  feedComposerSearch,
+  mobileComposeHref,
+  parseFeedComposerPrefill,
+  webFeedComposerHref,
+  type FeedBookAttachment,
+  type FeedComposerPrefill,
+} from "./feedComposer";
+
+export {
   FEED_IMAGE_MEDIA,
   feedImageOrientation,
   layoutFeedImageMedia,

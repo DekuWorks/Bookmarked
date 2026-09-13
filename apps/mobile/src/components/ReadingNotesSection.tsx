@@ -32,6 +32,7 @@ import { ShareNoteButton } from "./ShareNoteButton";
 type Props = {
   userId: string;
   userBookId: string;
+  book?: { id: string; title: string; cover_url?: string | null } | null;
   initialNotes: ReadingNote[];
   onChanged?: () => void;
 };
@@ -42,7 +43,13 @@ const VISIBILITY: { value: ReadingNoteVisibility; label: string }[] = [
   { value: "public", label: "Public" },
 ];
 
-export function ReadingNotesSection({ userId, userBookId, initialNotes, onChanged }: Props) {
+export function ReadingNotesSection({
+  userId,
+  userBookId,
+  book,
+  initialNotes,
+  onChanged,
+}: Props) {
   const insets = useSafeAreaInsets();
   const [notes, setNotes] = useState<ReadingNote[]>(initialNotes);
   const [categories, setCategories] = useState<ReadingNoteCategoryMeta[]>([]);
@@ -196,7 +203,7 @@ export function ReadingNotesSection({ userId, userBookId, initialNotes, onChange
                   isCustom={n.category.startsWith("custom:")}
                 />
                 <View className="flex-row gap-3">
-                  <ShareNoteButton note={n} />
+                  <ShareNoteButton note={n} book={book} />
                   <Pressable onPress={() => openEdit(n)}>
                     <Text className="text-xs font-medium text-primary-dark">Edit</Text>
                   </Pressable>

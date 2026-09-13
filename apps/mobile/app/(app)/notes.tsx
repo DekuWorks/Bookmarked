@@ -79,9 +79,9 @@ export default function NotesScreen() {
       <View className="bg-background px-4 pb-2">
         <Pressable
           onPress={() => router.push("/quote-graphics")}
-          className="mb-3 min-h-[52px] items-center justify-center self-stretch rounded-2xl bg-primary px-5 py-3"
+          className="mb-3 min-h-[44px] items-center justify-center self-stretch rounded-full bg-primary px-5 py-3"
         >
-          <Text className="text-base font-bold text-on-primary">Quote Graphics</Text>
+          <Text className="text-sm font-semibold text-on-primary">Quote Graphics</Text>
         </Pressable>
         {userId ? <QuotePdfExportButton userId={userId} /> : null}
         <View className="mb-3">

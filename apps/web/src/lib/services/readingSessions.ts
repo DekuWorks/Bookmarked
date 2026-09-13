@@ -3,6 +3,7 @@ import type { ReadingSession } from "@/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { calculateAudiobookSessionDuration } from "../../../../../packages/utils/listeningTime";
 import { localDateKey } from "../../../../../packages/utils/readingStreak";
+import { sessionMoodsWritePatch, withSessionMoodsWrite } from "../../../../../packages/utils/sessionMoods";
 
 export type CreateReadingSessionInput = {
   userId: string;
@@ -12,6 +13,7 @@ export type CreateReadingSessionInput = {
   percentComplete: number;
   note?: string | null;
   mood?: string | null;
+  moods?: string[] | null;
   createdAt?: string;
   readNumber?: number;
   sessionFormat?: "book" | "audiobook";
@@ -40,37 +42,41 @@ export async function createReadingSessionWithClient(
   const isAudiobook = input.sessionFormat === "audiobook";
   const pagesRead = isAudiobook ? 0 : Math.max(0, input.pageEnd - input.pageStart);
 
-  const { data, error } = await supabase
-    .from("reading_sessions")
-    .insert({
-      user_id: input.userId,
-      user_book_id: input.userBookId,
-      page_start: isAudiobook ? 0 : input.pageStart,
-      page_end: isAudiobook ? 0 : input.pageEnd,
-      pages_read: pagesRead,
-      percent_complete: input.percentComplete,
-      note: input.note ?? null,
-      mood: input.mood ?? null,
-      read_number: input.readNumber ?? 1,
-      session_format: input.sessionFormat ?? "book",
-      ...(isAudiobook
-        ? {
-            listening_start_seconds: input.listeningStartSeconds ?? 0,
-            listening_end_seconds: input.listeningEndSeconds ?? 0,
-            listening_seconds: calculateAudiobookSessionDuration(
-              input.listeningStartSeconds ?? 0,
-              input.listeningEndSeconds ?? 0
-            ),
-          }
-        : {}),
-      session_date:
-        input.sessionDate ??
-        localDateKey(input.createdAt ? new Date(input.createdAt) : new Date()),
-      activity_kind: input.activityKind ?? "session",
-      ...(input.createdAt ? { created_at: input.createdAt } : {}),
-    })
-    .select("*")
-    .single();
+  const { data, error } = await withSessionMoodsWrite((includeMoodsColumn) =>
+    supabase
+      .from("reading_sessions")
+      .insert({
+        user_id: input.userId,
+        user_book_id: input.userBookId,
+        page_start: isAudiobook ? 0 : input.pageStart,
+        page_end: isAudiobook ? 0 : input.pageEnd,
+        pages_read: pagesRead,
+        percent_complete: input.percentComplete,
+        note: input.note ?? null,
+        ...(includeMoodsColumn
+          ? sessionMoodsWritePatch(input.moods ?? (input.mood ? [input.mood] : []))
+          : { mood: sessionMoodsWritePatch(input.moods ?? (input.mood ? [input.mood] : [])).mood }),
+        read_number: input.readNumber ?? 1,
+        session_format: input.sessionFormat ?? "book",
+        ...(isAudiobook
+          ? {
+              listening_start_seconds: input.listeningStartSeconds ?? 0,
+              listening_end_seconds: input.listeningEndSeconds ?? 0,
+              listening_seconds: calculateAudiobookSessionDuration(
+                input.listeningStartSeconds ?? 0,
+                input.listeningEndSeconds ?? 0
+              ),
+            }
+          : {}),
+        session_date:
+          input.sessionDate ??
+          localDateKey(input.createdAt ? new Date(input.createdAt) : new Date()),
+        activity_kind: input.activityKind ?? "session",
+        ...(input.createdAt ? { created_at: input.createdAt } : {}),
+      })
+      .select("*")
+      .single()
+  );
 
   if (error) return { error: error.message };
   return { session: data as ReadingSession };
@@ -245,6 +251,7 @@ export async function getReadingPagesByDay(
 export type UpdateReadingSessionInput = {
   note?: string | null;
   mood?: string | null;
+  moods?: string[] | null;
 };
 
 export async function updateReadingSession(
@@ -252,25 +259,33 @@ export async function updateReadingSession(
   input: UpdateReadingSessionInput
 ): Promise<{ error?: string; session?: ReadingSession }> {
   const supabase = createClient();
-  const patch: { note?: string | null; mood?: string | null } = {};
+  const patch: { note?: string | null; mood?: string | null; moods?: string[] } = {};
 
   if (input.note !== undefined) {
     patch.note = input.note?.trim() ? input.note.trim() : null;
   }
-  if (input.mood !== undefined) {
-    patch.mood = input.mood || null;
+  if (input.moods !== undefined || input.mood !== undefined) {
+    Object.assign(
+      patch,
+      sessionMoodsWritePatch(input.moods ?? (input.mood ? [input.mood] : []))
+    );
   }
 
   if (Object.keys(patch).length === 0) {
     return { error: "Nothing to update." };
   }
 
-  const { data, error } = await supabase
-    .from("reading_sessions")
-    .update(patch)
-    .eq("id", sessionId)
-    .select("*")
-    .single();
+  const { data, error } = await withSessionMoodsWrite((includeMoodsColumn) => {
+    const nextPatch = includeMoodsColumn
+      ? patch
+      : Object.fromEntries(Object.entries(patch).filter(([key]) => key !== "moods"));
+    return supabase
+      .from("reading_sessions")
+      .update(nextPatch)
+      .eq("id", sessionId)
+      .select("*")
+      .single();
+  });
 
   if (error) return { error: error.message };
   return { session: data as ReadingSession };

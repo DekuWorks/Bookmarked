@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { BookCover } from "@/components/books/BookCover";
-import { SessionMoodChip } from "@/components/books/SessionMoodPicker";
+import { SessionMoodChips } from "@/components/books/SessionMoodPicker";
+import { sessionMoodsFromRow } from "@bookmarked/utils/sessionMoods";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -170,9 +171,9 @@ export function TrailPanel({ sessions }: Props) {
           ) : (
             <p className="mt-4 text-sm italic text-text-muted">No note for this session.</p>
           )}
-          {activeSession.mood ? (
+          {sessionMoodsFromRow(activeSession).length ? (
             <div className="mt-3">
-              <SessionMoodChip mood={activeSession.mood} />
+              <SessionMoodChips moods={sessionMoodsFromRow(activeSession)} />
             </div>
           ) : null}
           {activeBook.bookId ? (

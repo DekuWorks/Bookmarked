@@ -39,10 +39,11 @@ function formatNoteDate(iso: string): string {
 type Props = {
   note: ReadingNote;
   userBookId: string;
+  book?: { id: string; title: string; cover_url?: string | null } | null;
   onChange?: () => void;
 };
 
-export function ReadingNoteCard({ note, userBookId, onChange }: Props) {
+export function ReadingNoteCard({ note, userBookId, book, onChange }: Props) {
   const toast = useToast();
   const { customLookup } = useReadingNoteCategories(note.user_id);
   const [editing, setEditing] = useState(false);
@@ -118,7 +119,7 @@ export function ReadingNoteCard({ note, userBookId, onChange }: Props) {
       ) : null}
 
       <div className="mt-4 flex flex-wrap gap-1">
-        <ShareNoteButton note={note} />
+        <ShareNoteButton note={note} book={book} />
         <Button
           type="button"
           variant="ghost"

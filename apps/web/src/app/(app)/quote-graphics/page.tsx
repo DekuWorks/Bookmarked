@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { QuoteGraphicsStudio } from "@/components/quotes/QuoteGraphicsStudio";
-import { PLUS_UNLIMITED_FAIR_USE_COPY } from "@bookmarked/utils/subscription";
+import { QUOTE_GRAPHICS_PAGE_SUBTITLE } from "@bookmarked/utils/quoteGraphics";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { layout } from "@/lib/constants/layout";
@@ -28,17 +28,11 @@ export default function QuoteGraphicsPage() {
     <div className={layout.pageStack}>
       <header className={layout.pageHeader}>
         <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Quote graphics</h1>
-        <p className="mt-1 text-text-muted">
-          Create shareable quote cards. Free includes 3 per month. {PLUS_UNLIMITED_FAIR_USE_COPY}
-        </p>
+        <p className="mt-1 text-text-muted">{QUOTE_GRAPHICS_PAGE_SUBTITLE}</p>
       </header>
       <p>
         <Link href="/notes/" className="text-sm font-medium text-primary hover:underline">
           ← Back to notes
-        </Link>
-        {" · "}
-        <Link href="/quote-scanner/" className="text-sm font-medium text-primary hover:underline">
-          Quote scanner
         </Link>
       </p>
       <QuoteGraphicsStudio userId={user.id} />

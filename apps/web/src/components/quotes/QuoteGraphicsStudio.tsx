@@ -1,109 +1,136 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { FeatureLimitModal } from "@/components/premium/FeatureLimitModal";
 import { Button } from "@/components/ui/Button";
-import { Textarea } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
+import { NotesBookFilter } from "@/components/notes/NotesBookFilter";
+import { QuoteGraphicCard } from "@/components/quotes/QuoteGraphicCard";
+import { QuoteGraphicsVault } from "@/components/quotes/QuoteGraphicsVault";
+import { getQuoteGraphicsRemaining } from "@/lib/services/usageCounters";
 import {
-  consumeQuoteGraphicSlot,
-  getQuoteGraphicsRemaining,
-  refundQuoteGraphicSlot,
-} from "@/lib/services/usageCounters";
-import { searchNotes } from "@/lib/services/readingNotes";
+  createQuoteGraphic,
+  listQuoteGraphicSources,
+  listQuoteGraphics,
+} from "@/lib/services/quoteGraphics";
 import { isEntitlementLimitError } from "@/lib/utils/subscription";
-import { PLUS_UNLIMITED_FAIR_USE_COPY } from "@bookmarked/utils/subscription";
-import { cn } from "@/lib/utils/cn";
+import {
+  QUOTE_GRAPHICS_EMPTY_COPY,
+  QUOTE_GRAPHICS_SELECT_BOOK_FIRST,
+  QUOTE_GRAPHICS_VAULT_LABEL,
+  buildQuoteGraphicAttribution,
+  buildQuoteGraphicBookOptions,
+  monthlyLimitCopy,
+  quotesForSelectedBook,
+  type QuoteGraphicSourceNote,
+} from "@bookmarked/utils/quoteGraphics";
+import type { QuoteGraphic } from "@/types";
+import { webFeedComposerHref } from "@bookmarked/utils/feedComposer";
 
 type Props = {
   userId: string;
+  unlimited?: boolean;
 };
 
-const FEATURE_FLAG_AI_GRAPHICS = false;
-
-/**
- * Free: 3 quote graphics / month via usage_counters.
- * Generation is feature-flagged; preview still works locally without consuming
- * a slot until the user confirms "Save graphic".
- */
-export function QuoteGraphicsStudio({ userId }: Props) {
+export function QuoteGraphicsStudio({ userId, unlimited = false }: Props) {
   const toast = useToast();
-  const [quote, setQuote] = useState("");
-  const [attribution, setAttribution] = useState("");
-  const [favorites, setFavorites] = useState<Array<{ id: string; quote: string }>>([]);
+  const [sources, setSources] = useState<QuoteGraphicSourceNote[] | null>(null);
+  const [vault, setVault] = useState<QuoteGraphic[] | null>(null);
+  const [userBookId, setUserBookId] = useState<string | null>(null);
+  const [noteId, setNoteId] = useState<string | null>(null);
   const [remaining, setRemaining] = useState<number | null>(null);
-  const [preview, setPreview] = useState(false);
   const [saving, setSaving] = useState(false);
   const [limitOpen, setLimitOpen] = useState(false);
+  const [preview, setPreview] = useState(false);
+  const [vaultOpen, setVaultOpen] = useState(false);
 
   const refreshRemaining = useCallback(async () => {
-    const value = await getQuoteGraphicsRemaining(userId);
-    setRemaining(value);
+    setRemaining(await getQuoteGraphicsRemaining(userId));
+  }, [userId]);
+
+  const loadSources = useCallback(async () => {
+    const notes = await listQuoteGraphicSources(userId);
+    setSources(notes);
+  }, [userId]);
+
+  const loadVault = useCallback(async () => {
+    const rows = await listQuoteGraphics(userId);
+    setVault(rows);
   }, [userId]);
 
   useEffect(() => {
-    void refreshRemaining();
-    void searchNotes({ userId, category: "favorite_quote", limit: 25 }).then((notes) => {
-      setFavorites(
-        notes
-          .filter((note) => note.quote?.trim())
-          .map((note) => ({ id: note.id, quote: note.quote!.trim() }))
-      );
-    });
-  }, [refreshRemaining, userId]);
+    void (async () => {
+      await refreshRemaining();
+      await loadSources();
+      await loadVault();
+    })();
+  }, [refreshRemaining, loadSources, loadVault]);
 
-  async function handlePreview() {
-    if (!quote.trim()) {
-      toast.error("Add a quote to preview.");
+  const books = useMemo(
+    () => buildQuoteGraphicBookOptions(sources ?? []),
+    [sources]
+  );
+  const quotes = useMemo(
+    () => quotesForSelectedBook(sources ?? [], userBookId),
+    [sources, userBookId]
+  );
+  const selectedNote = quotes.find((note) => note.id === noteId) ?? null;
+  const attribution = selectedNote ? buildQuoteGraphicAttribution(selectedNote) : "";
+
+  async function handleGenerate() {
+    if (!selectedNote) {
+      toast.error("Select a book and quote first.");
       return;
     }
-    setPreview(true);
-  }
-
-  async function handleSaveGraphic() {
-    if (!quote.trim()) {
-      toast.error("Add a quote first.");
-      return;
-    }
-
     if (remaining === 0) {
       setLimitOpen(true);
       return;
     }
-
     setSaving(true);
-    let consumed = false;
-    try {
-      if (FEATURE_FLAG_AI_GRAPHICS) {
-        // Reserved for Higgsfield / AI render path.
-        throw new Error("AI quote graphics are not enabled yet.");
-      }
-
-      const result = await consumeQuoteGraphicSlot(userId);
-      if (!result.ok) {
-        if (isEntitlementLimitError(result.error)) {
-          setLimitOpen(true);
-        } else {
-          toast.error(result.error);
-        }
-        return;
-      }
-      consumed = true;
-
-      setRemaining(result.remaining);
-      setPreview(true);
-      toast.success(
-        `Graphic saved to your vault preview. ${result.remaining} remaining this month.`
-      );
-    } catch (error) {
-      if (consumed) {
-        await refundQuoteGraphicSlot(userId);
-        await refreshRemaining();
-      }
-      toast.error(error instanceof Error ? error.message : "Could not create graphic.");
-    } finally {
-      setSaving(false);
+    const result = await createQuoteGraphic({ userId, note: selectedNote });
+    setSaving(false);
+    if (result.error === "limit" || (result.error && isEntitlementLimitError(result.error))) {
+      setLimitOpen(true);
+      return;
     }
+    if (result.error || !result.graphic) {
+      toast.error(result.error ?? "Could not create graphic.");
+      return;
+    }
+    setRemaining(result.remaining ?? remaining);
+    setPreview(true);
+    setVault((current) => [result.graphic!, ...(current ?? [])]);
+    toast.success(
+      result.remaining == null
+        ? "Graphic saved to your Quote Graphics Vault."
+        : `Graphic saved to your Quote Graphics Vault. ${result.remaining} remaining this month.`
+    );
+  }
+
+  if (sources && sources.length === 0) {
+    return (
+      <section className="surface-card space-y-4 p-5 sm:p-6">
+        <h2 className="text-center font-display text-xl text-puce-red">Quote Graphics</h2>
+        <p className="text-center text-sm text-text-muted">{QUOTE_GRAPHICS_EMPTY_COPY}</p>
+        <p className="text-center">
+          <Link href="/notes/" className="text-sm font-medium text-primary hover:underline">
+            Open Reading Notes
+          </Link>
+        </p>
+        <div className="flex justify-center">
+          <Button type="button" variant="ghost" onClick={() => setVaultOpen((open) => !open)}>
+            {QUOTE_GRAPHICS_VAULT_LABEL}
+          </Button>
+        </div>
+        {vaultOpen ? (
+          <QuoteGraphicsVault
+            items={vault ?? []}
+            shareHref={(id) => webFeedComposerHref({ quoteGraphicId: id })}
+          />
+        ) : null}
+      </section>
+    );
   }
 
   return (
@@ -115,92 +142,84 @@ export function QuoteGraphicsStudio({ userId }: Props) {
         limitMessage="Free members can create 3 quote graphics per month. Upgrade to Bookmarked Plus for unlimited graphics."
       />
 
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="font-display text-xl text-puce-red">Quote graphics</h2>
-          <p className="mt-1 text-sm text-text-muted">
-            Turn a favorite line into a shareable card. Free members get 3 per month.
-          </p>
-          <p className="mt-1 text-xs text-text-muted">{PLUS_UNLIMITED_FAIR_USE_COPY}</p>
-        </div>
+      <h2 className="text-center font-display text-xl text-puce-red">Quote Graphics</h2>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs text-text-muted">{monthlyLimitCopy(unlimited)}</p>
         <span className="rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-puce-red">
           {remaining == null ? "…" : `${remaining} left this month`}
         </span>
       </div>
 
-      {!FEATURE_FLAG_AI_GRAPHICS ? (
-        <p className="rounded-xl border border-dashed border-border bg-background/60 px-3 py-2 text-xs text-text-muted">
-          Graphics are generated from your favorite quotes. A Free monthly slot is used only after a
-          graphic saves successfully.
-        </p>
-      ) : null}
-
-      {favorites.length > 0 ? (
-        <label className="block text-sm font-medium text-text">
-          Favorite quote
-          <select
-            className="mt-1.5 w-full min-h-[44px] rounded-lg border border-border bg-surface px-3 py-2"
-            value=""
-            onChange={(event) => {
-              const selected = favorites.find((item) => item.id === event.target.value);
-              if (selected) setQuote(selected.quote);
-            }}
-          >
-            <option value="">Choose a saved favorite…</option>
-            {favorites.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.quote.slice(0, 80)}
-              </option>
-            ))}
-          </select>
-        </label>
-      ) : null}
-
-      <Textarea
-        label="Quote"
-        value={quote}
-        onChange={(e) => setQuote(e.target.value)}
-        placeholder="Pick a favorite quote or paste a line…"
-        className="min-h-[96px]"
+      <NotesBookFilter
+        options={books}
+        selectedUserBookId={userBookId}
+        onSelect={(next) => {
+          setUserBookId(next);
+          setNoteId(null);
+          setPreview(false);
+        }}
       />
-      <Textarea
-        label="Attribution (optional)"
-        value={attribution}
-        onChange={(e) => setAttribution(e.target.value)}
-        placeholder="Book or author"
-        className="min-h-[64px]"
-      />
+
+      <label className="block text-sm font-medium text-text">
+        Quote
+        <select
+          className="mt-1.5 w-full min-h-[44px] rounded-lg border border-border bg-surface px-3 py-2 disabled:opacity-60"
+          disabled={!userBookId}
+          value={noteId ?? ""}
+          aria-label="Quote"
+          aria-disabled={!userBookId}
+          onChange={(event) => {
+            setNoteId(event.target.value || null);
+            setPreview(false);
+          }}
+        >
+          <option value="">
+            {userBookId ? "Choose a saved quote…" : QUOTE_GRAPHICS_SELECT_BOOK_FIRST}
+          </option>
+          {quotes.map((note) => (
+            <option key={note.id} value={note.id}>
+              {note.quote!.trim().slice(0, 80)}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      {selectedNote ? (
+        <p className="text-sm text-text-muted">Attribution: {attribution || "—"}</p>
+      ) : null}
 
       <div className="flex flex-wrap gap-2">
-        <Button type="button" variant="outline" onClick={() => void handlePreview()}>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={!selectedNote}
+          onClick={() => setPreview(true)}
+        >
           Preview
         </Button>
         <Button
           type="button"
           variant="secondary"
           loading={saving}
-          onClick={() => void handleSaveGraphic()}
+          disabled={!selectedNote}
+          onClick={() => void handleGenerate()}
         >
-          Save graphic
+          Generate
+        </Button>
+        <Button type="button" variant="ghost" onClick={() => setVaultOpen((open) => !open)}>
+          {QUOTE_GRAPHICS_VAULT_LABEL}
         </Button>
       </div>
 
-      {preview && quote.trim() ? (
-        <figure
-          className={cn(
-            "rounded-2xl border border-border bg-gradient-to-br from-puce-red via-[#7a3d4a] to-primary p-6 text-white",
-            "motion-safe:transition-opacity motion-reduce:transition-none"
-          )}
-          aria-label="Quote graphic preview"
-        >
-          <blockquote className="font-display text-xl leading-relaxed">
-            “{quote.trim()}”
-          </blockquote>
-          {attribution.trim() ? (
-            <figcaption className="mt-4 text-sm text-white/85">— {attribution.trim()}</figcaption>
-          ) : null}
-          <p className="mt-6 text-[11px] uppercase tracking-[0.2em] text-white/70">Bookmarked</p>
-        </figure>
+      {preview && selectedNote ? (
+        <QuoteGraphicCard quote={selectedNote.quote ?? ""} attribution={attribution} />
+      ) : null}
+
+      {vaultOpen ? (
+        <QuoteGraphicsVault
+          items={vault ?? []}
+          shareHref={(id) => webFeedComposerHref({ quoteGraphicId: id })}
+        />
       ) : null}
     </section>
   );

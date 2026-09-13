@@ -1,31 +1,47 @@
-import { useCallback, useEffect, useState } from "react";
-import { ScrollView, Text, TextInput, View } from "react-native";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Button } from "../../src/components/Button";
 import { FeatureLimitModal } from "../../src/components/FeatureLimitModal";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
+import { NotesBookFilterButton, NotesBookFilterSheet } from "../../src/components/reading-room/NotesBookFilterSheet";
+import { getQuoteGraphicsRemaining } from "../../src/services/usageCounters";
 import {
-  consumeQuoteGraphicSlot,
-  getQuoteGraphicsRemaining,
-  refundQuoteGraphicSlot,
-} from "../../src/services/usageCounters";
-import { searchNotesWithBooks } from "../../src/services/readingNotes";
+  createQuoteGraphic,
+  listQuoteGraphicSources,
+  listQuoteGraphics,
+} from "../../src/services/quoteGraphics";
 import { useAuthStore } from "../../src/store/authStore";
 import { isEntitlementLimitError } from "../../src/utils/subscription";
-import { PLUS_UNLIMITED_FAIR_USE_COPY } from "../../../../packages/utils/subscription";
+import {
+  QUOTE_GRAPHICS_EMPTY_COPY,
+  QUOTE_GRAPHICS_PAGE_SUBTITLE,
+  QUOTE_GRAPHICS_SELECT_BOOK_FIRST,
+  QUOTE_GRAPHICS_VAULT_LABEL,
+  buildQuoteGraphicAttribution,
+  buildQuoteGraphicBookOptions,
+  monthlyLimitCopy,
+  quoteGraphicSnippet,
+  quotesForSelectedBook,
+  type QuoteGraphicSourceNote,
+} from "../../../../packages/utils/quoteGraphics";
+import { mobileComposeHref } from "../../../../packages/utils/feedComposer";
+import type { QuoteGraphic } from "../../src/types";
 import { SANS_FONT, SANS_FONT_BOLD, SERIF_DISPLAY_FONT } from "../../src/constants/theme";
 import { useThemeColors } from "../../src/store/themeStore";
 import { TAB_BAR_SPACE } from "../../src/navigation/TabBarScroll";
-
-const FEATURE_FLAG_AI_GRAPHICS = false;
 
 export default function QuoteGraphicsRoute() {
   const router = useRouter();
   const colors = useThemeColors();
   const userId = useAuthStore((s) => s.user?.id);
-  const [quote, setQuote] = useState("");
-  const [attribution, setAttribution] = useState("");
-  const [favorites, setFavorites] = useState<Array<{ id: string; quote: string }>>([]);
+  const [sources, setSources] = useState<QuoteGraphicSourceNote[] | null>(null);
+  const [vault, setVault] = useState<QuoteGraphic[]>([]);
+  const [userBookId, setUserBookId] = useState<string | null>(null);
+  const [noteId, setNoteId] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [quotePickerOpen, setQuotePickerOpen] = useState(false);
+  const [vaultOpen, setVaultOpen] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
   const [preview, setPreview] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -40,55 +56,43 @@ export default function QuoteGraphicsRoute() {
   useEffect(() => {
     void refreshRemaining();
     if (!userId) return;
-    void searchNotesWithBooks({ userId, category: "favorite_quote", limit: 25 }).then(({ notes }) => {
-      setFavorites(
-        notes
-          .filter((note) => note.quote?.trim())
-          .map((note) => ({ id: note.id, quote: note.quote!.trim() }))
-      );
-    });
+    void listQuoteGraphicSources(userId).then(setSources);
+    void listQuoteGraphics(userId).then(setVault);
   }, [refreshRemaining, userId]);
 
-  async function handleSave() {
-    if (!userId) return;
-    if (!quote.trim()) {
-      setMessage("Add a quote first.");
+  const books = useMemo(() => buildQuoteGraphicBookOptions(sources ?? []), [sources]);
+  const quotes = useMemo(
+    () => quotesForSelectedBook(sources ?? [], userBookId),
+    [sources, userBookId]
+  );
+  const selectedNote = quotes.find((note) => note.id === noteId) ?? null;
+  const attribution = selectedNote ? buildQuoteGraphicAttribution(selectedNote) : "";
+
+  async function handleGenerate() {
+    if (!userId || !selectedNote) {
+      setMessage("Select a book and quote first.");
       return;
     }
     if (remaining === 0) {
       setLimitOpen(true);
       return;
     }
-
     setSaving(true);
     setMessage(null);
-    let consumed = false;
-    try {
-      if (FEATURE_FLAG_AI_GRAPHICS) {
-        throw new Error("AI quote graphics are not enabled yet.");
-      }
-      const result = await consumeQuoteGraphicSlot(userId);
-      if (!result.ok) {
-        if (isEntitlementLimitError(result.error)) {
-          setLimitOpen(true);
-        } else {
-          setMessage(result.error);
-        }
-        return;
-      }
-      consumed = true;
-      setRemaining(result.remaining);
-      setPreview(true);
-      setMessage(`Saved. ${result.remaining} left this month.`);
-    } catch (error) {
-      if (consumed) {
-        await refundQuoteGraphicSlot(userId);
-        await refreshRemaining();
-      }
-      setMessage(error instanceof Error ? error.message : "Could not create graphic.");
-    } finally {
-      setSaving(false);
+    const result = await createQuoteGraphic({ userId, note: selectedNote });
+    setSaving(false);
+    if (result.error === "limit" || (result.error && isEntitlementLimitError(result.error))) {
+      setLimitOpen(true);
+      return;
     }
+    if (result.error || !result.graphic) {
+      setMessage(result.error ?? "Could not create graphic.");
+      return;
+    }
+    setRemaining(result.remaining ?? remaining);
+    setPreview(true);
+    setVault((current) => [result.graphic!, ...current]);
+    setMessage(`Saved to Vault. ${result.remaining} left this month.`);
   }
 
   return (
@@ -100,53 +104,73 @@ export default function QuoteGraphicsRoute() {
         featureLabel="Quote graphics"
         limitMessage="Free members can create 3 quote graphics per month. Upgrade to Bookmarked Plus for unlimited graphics."
       />
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: TAB_BAR_SPACE }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: TAB_BAR_SPACE }}>
         <Text style={{ fontFamily: SANS_FONT, color: colors.inkMuted }}>
-          Graphics start from your favorite quotes. A Free monthly slot is used only after a graphic
-          saves successfully. {PLUS_UNLIMITED_FAIR_USE_COPY}
+          {QUOTE_GRAPHICS_PAGE_SUBTITLE}
         </Text>
+        <Text className="mt-3 text-center text-xl text-puce-red" style={{ fontFamily: SERIF_DISPLAY_FONT }}>
+          Quote Graphics
+        </Text>
+        <Text className="mt-2 text-xs text-ink-muted">{monthlyLimitCopy(false)}</Text>
         <Text className="mt-2 text-xs font-semibold text-puce-red" style={{ fontFamily: SANS_FONT_BOLD }}>
           {remaining == null ? "…" : `${remaining} left this month`}
         </Text>
 
-        {favorites.length > 0 ? (
-          <View className="mt-5">
-            <Text className="mb-2 text-sm font-medium text-ink">Favorite quote</Text>
-            {favorites.map((item) => (
+        {sources && sources.length === 0 ? (
+          <>
+            <Text className="mt-6 text-sm text-ink-muted">{QUOTE_GRAPHICS_EMPTY_COPY}</Text>
+            <View className="mt-4">
               <Button
-                key={item.id}
-                title={item.quote.slice(0, 80)}
+                title={QUOTE_GRAPHICS_VAULT_LABEL}
                 variant="ghost"
-                onPress={() => setQuote(item.quote)}
+                onPress={() => setVaultOpen((open) => !open)}
               />
-            ))}
-          </View>
-        ) : null}
-
-        <Text className="mt-5 mb-2 text-sm font-medium text-ink">Quote</Text>
-        <TextInput
-          value={quote}
-          onChangeText={setQuote}
-          multiline
-          placeholder="Paste a passage…"
-          placeholderTextColor="#A99DAE"
-          className="min-h-[100px] rounded-2xl border border-brand-border bg-surface px-3 py-3 text-ink"
-        />
-
-        <Text className="mt-4 mb-2 text-sm font-medium text-ink">Attribution</Text>
-        <TextInput
-          value={attribution}
-          onChangeText={setAttribution}
-          placeholder="Book or author"
-          placeholderTextColor="#A99DAE"
-          className="min-h-[44px] rounded-2xl border border-brand-border bg-surface px-3 py-3 text-ink"
-        />
-
-        <View className="mt-4 gap-2">
-          <Button title="Preview" variant="secondary" onPress={() => setPreview(Boolean(quote.trim()))} />
-          <Button title="Save graphic" loading={saving} onPress={() => void handleSave()} />
-          <Button title="Back to notes" variant="ghost" onPress={() => router.push("/(app)/notes")} />
-        </View>
+            </View>
+          </>
+        ) : (
+          <>
+            <View className="mt-5">
+              <NotesBookFilterButton
+                options={books}
+                selectedUserBookId={userBookId}
+                onPress={() => setPickerOpen(true)}
+              />
+            </View>
+            <Pressable
+              disabled={!userBookId}
+              onPress={() => userBookId && setQuotePickerOpen(true)}
+              accessibilityLabel="Quote"
+              className={`mt-4 min-h-[44px] justify-center rounded-xl border border-brand-border bg-surface px-3 ${
+                userBookId ? "" : "opacity-60"
+              }`}
+            >
+              <Text className="text-sm text-ink">
+                {selectedNote
+                  ? quoteGraphicSnippet(selectedNote.quote ?? "")
+                  : userBookId
+                    ? "Choose a saved quote…"
+                    : QUOTE_GRAPHICS_SELECT_BOOK_FIRST}
+              </Text>
+            </Pressable>
+            {selectedNote ? (
+              <Text className="mt-2 text-sm text-ink-muted">Attribution: {attribution || "—"}</Text>
+            ) : null}
+            <View className="mt-4 gap-2">
+              <Button
+                title="Preview"
+                variant="secondary"
+                onPress={() => setPreview(Boolean(selectedNote))}
+              />
+              <Button title="Generate" loading={saving} onPress={() => void handleGenerate()} />
+              <Button
+                title={QUOTE_GRAPHICS_VAULT_LABEL}
+                variant="ghost"
+                onPress={() => setVaultOpen((open) => !open)}
+              />
+              <Button title="Back to notes" variant="ghost" onPress={() => router.push("/(app)/notes")} />
+            </View>
+          </>
+        )}
 
         {message ? (
           <Text className="mt-3 text-sm" style={{ fontFamily: SANS_FONT, color: colors.inkMuted }}>
@@ -154,20 +178,76 @@ export default function QuoteGraphicsRoute() {
           </Text>
         ) : null}
 
-        {preview && quote.trim() ? (
+        {preview && selectedNote ? (
           <View className="mt-5 rounded-2xl bg-puce-red p-5">
             <Text className="text-xl leading-7 text-white" style={{ fontFamily: SERIF_DISPLAY_FONT }}>
-              “{quote.trim()}”
+              “{selectedNote.quote?.trim()}”
             </Text>
-            {attribution.trim() ? (
+            {attribution ? (
               <Text className="mt-3 text-sm text-white/85" style={{ fontFamily: SANS_FONT }}>
-                — {attribution.trim()}
+                — {attribution}
               </Text>
             ) : null}
             <Text className="mt-6 text-[11px] uppercase tracking-widest text-white/70">Bookmarked</Text>
           </View>
         ) : null}
+
+        {vaultOpen
+          ? vault.map((graphic) => (
+              <View key={graphic.id} className="mt-4 rounded-2xl border border-brand-border p-3">
+                <View className="rounded-2xl bg-puce-red p-4">
+                  <Text className="text-lg text-white" style={{ fontFamily: SERIF_DISPLAY_FONT }}>
+                    “{graphic.quote_text}”
+                  </Text>
+                  {graphic.attribution ? (
+                    <Text className="mt-2 text-sm text-white/85">— {graphic.attribution}</Text>
+                  ) : null}
+                </View>
+                <Text className="mt-2 text-xs text-ink-muted">
+                  {graphic.book?.title ?? "Quote graphic"}
+                </Text>
+                <Button
+                  title="Share to Feed"
+                  variant="ghost"
+                  onPress={() =>
+                    router.push(mobileComposeHref({ quoteGraphicId: graphic.id, bookId: graphic.book_id }))
+                  }
+                />
+              </View>
+            ))
+          : null}
       </ScrollView>
+
+      <NotesBookFilterSheet
+        visible={pickerOpen}
+        options={books}
+        selectedUserBookId={userBookId}
+        onClose={() => setPickerOpen(false)}
+        onSelect={(next) => {
+          setUserBookId(next);
+          setNoteId(null);
+          setPickerOpen(false);
+        }}
+      />
+      {quotePickerOpen ? (
+        <View className="absolute inset-0 bg-background px-4 pt-16">
+          <Pressable onPress={() => setQuotePickerOpen(false)} className="mb-3 min-h-[44px] justify-center">
+            <Text className="text-sm font-semibold text-primary-dark">Done</Text>
+          </Pressable>
+          {quotes.map((note) => (
+            <Pressable
+              key={note.id}
+              onPress={() => {
+                setNoteId(note.id);
+                setQuotePickerOpen(false);
+              }}
+              className="min-h-[44px] justify-center border-b border-brand-border py-3"
+            >
+              <Text className="text-sm text-ink">{note.quote}</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }

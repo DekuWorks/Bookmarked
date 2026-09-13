@@ -29,6 +29,7 @@ export type PlusInsightSession = {
   session_format?: string | null;
   activity_kind?: string | null;
   mood?: string | null;
+  moods?: string[] | null;
   bookAuthor?: string | null;
 };
 
