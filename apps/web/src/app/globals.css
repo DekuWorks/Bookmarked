@@ -188,6 +188,12 @@ body {
   animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
 /* Reusable surface cards — white cards with subtle depth */
 .surface-card {
   border-radius: 1rem;

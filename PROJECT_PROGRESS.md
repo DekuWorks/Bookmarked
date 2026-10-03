@@ -1594,6 +1594,65 @@ Branch: `cursor/twelfth-sprint-remaining-1bf6`. Web + native iPhone/iPad. Androi
 
 ---
 
+## SPRINT 1 — HOME / OVERVIEW STABILIZATION
+
+Branch: `feature/sprint-1-overview-stabilization`. Web + iPhone + iPad (shared layout). Android out of scope. No schema or RLS changes.
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Overview Information Architecture | ✅ | Order is Currently Reading → Recently Finished + Favorites → Quick Actions → Recent Activity. Reading Goal stays on Progress. No Dashboard tab. `/dashboard/` still redirects to the Reading Room for old links. |
+| Overview Title Standardization | ✅ | Shared `OVERVIEW_SECTION_TITLES`. Web headings use `READING_ROOM_SECTION_HEADING_CLASS` (`leading-tight` included). iOS Overview sections use `SECTION_CARD_HEADING_CLASS` and a centered header. |
+| Currently Reading Card Alignment | ✅ | Web cards share max width 220 and min height 356 in one grid. iOS book slots and Add Book use the native 96×224 box. |
+| Currently Reading Add Book Card | ✅ | Add Book uses `currentlyReadingCardBoxStyle` (same width, min height, radius). Existing TBR / search flow is unchanged. |
+| Recently Finished Cover Rendering | ✅ | Shared `OVERVIEW_SHELF_COVER` (`object-fit` / `resizeMode: contain`, 80×120). Missing art still uses `BookCover` fallback. |
+| Favorites Cover Rendering | ✅ | Same cover frame as Recently Finished on web and iOS. |
+| Favorites View All | ✅ | `/library/favorites/` and `/library/favorites` with `origin=home_overview`. Screen lists `is_favorite` books only. |
+| Overview Shelf Back Navigation | ✅ | `home_overview` returns to Reading Room Overview. `library_shelf` returns to Library. Missing origin falls back to Library. Web shelf back is `explicit` so it does not use browser history. |
+| Duplicate Back Navigation Cleanup | ✅ | iOS shelf keeps one `ScreenHeader` back. Web shelf keeps one `OriginBackNav`. |
+| Quick Actions Content | ✅ | Open Library, Book Clubs, Reading Challenges. Continue Reading, Search Books, and Trail are not Quick Actions. No fourth card. |
+| Quick Actions Alignment | ✅ | Shared min height 112. Web: 1 column, 3 columns from `md`. iOS: stacked on phone, equal row from `md`. |
+| Quick Actions Color System | ✅ | `#e7a4a6`, `#eb9f8e`, Bookmarked purple `#B89DBB` (`--color-primary` / `BRAND.primary`). `#d18dbe` stays reserved. Text contrast ≥ 4.5:1 on each fill. |
+| Recent Activity Header | ✅ | Title centered. “View all activity” centered directly underneath. Link still opens History. |
+| Recent Activity Layout | ✅ | Existing activity rows. Failed fetch shows an error line instead of the empty copy. |
+| Overview Loading States | ✅ | Reading Room waits for the library query before Overview. Activity stays on a skeleton (web) or loading line (iOS) until the query finishes. `overviewContentPhase` never reports loading as empty. |
+| Overview Empty States | ✅ | Currently Reading offers Add Book. Recently Finished and Favorites explain that finished or starred books will show up. Favorites can open Search. |
+| Overview Responsive Layout | ✅ | Recently Finished and Favorites sit side by side from `md` (web and iOS) and stack below that. Quick Actions are one column until `md`, then three equal columns. No per-device margin hacks. |
+| Overview Accessibility | ✅ | Section titles are headings. Shelf and Quick Action controls are links or buttons with labels. Covers keep “Cover of {title}”. Quick Action touch height is at least 112px. Web skeleton animation turns off for reduced motion. |
+| Overview Light/Dark Mode | ✅ | Section chrome uses existing theme tokens. Quick Action fills stay the approved colours in both modes, with the shared contrast text colour. |
+| Overview Regression Testing | ✅ | `packages/utils/overviewSprint.test.ts` plus existing overview copy, quick action, cover, and origin tests. Web and iOS `tsc --noEmit` passed. |
+
+### Implementation summary
+
+Overview is still the Reading Room home tab. Shelf data comes from the signed-in user's `user_books` query. Activity reads that user's `activity_events` (limit 12). No service-role client and no RLS change.
+
+### Files / components
+
+- Shared: `packages/utils/overviewCopy.ts`, `overviewQuickActions.ts`, `overviewSprint.test.ts`, `packages/utils/index.ts`
+- Web: `OverviewTab`, `CurrentlyReadingRow`, `AddBookCoverCard`, `OverviewBookShelf`, `QuickActionCard`, `ActivityFeed`, `OriginBackNav`, `ShelfPageClient`, `sectionHeading.ts`, `globals.css`
+- iOS: `OverviewTab`, `CurrentlyReadingRow`, `AddBookCoverCard`, `OverviewBookShelf`, `QuickActionCard`, `ActivityFeed`, `SectionCard`
+
+### Database / backend
+
+None.
+
+### Tests
+
+- Added `packages/utils/overviewSprint.test.ts` (section order, Add Book box, Favorites route, origin back, single back control, Quick Actions, activity link, loading phase, cover fit)
+- Updated activity link copy and heading token assertions
+
+### Known limitations
+
+- Web Overview was checked signed-in at desktop width and at a 390px viewport (light and dark). Add Book and Currently Reading cards measured 220×358. Shelf covers used `object-fit: contain`. Favorites View All showed only the starred book. Finished shelf back returned to Overview or Library based on `origin`. iPhone/iPad simulator was not launched in this pass.
+- iOS activity loading is a text line. Web uses the existing `Skeleton`. There is no shared native skeleton component.
+- Favorites “View All” still filters the signed-in user's library in memory after the existing user-scoped `user_books` fetch.
+
+### Remaining product decisions
+
+- No fourth Quick Action was named. `#d18dbe` stays unused until you approve a real destination.
+- `/dashboard/` remains a redirect, not a tab, so old links do not 404.
+
+---
+
 ## Next up (recommended)
 
 | Priority | Item | Notes |

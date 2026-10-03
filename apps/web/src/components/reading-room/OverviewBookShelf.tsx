@@ -73,7 +73,10 @@ export function OverviewBookShelf({
 
             const inner = (
               <div className="flex items-start gap-3 rounded-xl border border-border bg-background p-3 transition hover:shadow-sm">
-                <div className="shrink-0 self-start" style={overviewShelfCoverBoxStyle()}>
+                <div
+                  className="shrink-0 self-start overflow-hidden bg-background"
+                  style={overviewShelfCoverBoxStyle()}
+                >
                   <BookCover
                     title={book?.title ?? "Untitled"}
                     author={book?.author}

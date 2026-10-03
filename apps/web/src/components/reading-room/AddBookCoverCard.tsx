@@ -38,12 +38,13 @@ export function AddBookCoverCard({ onClick, className }: Props) {
       onClick={onClick}
       aria-label={CURRENTLY_READING_ADD_COPY.cardLabel}
       style={{
-        width: box.width,
+        width: "100%",
+        maxWidth: box.width,
         minHeight: box.height,
         borderRadius: box.borderRadius,
       }}
       className={cn(
-        "inline-flex h-full shrink-0 items-center justify-center border border-border bg-primary/10 text-text-muted",
+        "inline-flex h-full shrink-0 items-center justify-center border border-border bg-primary/10 text-text-muted shadow-sm",
         "transition hover:border-primary hover:bg-primary/15 hover:text-puce-red",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange",
         className

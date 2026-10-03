@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { BookCover } from "../BookCover";
@@ -16,6 +15,7 @@ type Props = {
   emoji?: string;
   items: LibraryBookRow[];
   emptyMessage: string;
+  emptyAction?: { label: string; onPress: () => void };
   viewAllLabel: string;
   onViewAll: () => void;
   showFinishedDate?: boolean;
@@ -35,6 +35,7 @@ export function OverviewBookShelf({
   emoji,
   items,
   emptyMessage,
+  emptyAction,
   viewAllLabel,
   onViewAll,
   showFinishedDate = false,
@@ -47,14 +48,32 @@ export function OverviewBookShelf({
       title={title}
       shelfIconId={shelfIconId}
       emoji={emoji}
+      headerAlign="center"
       action={
-        <Pressable onPress={onViewAll} accessibilityRole="button">
+        <Pressable
+          onPress={onViewAll}
+          accessibilityRole="button"
+          accessibilityLabel={viewAllLabel}
+          className="min-h-11 items-center justify-center px-2"
+        >
           <Text className="text-sm font-semibold text-primary-dark">{viewAllLabel}</Text>
         </Pressable>
       }
     >
       {items.length === 0 ? (
-        <Text className="text-sm text-ink-muted">{emptyMessage}</Text>
+        <View className="items-center gap-2">
+          <Text className="text-center text-sm text-ink-muted">{emptyMessage}</Text>
+          {emptyAction ? (
+            <Pressable
+              onPress={emptyAction.onPress}
+              accessibilityRole="link"
+              accessibilityLabel={emptyAction.label}
+              className="min-h-11 items-center justify-center px-2"
+            >
+              <Text className="text-sm font-semibold text-primary-dark">{emptyAction.label}</Text>
+            </Pressable>
+          ) : null}
+        </View>
       ) : (
         <View className="gap-3">
           {items.map((item, index) => {
@@ -70,7 +89,7 @@ export function OverviewBookShelf({
                 accessibilityRole="button"
                 accessibilityLabel={book?.title ?? "Book"}
               >
-                <View className="shrink-0">
+                <View className="shrink-0 overflow-hidden bg-background">
                   <BookCover
                     url={book?.cover_url}
                     title={book?.title}
@@ -115,20 +134,4 @@ export function OverviewBookShelf({
       )}
     </SectionCard>
   );
-}
-
-export function useDeferredOverviewSections(active: boolean) {
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    if (!active) {
-      setReady(false);
-      return;
-    }
-
-    const timer = setTimeout(() => setReady(true), 0);
-    return () => clearTimeout(timer);
-  }, [active]);
-
-  return ready;
 }

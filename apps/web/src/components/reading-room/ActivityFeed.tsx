@@ -5,10 +5,13 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { formatActivityMessage } from "@/lib/services/activity";
 import { ReadingRoomSection } from "@/components/reading-room/ReadingRoomSection";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { readingRoomTabHref } from "@/lib/reading-room/readingRoomTabs";
 import {
   OVERVIEW_ACTIVITY_VIEW_ALL,
+  OVERVIEW_EMPTY_COPY,
   OVERVIEW_SECTION_TITLES,
+  overviewContentPhase,
 } from "@bookmarked/utils/overviewCopy";
 
 type ActivityEvent = {
@@ -19,16 +22,31 @@ type ActivityEvent = {
 
 export function ActivityFeed({ userId }: { userId: string }) {
   const [events, setEvents] = useState<ActivityEvent[] | null>(null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
+    let cancelled = false;
+    setFailed(false);
+    setEvents(null);
     void supabase
       .from("activity_events")
       .select("event_type, metadata_json, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(12)
-      .then(({ data }) => setEvents(data ?? []));
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) {
+          setFailed(true);
+          setEvents([]);
+          return;
+        }
+        setEvents(data ?? []);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [userId]);
 
   const sectionAction = (
@@ -40,21 +58,25 @@ export function ActivityFeed({ userId }: { userId: string }) {
     </Link>
   );
 
-  if (!events) {
+  const phase = failed ? "error" : overviewContentPhase(events === null, events?.length ?? 0);
+
+  if (phase === "loading") {
     return (
       <ReadingRoomSection
         title={OVERVIEW_SECTION_TITLES.recentActivity}
         action={sectionAction}
         actionLayout="stacked"
       >
-        <p className="text-center text-sm text-text-muted" role="status">
-          Loading activity…
-        </p>
+        <div className="mx-auto max-w-2xl space-y-3" role="status" aria-label={OVERVIEW_EMPTY_COPY.activityLoading}>
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+        </div>
       </ReadingRoomSection>
     );
   }
 
-  if (!events.length) {
+  if (phase === "error" || phase === "empty") {
     return (
       <ReadingRoomSection
         title={OVERVIEW_SECTION_TITLES.recentActivity}
@@ -62,8 +84,7 @@ export function ActivityFeed({ userId }: { userId: string }) {
         actionLayout="stacked"
       >
         <p className="rounded-xl border border-dashed border-border bg-background px-4 py-8 text-center text-sm text-text-muted">
-          Your reading activity will show up here as you add books, track progress, and write
-          reviews.
+          {phase === "error" ? OVERVIEW_EMPTY_COPY.activityError : OVERVIEW_EMPTY_COPY.recentActivity}
         </p>
       </ReadingRoomSection>
     );
@@ -76,7 +97,7 @@ export function ActivityFeed({ userId }: { userId: string }) {
       actionLayout="stacked"
     >
       <ul className="mx-auto max-w-2xl space-y-3" aria-label="Recent reading activity">
-        {events.map((event, i) => (
+        {(events ?? []).map((event, i) => (
           <li
             key={`${event.created_at}-${i}`}
             className="rounded-xl border border-border bg-background px-4 py-3 text-left text-sm"

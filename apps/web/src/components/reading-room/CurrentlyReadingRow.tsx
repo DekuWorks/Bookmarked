@@ -16,6 +16,7 @@ import {
   CURRENTLY_READING_CARD_SIZE,
   currentlyReadingCardBoxStyle,
 } from "@bookmarked/utils/currentlyReadingCard";
+import { OVERVIEW_EMPTY_COPY } from "@bookmarked/utils/overviewCopy";
 
 type Props = {
   items: LibraryBookRow[];
@@ -54,12 +55,19 @@ export function CurrentlyReadingRow({ items, onItemsChange }: Props) {
   return (
     <>
       {items.length === 0 ? (
-        <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-border bg-background px-4 py-10 text-center">
-          <p className="text-sm text-text-muted">You aren&apos;t currently reading anything.</p>
-          <AddBookCoverCard onClick={openAdd} />
+        <div className="flex flex-col items-center gap-4 text-center">
+          <p className="rounded-xl border border-dashed border-border bg-background px-4 py-6 text-sm text-text-muted">
+            {OVERVIEW_EMPTY_COPY.currentlyReading}
+          </p>
+          <div
+            className="w-full"
+            style={{ width: CURRENTLY_READING_CARD_SIZE.web.widthPx, maxWidth: "100%" }}
+          >
+            <AddBookCoverCard onClick={openAdd} className="w-full" />
+          </div>
         </div>
       ) : (
-        <ul className="mx-auto grid max-w-4xl justify-items-center gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="mx-auto grid w-full max-w-4xl grid-cols-1 items-stretch justify-items-center gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((ub) => {
             const book = ub.books;
             const percent = Math.round(Number(ub.progress_percent) || 0);
@@ -72,9 +80,9 @@ export function CurrentlyReadingRow({ items, onItemsChange }: Props) {
             return (
               <li
                 key={ub.id}
-                className="relative flex shrink-0 flex-col items-center border border-border bg-background text-center shadow-sm transition hover:shadow-md"
+                className="relative flex h-full w-full max-w-full flex-col items-center border border-border bg-background text-center shadow-sm transition hover:shadow-md"
                 style={{
-                  width: cardBox.width,
+                  maxWidth: cardBox.width,
                   minHeight: cardBox.height,
                   borderRadius: cardBox.borderRadius,
                   padding: cardSize.paddingPx,
@@ -130,8 +138,8 @@ export function CurrentlyReadingRow({ items, onItemsChange }: Props) {
               </li>
             );
           })}
-          <li className="flex shrink-0 items-stretch justify-center">
-            <AddBookCoverCard onClick={openAdd} />
+          <li className="flex h-full w-full items-stretch justify-center" style={{ maxWidth: CURRENTLY_READING_CARD_SIZE.web.widthPx }}>
+            <AddBookCoverCard onClick={openAdd} className="w-full" />
           </li>
         </ul>
       )}

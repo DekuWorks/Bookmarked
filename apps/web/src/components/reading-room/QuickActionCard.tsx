@@ -2,7 +2,11 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import type { OverviewQuickAction, OverviewQuickActionIcon } from "@bookmarked/utils/overviewQuickActions";
+import {
+  OVERVIEW_QUICK_ACTION_MIN_HEIGHT_PX,
+  type OverviewQuickAction,
+  type OverviewQuickActionIcon,
+} from "@bookmarked/utils/overviewQuickActions";
 import { cn } from "@/lib/utils/cn";
 
 function LibraryIcon() {
@@ -60,15 +64,20 @@ export function QuickActionCard({ action, onNavigate }: Props) {
       href={action.webHref}
       onClick={onNavigate}
       className={cn(
-        "flex min-h-[108px] w-full min-w-0 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-black/10 px-3 py-3 text-center shadow-sm",
+        "flex h-full w-full min-w-0 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-black/10 px-3 py-3 text-center shadow-sm",
         "transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md",
         "active:translate-y-0 active:opacity-90",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2"
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange focus-visible:ring-offset-2",
+        "dark:border-white/20"
       )}
-      style={{ backgroundColor: action.color, color: action.textColor }}
+      style={{
+        backgroundColor: action.color,
+        color: action.textColor,
+        minHeight: OVERVIEW_QUICK_ACTION_MIN_HEIGHT_PX,
+      }}
     >
       <Icon />
-      <span className="text-sm font-semibold leading-snug">{action.label}</span>
+      <span className="text-balance text-sm font-semibold leading-snug">{action.label}</span>
     </Link>
   );
 }

@@ -13,6 +13,8 @@ type Props = {
   action?: ReactNode;
   /** `stacked` puts the action under the heading, centered (Recent Activity). */
   actionLayout?: "inline" | "stacked";
+  /** Overview sections center the title. Other screens keep the split header. */
+  headerAlign?: "center" | "between";
   children: ReactNode;
   className?: string;
 };
@@ -25,10 +27,12 @@ export function SectionCard({
   shelfIconId,
   action,
   actionLayout = "inline",
+  headerAlign = "between",
   children,
   className,
 }: Props) {
   const stacked = actionLayout === "stacked";
+  const centered = stacked || headerAlign === "center";
 
   return (
     <View
@@ -36,20 +40,23 @@ export function SectionCard({
     >
       <View
         className={
-          stacked
+          centered
             ? "mb-4 w-full items-center gap-1.5"
             : "mb-3 flex-row items-center justify-between"
         }
       >
         <View
           className={
-            stacked
+            centered
               ? "flex-row items-center justify-center gap-2"
               : "min-w-0 flex-1 flex-row items-center gap-2"
           }
         >
           {icon ?? (shelfIconId ? <ShelfIcon id={shelfIconId} size="small" /> : null)}
-          <Text className={`${SECTION_CARD_HEADING_CLASS}${stacked ? " text-center" : ""}`}>
+          <Text
+            accessibilityRole="header"
+            className={`${SECTION_CARD_HEADING_CLASS}${centered ? " text-center" : ""}`}
+          >
             {emoji && !shelfIconId && !icon ? `${emoji} ` : ""}
             {title}
           </Text>

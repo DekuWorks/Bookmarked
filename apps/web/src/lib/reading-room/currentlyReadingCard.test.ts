@@ -21,7 +21,7 @@ describe("currently reading card size (web)", () => {
 describe("Overview section heading", () => {
   it("reuses the puce-red section title token for Recent Activity", () => {
     expect(READING_ROOM_SECTION_HEADING_CLASS).toBe(
-      "text-lg font-semibold text-puce-red md:text-xl"
+      "text-lg font-semibold leading-tight text-puce-red md:text-xl"
     );
     expect(READING_ROOM_SECTION_HEADING_CLASS).not.toContain("text-text");
   });
