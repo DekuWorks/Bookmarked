@@ -22,6 +22,9 @@ const BODY_INK = "#1A1A1A";
 /** Light-theme page background (`--color-background`) — fallback for dark fills. */
 const PAGE_LIGHT = "#FAF8FC";
 
+/** Minimum Quick Action height. A row stretches every card to the tallest label. */
+export const OVERVIEW_QUICK_ACTION_MIN_HEIGHT_PX = 112;
+
 export const OVERVIEW_QUICK_ACTION_COLORS = {
   openLibrary: "#e7a4a6",
   bookClubs: "#eb9f8e",

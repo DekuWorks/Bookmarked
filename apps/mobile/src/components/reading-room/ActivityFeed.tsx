@@ -5,7 +5,9 @@ import { supabase } from "../../services/supabase";
 import { SectionCard } from "../SectionCard";
 import {
   OVERVIEW_ACTIVITY_VIEW_ALL,
+  OVERVIEW_EMPTY_COPY,
   OVERVIEW_SECTION_TITLES,
+  overviewContentPhase,
 } from "../../../../../packages/utils/overviewCopy";
 
 type ActivityEvent = {
@@ -21,21 +23,39 @@ type Props = {
 
 export function ActivityFeed({ userId, onViewAll }: Props) {
   const [events, setEvents] = useState<ActivityEvent[] | null>(null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+    setFailed(false);
+    setEvents(null);
     void supabase
       .from("activity_events")
       .select("event_type, metadata_json, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(12)
-      .then(({ data }: { data: ActivityEvent[] | null }) => setEvents(data ?? []));
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) {
+          setFailed(true);
+          setEvents([]);
+          return;
+        }
+        setEvents(data ?? []);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [userId]);
+
+  const phase = failed ? "error" : overviewContentPhase(events === null, events?.length ?? 0);
 
   return (
     <SectionCard
       title={OVERVIEW_SECTION_TITLES.recentActivity}
       actionLayout="stacked"
+      headerAlign="center"
       action={
         <Pressable
           onPress={onViewAll}
@@ -47,18 +67,17 @@ export function ActivityFeed({ userId, onViewAll }: Props) {
         </Pressable>
       }
     >
-      {!events ? (
-        <Text className="text-sm text-ink-muted" accessibilityRole="text">
-          Loading activity…
+      {phase === "loading" ? (
+        <Text className="text-center text-sm text-ink-muted" accessibilityRole="text">
+          {OVERVIEW_EMPTY_COPY.activityLoading}
         </Text>
-      ) : events.length === 0 ? (
-        <Text className="text-sm text-ink-muted">
-          Your reading activity will show up here as you add books, track progress, and write
-          reviews.
+      ) : phase === "error" || phase === "empty" ? (
+        <Text className="text-center text-sm text-ink-muted">
+          {phase === "error" ? OVERVIEW_EMPTY_COPY.activityError : OVERVIEW_EMPTY_COPY.recentActivity}
         </Text>
       ) : (
         <View className="gap-3" accessibilityLabel="Recent reading activity">
-          {events.map((event, index) => (
+          {(events ?? []).map((event, index) => (
             <View
               key={`${event.created_at}-${index}`}
               className="rounded-xl border border-brand-border bg-background/70 px-4 py-3"

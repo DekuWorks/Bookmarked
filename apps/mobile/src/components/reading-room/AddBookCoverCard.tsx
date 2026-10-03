@@ -23,7 +23,7 @@ export function AddBookCoverCard({ onPress }: Props) {
       accessibilityLabel={CURRENTLY_READING_ADD_COPY.cardLabel}
       style={{
         width: box.width,
-        minHeight: box.height,
+        height: box.height,
         borderRadius: box.borderRadius,
         alignSelf: "stretch",
       }}

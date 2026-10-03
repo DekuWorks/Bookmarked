@@ -1,6 +1,10 @@
 import type { ReactElement } from "react";
 import { Pressable, Text, View } from "react-native";
-import type { OverviewQuickAction, OverviewQuickActionIcon } from "../../../../../packages/utils/overviewQuickActions";
+import {
+  OVERVIEW_QUICK_ACTION_MIN_HEIGHT_PX,
+  type OverviewQuickAction,
+  type OverviewQuickActionIcon,
+} from "../../../../../packages/utils/overviewQuickActions";
 
 function LibraryIcon({ color }: { color: string }) {
   return (
@@ -73,11 +77,11 @@ export function QuickActionCard({ action, onPress }: Props) {
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={action.label}
-      className="w-full items-center justify-center rounded-2xl border border-black/10 px-3 py-3 active:opacity-[0.82]"
+      className="h-full w-full items-center justify-center rounded-2xl border border-black/10 px-3 py-3 active:opacity-[0.82]"
       style={{
         backgroundColor: action.color,
-        minHeight: 108,
-        shadowColor: action.textColor,
+        minHeight: OVERVIEW_QUICK_ACTION_MIN_HEIGHT_PX,
+        shadowColor: "#1A1A1A",
         shadowOpacity: 0.12,
         shadowRadius: 6,
         shadowOffset: { width: 0, height: 2 },

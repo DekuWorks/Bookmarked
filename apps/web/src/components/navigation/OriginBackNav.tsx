@@ -8,9 +8,14 @@ type Props = {
   fallbackLabel: string;
   fallbackHref: string;
   className?: string;
+  /**
+   * Always use the resolved in-app href.
+   * Shelf screens pass this so a deep link cannot history.back() out of Bookmarked.
+   */
+  explicit?: boolean;
 };
 
-export function OriginBackNav({ fallbackLabel, fallbackHref, className }: Props) {
+export function OriginBackNav({ fallbackLabel, fallbackHref, className, explicit = false }: Props) {
   const searchParams = useSearchParams();
   const origin = parseNavOrigin(searchParams.get("origin"));
   const query = searchParams.get("q");
@@ -22,7 +27,7 @@ export function OriginBackNav({ fallbackLabel, fallbackHref, className }: Props)
     <BackNav
       label={target?.label.toLowerCase() ?? fallbackLabel}
       fallbackHref={href}
-      href={origin ? href : undefined}
+      href={origin || explicit ? href : undefined}
       className={className}
     />
   );

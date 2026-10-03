@@ -80,7 +80,7 @@ export default function ShelfPageClient() {
     return (
       <div className="text-center">
         <p className="text-text-muted">Shelf not found.</p>
-        <OriginBackNav fallbackLabel="Library" fallbackHref="/library/" />
+        <OriginBackNav explicit fallbackLabel="Library" fallbackHref="/library/" />
       </div>
     );
   }
@@ -93,7 +93,7 @@ export default function ShelfPageClient() {
     return (
       <div className="text-center">
         <p className="text-rust">{loadError}</p>
-        <OriginBackNav fallbackLabel="Library" fallbackHref="/library/" />
+        <OriginBackNav explicit fallbackLabel="Library" fallbackHref="/library/" />
       </div>
     );
   }
@@ -104,7 +104,7 @@ export default function ShelfPageClient() {
     <div className={layout.pageStackWide}>
       <header className="flex flex-col items-center gap-4 text-center">
         <div>
-          <OriginBackNav fallbackLabel="Library" fallbackHref={libraryBackHref} />
+          <OriginBackNav explicit fallbackLabel="Library" fallbackHref={libraryBackHref} />
           <h1 className="mt-2 flex justify-center">
             <ShelfTitleRow
               id={config.status}

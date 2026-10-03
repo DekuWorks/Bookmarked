@@ -3,14 +3,14 @@ import { Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { ActivityFeed } from "./ActivityFeed";
 import { CurrentlyReadingRow } from "./CurrentlyReadingRow";
-import { OverviewBookShelf, useDeferredOverviewSections } from "./OverviewBookShelf";
+import { OverviewBookShelf } from "./OverviewBookShelf";
 import { QuickActionCard } from "./QuickActionCard";
-import { LoadingState } from "../LoadingState";
 import { SectionCard } from "../SectionCard";
 import type { LibraryBookRow } from "../../services/library";
 import { selectRecentlyFinishedBooks } from "../../../../../packages/utils/readingRoomHistory";
 import {
   FAVORITES_LISTING,
+  OVERVIEW_EMPTY_COPY,
   OVERVIEW_SECTION_TITLES,
   OVERVIEW_SHELF_ACTIONS,
 } from "../../../../../packages/utils/overviewCopy";
@@ -28,31 +28,29 @@ type Props = {
 
 export function OverviewTab({ userId, books, currentlyReading, onSelectTab, onRefresh }: Props) {
   const router = useRouter();
-  const deferredReady = useDeferredOverviewSections(true);
-  const recentlyFinished = useMemo(
-    () => (deferredReady ? selectRecentlyFinishedBooks(books) : []),
-    [books, deferredReady]
-  );
+  const recentlyFinished = useMemo(() => selectRecentlyFinishedBooks(books), [books]);
   const favorites = useMemo(
-    () => (deferredReady ? books.filter((book) => book.is_favorite).slice(0, 8) : []),
-    [books, deferredReady]
+    () => books.filter((book) => book.is_favorite).slice(0, 8),
+    [books]
   );
 
   return (
-    <View className="gap-4 md:gap-6">
+    <View className="gap-6">
       <SectionCard
         title={OVERVIEW_SECTION_TITLES.currentlyReading}
         shelfIconId="currently_reading"
+        headerAlign="center"
         action={
           <Pressable
             onPress={() =>
               router.push(withOriginQuery("/library/reading", { origin: "home_overview" }))
             }
-            accessibilityRole="button"
+            accessibilityRole="link"
             accessibilityLabel={OVERVIEW_SHELF_ACTIONS.viewShelf}
+            className="min-h-11 items-center justify-center px-2"
           >
-            <Text className="text-sm font-semibold text-primary-dark">
-              {OVERVIEW_SHELF_ACTIONS.viewShelf} ›
+            <Text className="text-center text-sm font-semibold text-primary-dark">
+              {OVERVIEW_SHELF_ACTIONS.viewShelf}
             </Text>
           </Pressable>
         }
@@ -60,44 +58,43 @@ export function OverviewTab({ userId, books, currentlyReading, onSelectTab, onRe
         <CurrentlyReadingRow userId={userId} items={currentlyReading} onRefresh={onRefresh} />
       </SectionCard>
 
-      {deferredReady ? (
-        <View className="gap-4 md:flex-row md:gap-3">
-          <View className="md:flex-1">
-            <OverviewBookShelf
-              title={OVERVIEW_SECTION_TITLES.recentlyFinished}
-              shelfIconId="read"
-              items={recentlyFinished}
-              showFinishedDate
-              emptyMessage="Books you finish will appear here."
-              viewAllLabel={OVERVIEW_SHELF_ACTIONS.viewShelf}
-              onViewAll={() =>
-                router.push(withOriginQuery("/library/read", { origin: "home_overview" }))
-              }
-            />
-          </View>
-
-          <View className="md:flex-1">
-            <OverviewBookShelf
-              title={OVERVIEW_SECTION_TITLES.favorites}
-              emoji="⭐"
-              items={favorites}
-              showFavoriteBadge
-              emptyMessage={FAVORITES_LISTING.empty}
-              viewAllLabel={OVERVIEW_SHELF_ACTIONS.viewAll}
-              onViewAll={() =>
-                router.push(withOriginQuery(FAVORITES_LISTING.mobilePath, { origin: "home_overview" }))
-              }
-            />
-          </View>
+      <View className="gap-6 md:flex-row">
+        <View className="md:flex-1">
+          <OverviewBookShelf
+            title={OVERVIEW_SECTION_TITLES.recentlyFinished}
+            shelfIconId="read"
+            items={recentlyFinished}
+            showFinishedDate
+            emptyMessage={OVERVIEW_EMPTY_COPY.recentlyFinished}
+            viewAllLabel={OVERVIEW_SHELF_ACTIONS.viewShelf}
+            onViewAll={() =>
+              router.push(withOriginQuery("/library/read", { origin: "home_overview" }))
+            }
+          />
         </View>
-      ) : (
-        <LoadingState message="Loading shelves…" />
-      )}
 
-      <SectionCard title={OVERVIEW_SECTION_TITLES.quickActions}>
-        <View className="-mx-1.5 flex-row flex-wrap">
+        <View className="md:flex-1">
+          <OverviewBookShelf
+            title={OVERVIEW_SECTION_TITLES.favorites}
+            items={favorites}
+            showFavoriteBadge
+            emptyMessage={FAVORITES_LISTING.empty}
+            emptyAction={{
+              label: "Find a book",
+              onPress: () => router.push("/search"),
+            }}
+            viewAllLabel={OVERVIEW_SHELF_ACTIONS.viewAll}
+            onViewAll={() =>
+              router.push(withOriginQuery(FAVORITES_LISTING.mobilePath, { origin: "home_overview" }))
+            }
+          />
+        </View>
+      </View>
+
+      <SectionCard title={OVERVIEW_SECTION_TITLES.quickActions} headerAlign="center">
+        <View className="flex-row flex-wrap items-stretch gap-3">
           {OVERVIEW_QUICK_ACTIONS_LIST.map((action) => (
-            <View key={action.id} className="mb-3 w-1/2 px-1.5 md:w-1/3">
+            <View key={action.id} className="w-full md:w-auto md:min-w-0 md:flex-1">
               <QuickActionCard
                 action={action}
                 onPress={() => {
@@ -110,7 +107,7 @@ export function OverviewTab({ userId, books, currentlyReading, onSelectTab, onRe
         </View>
       </SectionCard>
 
-      {deferredReady ? <ActivityFeed userId={userId} onViewAll={() => onSelectTab("history")} /> : null}
+      <ActivityFeed userId={userId} onViewAll={() => onSelectTab("history")} />
     </View>
   );
 }

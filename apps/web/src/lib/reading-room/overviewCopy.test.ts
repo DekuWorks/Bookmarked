@@ -16,6 +16,7 @@ describe("overview copy (web)", () => {
   it("uses the shared Title Case Overview labels", () => {
     expect(OVERVIEW_SECTION_TITLES.currentlyReading).toBe("Currently Reading");
     expect(OVERVIEW_SECTION_TITLES.recentlyFinished).toBe("Recently Finished");
+    expect(OVERVIEW_SECTION_TITLES.favorites).toBe("Favorites");
     expect(OVERVIEW_SECTION_TITLES.quickActions).toBe("Quick Actions");
     expect(OVERVIEW_SECTION_TITLES.recentActivity).toBe("Recent Activity");
     expect(OVERVIEW_QUICK_ACTIONS.openLibrary).toBe("Open Library");

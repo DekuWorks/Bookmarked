@@ -6,6 +6,7 @@ import { CoverTile } from "../CoverTile";
 import { trackProductEvent } from "../../services/productAnalytics";
 import type { LibraryBookRow } from "../../services/library";
 import { CURRENTLY_READING_ADD_EVENTS } from "../../../../../packages/utils/currentlyReadingAdd";
+import { OVERVIEW_EMPTY_COPY } from "../../../../../packages/utils/overviewCopy";
 import {
   CURRENTLY_READING_CARD_SIZE,
   currentlyReadingCoverBoxStyle,
@@ -34,16 +35,16 @@ export function CurrentlyReadingRow({ userId, items, onRefresh }: Props) {
       {items.length === 0 ? (
         <View className="items-center gap-3 py-2">
           <Text className="text-center text-sm text-ink-muted">
-            You aren&apos;t currently reading anything.
+            {OVERVIEW_EMPTY_COPY.currentlyReading}
           </Text>
           <AddBookCoverCard onPress={openAdd} />
         </View>
       ) : (
-        <View className="flex-row flex-wrap gap-3">
+        <View className="flex-row flex-wrap items-stretch gap-3">
           {items.map((item) => (
             <View
               key={item.id}
-              style={{ width: cardSize.widthPx, minHeight: cardSize.heightPx }}
+              style={{ width: cardSize.widthPx, height: cardSize.heightPx }}
             >
               <CoverTile
                 bookId={item.books?.id}
