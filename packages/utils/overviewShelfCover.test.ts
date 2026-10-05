@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   OVERVIEW_SHELF_COVER,
   OVERVIEW_SHELF_COVER_ASPECT_RATIO,
+  OVERVIEW_SHELF_COVER_FRAME_CLASS,
+  OVERVIEW_SHELF_TABLET_MIN_PX,
   isPortraitCoverFrame,
   overviewShelfCoverBoxStyle,
   overviewShelfCoverFrame,
@@ -34,6 +36,25 @@ describe("overviewShelfCoverFrame", () => {
       aspectRatio: 2 / 3,
     });
     expect(overviewShelfCoverBoxStyle()).toEqual({ width: 80, height: 120 });
+    expect(overviewShelfCoverBoxStyle(OVERVIEW_SHELF_TABLET_MIN_PX - 1)).toEqual({
+      width: 80,
+      height: 120,
+    });
+    expect(overviewShelfCoverBoxStyle(OVERVIEW_SHELF_TABLET_MIN_PX)).toEqual({
+      width: 96,
+      height: 144,
+    });
+    expect(OVERVIEW_SHELF_COVER.tabletWidthPx).toBe(96);
+    expect(OVERVIEW_SHELF_COVER.tabletHeightPx).toBe(144);
+    expect(OVERVIEW_SHELF_COVER.tabletWidthPx / OVERVIEW_SHELF_COVER.widthPx).toBeLessThan(1.5);
+  });
+
+  it("uses one visible portrait frame on web", () => {
+    expect(OVERVIEW_SHELF_COVER_FRAME_CLASS).toContain("w-20");
+    expect(OVERVIEW_SHELF_COVER_FRAME_CLASS).toContain("md:w-24");
+    expect(OVERVIEW_SHELF_COVER_FRAME_CLASS).toContain("overflow-visible");
+    expect(OVERVIEW_SHELF_COVER_FRAME_CLASS).not.toContain("overflow-hidden");
+    expect(OVERVIEW_SHELF_COVER_FRAME_CLASS).not.toContain("h-");
   });
 
   it("never produces a landscape thumbnail", () => {

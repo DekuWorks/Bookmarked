@@ -15,7 +15,7 @@ import {
   OVERVIEW_QUICK_ACTION_FOURTH_SLOT,
   OVERVIEW_QUICK_ACTIONS_LIST,
 } from "./overviewQuickActions";
-import { OVERVIEW_SHELF_COVER } from "./overviewShelfCover";
+import { OVERVIEW_SHELF_COVER, OVERVIEW_SHELF_COVER_FRAME_CLASS } from "./overviewShelfCover";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -145,6 +145,16 @@ describe("Sprint 1 Overview contracts", () => {
     ]) {
       const text = source(file);
       expect(text).toContain("OVERVIEW_SHELF_COVER.fit");
+      expect(text).not.toContain("overflow-hidden bg-background");
     }
+    expect(source("apps/web/src/components/reading-room/OverviewBookShelf.tsx")).toContain(
+      OVERVIEW_SHELF_COVER_FRAME_CLASS
+    );
+    expect(source("apps/web/src/components/reading-room/OverviewBookShelf.tsx")).toContain(
+      "`${title} cover`"
+    );
+    expect(source("apps/mobile/src/components/reading-room/OverviewBookShelf.tsx")).toContain(
+      "overviewShelfCoverBoxStyle(viewportWidth)"
+    );
   });
 });

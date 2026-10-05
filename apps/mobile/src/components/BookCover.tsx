@@ -20,6 +20,9 @@ type Props = {
   badgeSize?: "small" | "medium" | "large";
   /** Book details / above-fold — request the larger cover variant. */
   priority?: boolean;
+  /** When false, the parent control owns the accessible name. */
+  accessible?: boolean;
+  accessibilityLabel?: string;
 };
 
 export function BookCover({
@@ -32,6 +35,8 @@ export function BookCover({
   onToggleSave,
   badgeSize = "medium",
   priority = false,
+  accessible = true,
+  accessibilityLabel,
 }: Props) {
   const source = url?.trim()
     ? resolveCoverDisplaySource(url.trim(), priority ? "detail" : "thumb")
@@ -58,7 +63,12 @@ export function BookCover({
       className={[dimensionClass, radiusClass, "bg-primary/20"].filter(Boolean).join(" ")}
       style={sizeStyle}
       resizeMode={resizeMode}
-      accessibilityLabel={title?.trim() ? `Cover of ${title.trim()}` : "Book cover"}
+      accessible={accessible}
+      accessibilityLabel={
+        accessible
+          ? accessibilityLabel ?? (title?.trim() ? `Cover of ${title.trim()}` : "Book cover")
+          : undefined
+      }
       onError={() => {
         const next = url?.trim()
           ? resolveCoverDisplaySource(url.trim(), priority ? "detail" : "thumb")

@@ -471,6 +471,8 @@ export {
 export {
   OVERVIEW_SHELF_COVER,
   OVERVIEW_SHELF_COVER_ASPECT_RATIO,
+  OVERVIEW_SHELF_COVER_FRAME_CLASS,
+  OVERVIEW_SHELF_TABLET_MIN_PX,
   isPortraitCoverFrame,
   overviewShelfCoverBoxStyle,
   overviewShelfCoverFrame,

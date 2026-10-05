@@ -1,4 +1,4 @@
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text, useWindowDimensions, View } from "react-native";
 import { useRouter } from "expo-router";
 import { BookCover } from "../BookCover";
 import { SectionCard } from "../SectionCard";
@@ -42,6 +42,8 @@ export function OverviewBookShelf({
   showFavoriteBadge = false,
 }: Props) {
   const router = useRouter();
+  const { width: viewportWidth } = useWindowDimensions();
+  const coverBox = overviewShelfCoverBoxStyle(viewportWidth);
 
   return (
     <SectionCard
@@ -78,6 +80,7 @@ export function OverviewBookShelf({
         <View className="gap-3">
           {items.map((item, index) => {
             const book = item.books;
+            const title = book?.title ?? "Untitled";
             const finishedLabel = showFinishedDate ? formatFinishedDate(item.finished_at) : null;
 
             return (
@@ -87,21 +90,22 @@ export function OverviewBookShelf({
                 onPress={() => book?.id && router.push(`/book/${book.id}`)}
                 className="flex-row items-start gap-3 rounded-xl border border-brand-border bg-background/70 p-3 active:opacity-80"
                 accessibilityRole="button"
-                accessibilityLabel={book?.title ?? "Book"}
+                accessibilityLabel={`${title} cover`}
               >
-                <View className="shrink-0 overflow-hidden bg-background">
+                <View className="shrink-0 overflow-visible bg-background" style={coverBox}>
                   <BookCover
                     url={book?.cover_url}
-                    title={book?.title}
-                    sizeStyle={overviewShelfCoverBoxStyle()}
+                    title={title}
+                    sizeStyle={coverBox}
                     resizeMode={OVERVIEW_SHELF_COVER.fit}
                     saved
                     priority={index < 2}
+                    accessible={false}
                   />
                 </View>
                 <View className="min-w-0 flex-1 overflow-hidden">
                   <Text className="text-sm font-semibold text-ink" numberOfLines={2}>
-                    {book?.title ?? "Untitled"}
+                    {title}
                   </Text>
                   {book?.author ? (
                     <Text className="mt-1 text-xs text-ink-muted" numberOfLines={1}>
