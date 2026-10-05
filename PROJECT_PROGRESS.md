@@ -1653,6 +1653,54 @@ None.
 
 ---
 
+## FIX — Overview Recently Finished & Favorites Book Cover Layout
+
+Branch: `feature/overview-cover-layout`. Web + iPhone + iPad. No Android. No shelf, favorites, or query changes.
+
+### Root cause
+
+Recently Finished and Favorites wrapped the shared `BookCover` in a second 80×120 box with `overflow: hidden`. `BookCover` is already a 2:3 frame (`aspect-[2/3] w-full`). The extra clip cut the saved ribbon and any part of the frame that did not match the box exactly, so covers looked cropped, zoomed, or uneven. Width and height were both forced on that wrapper, which fights `BookCover`’s own aspect box.
+
+### What changed
+
+- One portrait frame per cover. Web sets width only (`w-20`, `md:w-24`). `BookCover` sets the 2:3 height. Image uses `object-fit: contain` and stays centred. No second clip box.
+- Phone frame stays 80×120. Tablet and iPad use 96×144, the same size as the iOS CoverTile (`w-24 h-36`). That is about 1.2× the phone frame, not a stretched phone card.
+- Cards are a two-column grid (`cover | text`) with `items-start`, so title, author, rating, and the favorite badge do not move the cover. A second card column only appears when the section is at least 34rem wide, so a half-width Overview column does not squash the cover.
+- Missing art still uses the existing `BookCover` placeholder (web) or title fallback (iOS), inside the same frame.
+- The frame is in the layout before the image loads, so the row does not jump.
+- Alt text is `{title} cover`. The visible title next to the cover is hidden from the accessibility tree so the link does not announce the title twice. iOS VoiceOver uses the same label on the row, and the image is not a second control.
+
+### Files
+
+- Shared: `packages/utils/overviewShelfCover.ts`, `overviewShelfCover.test.ts`, `overviewSprint.test.ts`, `packages/utils/index.ts`
+- Web: `OverviewBookShelf.tsx`, `BookCover.tsx` (`alt`, `object-center` when `contain`)
+- iOS: `OverviewBookShelf.tsx`, `BookCover.tsx` (`accessible` so the row owns the label), `overviewShelfCover.test.ts`
+
+`BookCover` still defaults to `object-fit: cover` / `resizeMode: cover` everywhere else. Only these two Overview sections pass `contain`.
+
+### Tests
+
+- Web vitest: overview shelf cover, sprint contracts, Currently Reading card size. 18 passed.
+- iOS vitest: overview shelf cover. 1 passed.
+- Signed-in web Overview at localhost:
+  - 390px: frame 80×120, `object-fit: contain`, one card column, no page overflow.
+  - 768px and 1440px: frame 96×144, overflow visible, `contain`, centred. No page overflow.
+  - Light and dark: cover filter `none`. Card background and title colour follow the theme (`rgb(250, 248, 252)` / `rgb(26, 26, 26)` in light).
+  - Book link still points at `/book/?id=…`.
+
+### Regressions
+
+Not changed: favorites data, View All, finished query, reading progress, reviews, Feed, Search, Book Clubs, auth, Supabase, RLS, Currently Reading, Library, History. Currently Reading still uses its own cover size and default `cover` fit.
+
+### Known limitations
+
+- The signed-in library had one finished book and one favorite, both the same cover (near 2:3). Alignment across several different source ratios was not on screen. The frame is fixed, and `contain` letterboxes anything that is not 2:3.
+- A book with no cover URL was not in this library. The existing placeholder still fills the same aspect box.
+- iPhone and iPad were not launched in the simulator. Native sizing is the shared 80×120 / 96×144 token with `resizeMode: contain`.
+- The saved ribbon still sits on the top-left of the artwork. That is the existing badge, not a crop of the image.
+
+---
+
 ## Next up (recommended)
 
 | Priority | Item | Notes |

@@ -7,10 +7,7 @@ import { StarDisplay } from "@/components/reviews/StarDisplay";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { bookDetailsPath } from "@/lib/routes/book";
 import type { LibraryBookRow } from "@/lib/services/library";
-import {
-  OVERVIEW_SHELF_COVER,
-  overviewShelfCoverBoxStyle,
-} from "@bookmarked/utils/overviewShelfCover";
+import { OVERVIEW_SHELF_COVER } from "@bookmarked/utils/overviewShelfCover";
 
 type Props = {
   title: string;
@@ -65,32 +62,32 @@ export function OverviewBookShelf({
           ) : null}
         </p>
       ) : (
-        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="@container min-w-0">
+          <ul className="grid grid-cols-1 items-start gap-4 @min-[34rem]:grid-cols-2">
           {items.map((ub, index) => {
             const book = ub.books;
+            const title = book?.title ?? "Untitled";
             const href = book?.id ? bookDetailsPath(book.id) : undefined;
             const finishedLabel = showFinishedDate ? formatFinishedDate(ub.finished_at) : null;
 
             const inner = (
-              <div className="flex items-start gap-3 rounded-xl border border-border bg-background p-3 transition hover:shadow-sm">
-                <div
-                  className="shrink-0 self-start overflow-hidden bg-background"
-                  style={overviewShelfCoverBoxStyle()}
-                >
+              <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 rounded-xl border border-border bg-background p-3 transition hover:shadow-sm">
+                <div className="relative w-20 shrink-0 self-start overflow-visible bg-background md:w-24">
                   <BookCover
-                    title={book?.title ?? "Untitled"}
+                    title={title}
                     author={book?.author}
                     coverUrl={book?.cover_url}
+                    alt={`${title} cover`}
                     className="shadow-sm"
-                    sizes={`${OVERVIEW_SHELF_COVER.widthPx}px`}
+                    sizes={`(min-width: 768px) ${OVERVIEW_SHELF_COVER.tabletWidthPx}px, ${OVERVIEW_SHELF_COVER.widthPx}px`}
                     objectFit={OVERVIEW_SHELF_COVER.fit}
                     bookmarked
                     priority={index < 2}
                   />
                 </div>
-                <div className="min-w-0 flex-1 overflow-hidden text-left">
-                  <p className="line-clamp-2 text-sm font-semibold text-text">
-                    {book?.title ?? "Untitled"}
+                <div className="min-w-0 overflow-hidden text-left">
+                  <p className="line-clamp-2 text-sm font-semibold text-text" aria-hidden="true">
+                    {title}
                   </p>
                   {book?.author ? (
                     <p className="mt-1 line-clamp-1 text-xs text-text-muted">{book.author}</p>
@@ -127,7 +124,8 @@ export function OverviewBookShelf({
               </li>
             );
           })}
-        </ul>
+          </ul>
+        </div>
       )}
     </ReadingRoomSection>
   );

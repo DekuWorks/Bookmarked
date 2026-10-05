@@ -17,6 +17,8 @@ type Props = {
   coverUrl?: string | null;
   className?: string;
   sizes?: string;
+  /** Overrides the default `Cover of {title}` label. */
+  alt?: string;
   /** `contain` shows complete artwork; default `cover` fills the 2:3 frame. */
   objectFit?: "cover" | "contain";
   priority?: boolean;
@@ -61,6 +63,7 @@ export function BookCover({
   coverUrl,
   className,
   sizes = "(max-width: 768px) 50vw, 220px",
+  alt,
   objectFit = "cover",
   priority,
   isSaved,
@@ -101,9 +104,9 @@ export function BookCover({
         {showImage && src ? (
           <Image
             src={src}
-            alt={`Cover of ${title}`}
+            alt={alt ?? `Cover of ${title}`}
             fill
-            className={objectFit === "contain" ? "object-contain" : "object-cover"}
+            className={objectFit === "contain" ? "object-contain object-center" : "object-cover"}
             sizes={sizes}
             unoptimized
             priority={priority}
