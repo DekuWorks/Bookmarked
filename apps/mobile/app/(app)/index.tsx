@@ -81,7 +81,7 @@ export default function HomeReadingRoom() {
         library.data ?? [],
         profile?.favorite_genres ?? null
       ),
-    enabled: Boolean(userId) && tab === "progress" && library.data != null,
+    enabled: Boolean(userId) && tab === "stats" && library.data != null,
   });
 
   const sessionsQuery = useQuery({
@@ -119,12 +119,11 @@ export default function HomeReadingRoom() {
     [books]
   );
   const goal = computeReadingGoal(books, profile?.yearly_reading_goal ?? null);
-  const name = profile?.display_name?.trim() || profile?.username?.trim() || "reader";
 
   function refreshAll() {
     library.refetch();
     void refetchProfile();
-    if (tab === "progress") {
+    if (tab === "stats") {
       void analytics.refetch();
       void queryClient.invalidateQueries({ queryKey: [READING_CALENDAR_QUERY_KEY] });
     }
@@ -164,16 +163,12 @@ export default function HomeReadingRoom() {
           />
         }
       >
-        <View accessibilityRole="header">
+        <View accessibilityRole="header" className="items-center">
           <Text
-            className="text-3xl"
+            className="text-center text-4xl"
             style={{ fontFamily: SERIF_DISPLAY_FONT, color: colors.puceRed }}
           >
             Reading Room
-          </Text>
-          <Text style={{ color: colors.inkMuted }}>Welcome back, {name}.</Text>
-          <Text className="mt-1 text-ink-muted">
-            Your Whole Reading Life — Tracked, Noted and Reviewed.
           </Text>
         </View>
 
@@ -192,12 +187,13 @@ export default function HomeReadingRoom() {
             userId={userId}
             books={books}
             currentlyReading={currentlyReading}
-            onSelectTab={setTab}
+            readingGoal={goal}
+            onSetGoal={() => setTab("stats")}
             onRefresh={() => void library.refetch()}
           />
         ) : null}
 
-        {tab === "progress" ? (
+        {tab === "stats" ? (
           <>
             <SectionCard title="Reading Goal">
               <ReadingGoalPanel status={goal} />

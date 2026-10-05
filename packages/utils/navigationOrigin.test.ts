@@ -31,6 +31,14 @@ describe("resolveOriginBack", () => {
     expect(target?.label).toBe("Overview");
   });
 
+  it("sends Reading Room overview links back to Overview", () => {
+    const target = resolveOriginBack("reading_room_overview");
+    expect(target?.webHref).toBe("/reading-room/");
+    expect(target?.mobileHref).toBe("/?tab=overview");
+    expect(target?.label).toBe("Overview");
+    expect(parseNavOrigin("reading_room_overview")).toBe("reading_room_overview");
+  });
+
   it("sends History shelf back to History", () => {
     expect(resolveOriginBack("home_history")?.webHref).toBe("/reading-room/?tab=history");
   });

@@ -14,6 +14,7 @@ export const NAV_ORIGINS = [
   "library_shelf",
   "challenges",
   "profile",
+  "reading_room_overview",
 ] as const;
 
 export type NavOrigin = (typeof NAV_ORIGINS)[number];
@@ -147,6 +148,13 @@ export function resolveOriginBack(origin: string | null | undefined): OriginBack
         webHref: "/profile/",
         mobileHref: "/profile",
         label: "Profile",
+      };
+    case "reading_room_overview":
+      return {
+        origin: parsed,
+        webHref: "/reading-room/",
+        mobileHref: "/?tab=overview",
+        label: "Overview",
       };
   }
 }

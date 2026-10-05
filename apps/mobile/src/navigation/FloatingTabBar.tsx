@@ -7,7 +7,6 @@ import Animated, {
   useAnimatedStyle,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useUnreadMessageCount } from "../hooks/useMessages";
 import { useTabBarScroll } from "./TabBarScroll";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
@@ -23,9 +22,8 @@ const PRIMARY_TABS: {
   iconFocused: IoniconName;
 }[] = [
   { name: "index", label: "Home", icon: "home-outline", iconFocused: "home" },
-  { name: "feed", label: "Feed", icon: "newspaper-outline", iconFocused: "newspaper" },
-  { name: "search", label: "Search", icon: "search-outline", iconFocused: "search" },
-  { name: "messages", label: "Messages", icon: "mail-outline", iconFocused: "mail" },
+  { name: "feed", label: "Community", icon: "people-outline", iconFocused: "people" },
+  { name: "discover", label: "Discover", icon: "compass-outline", iconFocused: "compass" },
   { name: "profile", label: "Profile", icon: "person-outline", iconFocused: "person" },
 ];
 
@@ -72,7 +70,6 @@ function TabItem({
 export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const { floating } = useTabBarScroll();
-  const { data: unreadMessages = 0 } = useUnreadMessageCount();
 
   const focusedRoute = state.routes[state.index];
   const activeName = focusedRoute?.name;
@@ -132,7 +129,7 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
             icon={tab.icon}
             iconFocused={tab.iconFocused}
             focused={focused}
-            badge={tab.name === "messages" && unreadMessages > 0}
+            badge={false}
             onPress={() => {
               const event = navigation.emit({
                 type: "tabPress",

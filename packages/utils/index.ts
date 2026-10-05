@@ -412,6 +412,7 @@ export {
 
 export {
   parseReadingRoomTab,
+  readingRoomTabLabel,
   READING_ROOM_TAB_OPTIONS,
   type ReadingRoomTab,
 } from "./readingRoomTabs";
@@ -469,6 +470,24 @@ export {
 } from "./discoveryCard";
 
 export {
+  DISCOVER_DESTINATIONS,
+  type DiscoverDestinationId,
+} from "./discoverDestinations";
+
+export {
+  OVERVIEW_PREVIEW_SHELVES,
+  SHELF_PREVIEW_COVER,
+  SHELF_PREVIEW_LIMIT,
+  bookCountLabel,
+  currentlyReadingProgressLabel,
+  previewShelfItems,
+  readingGoalPercentLabel,
+  readingGoalSummary,
+  type OverviewPreviewShelfStatus,
+  type ReadingProgressInput,
+} from "./overviewShelfPreview";
+
+export {
   OVERVIEW_SHELF_COVER,
   OVERVIEW_SHELF_COVER_ASPECT_RATIO,
   OVERVIEW_SHELF_COVER_FRAME_CLASS,
@@ -491,6 +510,7 @@ export {
   CURRENTLY_READING_ADD_COPY,
   FAVORITES_LISTING,
   OVERVIEW_ACTIVITY_VIEW_ALL,
+  OVERVIEW_CHALLENGES_COPY,
   OVERVIEW_EMPTY_COPY,
   OVERVIEW_QUICK_ACTIONS,
   OVERVIEW_SECTION_ORDER,

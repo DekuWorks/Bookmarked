@@ -302,9 +302,10 @@ body {
 
 .reading-room-tablist {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  width: 100%;
-  border-radius: 1.5rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: min(100%, 36rem);
+  margin-inline: auto;
+  border-radius: 9999px;
 }
 
 .reading-room-tablist .pill-tab {
@@ -316,13 +317,6 @@ body {
   font-size: 0.75rem;
   line-height: 1rem;
   white-space: nowrap;
-}
-
-@media (min-width: 640px) {
-  .reading-room-tablist {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    border-radius: 9999px;
-  }
 }
 
 @media (min-width: 768px) {

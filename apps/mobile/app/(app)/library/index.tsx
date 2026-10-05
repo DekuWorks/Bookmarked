@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { originBackHref, parseNavOriginParam } from "../../../../../packages/utils/navigationOrigin";
 import { Pressable, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -20,6 +21,8 @@ import { useAuthStore } from "../../../src/store/authStore";
 export default function LibraryScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const params = useLocalSearchParams<{ origin?: string | string[] }>();
+  const backHref = originBackHref(parseNavOriginParam(params.origin), "mobile");
   const userId = useAuthStore((s) => s.user?.id);
   const { onScroll } = useTabBarScroll();
   const { data: shelves, isLoading, isError, error } = useLibrary();
@@ -40,6 +43,16 @@ export default function LibraryScreen() {
       <ScreenGradientWash />
       <View style={{ paddingTop: insets.top + 8 }} className="bg-background px-4 pb-2">
         <View className="flex-row items-center">
+          {backHref ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Back to Overview"
+              onPress={() => router.replace(backHref as never)}
+              className="mr-2 h-11 w-11 items-center justify-center"
+            >
+              <Text className="text-2xl text-puce-red">‹</Text>
+            </Pressable>
+          ) : null}
           <Text className="flex-1 text-3xl font-black text-puce-red">Library</Text>
           <Pressable
             onPress={() => router.push("/search")}
