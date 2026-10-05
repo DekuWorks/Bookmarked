@@ -19,27 +19,9 @@ const APP_LINKS: NavLinkItem[] = [
     label: "Home",
     className: "font-semibold text-royal-orange hover:text-rust",
   },
-  { href: "/feed/", label: "Feed" },
-  { href: "/library/", label: "Library" },
-  { href: "/search/", label: "Search" },
-  { href: "/clubs/", label: "Book Clubs" },
-  { href: "/events/", label: "Events" },
-  { href: "/book-map/", label: "Book Map" },
-  { href: "/messages/", label: "Messages" },
+  { href: "/feed/", label: "Community" },
+  { href: "/discover/", label: "Discover" },
   { href: "/profile/", label: "Profile" },
-];
-
-/**
- * Sections not already reachable from `MobileBottomNav`'s 5 tabs
- * (Home, Feed, Search, Messages, Profile). Surfaced via a "More" menu on
- * mobile web instead of overcrowding the bottom tab bar.
- */
-const APP_MOBILE_MORE_LINKS: NavLinkItem[] = [
-  { href: "/library/", label: "Library" },
-  { href: "/clubs/", label: "Book Clubs" },
-  { href: "/events/", label: "Events" },
-  { href: "/book-map/", label: "Book Map" },
-  { href: "/home-hub/", label: "Home Hub" },
 ];
 
 const PUBLIC_LINKS: NavLinkItem[] = [
@@ -87,8 +69,7 @@ export function Navbar({ variant = "public" }: Props) {
 
         <NavbarMenu
           links={isApp ? APP_LINKS : PUBLIC_LINKS}
-          mobileLinks={isApp ? APP_MOBILE_MORE_LINKS : undefined}
-          mobileMenuLabel={isApp ? "More" : "Menu"}
+          mobileMenuLabel="Menu"
           actions={isApp ? <NotificationBell /> : null}
           centerNav={!isApp}
           footer={
@@ -100,6 +81,7 @@ export function Navbar({ variant = "public" }: Props) {
           }
           mobileFooter={isApp ? undefined : <NavbarPublicAuth layout="menu" />}
           useAppNavLinks={isApp}
+          hideMobileDrawer={isApp}
         />
       </nav>
     </header>

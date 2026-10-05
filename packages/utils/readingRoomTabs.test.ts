@@ -16,8 +16,12 @@ describe("parseReadingRoomTab", () => {
     expect(parseReadingRoomTab("dashboard")).toBe("overview");
   });
 
-  it("accepts valid tab ids", () => {
-    expect(parseReadingRoomTab("progress")).toBe("progress");
+  it("maps the old Progress tab onto Stats", () => {
+    expect(parseReadingRoomTab("progress")).toBe("stats");
+    expect(parseReadingRoomTab("stats")).toBe("stats");
+  });
+
+  it("keeps Trail and History reachable without showing them in the tab bar", () => {
     expect(parseReadingRoomTab("trail")).toBe("trail");
     expect(parseReadingRoomTab("history")).toBe("history");
   });

@@ -24,7 +24,7 @@ describe("overview copy (iOS)", () => {
     expect(OVERVIEW_QUICK_ACTIONS).not.toHaveProperty("searchBooks");
     expect(OVERVIEW_QUICK_ACTIONS).not.toHaveProperty("continueReading");
     expect(OVERVIEW_QUICK_ACTIONS).not.toHaveProperty("trail");
-    expect(CURRENTLY_READING_ADD_COPY.cardLabel).toBe("Add Book to Currently Reading");
+    expect(CURRENTLY_READING_ADD_COPY.cardLabel).toBe("Add Book to Currently Reading Shelf");
   });
 
   it("uses the shared Add Book search origin", () => {

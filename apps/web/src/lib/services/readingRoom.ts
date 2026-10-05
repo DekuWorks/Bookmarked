@@ -15,7 +15,6 @@ import {
   type ShelfGroup,
 } from "@/lib/services/library";
 import type { Book, Review } from "@/types";
-import { selectRecentlyFinishedBooks } from "@bookmarked/utils/readingRoomHistory";
 
 export type UserReviewWithBook = Review & {
   books: Pick<Book, "id" | "title" | "author" | "cover_url"> | null;
@@ -23,8 +22,6 @@ export type UserReviewWithBook = Review & {
 
 export type ReadingRoomData = {
   currentlyReading: LibraryBookRow[];
-  recentlyFinished: LibraryBookRow[];
-  favorites: LibraryBookRow[];
   analytics: ReadingAnalytics;
   readingGoal: ReadingGoalStatus;
   shelves: ShelfGroup[];
@@ -35,8 +32,6 @@ export function emptyReadingRoomData(
 ): ReadingRoomData {
   return {
     currentlyReading: [],
-    recentlyFinished: [],
-    favorites: [],
     analytics: computeReadingAnalytics({
       books: [],
       reviewsWritten: 0,
@@ -68,14 +63,8 @@ export async function getReadingRoomData(
 
   const currentlyReading = books.filter((b) => b.shelf_status === "currently_reading");
 
-  const recentlyFinished = selectRecentlyFinishedBooks(books);
-
-  const favorites = books.filter((b) => b.is_favorite).slice(0, 8);
-
   return {
     currentlyReading,
-    recentlyFinished,
-    favorites,
     analytics: computeReadingAnalytics({
       books,
       reviewsWritten: reviewCount ?? 0,

@@ -36,10 +36,11 @@ export default function AppTabsLayout() {
       >
         {/* Primary destinations (final mapping — IMG_5471) */}
         <Tabs.Screen name="index" options={{ title: "Home" }} />
-        <Tabs.Screen name="feed" options={{ title: "Feed" }} />
-        <Tabs.Screen name="search" options={{ title: "Search" }} />
-        <Tabs.Screen name="messages" options={{ title: "Messages" }} />
+        <Tabs.Screen name="feed" options={{ title: "Community" }} />
+        <Tabs.Screen name="discover" options={{ title: "Discover" }} />
         <Tabs.Screen name="profile" options={{ title: "Profile" }} />
+        <Tabs.Screen name="search" options={{ href: null, title: "Search" }} />
+        <Tabs.Screen name="messages" options={{ href: null, title: "Messages" }} />
 
         {/* Secondary destinations — reached from Home links, Feed, Search, or the bell */}
         <Tabs.Screen name="library" options={{ href: null }} />

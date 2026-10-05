@@ -24,27 +24,28 @@ function source(relativePath: string): string {
 }
 
 describe("Sprint 1 Overview contracts", () => {
-  it("renders section order Currently Reading, shelves, Quick Actions, Recent Activity", () => {
+  it("renders Currently Reading, Reading Goal, Shelves, then Challenges", () => {
     expect(OVERVIEW_SECTION_ORDER.map((id) => OVERVIEW_SECTION_TITLES[id])).toEqual([
       "Currently Reading",
-      "Recently Finished",
-      "Favorites",
-      "Quick Actions",
-      "Recent Activity",
+      "Reading Goal",
+      "Shelves",
+      "Challenges",
     ]);
     const web = source("apps/web/src/components/reading-room/OverviewTab.tsx");
     const mobile = source("apps/mobile/src/components/reading-room/OverviewTab.tsx");
     for (const file of [web, mobile]) {
-      const currently = file.indexOf("OVERVIEW_SECTION_TITLES.currentlyReading");
-      const finished = file.indexOf("OVERVIEW_SECTION_TITLES.recentlyFinished");
-      const favorites = file.indexOf("OVERVIEW_SECTION_TITLES.favorites");
-      const actions = file.indexOf("OVERVIEW_SECTION_TITLES.quickActions");
-      const activity = file.indexOf("<ActivityFeed");
+      const currently = file.indexOf("CurrentlyReadingCarousel");
+      const goal = file.indexOf("ReadingGoalCard");
+      const shelves = file.indexOf("ShelfPreviewSection");
+      const challenges = file.indexOf("ChallengesCTA");
       expect(currently).toBeGreaterThan(-1);
-      expect(currently).toBeLessThan(finished);
-      expect(finished).toBeLessThan(favorites);
-      expect(favorites).toBeLessThan(actions);
-      expect(actions).toBeLessThan(activity);
+      expect(currently).toBeLessThan(goal);
+      expect(goal).toBeLessThan(shelves);
+      expect(shelves).toBeLessThan(challenges);
+      expect(file).not.toContain("OVERVIEW_SECTION_TITLES.recentlyFinished");
+      expect(file).not.toContain("OVERVIEW_SECTION_TITLES.favorites");
+      expect(file).not.toContain("QuickActionCard");
+      expect(file).not.toContain("<ActivityFeed");
     }
   });
 
@@ -62,13 +63,13 @@ describe("Sprint 1 Overview contracts", () => {
     );
   });
 
-  it("routes Favorites View All to Favorites, not the finished shelf", () => {
+  it("keeps the Favorites route and does not render it on Overview", () => {
     expect(FAVORITES_LISTING.webPath).toBe("/library/favorites/");
     expect(FAVORITES_LISTING.mobilePath).toBe("/library/favorites");
     expect(FAVORITES_LISTING.webPath).not.toContain("/library/read");
     const web = source("apps/web/src/components/reading-room/OverviewTab.tsx");
-    expect(web).toContain("FAVORITES_LISTING.webPath");
-    expect(web).toContain('withOriginQuery("/library/read/"');
+    expect(web).not.toContain("FAVORITES_LISTING");
+    expect(web).not.toContain("recentlyFinished");
   });
 
   it("sends Overview shelf back to Overview and Library shelf back to Library", () => {
@@ -116,6 +117,7 @@ describe("Sprint 1 Overview contracts", () => {
     expect(OVERVIEW_QUICK_ACTIONS_LIST.map((action) => action.id)).not.toContain("trail");
     expect(OVERVIEW_QUICK_ACTION_FOURTH_SLOT).toBeNull();
     const web = source("apps/web/src/components/reading-room/OverviewTab.tsx");
+    expect(web).not.toContain("QuickActionCard");
     expect(web).not.toContain("Continue Reading");
     expect(web).not.toContain("Search Books");
   });

@@ -29,6 +29,7 @@ import {
   readingRoomTabHref,
   type ReadingRoomTab,
 } from "@/lib/reading-room/readingRoomTabs";
+import { readingRoomTabLabel } from "@bookmarked/utils/readingRoomTabs";
 
 export type { ReadingRoomTab };
 
@@ -84,7 +85,7 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
   }, [tab, loadReviews]);
 
   useEffect(() => {
-    if (tab !== "progress" || typeof window === "undefined") return;
+    if (tab !== "stats" || typeof window === "undefined") return;
 
     const scrollToHash = () => {
       const hash = window.location.hash.replace(/^#/, "");
@@ -123,22 +124,25 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
       <div
         id="reading-room-panel"
         role="tabpanel"
-        aria-labelledby={`reading-room-tab-${tab}`}
-        aria-label={READING_ROOM_TAB_OPTIONS.find((t) => t.id === tab)?.label}
+        aria-labelledby={
+          READING_ROOM_TAB_OPTIONS.some((option) => option.id === tab)
+            ? `reading-room-tab-${tab}`
+            : undefined
+        }
+        aria-label={readingRoomTabLabel(tab)}
       >
         {tab === "overview" ? (
           <OverviewTab
-            userId={userId}
             data={{
               currentlyReading: data.currentlyReading,
-              recentlyFinished: data.recentlyFinished,
-              favorites: data.favorites,
+              readingGoal: data.readingGoal,
+              shelves: data.shelves,
             }}
             onRefresh={onRefresh}
           />
         ) : null}
 
-        {tab === "progress" ? (
+        {tab === "stats" ? (
           <div className="space-y-6">
             <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
               <h2 className="text-lg font-semibold text-puce-red">Reading Goal</h2>

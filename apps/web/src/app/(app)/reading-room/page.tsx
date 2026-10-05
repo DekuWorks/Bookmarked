@@ -8,6 +8,7 @@ import {
   type ReadingRoomData,
 } from "@/lib/services/readingRoom";
 import { backfillReadingSessionsForUser } from "@/lib/services/readingSessionBackfill";
+import { ReadingRoomHeader } from "@/components/reading-room/ReadingRoomHeader";
 import { ReadingRoomTabs } from "@/components/reading-room/ReadingRoomTabs";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
@@ -17,14 +18,12 @@ import { useStaleCatalogRefresh } from "@/lib/hooks/useStaleCatalogRefresh";
 export default function ReadingRoomPage() {
   const user = useAuthUser();
   const [data, setData] = useState<ReadingRoomData | null>(null);
-  const [displayName, setDisplayName] = useState("Reader");
 
   const loadReadingRoom = useCallback(async () => {
     if (!user) return;
 
     try {
       const profile = await getProfile(user.id);
-      setDisplayName(profile?.display_name || profile?.username || "Reader");
       void backfillReadingSessionsForUser(user.id);
       const room = await getReadingRoomData(
         user.id,
@@ -59,17 +58,7 @@ export default function ReadingRoomPage() {
 
   return (
     <div className="reading-room-bg -mx-4 space-y-8 overflow-x-hidden px-4 py-2 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-      <header className="animate-fade-in text-center">
-        <p className="text-sm font-medium uppercase tracking-widest text-primary">
-          Home
-        </p>
-        <h1 className="mt-1 text-3xl font-bold text-puce-red md:text-4xl">
-          {displayName}&apos;s Reading Room
-        </h1>
-        <p className="mx-auto mt-2 max-w-2xl text-pretty text-text-muted">
-          Your Whole Reading Life — Tracked, Noted and Reviewed.
-        </p>
-      </header>
+      <ReadingRoomHeader />
 
       <ReadingRoomTabs
         userId={user.id}

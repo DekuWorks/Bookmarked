@@ -2,19 +2,27 @@
 
 export const OVERVIEW_SECTION_TITLES = {
   currentlyReading: "Currently Reading",
+  readingGoal: "Reading Goal",
+  shelves: "Shelves",
+  challenges: "Challenges",
+  seeAllShelves: "See All Shelves",
   recentlyFinished: "Recently Finished",
   favorites: "Favorites",
   quickActions: "Quick Actions",
   recentActivity: "Recent Activity",
 } as const;
 
-/** Home → Overview section order. Reading Goal stays on Progress. */
+export const OVERVIEW_CHALLENGES_COPY = {
+  title: "Challenges",
+  subtitle: "Join reading challenges and track your progress.",
+} as const;
+
+/** Reading Room → Overview section order. */
 export const OVERVIEW_SECTION_ORDER = [
   "currentlyReading",
-  "recentlyFinished",
-  "favorites",
-  "quickActions",
-  "recentActivity",
+  "readingGoal",
+  "shelves",
+  "challenges",
 ] as const satisfies readonly (keyof typeof OVERVIEW_SECTION_TITLES)[];
 
 export const OVERVIEW_QUICK_ACTIONS = {
@@ -39,7 +47,7 @@ export const FAVORITES_LISTING = {
 } as const;
 
 export const CURRENTLY_READING_ADD_COPY = {
-  cardLabel: "Add Book to Currently Reading",
+  cardLabel: "Add Book to Currently Reading Shelf",
   chooseFromTbr: "Choose from TBR",
   searchForABook: "Search for a Book",
   tbrEmpty: "Your TBR is empty.",

@@ -18,8 +18,9 @@ describe("parseReadingRoomTab", () => {
     expect(parseReadingRoomTab("dashboard")).toBe("overview");
   });
 
-  it("accepts valid tab ids", () => {
-    expect(parseReadingRoomTab("progress")).toBe("progress");
+  it("maps the old Progress tab onto Stats and keeps Trail", () => {
+    expect(parseReadingRoomTab("progress")).toBe("stats");
+    expect(parseReadingRoomTab("stats")).toBe("stats");
     expect(parseReadingRoomTab("trail")).toBe("trail");
   });
 });
@@ -30,6 +31,7 @@ describe("readingRoomTabHref", () => {
   });
 
   it("adds tab query for other tabs", () => {
+    expect(readingRoomTabHref("stats")).toBe("/reading-room/?tab=stats");
     expect(readingRoomTabHref("trail")).toBe("/reading-room/?tab=trail");
     expect(readingRoomTabHref("history")).toBe("/reading-room/?tab=history");
   });

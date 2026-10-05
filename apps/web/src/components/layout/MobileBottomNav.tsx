@@ -3,7 +3,6 @@
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { AppNavLink } from "@/components/layout/AppNavLink";
-import { MessagesUnreadBadge } from "@/components/messages/MessagesUnreadBadge";
 import { Z_CLASS } from "@/lib/constants/zIndex";
 import { cn } from "@/lib/utils/cn";
 
@@ -57,7 +56,7 @@ function FeedIcon({ active }: { active: boolean }) {
   );
 }
 
-function SearchIcon({ active }: { active: boolean }) {
+function DiscoverIcon({ active }: { active: boolean }) {
   return (
     <svg
       aria-hidden
@@ -70,33 +69,8 @@ function SearchIcon({ active }: { active: boolean }) {
       stroke="currentColor"
       strokeWidth={active ? 2 : 1.75}
     >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-      />
-    </svg>
-  );
-}
-
-function MessagesIcon({ active }: { active: boolean }) {
-  return (
-    <svg
-      aria-hidden
-      className={cn(
-        "h-5 w-5 transition-colors duration-200",
-        active ? "text-royal-orange" : "text-puce-red/80"
-      )}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={active ? 2 : 1.75}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-      />
+      <circle cx="12" cy="12" r="9" />
+      <path strokeLinecap="round" d="M14.5 9.5 13 13l-3.5 1.5L11 11l3.5-1.5Z" />
     </svg>
   );
 }
@@ -125,9 +99,8 @@ function ProfileIcon({ active }: { active: boolean }) {
 
 const NAV_ITEMS: NavItem[] = [
   { href: "/reading-room/", label: "Home", icon: (active) => <HomeIcon active={active} /> },
-  { href: "/feed/", label: "Feed", icon: (active) => <FeedIcon active={active} /> },
-  { href: "/search/", label: "Search", icon: (active) => <SearchIcon active={active} /> },
-  { href: "/messages/", label: "Messages", icon: (active) => <MessagesIcon active={active} /> },
+  { href: "/feed/", label: "Community", icon: (active) => <FeedIcon active={active} /> },
+  { href: "/discover/", label: "Discover", icon: (active) => <DiscoverIcon active={active} /> },
   { href: "/profile/", label: "Profile", icon: (active) => <ProfileIcon active={active} /> },
 ];
 
@@ -165,7 +138,7 @@ export function MobileBottomNav() {
         )}
         aria-label="Mobile navigation"
       >
-        <ul className="relative grid grid-cols-5 p-1.5">
+        <ul className="relative grid grid-cols-4 p-1.5">
           <li
             aria-hidden
             className={cn(
@@ -181,8 +154,6 @@ export function MobileBottomNav() {
 
           {NAV_ITEMS.map((item) => {
             const active = isActivePath(pathname, item.href);
-            const isMessages = item.href.includes("/messages/");
-
             return (
               <li key={item.href} className="relative z-[1]">
                 <AppNavLink
@@ -198,9 +169,6 @@ export function MobileBottomNav() {
                 >
                   <span className="relative flex items-center justify-center">
                     {item.icon(active)}
-                    {isMessages ? (
-                      <MessagesUnreadBadge className="absolute -right-2.5 -top-1.5 ml-0 h-3.5 min-w-[14px] px-0.5 text-[8px]" />
-                    ) : null}
                   </span>
                   <span className="leading-none">{item.label}</span>
                 </AppNavLink>

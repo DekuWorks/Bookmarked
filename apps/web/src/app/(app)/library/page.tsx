@@ -1,6 +1,9 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { OriginBackNav } from "@/components/navigation/OriginBackNav";
+import { parseNavOrigin } from "@bookmarked/utils/navigationOrigin";
 import { getProfile } from "@/lib/services/profile";
 import { getUserLibraryBooks, groupBooksByShelf } from "@/lib/services/library";
 import { LibraryOrganizePanel } from "@/components/library/LibraryOrganizePanel";
@@ -13,6 +16,14 @@ import { useStaleCatalogRefresh } from "@/lib/hooks/useStaleCatalogRefresh";
 import type { LibraryViewMode } from "@/types";
 import type { LibraryBookRow, ShelfGroup } from "@/lib/services/library";
 import { layout } from "@/lib/constants/layout";
+
+function LibraryOriginBack() {
+  const params = useSearchParams();
+  if (!parseNavOrigin(params.get("origin"))) return null;
+  return (
+    <OriginBackNav fallbackLabel="overview" fallbackHref="/reading-room/" explicit />
+  );
+}
 
 type LibraryData = {
   books: LibraryBookRow[];
@@ -85,6 +96,9 @@ export default function LibraryPage() {
 
   return (
     <div className={layout.pageStackWide}>
+      <Suspense fallback={null}>
+        <LibraryOriginBack />
+      </Suspense>
       <header className="-mx-4 feed-header-gradient px-4 pb-8 pt-2 text-center sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
         <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Library</h1>
         <p className="mx-auto mt-2 max-w-2xl text-pretty text-text-muted">
