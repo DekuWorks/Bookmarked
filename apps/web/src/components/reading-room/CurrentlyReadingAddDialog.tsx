@@ -19,9 +19,17 @@ type Props = {
   open: boolean;
   onClose: () => void;
   onAdded: () => void;
+  onMoveStart?: (row: LibraryBookRow) => void;
+  onMoveFailed?: (row: LibraryBookRow) => void;
 };
 
-export function CurrentlyReadingAddDialog({ open, onClose, onAdded }: Props) {
+export function CurrentlyReadingAddDialog({
+  open,
+  onClose,
+  onAdded,
+  onMoveStart,
+  onMoveFailed,
+}: Props) {
   const router = useRouter();
   const toast = useToast();
   const [tbrOpen, setTbrOpen] = useState(false);
@@ -46,6 +54,7 @@ export function CurrentlyReadingAddDialog({ open, onClose, onAdded }: Props) {
     const bookId = row.books?.id;
     if (!bookId) return;
     setMovingId(bookId);
+    onMoveStart?.(row);
     const formData = new FormData();
     formData.set("book_id", bookId);
     formData.set("shelf_status", "currently_reading");
@@ -53,6 +62,7 @@ export function CurrentlyReadingAddDialog({ open, onClose, onAdded }: Props) {
     try {
       const result = await setBookShelfStatus({}, formData);
       if (result.error) {
+        onMoveFailed?.(row);
         toast.error(result.error);
         return;
       }

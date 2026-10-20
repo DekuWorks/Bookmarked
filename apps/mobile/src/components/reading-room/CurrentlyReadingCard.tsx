@@ -1,10 +1,11 @@
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text, useWindowDimensions, View } from "react-native";
 import { useRouter } from "expo-router";
 import { BookCover } from "../BookCover";
 import { ProgressBar } from "../ProgressBar";
 import type { LibraryBookRow } from "../../services/library";
 import { withOriginQuery } from "../../../../../packages/utils/navigationOrigin";
 import { currentlyReadingProgressLabel } from "../../../../../packages/utils/overviewShelfPreview";
+import { currentlyReadingCoverSize } from "../../../../../packages/utils/readingRoomMotion";
 
 type Props = {
   item: LibraryBookRow;
@@ -12,6 +13,9 @@ type Props = {
 
 export function CurrentlyReadingCard({ item }: Props) {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const cover = currentlyReadingCoverSize(width, "ios");
+  const pad = width >= 768;
   const book = item.books;
   const title = book?.title ?? "Untitled";
   const progress = currentlyReadingProgressLabel({
@@ -27,20 +31,24 @@ export function CurrentlyReadingCard({ item }: Props) {
   });
 
   return (
-    <View className="min-h-[220px] flex-row gap-3 rounded-2xl border border-brand-border bg-background p-3">
+    <View
+      className="flex-row rounded-2xl border border-brand-border bg-background"
+      style={{ minHeight: pad ? 280 : 220, gap: pad ? 16 : 12, padding: pad ? 20 : 12 }}
+    >
       <BookCover
         url={book?.cover_url}
         title={title}
         resizeMode="contain"
-        sizeStyle={{ width: 96, height: 144 }}
+        sizeStyle={{ width: cover.width, height: cover.height }}
         accessibilityLabel={`${title} cover`}
+        saved
       />
       <View className="min-w-0 flex-1">
-        <Text className="text-lg font-semibold text-puce-red" numberOfLines={2}>
+        <Text className="text-lg font-semibold text-puce-red" numberOfLines={3}>
           {title}
         </Text>
         {book?.author ? (
-          <Text className="mt-1 text-sm text-ink-muted" numberOfLines={1}>
+          <Text className="mt-1 text-sm text-ink-muted" numberOfLines={2}>
             {book.author}
           </Text>
         ) : null}
@@ -53,7 +61,7 @@ export function CurrentlyReadingCard({ item }: Props) {
           accessibilityRole="progressbar"
           accessibilityLabel={`Progress, ${progress.value}`}
         >
-          <ProgressBar percent={progress.percent} />
+          <ProgressBar percent={progress.percent} animate />
         </View>
         {book?.id ? (
           <Pressable

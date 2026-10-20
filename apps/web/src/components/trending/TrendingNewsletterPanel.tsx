@@ -16,7 +16,7 @@ function TrendingBookRow({ book }: { book: TrendingBook }) {
         href={bookDetailsPath(book.bookId)}
         className="group flex items-start gap-3 rounded-xl border border-border bg-background/60 p-3 transition hover:border-primary/30 hover:bg-background hover:shadow-sm"
       >
-        <div className="relative h-[4.5rem] w-[3rem] shrink-0 overflow-hidden rounded-md border border-border bg-white shadow-sm">
+        <div className="relative h-[4.5rem] w-[3rem] shrink-0 overflow-visible border border-border bg-white shadow-sm">
           <BookCover
             title={book.title}
             author={book.author}

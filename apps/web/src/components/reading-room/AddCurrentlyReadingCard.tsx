@@ -9,7 +9,7 @@ export function AddCurrentlyReadingCard({ onClick }: Props) {
     <button
       type="button"
       onClick={onClick}
-      className="flex h-full min-h-[220px] w-full flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-primary/50 bg-primary/10 px-6 text-center text-puce-red shadow-sm transition hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
+      className="flex h-full min-h-[220px] w-full flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-primary/50 bg-primary/10 px-6 text-center text-puce-red shadow-sm transition hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange md:min-h-[280px] lg:min-h-[320px]"
     >
       <span aria-hidden className="font-display text-5xl leading-none text-primary">
         +

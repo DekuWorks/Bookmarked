@@ -557,7 +557,7 @@ export function ClubDiscussionsPanel({
             <div className="mt-4 flex items-center gap-3 rounded-lg border border-border p-3">
               <Link
                 href={bookDetailsPath(activeDiscussion.book.id)}
-                className="h-20 w-14 shrink-0 overflow-hidden rounded-md"
+                className="h-20 w-14 shrink-0 overflow-visible"
               >
                 <BookCover
                   title={activeDiscussion.book.title}

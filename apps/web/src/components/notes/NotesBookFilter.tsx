@@ -124,7 +124,7 @@ export function NotesBookFilter({
                       : "border-border bg-background hover:border-primary/40"
                   )}
                 >
-                  <div className="h-14 w-10 shrink-0 overflow-hidden rounded">
+                  <div className="h-14 w-10 shrink-0 overflow-visible">
                     <BookCover
                       title={option.title}
                       author={option.author ?? undefined}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AnalyticsGrid } from "@/components/analytics/AnalyticsGrid";
 import { ReadingActivityPanel } from "@/components/analytics/ReadingActivityPanel";
@@ -46,10 +46,11 @@ const HistoryPanel = dynamic(
 type Props = {
   userId: string;
   data: ReadingRoomData;
+  dataSettled: boolean;
   onRefresh: () => void;
 };
 
-function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
+function ReadingRoomTabsContent({ userId, data, dataSettled, onRefresh }: Props) {
   const searchParams = useSearchParams();
   const tab = parseReadingRoomTab(searchParams.get("tab"));
   const { canAccess, loading: subscriptionLoading } = useSubscription(userId);
@@ -57,6 +58,13 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
   const hasAiInsights = canAccess("ai_insights");
   const [sessions, setSessions] = useState<UserReadingSession[] | null>(null);
   const [reviews, setReviews] = useState<UserReviewWithBook[] | null>(null);
+  const [keepNotes, setKeepNotes] = useState(tab === "notes");
+  const [keepReviews, setKeepReviews] = useState(tab === "reviews");
+  if (tab === "notes" && !keepNotes) setKeepNotes(true);
+  if (tab === "reviews" && !keepReviews) setKeepReviews(true);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const firstPanel = useRef(true);
+  const tabIndex = READING_ROOM_TAB_OPTIONS.findIndex((option) => option.id === tab);
   const libraryBooks = useMemo(
     () => data.shelves.flatMap((shelf) => shelf.items),
     [data.shelves]
@@ -85,6 +93,32 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
   }, [tab, loadReviews]);
 
   useEffect(() => {
+    if (firstPanel.current) {
+      firstPanel.current = false;
+      return;
+    }
+    const panel = panelRef.current;
+    if (!panel) return;
+    panel.classList.remove("reading-room-panel-in");
+    void panel.offsetWidth;
+    panel.classList.add("reading-room-panel-in");
+  }, [tab]);
+
+  function onTabKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+    event.preventDefault();
+    const current = Math.max(0, tabIndex);
+    const direction = event.key === "ArrowRight" ? 1 : -1;
+    const next =
+      READING_ROOM_TAB_OPTIONS[
+        (current + direction + READING_ROOM_TAB_OPTIONS.length) % READING_ROOM_TAB_OPTIONS.length
+      ];
+    const link = next ? document.getElementById(`reading-room-tab-${next.id}`) : null;
+    link?.focus();
+    link?.click();
+  }
+
+  useEffect(() => {
     if (tab !== "stats" || typeof window === "undefined") return;
 
     const scrollToHash = () => {
@@ -104,7 +138,15 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
         className="pill-tabs reading-room-tablist"
         role="tablist"
         aria-label="Reading room sections"
+        onKeyDown={onTabKeyDown}
       >
+        {tabIndex >= 0 ? (
+          <span
+            className="reading-room-tab-indicator"
+            aria-hidden
+            style={{ "--reading-room-tab": tabIndex } as React.CSSProperties}
+          />
+        ) : null}
         {READING_ROOM_TAB_OPTIONS.map((option) => (
           <Link
             key={option.id}
@@ -122,6 +164,7 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
       </div>
 
       <div
+        ref={panelRef}
         id="reading-room-panel"
         role="tabpanel"
         aria-labelledby={
@@ -131,16 +174,17 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
         }
         aria-label={readingRoomTabLabel(tab)}
       >
-        {tab === "overview" ? (
+        <div hidden={tab !== "overview"}>
           <OverviewTab
             data={{
               currentlyReading: data.currentlyReading,
               readingGoal: data.readingGoal,
               shelves: data.shelves,
             }}
+            dataSettled={dataSettled}
             onRefresh={onRefresh}
           />
-        ) : null}
+        </div>
 
         {tab === "stats" ? (
           <div className="space-y-6">
@@ -224,10 +268,16 @@ function ReadingRoomTabsContent({ userId, data, onRefresh }: Props) {
 
         {tab === "trail" ? <TrailPanel sessions={sessions} /> : null}
 
-        {tab === "notes" ? <NotesPanel userId={userId} /> : null}
+        {keepNotes ? (
+          <div hidden={tab !== "notes"}>
+            <NotesPanel userId={userId} />
+          </div>
+        ) : null}
 
-        {tab === "reviews" ? (
-          <ReviewsPanel reviews={reviews} onReviewsChange={() => void loadReviews()} />
+        {keepReviews ? (
+          <div hidden={tab !== "reviews"}>
+            <ReviewsPanel reviews={reviews} onReviewsChange={() => void loadReviews()} />
+          </div>
         ) : null}
 
         {tab === "history" ? (

@@ -11,8 +11,12 @@ type Props = {
   books: LibraryBookRow[];
   currentlyReading: LibraryBookRow[];
   readingGoal: ReadingGoalStatus;
+  dataSettled: boolean;
+  focusGeneration: number;
   onSetGoal?: () => void;
   onRefresh: () => void;
+  onMoveStart?: (row: LibraryBookRow) => void;
+  onMoveFailed?: (row: LibraryBookRow) => void;
 };
 
 export function OverviewTab({
@@ -20,15 +24,30 @@ export function OverviewTab({
   books,
   currentlyReading,
   readingGoal,
+  dataSettled,
+  focusGeneration,
   onSetGoal,
   onRefresh,
+  onMoveStart,
+  onMoveFailed,
 }: Props) {
   const shelves = groupBooksByShelf(books);
 
   return (
     <View className="gap-4">
-      <CurrentlyReadingCarousel userId={userId} items={currentlyReading} onRefresh={onRefresh} />
-      <ReadingGoalCard status={readingGoal} onSetGoal={onSetGoal} />
+      <CurrentlyReadingCarousel
+        userId={userId}
+        items={currentlyReading}
+        onRefresh={onRefresh}
+        onMoveStart={onMoveStart}
+        onMoveFailed={onMoveFailed}
+      />
+      <ReadingGoalCard
+        status={readingGoal}
+        dataSettled={dataSettled}
+        focusGeneration={focusGeneration}
+        onSetGoal={onSetGoal}
+      />
       <ShelfPreviewSection shelves={shelves} />
       <ChallengesCTA />
     </View>

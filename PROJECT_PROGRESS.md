@@ -1874,6 +1874,120 @@ These are not the shared history control. They still name a fixed place:
 
 ---
 
+## READING ROOM — 21ST.DEV-INSPIRED UI ENHANCEMENTS
+
+Branch: `feature/reading-room-motion` (from `origin/main` at `b54bb75`, which includes Sprint 1 and the universal "Back to" label). Not committed. No Android. No Supabase schema, RLS, or migration changes. No subscription restrictions. No new animation library.
+
+This is an enhancement of the existing Overview. Section order stays Currently Reading, Reading Goal, Shelves, Challenges. Recently Finished, Favorites, Quick Actions, and Recent Activity stay removed. The visible Back label stays `← Back to`.
+
+### Checklist
+
+| Item | Status |
+|------|--------|
+| Architecture audited | Done before edits. Web Next.js reading room, iOS Home, shared `@bookmarked/utils`, existing tokens. |
+| Dependencies reviewed | Done. Web has no animation package. iOS already has Reanimated and Gesture Handler. Nothing added. |
+| Desktop width | Done. Overview column uses `max-w-7xl` (80rem, +25% vs the old `max-w-5xl`). At 1440 and 1920 the shell padding caps the column at 1216px, centered. |
+| Spacing | Done. `space-y-6` on the dashboard. Existing card padding. Challenges link is full width of that column. |
+| Larger covers | Done on web, measured. Desktop cover 176×264 (37.5% wider than 128px), 2:3. Tablet 160×240. Phone 96×144. |
+| Carousel | Done on web. 280ms ease, arrows, keyboard, wheel, disabled ends, no route on index change. Position kept after Book Details. |
+| Progress animation | Implemented. Fill and number animate only when the value changes. Unit test confirms the motion helper does not call `recordNavVisit`. Live page change was not exercised (signed-in book is 0/208). |
+| Shelf hover | CSS is loaded (6px lift, scale 1.03, tooltip, focus-visible). A physical mouse hover was not performed. |
+| Native press | Implemented on iOS (press scale, optional iPad pointer lift). Simulator was not launched. |
+| Placement animations | Implemented, 240ms, first paint does not animate. Unit-tested. Not triggered in the browser, because that would move a real user-book. |
+| Tab indicator | Done on web. 220ms, width matches the active pill. Settled alignment measured for Overview, Reviews, Notes, and Stats. |
+| Tab content | Implemented. Fade and 6px shift on the panel only. Notes and Reviews stay mounted after the first visit. |
+| Goal animation | Implemented. Live account is 0 of 5, so the bar was scale 0. Over-target fill cap is unit-tested, not shown on this account. |
+| Milestones | Implemented. Client-only. First settled value does not celebrate. Not fired in the browser. |
+| Reduced motion | CSS and `motionDuration` return 0. OS reduced-motion was not toggled. |
+| Light | Sampled by setting `data-theme="light"` and restoring dark. Heading `rgb(100, 47, 55)`. |
+| Dark | Signed-in session was dark. Heading `rgb(232, 196, 204)`. |
+| Desktop web | Checked at 1920, 1440, 1280, and 1024. No horizontal overflow. |
+| Mobile web | Checked at 768, 390, and 375. Phone cover 96×144. Update Progress stayed inside the card. |
+| iPhone | Code only. Simulator not run. |
+| iPad | Code only. Simulator not run. Cover sizes differ from the phone (148×222 and 168×252). |
+| Navigation regression | Shelf cover opened Book Details with `origin=reading_room_overview`. Visible text was `← Back to`. Return kept carousel `2 / 2` and the URL had no carousel index. |
+| Data integrity | No schema or extra writes. Optimistic move reuses the existing shelf mutation and rolls back on failure. |
+| Accessibility | Keyboard tabs, `aria` on the carousel, inactive slides `inert`, milestone live region, reduced-motion CSS. VoiceOver was not run. |
+| Performance | Transform and opacity only. No new bundle. Listeners removed with the carousel effect. |
+
+### Files
+
+Shared:
+
+- `packages/utils/readingRoomMotion.ts` — durations, cover sizes, carousel clamp, goal fill cap, milestone observer, shelf membership, optimistic relocate.
+- `packages/utils/readingRoomMotion.test.ts`
+- `packages/utils/index.ts` — re-exports.
+
+Web:
+
+- `apps/web/src/app/globals.css` — indicator, carousel, panel, progress fill, shelf hover and placement, goal glow, reduced motion.
+- `apps/web/src/app/(app)/reading-room/page.tsx` — last successful payload kept so a return does not flash the loading state. Cache is not treated as settled, so a milestone does not fire on restore.
+- `apps/web/src/components/reading-room/ReadingRoomTabs.tsx`
+- `apps/web/src/components/reading-room/OverviewTab.tsx`
+- `apps/web/src/components/reading-room/CurrentlyReadingCarousel.tsx`
+- `apps/web/src/components/reading-room/CurrentlyReadingCard.tsx`
+- `apps/web/src/components/reading-room/AddCurrentlyReadingCard.tsx`
+- `apps/web/src/components/reading-room/ReadingGoalCard.tsx`
+- `apps/web/src/components/reading-room/ShelfPreviewRow.tsx`
+- `apps/web/src/components/reading-room/CurrentlyReadingAddDialog.tsx`
+- `apps/web/src/components/reading-room/MotionProgressBar.tsx` (new)
+- `apps/web/src/components/reading-room/GoalMilestone.tsx` (new)
+- `apps/web/src/lib/hooks/usePrefersReducedMotion.ts` (new)
+
+iOS:
+
+- `apps/mobile/app/(app)/index.tsx`
+- `apps/mobile/src/components/ProgressBar.tsx` — optional Reanimated fill. Other callers stay on the old bar unless they pass `animate`.
+- `apps/mobile/src/components/SegmentedTabs.tsx` — sliding pill is opt-in. Other segmented controls are unchanged.
+- `apps/mobile/src/components/reading-room/CurrentlyReadingCarousel.tsx`
+- `apps/mobile/src/components/reading-room/CurrentlyReadingCard.tsx`
+- `apps/mobile/src/components/reading-room/AddCurrentlyReadingCard.tsx`
+- `apps/mobile/src/components/reading-room/CurrentlyReadingAddSheet.tsx`
+- `apps/mobile/src/components/reading-room/OverviewTab.tsx`
+- `apps/mobile/src/components/reading-room/ReadingGoalCard.tsx`
+- `apps/mobile/src/components/reading-room/ShelfPreviewRow.tsx`
+- `apps/mobile/src/hooks/usePrefersReducedMotion.ts` (new)
+
+### Animation
+
+Web uses CSS transitions and keyframes. iOS uses Reanimated. Shared timings: carousel 280ms, progress 280ms, shelf hover 220ms (6px, scale 1.03), shelf placement 240ms, tab indicator 220ms, tab content 200ms with a 6px shift, milestone 900ms. Ease is `cubic-bezier(0.22, 1, 0.36, 1)`.
+
+21st.dev was inspiration only. Metadata for a sliding pill and a short progress fill was read. No component source was fetched or copied, so no third-party license applies. Glass, spring bounce, and coverflow were not used.
+
+### Platform differences
+
+- Web active tab fill stays the existing lavender primary. iOS active tab stays the existing puce capsule. The palettes were not unified.
+- Web carousel is a transform track with arrows. iOS uses a horizontal paging `ScrollView`.
+- iPad cover width is its own step. It is not a scaled iPhone card.
+- Notes and Reviews stay mounted after the first visit on both platforms so a tab animation cannot drop a draft.
+
+### Tests
+
+`apps/web` vitest, 20 Oct 2026:
+
+- `readingRoomMotion.test.ts` (8), `overviewSprint.test.ts` (9), `overviewShelfPreview.test.ts` (5), `currentlyReadingCard.test.ts` (4). 26 passed.
+
+Covered: rapid carousel clicks clamp to one index, progress animation skips an unchanged value and the motion sources do not call `recordNavVisit`, goal fill caps at 100 while 7/5 stays 140, milestones do not fire on an unsettled or first settled value, reduced motion duration is 0, five-cover cap vs a "6 books" count, relocate does not duplicate a user-book, desktop covers are 30–50% larger and phone covers stay 96×144.
+
+Web and iOS `tsc --noEmit` both passed after the final edits. ESLint on the new motion components passed. `ReadingRoomTabs` still reports the pre-existing `set-state-in-effect` findings in its review and session load effects. Those effects were not rewritten.
+
+### Browser
+
+Signed in on `http://localhost:3000`. Viewports 1920, 1440, 1280, 1024, 768, 390, and 375. Carousel arrows and rapid clicks, tab indicator alignment, shelf link to Book Details, Back label, and return to the same carousel index. Light colours were sampled and dark was restored. Device metrics were cleared.
+
+### Cover treatment
+
+Book covers use the shared `BookCover` on web and iOS. Corner radius is 3px (`BOOK_COVER_RADIUS_PX`), a tight paperback edge instead of `rounded-xl` / `rounded-md`. The existing ribbon asset is `/assets/branding/bookmarked-saved-badge.png` (`SavedBookBadge`). It shows on book covers unless a caller passes `bookmarked={false}` or `saved={false}` (search still does this for books that are not on a shelf). Shelf previews use the same front cover and a small ribbon. Frames that were `overflow-hidden` plus a large radius around a cover were opened so the ribbon and the 3px edge are not clipped. 21st.dev book and coverflow listings were metadata only. Those are 3D mockups, so no source was copied.
+
+### Known limitations
+
+- iPhone and iPad Simulator were not launched. No `expo run:ios` and no EAS build.
+- Mouse hover, OS reduced motion, VoiceOver, and a live progress or goal change were not exercised.
+- Shelf placement and the milestone effect were not triggered against the signed-in account.
+- The Next dev log still warns that some cover images using `fill` have a zero-height parent on a first frame. Measured carousel covers were 176×264, 160×240, and 96×144. Shelf frames measured 46×69.
+
+---
+
 ## Next up (recommended)
 
 | Priority | Item | Notes |

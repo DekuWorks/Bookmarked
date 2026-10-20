@@ -91,7 +91,7 @@ export function ClubDiscussionComposer({ clubId, viewerId, onPosted }: Props) {
 
       {book ? (
         <div className="mb-3 flex items-center gap-3 rounded-lg border border-border p-3">
-          <div className="h-16 w-11 shrink-0 overflow-hidden rounded-md">
+          <div className="h-16 w-11 shrink-0 overflow-visible">
             <BookCover
               title={book.title}
               author={book.author}

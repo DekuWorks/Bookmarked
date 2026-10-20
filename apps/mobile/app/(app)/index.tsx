@@ -1,8 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { Pressable, RefreshControl, Text, View } from "react-native";
-import Animated from "react-native-reanimated";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { parseReadingRoomTab } from "../../../../packages/utils/readingRoomTabs";
 import { BrandTopHeader } from "../../src/components/BrandTopHeader";
 import { ScreenGradientWash } from "../../src/components/ScreenGradientWash";
@@ -27,7 +32,7 @@ import {
   readingSessionsQueryKey,
 } from "../../src/constants/readingSessionQueries";
 import { useProfile } from "../../src/hooks/useProfile";
-import { getUserLibraryBooks } from "../../src/services/library";
+import { getUserLibraryBooks, type LibraryBookRow } from "../../src/services/library";
 import { loadReadingAnalytics } from "../../src/services/analytics";
 import { computeReadingGoal } from "../../src/services/readingGoal";
 import { listUserReviews } from "../../src/services/readingRoom";
@@ -36,6 +41,8 @@ import { TAB_BAR_SPACE, useTabBarScroll } from "../../src/navigation/TabBarScrol
 import { SERIF_DISPLAY_FONT } from "../../src/constants/theme";
 import { useAuthStore } from "../../src/store/authStore";
 import { useThemeColors } from "../../src/store/themeStore";
+import { usePrefersReducedMotion } from "../../src/hooks/usePrefersReducedMotion";
+import { READING_ROOM_MOTION, relocateLibraryBook } from "../../../../packages/utils/readingRoomMotion";
 
 function parseReadingRoomTabParam(value: string | string[] | undefined): ReadingRoomTab {
   const raw = Array.isArray(value) ? value[0] : value;
@@ -55,6 +62,14 @@ export default function HomeReadingRoom() {
   const { onScroll } = useTabBarScroll();
   const [tab, setTab] = useState<ReadingRoomTab>("overview");
   const [notesPickerOpen, setNotesPickerOpen] = useState(false);
+  const [focusGeneration, setFocusGeneration] = useState(0);
+  const [keepNotes, setKeepNotes] = useState(false);
+  const [keepReviews, setKeepReviews] = useState(false);
+  const reducedMotion = usePrefersReducedMotion();
+  const panelOpacity = useSharedValue(1);
+  const panelShift = useSharedValue(0);
+  const firstPanel = useRef(true);
+  const moveSnapshot = useRef<LibraryBookRow[] | null>(null);
 
   useEffect(() => {
     setTab(parseReadingRoomTabParam(tabParam));
@@ -62,7 +77,27 @@ export default function HomeReadingRoom() {
 
   useEffect(() => {
     if (tab !== "notes") setNotesPickerOpen(false);
+    if (tab === "notes") setKeepNotes(true);
+    if (tab === "reviews") setKeepReviews(true);
   }, [tab]);
+
+  useEffect(() => {
+    if (firstPanel.current) {
+      firstPanel.current = false;
+      return;
+    }
+    if (reducedMotion) return;
+    panelOpacity.value = 0;
+    panelShift.value = READING_ROOM_MOTION.tabContentShiftPx;
+    panelOpacity.value = withTiming(1, {
+      duration: READING_ROOM_MOTION.tabContentMs,
+      easing: Easing.out(Easing.cubic),
+    });
+    panelShift.value = withTiming(0, {
+      duration: READING_ROOM_MOTION.tabContentMs,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [panelOpacity, panelShift, reducedMotion, tab]);
 
   const [reviews, setReviews] = useState<Awaited<ReturnType<typeof listUserReviews>> | null>(null);
   const [notesRefreshId, setNotesRefreshId] = useState(0);
@@ -98,6 +133,7 @@ export default function HomeReadingRoom() {
 
   useFocusEffect(
     useCallback(() => {
+      setFocusGeneration((current) => current + 1);
       if (!userId) return;
       void queryClient.invalidateQueries({ queryKey: [READING_CALENDAR_QUERY_KEY] });
       if (tab === "trail" || tab === "history") {
@@ -135,6 +171,28 @@ export default function HomeReadingRoom() {
     if (tab === "reviews") void loadReviews();
     if (tab === "notes") setNotesRefreshId((id) => id + 1);
   }
+
+  function beginMove(row: LibraryBookRow) {
+    if (!userId) return;
+    const previous = queryClient.getQueryData<LibraryBookRow[]>(["library", userId]);
+    if (!previous) return;
+    moveSnapshot.current = previous;
+    queryClient.setQueryData(
+      ["library", userId],
+      relocateLibraryBook(previous, row.id, "currently_reading")
+    );
+  }
+
+  function failMove() {
+    if (!userId || !moveSnapshot.current) return;
+    queryClient.setQueryData(["library", userId], moveSnapshot.current);
+    moveSnapshot.current = null;
+  }
+
+  const panelStyle = useAnimatedStyle(() => ({
+    opacity: panelOpacity.value,
+    transform: [{ translateY: panelShift.value }],
+  }));
 
   if (library.isLoading) {
     return (
@@ -177,6 +235,7 @@ export default function HomeReadingRoom() {
           className="w-full"
           compact
           equalWidth
+          slidingIndicator
           options={READING_ROOM_TAB_OPTIONS}
           value={tab}
           onChange={(next) => {
@@ -185,71 +244,83 @@ export default function HomeReadingRoom() {
           }}
         />
 
-        {tab === "overview" && userId ? (
-          <OverviewTab
-            userId={userId}
-            books={books}
-            currentlyReading={currentlyReading}
-            readingGoal={goal}
-            onSetGoal={() => setTab("stats")}
-            onRefresh={() => void library.refetch()}
-          />
-        ) : null}
+        <Animated.View style={[{ gap: 16 }, panelStyle]}>
+          {userId ? (
+            <View style={{ display: tab === "overview" ? "flex" : "none" }}>
+              <OverviewTab
+                userId={userId}
+                books={books}
+                currentlyReading={currentlyReading}
+                readingGoal={goal}
+                dataSettled={library.isSuccess}
+                focusGeneration={focusGeneration}
+                onSetGoal={() => setTab("stats")}
+                onRefresh={() => void library.refetch()}
+                onMoveStart={beginMove}
+                onMoveFailed={failMove}
+              />
+            </View>
+          ) : null}
 
-        {tab === "stats" ? (
-          <>
-            <SectionCard title="Reading Goal">
-              <ReadingGoalPanel status={goal} />
-            </SectionCard>
-            <Pressable
-              onPress={() => router.push("/wrapped")}
-              accessibilityRole="button"
-              className="self-start"
-            >
-              <Text className="text-sm font-semibold text-primary-dark">Your year in books ›</Text>
-            </Pressable>
-            {userId ? (
-              <SectionCard title="Reading calendar">
-                <ReadingCalendar userId={userId} />
+          {tab === "stats" ? (
+            <>
+              <SectionCard title="Reading Goal">
+                <ReadingGoalPanel status={goal} />
               </SectionCard>
-            ) : null}
-            <SectionCard title="Reading Statistics">
-              {analytics.isLoading ? (
-                <LoadingState message="Loading statistics…" />
-              ) : analytics.data ? (
-                <AnalyticsGrid analytics={analytics.data} readingGoal={goal} />
-              ) : (
-                <Text className="text-ink-muted">Sign in to view your reading statistics.</Text>
-              )}
-            </SectionCard>
-            <ReadingInsightsSection />
-          </>
-        ) : null}
+              <Pressable
+                onPress={() => router.push("/wrapped")}
+                accessibilityRole="button"
+                className="self-start"
+              >
+                <Text className="text-sm font-semibold text-primary-dark">Your year in books ›</Text>
+              </Pressable>
+              {userId ? (
+                <SectionCard title="Reading calendar">
+                  <ReadingCalendar userId={userId} />
+                </SectionCard>
+              ) : null}
+              <SectionCard title="Reading Statistics">
+                {analytics.isLoading ? (
+                  <LoadingState message="Loading statistics…" />
+                ) : analytics.data ? (
+                  <AnalyticsGrid analytics={analytics.data} readingGoal={goal} />
+                ) : (
+                  <Text className="text-ink-muted">Sign in to view your reading statistics.</Text>
+                )}
+              </SectionCard>
+              <ReadingInsightsSection />
+            </>
+          ) : null}
 
-        {tab === "trail" ? <TrailPanel sessions={sessions} /> : null}
+          {tab === "trail" ? <TrailPanel sessions={sessions} /> : null}
 
-        {tab === "notes" && userId ? (
-          <NotesPanel
-            userId={userId}
-            bookParam={Array.isArray(bookParam) ? bookParam[0] : bookParam}
-            refreshId={notesRefreshId}
-            onPickerOpenChange={setNotesPickerOpen}
-          />
-        ) : null}
+          {keepNotes && userId ? (
+            <View style={{ display: tab === "notes" ? "flex" : "none" }}>
+              <NotesPanel
+                userId={userId}
+                bookParam={Array.isArray(bookParam) ? bookParam[0] : bookParam}
+                refreshId={notesRefreshId}
+                onPickerOpenChange={setNotesPickerOpen}
+              />
+            </View>
+          ) : null}
 
-        {tab === "reviews" ? (
-          <ReviewsPanel
-            reviews={reviews}
-            onReviewsChange={() => {
-              void loadReviews();
-              void queryClient.invalidateQueries({ queryKey: ["home-feed"] });
-              void queryClient.invalidateQueries({ queryKey: ["reader-activity"] });
-              void queryClient.invalidateQueries({ queryKey: ["book-details"] });
-            }}
-          />
-        ) : null}
+          {keepReviews ? (
+            <View style={{ display: tab === "reviews" ? "flex" : "none" }}>
+              <ReviewsPanel
+                reviews={reviews}
+                onReviewsChange={() => {
+                  void loadReviews();
+                  void queryClient.invalidateQueries({ queryKey: ["home-feed"] });
+                  void queryClient.invalidateQueries({ queryKey: ["reader-activity"] });
+                  void queryClient.invalidateQueries({ queryKey: ["book-details"] });
+                }}
+              />
+            </View>
+          ) : null}
 
-        {tab === "history" ? <HistoryPanel books={books} sessions={sessions} /> : null}
+          {tab === "history" ? <HistoryPanel books={books} sessions={sessions} /> : null}
+        </Animated.View>
       </Animated.ScrollView>
     </View>
   );

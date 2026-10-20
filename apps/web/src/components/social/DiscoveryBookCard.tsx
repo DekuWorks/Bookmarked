@@ -121,7 +121,7 @@ export function DiscoveryBookCard({ book }: Props) {
         className="group flex h-full flex-col text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
       >
         <div
-          className="relative w-[7.5rem] shrink-0 overflow-hidden rounded-lg border border-border bg-white shadow-sm"
+          className="relative w-[7.5rem] shrink-0 overflow-visible border border-border bg-white shadow-sm"
           style={{ height: DISCOVERY_CARD_ROW_PX.coverHeight }}
         >
           <BookCover

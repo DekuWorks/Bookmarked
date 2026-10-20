@@ -77,7 +77,7 @@ export function BookPickerModal({ open, onClose, viewerId, title = "Choose a boo
                     "hover:border-primary/40 hover:bg-primary/5"
                   )}
                 >
-                  <div className="h-16 w-11 shrink-0 overflow-hidden rounded-md">
+                  <div className="h-16 w-11 shrink-0 overflow-visible">
                     <BookCover
                       title={book.title}
                       author={book.author}
