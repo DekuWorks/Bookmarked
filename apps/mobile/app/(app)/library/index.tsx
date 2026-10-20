@@ -1,6 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { originBackHref, parseNavOriginParam } from "../../../../../packages/utils/navigationOrigin";
+import {
+  originBackHref,
+  parseNavOriginParam,
+  resolveOriginBack,
+  UNIVERSAL_BACK_VISIBLE_LABEL,
+} from "../../../../../packages/utils/navigationOrigin";
 import { HistoryMenuButton } from "../../../src/navigation/HistoryMenuButton";
 import { Pressable, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
@@ -23,7 +28,9 @@ export default function LibraryScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const params = useLocalSearchParams<{ origin?: string | string[] }>();
-  const backHref = originBackHref(parseNavOriginParam(params.origin), "mobile");
+  const origin = parseNavOriginParam(params.origin);
+  const backHref = originBackHref(origin, "mobile");
+  const originLabel = resolveOriginBack(origin)?.label;
   const userId = useAuthStore((s) => s.user?.id);
   const { onScroll } = useTabBarScroll();
   const { data: shelves, isLoading, isError, error } = useLibrary();
@@ -47,11 +54,14 @@ export default function LibraryScreen() {
           {backHref ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Back to Overview"
+              accessibilityLabel={originLabel ? `Back to ${originLabel}` : UNIVERSAL_BACK_VISIBLE_LABEL}
               onPress={() => router.replace(backHref as never)}
-              className="mr-2 h-11 w-11 items-center justify-center"
+              className="mr-1 h-11 flex-row items-center pr-1"
             >
-              <Text className="text-2xl text-puce-red">‹</Text>
+              <Text className="text-2xl leading-none text-puce-red">‹</Text>
+              <Text className="ml-0.5 text-sm font-medium text-puce-red">
+                {UNIVERSAL_BACK_VISIBLE_LABEL}
+              </Text>
             </Pressable>
           ) : null}
           <HistoryMenuButton />

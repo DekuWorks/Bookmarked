@@ -3,7 +3,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { CURRENTLY_READING_CARD_SIZE } from "./currentlyReadingCard";
-import { originBackLink } from "./navigationOrigin";
+import { originBackLink, UNIVERSAL_BACK_LINK_LABEL } from "./navigationOrigin";
 import {
   FAVORITES_LISTING,
   OVERVIEW_ACTIVITY_VIEW_ALL,
@@ -78,7 +78,8 @@ describe("Sprint 1 Overview contracts", () => {
       label: "← Back to Library",
     });
     expect(fromOverview.href).toBe("/reading-room/");
-    expect(fromOverview.label).toBe("← Back to Overview");
+    expect(fromOverview.label).toBe(UNIVERSAL_BACK_LINK_LABEL);
+    expect(fromOverview.label).not.toContain("Overview");
 
     const fromLibrary = originBackLink("library_shelf", "mobile", {
       href: "/library",

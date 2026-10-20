@@ -12,14 +12,14 @@ import { getUserLibraryBooks, type LibraryBookRow } from "@/lib/services/library
 import { FAVORITES_LISTING } from "@bookmarked/utils/overviewCopy";
 import { resolveTrackingFormat } from "@bookmarked/utils/listeningTime";
 import { BackCluster } from "@/components/navigation/HistoryMenuButton";
-import { originBackLink } from "@bookmarked/utils/navigationOrigin";
+import { originBackLink, UNIVERSAL_BACK_LINK_LABEL } from "@bookmarked/utils/navigationOrigin";
 
 export default function FavoritesPageClient() {
   const user = useAuthUser();
   const searchParams = useSearchParams();
   const back = originBackLink(searchParams.get("origin"), "web", {
     href: "/library/",
-    label: "← Back to Library",
+    label: UNIVERSAL_BACK_LINK_LABEL,
   });
   const [books, setBooks] = useState<LibraryBookRow[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);

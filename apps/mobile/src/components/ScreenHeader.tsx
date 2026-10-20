@@ -4,7 +4,12 @@ import { useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { resolveNavScreen, type NavQuery } from "../../../../packages/utils/navigationHistory";
-import { originBackHref, parseNavOrigin } from "../../../../packages/utils/navigationOrigin";
+import {
+  originBackHref,
+  parseNavOrigin,
+  resolveOriginBack,
+  UNIVERSAL_BACK_VISIBLE_LABEL,
+} from "../../../../packages/utils/navigationOrigin";
 import { HistoryMenuButton } from "../navigation/HistoryMenuButton";
 import { useNavHistory } from "../navigation/NavHistoryProvider";
 
@@ -42,7 +47,7 @@ export function ScreenHeader({
   const insets = useSafeAreaInsets();
   const focused = useIsFocused();
   const pathname = usePathname();
-  const { renameCurrent } = useNavHistory();
+  const { previous, renameCurrent } = useNavHistory();
   const params = useLocalSearchParams<{
     id?: string | string[];
     tab?: string | string[];
@@ -68,10 +73,18 @@ export function ScreenHeader({
   useEffect(() => {
     if (focused && screenKey) renameCurrent(screenKey, title);
   }, [focused, renameCurrent, screenKey, title]);
-  const originHref = originBackHref(parseNavOrigin(firstParam(params.origin)), "mobile", {
+  const origin = parseNavOrigin(firstParam(params.origin));
+  const originHref = originBackHref(origin, "mobile", {
     query: firstParam(params.q),
     scroll: firstParam(params.scroll),
   });
+  const explicitDestination =
+    backHref || originHref ? resolveOriginBack(origin)?.label : undefined;
+  const accessibleName = explicitDestination
+    ? `Back to ${explicitDestination}`
+    : previous[0]?.title
+      ? `Back to ${previous[0].title}`
+      : UNIVERSAL_BACK_VISIBLE_LABEL;
 
   function handleBack() {
     if (backHref) {
@@ -102,11 +115,14 @@ export function ScreenHeader({
         {back ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Go back"
+            accessibilityLabel={accessibleName}
             onPress={handleBack}
-            className="h-11 w-11 items-center justify-center rounded-full active:bg-primary/10"
+            className="h-11 flex-row items-center rounded-full pl-1 pr-2 active:bg-primary/10"
           >
-            <Text className="text-2xl text-puce-red">‹</Text>
+            <Text className="text-2xl leading-none text-puce-red">‹</Text>
+            <Text className="ml-0.5 text-sm font-medium text-puce-red">
+              {UNIVERSAL_BACK_VISIBLE_LABEL}
+            </Text>
           </Pressable>
         ) : (
           <View className="w-2" />

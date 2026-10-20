@@ -12,6 +12,7 @@ import {
   unpinConversation,
 } from "@/lib/services/messages";
 import { BackCluster } from "@/components/navigation/HistoryMenuButton";
+import { UNIVERSAL_BACK_LINK_LABEL } from "@bookmarked/utils/navigationOrigin";
 import { messagesInboxPath } from "@/lib/routes/messages";
 import { readerProfilePath } from "@/lib/routes/reader";
 import { profileDisplayName } from "@/lib/utils/messaging";
@@ -72,8 +73,9 @@ export function ConversationHeader({
           <Link
             href={messagesInboxPath()}
             className="shrink-0 text-sm font-medium text-primary hover:underline sm:hidden"
+            aria-label="Back to inbox"
           >
-            ← Inbox
+            {UNIVERSAL_BACK_LINK_LABEL}
           </Link>
         </BackCluster>
 

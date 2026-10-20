@@ -14,7 +14,7 @@ import { challengeDetailPath, challengesPath } from "@/lib/routes/challenges";
 import { createChallenge } from "@/lib/services/challenges/ChallengeService";
 import { uploadChallengeCover } from "@/lib/services/entityAvatar";
 import { BackCluster } from "@/components/navigation/HistoryMenuButton";
-import { originBackLink } from "@bookmarked/utils/navigationOrigin";
+import { originBackLink, UNIVERSAL_BACK_LINK_LABEL } from "@bookmarked/utils/navigationOrigin";
 import {
   CHALLENGE_GOAL_TYPES,
   CHALLENGE_VISIBILITIES,
@@ -33,7 +33,7 @@ export default function CreateChallengePage() {
   const searchParams = useSearchParams();
   const back = originBackLink(searchParams.get("origin"), "web", {
     href: challengesPath(),
-    label: "← Back to Challenges",
+    label: UNIVERSAL_BACK_LINK_LABEL,
   });
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");

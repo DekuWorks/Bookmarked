@@ -1,4 +1,5 @@
 import { Stack } from "expo-router";
+import { UNIVERSAL_BACK_VISIBLE_LABEL } from "../../../../../packages/utils/navigationOrigin";
 import { HistoryMenuButton } from "../../../src/navigation/HistoryMenuButton";
 import { useNavStackReset } from "../../../src/navigation/useNavStackReset";
 
@@ -16,8 +17,8 @@ export default function ClubsLayout() {
       }}
     >
       <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="[id]" options={{ title: "Club", headerBackTitle: "Clubs" }} />
-      <Stack.Screen name="new" options={{ title: "Start a club", headerBackTitle: "Clubs" }} />
+      <Stack.Screen name="[id]" options={{ title: "Club", headerBackTitle: UNIVERSAL_BACK_VISIBLE_LABEL }} />
+      <Stack.Screen name="new" options={{ title: "Start a club", headerBackTitle: UNIVERSAL_BACK_VISIBLE_LABEL }} />
     </Stack>
   );
 }

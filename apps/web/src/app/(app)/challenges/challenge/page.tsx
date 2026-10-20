@@ -23,7 +23,7 @@ import { formatChallengeAmount, formatChallengeListeningTime } from "@bookmarked
 import { checklistItemAnnouncement, challengeProgressAnnouncement } from "@bookmarked/utils/challengeDisplay";
 import { visibilityLabel as challengeVisibilityLabel } from "@bookmarked/utils/challengeDisplay";
 import { BackCluster } from "@/components/navigation/HistoryMenuButton";
-import { originBackLink } from "@bookmarked/utils/navigationOrigin";
+import { originBackLink, UNIVERSAL_BACK_LINK_LABEL } from "@bookmarked/utils/navigationOrigin";
 import { ENTITLEMENT_LIMIT_MESSAGES, isEntitlementLimitError } from "@bookmarked/utils/subscription";
 
 export default function ChallengeDetailPage() {
@@ -33,7 +33,7 @@ export default function ChallengeDetailPage() {
   const id = searchParams.get("id") ?? "";
   const back = originBackLink(searchParams.get("origin"), "web", {
     href: challengesPath(),
-    label: "← Back to Challenges",
+    label: UNIVERSAL_BACK_LINK_LABEL,
   });
   const [detail, setDetail] = useState<ChallengeDetailModel | null>(null);
   const [loading, setLoading] = useState(true);

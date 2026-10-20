@@ -26,6 +26,7 @@ import { computeReadingGoal } from "@/lib/services/readingGoal";
 import type { ReadingGoalStatus } from "@/lib/services/readingGoal";
 import type { Profile } from "@/types";
 import { BackCluster } from "@/components/navigation/HistoryMenuButton";
+import { UNIVERSAL_BACK_LINK_LABEL } from "@bookmarked/utils/navigationOrigin";
 import { layout } from "@/lib/constants/layout";
 
 type SettingsData = {
@@ -78,8 +79,9 @@ export default function ProfileSettingsPage() {
         <Link
           href="/profile"
           className="inline-block text-sm font-medium text-primary hover:underline"
+          aria-label="Back to profile"
         >
-          ← Back to profile
+          {UNIVERSAL_BACK_LINK_LABEL}
         </Link>
       </BackCluster>
 

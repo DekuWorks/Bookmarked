@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { BackCluster } from "@/components/navigation/HistoryMenuButton";
+import { UNIVERSAL_BACK_LINK_LABEL } from "@bookmarked/utils/navigationOrigin";
 import { useEffect, useState } from "react";
 import { ProfileSetupForm } from "@/components/auth/ProfileSetupForm";
 import { createClient } from "@/lib/supabase/client";
@@ -33,8 +34,12 @@ export default function ProfileSetupPage() {
     <div className={`${layout.pageStack} max-w-lg`}>
       {isEditing ? (
         <BackCluster>
-          <Link href="/profile" className="inline-block text-sm font-medium text-primary hover:underline">
-            ← Back to profile
+          <Link
+            href="/profile"
+            className="inline-block text-sm font-medium text-primary hover:underline"
+            aria-label="Back to profile"
+          >
+            {UNIVERSAL_BACK_LINK_LABEL}
           </Link>
         </BackCluster>
       ) : null}

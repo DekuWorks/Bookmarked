@@ -1,7 +1,14 @@
 /**
  * Origin-aware back navigation for Home, Feed, Search, and Library.
- * Never hardcode every Back to Library/Home — resolve from `origin`.
+ * The href still comes from `origin`. The shared Back control's visible
+ * words do not name that destination.
  */
+
+/** Visible words on the shared multi-step Back control. No destination name. */
+export const UNIVERSAL_BACK_VISIBLE_LABEL = "Back to";
+
+/** Arrow plus the universal label, for text-link Back controls. */
+export const UNIVERSAL_BACK_LINK_LABEL = `← ${UNIVERSAL_BACK_VISIBLE_LABEL}`;
 
 export const NAV_ORIGINS = [
   "home_overview",
@@ -173,10 +180,12 @@ export function originBackLink(
 ): { href: string; label: string; origin: NavOrigin | null } {
   const parsed = parseNavOriginParam(origin);
   const target = resolveOriginBack(parsed);
-  if (!target) return { ...fallback, origin: null };
+  if (!target) {
+    return { href: fallback.href, label: UNIVERSAL_BACK_LINK_LABEL, origin: null };
+  }
   return {
     href: platform === "web" ? target.webHref : target.mobileHref,
-    label: `← Back to ${target.label}`,
+    label: UNIVERSAL_BACK_LINK_LABEL,
     origin: target.origin,
   };
 }

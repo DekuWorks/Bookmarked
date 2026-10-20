@@ -7,13 +7,13 @@ import { LoadingState } from "../../../src/components/LoadingState";
 import { ScreenHeader } from "../../../src/components/ScreenHeader";
 import { useLibrary } from "../../../src/hooks/useLibrary";
 import { FAVORITES_LISTING } from "../../../../../packages/utils/overviewCopy";
-import { originBackLink } from "../../../../../packages/utils/navigationOrigin";
+import { originBackLink, UNIVERSAL_BACK_LINK_LABEL } from "../../../../../packages/utils/navigationOrigin";
 
 export default function LibraryFavoritesScreen() {
   const { origin } = useLocalSearchParams<{ origin?: string }>();
   const back = originBackLink(origin, "mobile", {
     href: "/library",
-    label: "← Back to Library",
+    label: UNIVERSAL_BACK_LINK_LABEL,
   });
   const { data: shelves, isLoading, isError } = useLibrary();
 
