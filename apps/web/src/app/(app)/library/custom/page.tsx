@@ -2,6 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { BackCluster } from "@/components/navigation/HistoryMenuButton";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BookSpine } from "@/components/library/BookSpine";
 import { EmptyShelfMessage } from "@/components/library/EmptyShelfMessage";
@@ -146,12 +147,14 @@ function CustomShelfContent() {
     <div className={layout.pageStackWide}>
       <header className="flex flex-col items-center gap-4 text-center">
         <div>
-          <Link
-            href="/library"
-            className="inline-block text-sm font-medium text-primary hover:underline"
-          >
-            ← Back to library
-          </Link>
+          <BackCluster>
+            <Link
+              href="/library"
+              className="inline-block text-sm font-medium text-primary hover:underline"
+            >
+              ← Back to library
+            </Link>
+          </BackCluster>
           <h1 className="mt-2 flex items-center justify-center gap-2 text-3xl font-bold text-puce-red sm:text-4xl">
             <ShelfTitleRow
               iconKey={shelf.icon_key}

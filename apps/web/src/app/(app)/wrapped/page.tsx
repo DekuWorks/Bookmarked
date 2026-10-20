@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { BackCluster } from "@/components/navigation/HistoryMenuButton";
 import { Button } from "@/components/ui/Button";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
@@ -101,9 +102,11 @@ export default function WrappedPage() {
       ) : null}
 
       <p className="text-center">
-        <Link href="/reading-room/?tab=progress" className="text-sm font-medium text-primary hover:underline">
-          ← Back to Progress
-        </Link>
+        <BackCluster>
+          <Link href="/reading-room/?tab=progress" className="text-sm font-medium text-primary hover:underline">
+            ← Back to Progress
+          </Link>
+        </BackCluster>
       </p>
     </div>
   );

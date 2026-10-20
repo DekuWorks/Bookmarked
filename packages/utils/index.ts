@@ -635,6 +635,33 @@ export {
 } from "./sharePreview";
 
 export {
+  NAV_HISTORY_DISPLAY_LIMIT,
+  NAV_HISTORY_MAX_ENTRIES,
+  NAV_HISTORY_STORAGE_KEY,
+  adoptRicherNavHistory,
+  canPopWithinSession,
+  emptyNavHistory,
+  focusNavHistory,
+  isSafeNavHref,
+  normalizeNavPath,
+  parseNavHistory,
+  previousNavEntries,
+  recordNavVisit,
+  renameCurrentNavEntry,
+  renameNavEntryIfCurrent,
+  resolveNavScreen,
+  serializeNavHistory,
+  stacksToReset,
+  syncNavVisit,
+  truncateNavHistory,
+  type NavHistoryEntry,
+  type NavHistoryIcon,
+  type NavHistoryState,
+  type NavPlatform,
+  type NavQuery,
+} from "./navigationHistory";
+
+export {
   NAV_ORIGINS,
   NAV_ORIGIN_QUERY_PARAM,
   NAV_QUERY_QUERY_PARAM,

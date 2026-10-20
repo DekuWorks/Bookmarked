@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
 import { OriginBackNav } from "@/components/navigation/OriginBackNav";
+import { useNavHistoryTitle } from "@/lib/navigation/NavHistoryProvider";
 import { ShareHead } from "@/components/seo/ShareHead";
 import { bookDetailsPath } from "@/lib/routes/book";
 import { webFeedComposerHref } from "@bookmarked/utils/feedComposer";
@@ -80,6 +81,7 @@ function BookDetailsContent() {
   }, [user, bookId, loadBookDetails]);
 
   useUserBooksRealtime(user?.id, loadBookDetails);
+  useNavHistoryTitle(bookId ? `book:${bookId}` : "", data?.book?.title);
 
   useEffect(() => {
     loadCustomMembership();

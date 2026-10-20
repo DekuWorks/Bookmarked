@@ -11,6 +11,7 @@ import {
   pinConversation,
   unpinConversation,
 } from "@/lib/services/messages";
+import { BackCluster } from "@/components/navigation/HistoryMenuButton";
 import { messagesInboxPath } from "@/lib/routes/messages";
 import { readerProfilePath } from "@/lib/routes/reader";
 import { profileDisplayName } from "@/lib/utils/messaging";
@@ -67,12 +68,14 @@ export function ConversationHeader({
       )}
     >
       <div className="mx-auto flex max-w-3xl items-center gap-3">
-        <Link
-          href={messagesInboxPath()}
-          className="shrink-0 text-sm font-medium text-primary hover:underline sm:hidden"
-        >
-          ← Inbox
-        </Link>
+        <BackCluster>
+          <Link
+            href={messagesInboxPath()}
+            className="shrink-0 text-sm font-medium text-primary hover:underline sm:hidden"
+          >
+            ← Inbox
+          </Link>
+        </BackCluster>
 
         {otherParticipant ? (
           peerHref ? (

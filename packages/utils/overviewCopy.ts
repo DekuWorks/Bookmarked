@@ -49,7 +49,7 @@ export const FAVORITES_LISTING = {
 export const CURRENTLY_READING_ADD_COPY = {
   cardLabel: "Add Book to Currently Reading Shelf",
   chooseFromTbr: "Choose from TBR",
-  searchForABook: "Search for a Book",
+  searchForABook: "Search for a New Book",
   tbrEmpty: "Your TBR is empty.",
   addingBanner: "Adding to Currently Reading",
 } as const;

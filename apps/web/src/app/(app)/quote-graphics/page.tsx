@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BackCluster } from "@/components/navigation/HistoryMenuButton";
 import { QuoteGraphicsStudio } from "@/components/quotes/QuoteGraphicsStudio";
 import { QUOTE_GRAPHICS_PAGE_SUBTITLE } from "@bookmarked/utils/quoteGraphics";
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -30,11 +31,11 @@ export default function QuoteGraphicsPage() {
         <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Quote graphics</h1>
         <p className="mt-1 text-text-muted">{QUOTE_GRAPHICS_PAGE_SUBTITLE}</p>
       </header>
-      <p>
+      <BackCluster>
         <Link href="/notes/" className="text-sm font-medium text-primary hover:underline">
           ← Back to notes
         </Link>
-      </p>
+      </BackCluster>
       <QuoteGraphicsStudio userId={user.id} />
     </div>
   );

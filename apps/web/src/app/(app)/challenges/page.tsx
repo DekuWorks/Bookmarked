@@ -15,6 +15,7 @@ import {
   listChallengeCatalog,
   type ChallengeCardModel,
 } from "@/lib/services/challenges/ChallengeService";
+import { BackCluster } from "@/components/navigation/HistoryMenuButton";
 import { originBackLink } from "@bookmarked/utils/navigationOrigin";
 import { useSearchParams } from "next/navigation";
 
@@ -71,11 +72,11 @@ export default function ChallengesPage() {
         </p>
       </header>
 
-      <p>
+      <BackCluster>
         <Link href={back.href} className="text-sm font-medium text-primary hover:underline">
           {back.label}
         </Link>
-      </p>
+      </BackCluster>
 
       <div className="flex justify-center">
         {canCreate ? (

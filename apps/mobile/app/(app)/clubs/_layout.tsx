@@ -1,6 +1,9 @@
 import { Stack } from "expo-router";
+import { HistoryMenuButton } from "../../../src/navigation/HistoryMenuButton";
+import { useNavStackReset } from "../../../src/navigation/useNavStackReset";
 
 export default function ClubsLayout() {
+  useNavStackReset("clubs");
   return (
     <Stack
       screenOptions={{
@@ -9,6 +12,7 @@ export default function ClubsLayout() {
         headerTintColor: "#642F37",
         headerShadowVisible: false,
         contentStyle: { backgroundColor: "#F4EEFA" },
+        headerRight: () => <HistoryMenuButton />,
       }}
     >
       <Stack.Screen name="index" options={{ headerShown: false }} />

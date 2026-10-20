@@ -46,7 +46,7 @@ export function CurrentlyReadingCarousel({ items, onItemsChange }: Props) {
 
   return (
     <section className="rounded-2xl border border-border bg-surface/90 p-4 shadow-sm md:p-5">
-      <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-display text-xl text-puce-red md:text-2xl">
           {OVERVIEW_SECTION_TITLES.currentlyReading}
         </h2>
@@ -54,7 +54,7 @@ export function CurrentlyReadingCarousel({ items, onItemsChange }: Props) {
           <p className="text-sm tabular-nums text-text-muted" aria-live="polite">
             {index + 1} / {count}
           </p>
-          <div className="hidden gap-1 md:flex">
+          <div className="flex gap-1">
             <button
               type="button"
               className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border text-lg text-puce-red disabled:opacity-40"
@@ -79,9 +79,20 @@ export function CurrentlyReadingCarousel({ items, onItemsChange }: Props) {
 
       <div
         ref={scrollerRef}
+        tabIndex={0}
         onScroll={syncIndex}
-        className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth"
+        onKeyDown={(event) => {
+          if (event.key === "ArrowLeft") {
+            event.preventDefault();
+            scrollToIndex(index - 1);
+          } else if (event.key === "ArrowRight") {
+            event.preventDefault();
+            scrollToIndex(index + 1);
+          }
+        }}
+        className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
         aria-label="Currently reading books"
+        aria-roledescription="carousel"
       >
         {items.map((item) => (
           <div key={item.id} className="w-full shrink-0 snap-start">

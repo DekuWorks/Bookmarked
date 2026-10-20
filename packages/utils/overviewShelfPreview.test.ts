@@ -23,6 +23,7 @@ describe("overview shelf preview", () => {
     expect(previewShelfItems(items)).toEqual([1, 2, 3, 4, 5]);
     expect(previewShelfItems(items).length).toBe(SHELF_PREVIEW_LIMIT);
     expect(bookCountLabel(items.length)).toBe("7 books");
+    expect(bookCountLabel(20)).toBe("20 books");
     expect(bookCountLabel(1)).toBe("1 book");
     expect(bookCountLabel(0)).toBe("0 books");
   });
@@ -43,5 +44,17 @@ describe("overview shelf preview", () => {
         progressPercent: 10,
       })
     ).toEqual({ value: "40 / 320", percent: 13 });
+  });
+
+  it("shows listening time for an audiobook edition", () => {
+    expect(
+      currentlyReadingProgressLabel({
+        trackingFormat: "audiobook",
+        listeningProgressSeconds: 9000,
+        audiobookDurationSeconds: 18000,
+        progressPages: 10,
+        totalPages: 100,
+      })
+    ).toEqual({ value: "2:30 / 5:00", percent: 50 });
   });
 });

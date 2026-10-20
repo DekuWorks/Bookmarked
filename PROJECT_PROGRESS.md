@@ -1701,6 +1701,122 @@ Not changed: favorites data, View All, finished query, reading progress, reviews
 
 ---
 
+## SPRINT 1 — READING ROOM OVERVIEW
+
+Branch: `feature/sprint-1-reading-room-nav`. Web + iPhone/iPad layout. No Android. No commit, push, or production change.
+
+The Reading Room Overview already rendered Currently Reading, Reading Goal, Shelves, and Challenges from the signed-in library. This pass closed the remaining overview gaps against that layout.
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Currently Reading shows every book on that shelf | ✅ | `readingRoom` / mobile Home filter `shelf_status === "currently_reading"`. No mock titles. |
+| Horizontal carousel | ✅ | Web `CurrentlyReadingCarousel` (snap scroll, arrows, keyboard). iOS `ScrollView` `pagingEnabled`. |
+| Web arrows, keyboard, disabled ends, touch scroll | ✅ | Arrows stay visible below `md`. Left/Right keys move one card. Buttons disable at the ends. `overflow-x-auto` still scrolls. |
+| iOS swipe, snap, spacing | ✅ | Native horizontal paging. One card per page, Add Book last. Not launched in Simulator this pass. |
+| Card content | ✅ | Cover (`contain`), title, author, progress, bar, Update Progress. |
+| Update Progress → Book Details, Back to Overview | ✅ | `origin=reading_room_overview` on web and iOS. Page editing on Book Details is unchanged. |
+| Audiobook progress | ✅ | `currentlyReadingProgressLabel` uses listening time when the edition is an audiobook. Page fields stay for print. |
+| Add Book is the last card | ✅ | Same slide width as a book card. Label: "Add Book to Currently Reading Shelf". |
+| Choose from TBR / Search for a New Book | ✅ | Existing TBR move and search-return flow. Copy is now "Search for a New Book". |
+| Add updates the carousel and stays on Overview | ✅ | TBR add calls `onAdded` / `onRefresh` and closes the picker. Search still uses the existing Search screen, then returns to Overview. No new user-book insert path. |
+| Reading Goal under the carousel | ✅ | Completed / target, percent, bar. Set goal still links to Stats. |
+| Shelves under the goal | ✅ | Heading "Shelves" with "See All Shelves". Previews are only TBR, Finished, DNF. |
+| Five covers, full count | ✅ | `previewShelfItems` caps covers at 5. `bookCountLabel(count)` uses the full shelf length ("20 books"). |
+| Square frames on the wooden shelf | ✅ | 56px phone / 72px tablet frame. Artwork stays 2:3, `contain`, bottom-aligned on `bookshelf-board` / the iOS wood gradient. No per-shelf arrows. |
+| See All Shelves → Library | ✅ | `origin=reading_room_overview`. |
+| Library Back to Overview | ✅ | Origin back when entered from Overview. |
+| View Shelf | ✅ | Existing Library "View Shelf" opens that shelf only. Filters and sort are unchanged. |
+| No second Back to Overview inside a shelf | ✅ | Shelf back is one control. Older pages are in the history menu. |
+| Challenges CTA | ✅ | Full width. Trophy, "Challenges", "Join reading challenges and track your progress." Opens the existing Challenges home with Overview as the origin. |
+| Responsive | 🔄 | Web checked signed-in at 1440, 1280, 1024, 768, and 390: no page overflow, Challenges CTA matches its column, shelf covers stay inside the viewport. Under 640px the shelf name sits above the wood so five covers fit. iPhone/iPad Simulator was not launched. |
+| Light and dark | ✅ | Existing surface, border, and puce/primary tokens. No new palette. |
+
+### Files
+
+- Shared: `packages/utils/overviewCopy.ts`, `overviewShelfPreview.ts`, `navigationHistory.ts`
+- Web: `CurrentlyReadingCarousel.tsx`, `CurrentlyReadingCard.tsx`, `ShelfPreviewRow.tsx`, `ChallengesCTA.tsx`, `BookCover.tsx`
+- iOS: `CurrentlyReadingCard.tsx`, `ShelfPreviewRow.tsx`, `ChallengesCTA.tsx`, Home tab param sync in `app/(app)/index.tsx`
+
+### Root cause / implementation
+
+Overview data was already the signed-in user's shelves. The gaps were audiobook progress (page fields only), carousel arrows hidden under 768px, no keyboard control, the Add Book search label, and shelf covers in a portrait box instead of a square frame sitting on the wood shelf.
+
+### Tests
+
+- `npm test` in `apps/web` for navigation history: 16 passed. Shelf preview and overview copy tests passed in the earlier run (audiobook progress label and `bookCountLabel(20)`).
+- Web `tsc --noEmit`: pass. ESLint on the history provider: pass.
+
+### Platform verification
+
+- Signed-in web on localhost:3000. Overview showed the account's Currently Reading book, goal "0 out of 5 books", TBR "16 books" with five covers, Finished "1 book", DNF "0 books". Carousel next arrow reached 2/2 and disabled. Add Book opened "Choose from TBR" and "Search for a New Book", then the TBR picker. No book was added (that writes the live library).
+- Challenges CTA opened `/challenges/?origin=reading_room_overview` and "Back to Overview" was present.
+- Widths 1440, 1280, 1024, 768, and 390: document did not overflow. Light theme heading `rgb(100, 47, 55)` on `rgb(250, 248, 252)`; dark heading `rgb(232, 196, 204)` on `rgb(26, 19, 38)`. Theme was restored to dark.
+- iPhone and iPad Simulator were not launched. No `expo run:ios` and no EAS build.
+
+### Known issues
+
+- "Search for a New Book" still opens Search, then returns to Overview. That is the existing add-from-search flow.
+- A book with no cover still uses `BookCover`'s placeholder inside the same frame.
+- No separate Reading Room Overview mockup file was in the repo. Spacing follows the current Overview cards and the wooden shelf styles already in the app.
+
+---
+
+## SPRINT 1 — GLOBAL NAVIGATION
+
+Same branch. One history model for web and iOS. Up to three previous screens, most recent first.
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Track real visits | ✅ | `recordNavVisit` stores route key, title, href, icon, and stack id. Not page contents. |
+| Skip current, consecutive duplicates, overlays | ✅ | Same key updates the current entry. `/compose`, auth, and profile setup are not recorded. Loading states are not routes. |
+| Keep legitimate repeats | ✅ | Overview → Library → Overview stays as three visits. |
+| Single-step Back unchanged | ✅ | Origin back and `router.back()` / the iOS back gesture stay as they were. |
+| Menu of up to three previous screens | ✅ | Web `HistoryMenuButton` next to `BackNav`. iOS button next to `ScreenHeader` back, Library's back, and the native club header. |
+| Jump without stacking duplicates | ✅ | Web uses `history.go` inside the current document, otherwise `router.push` and drops the forward entries. iOS uses `router.dismissTo`. Library, Challenges, and Clubs pop nested screens when the jump target is that stack's root. |
+| Web router, URL params, browser Back/Forward | ✅ | Provider listens to `popstate`. Session storage restores a refresh for the same user. Deep link with no history shows no menu. |
+| Menu keyboard and overflow | ✅ | Click, Enter, Space, Arrow keys. Escape closes and returns focus. Menu is portaled to `document.body`. |
+| iOS VoiceOver and gesture | ✅ | Menu button label "Show previous screens". Items "Go to {title}". Stack swipe-back is unchanged. Not run on a device. |
+| Account switch / logout | ✅ | History is keyed by user id. Another user's blob is ignored. Web logout clears `sessionStorage`. iOS memory clears when the user id changes. |
+| App-wide back controls | 🔄 | `BackNav` / `OriginBackNav` and iOS `ScreenHeader` share it. Also wrapped Challenges, Settings, Favorites, custom shelf, Quote Graphics, Wrapped, messages inbox, and club discussion back. Some error-only links (reader not found, empty thread) still have a plain back. |
+| Modals | ✅ | Compose and in-page sheets are not history destinations. Club thread back stays a dismiss, with the menu beside it. |
+| Deleted or private destinations | 🔄 | The jump still opens the stored route. Existing not-found / sign-in screens handle a missing book, shelf, or expired session. History is not pre-checked against the database. |
+
+### Files
+
+- Shared: `packages/utils/navigationHistory.ts`, `navigationHistory.test.ts`, `packages/utils/index.ts`
+- Web: `NavHistoryProvider.tsx`, `HistoryMenuButton.tsx`, `BackNav.tsx`, app layout, `LogoutButton.tsx`, `BookDetailsPage.tsx`
+- iOS: `NavHistoryProvider.tsx`, `HistoryMenuButton.tsx`, `navStackReset.ts`, `useNavStackReset.ts`, `ScreenHeader.tsx`, app/library/challenges/clubs layouts, Library index
+
+### Root cause / implementation
+
+Back was a single origin or `history.back()`. There was no list of earlier screens. History is now an explicit stack of route keys. The menu reads the three entries before the current index. A jump moves to that entry and removes screens above it so Back does not walk through copies. Browser Back/Forward moves the index when the route already exists. After a refresh, jumps use `router.push` until the user has navigated again, so `history.go` cannot leave the site.
+
+### Tests
+
+- `packages/utils/navigationHistory.test.ts` (16): paths A–E and I–L, rerenders, repeats, account switch, session `history.go` bounds, rename only the current route, empty-stack restore.
+- Web `tsc --noEmit` and iOS `tsc --noEmit`: pass. ESLint on `NavHistoryProvider.tsx`: pass. `BookDetailsPage.tsx` still reports two existing `set-state-in-effect` findings that were already in the load effects.
+
+### Platform verification
+
+- Signed-in web: Overview → Library → TBR → Woman Down. The menu listed TBR, Library, Overview. Choosing Library opened Library. Choosing Overview from Book Details opened Overview. Browser Forward restored TBR, then the book. A later Challenges jump back to Overview kept Challenges as a forward entry, and browser Forward returned to Challenges.
+- A direct book load with storage cleared recorded only that book. The menu was absent. The existing "Back to library" control remained.
+- A signed-out flicker no longer deletes stored history. A shorter real visit is written even when storage still has forward entries.
+- iPhone and iPad Simulator were not launched. iOS history is the same module plus `dismissTo` and the stack reset hooks.
+
+### Known issues
+
+- Book and shelf titles in the menu start as "Book" or "TBR" and update to the header title only after that route is the current entry.
+- Direct deep links have an empty menu. The existing fallback back remains.
+- iOS history is in memory, so an app restart starts empty. Web history survives a refresh in the same tab and ends at logout.
+- Club screens that use the system header put the menu on the right of that header, not on the system back glyph.
+
+### Remaining dependencies
+
+- Web widths and light/dark colours were checked in the signed-in browser. An iPhone and iPad Simulator pass for swipe-back plus the menu is still outstanding.
+- No schema or RLS change.
+
+---
+
 ## Next up (recommended)
 
 | Priority | Item | Notes |

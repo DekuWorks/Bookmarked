@@ -25,6 +25,7 @@ import { getProfile } from "@/lib/services/profile";
 import { computeReadingGoal } from "@/lib/services/readingGoal";
 import type { ReadingGoalStatus } from "@/lib/services/readingGoal";
 import type { Profile } from "@/types";
+import { BackCluster } from "@/components/navigation/HistoryMenuButton";
 import { layout } from "@/lib/constants/layout";
 
 type SettingsData = {
@@ -73,12 +74,14 @@ export default function ProfileSettingsPage() {
 
   return (
     <div className={`${layout.pageStack} text-left`}>
-      <Link
-        href="/profile"
-        className="inline-block text-sm font-medium text-primary hover:underline"
-      >
-        ← Back to profile
-      </Link>
+      <BackCluster>
+        <Link
+          href="/profile"
+          className="inline-block text-sm font-medium text-primary hover:underline"
+        >
+          ← Back to profile
+        </Link>
+      </BackCluster>
 
       <header className={layout.pageHeader}>
         <h1 className="mt-2 text-3xl font-bold text-puce-red sm:text-4xl">Account settings</h1>

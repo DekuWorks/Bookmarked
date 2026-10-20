@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { BackCluster } from "@/components/navigation/HistoryMenuButton";
 import { useRouter } from "next/navigation";
 import { BookCover } from "@/components/books/BookCover";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
@@ -427,14 +428,16 @@ export function ClubDiscussionsPanel({
 
     return (
       <section className="space-y-4 pt-6 text-left scroll-mt-[var(--app-nav-clearance)]">
-        <button
-          type="button"
-          onClick={handleBackFromThread}
-          className="text-left text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
-          aria-label={fromDeepLink ? "Go back" : "Back to discussions"}
-        >
-          {fromDeepLink ? "← Back" : "← Back to discussions"}
-        </button>
+        <BackCluster>
+          <button
+            type="button"
+            onClick={handleBackFromThread}
+            className="text-left text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
+            aria-label={fromDeepLink ? "Go back" : "Back to discussions"}
+          >
+            {fromDeepLink ? "← Back" : "← Back to discussions"}
+          </button>
+        </BackCluster>
 
         <article className="rounded-xl border border-border bg-surface p-5 text-left shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-3 text-left">

@@ -22,6 +22,7 @@ import { searchReaders } from "@/lib/services/feedSearch";
 import { formatChallengeAmount, formatChallengeListeningTime } from "@bookmarked/utils/challengeDisplay";
 import { checklistItemAnnouncement, challengeProgressAnnouncement } from "@bookmarked/utils/challengeDisplay";
 import { visibilityLabel as challengeVisibilityLabel } from "@bookmarked/utils/challengeDisplay";
+import { BackCluster } from "@/components/navigation/HistoryMenuButton";
 import { originBackLink } from "@bookmarked/utils/navigationOrigin";
 import { ENTITLEMENT_LIMIT_MESSAGES, isEntitlementLimitError } from "@bookmarked/utils/subscription";
 
@@ -80,9 +81,11 @@ export default function ChallengeDetailPage() {
     return (
       <div className={layout.pageStack}>
         <p className="text-text-muted">This challenge is not available.</p>
-        <Link href={back.href} className="text-sm font-medium text-primary hover:underline">
-          {back.label}
-        </Link>
+        <BackCluster>
+          <Link href={back.href} className="text-sm font-medium text-primary hover:underline">
+            {back.label}
+          </Link>
+        </BackCluster>
       </div>
     );
   }
@@ -154,9 +157,11 @@ export default function ChallengeDetailPage() {
         limitMessage={ENTITLEMENT_LIMIT_MESSAGES.reading_challenges}
       />
 
-      <Link href={back.href} className="text-sm font-medium text-primary hover:underline">
-        {back.label}
-      </Link>
+      <BackCluster>
+        <Link href={back.href} className="text-sm font-medium text-primary hover:underline">
+          {back.label}
+        </Link>
+      </BackCluster>
 
       <header>
         <p className="text-xs uppercase tracking-wide text-text-muted">
