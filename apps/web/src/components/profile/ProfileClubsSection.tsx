@@ -52,7 +52,7 @@ export function ProfileClubsSection({ profileUserId, viewerId, isOwnProfile }: P
             href={clubDetailPath(club.id)}
             className="flex items-center gap-3 rounded-lg border border-border bg-background/40 p-3 transition hover:border-primary/40"
           >
-            <div className="h-16 w-11 shrink-0 overflow-hidden rounded-md">
+            <div className="h-16 w-11 shrink-0 overflow-visible">
               {club.current_book ? (
                 <BookCover
                   title={club.current_book.title}

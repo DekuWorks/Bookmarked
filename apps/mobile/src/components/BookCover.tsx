@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
 import { Image, Text, View } from "react-native";
+import {
+  BOOK_COVER_RADIUS_PX,
+  coverRibbonSize,
+  coverWidthFromClass,
+} from "../../../../packages/utils/bookCover";
 import { resolveCoverDisplaySource } from "../../../../packages/utils/mediaDisplayUrl";
 import { SavedBookBadge, SAVED_BOOK_BADGE_INSET, SAVED_BOOK_BADGE_Z } from "./SavedBookBadge";
 
@@ -12,7 +17,7 @@ type Props = {
   sizeStyle?: { width: number; height: number };
   /** `contain` shows complete artwork; default `cover` fills the frame. */
   resizeMode?: "cover" | "contain";
-  /** Overlay the Bookmarked "B" ribbon (book is saved to a shelf). */
+  /** Overlay the Bookmarked ribbon. Omit to show it. Pass false to hide it. */
   saved?: boolean;
   /** Optional save toggle — forwarded to SavedBookBadge. */
   onToggleSave?: () => void;
@@ -33,7 +38,7 @@ export function BookCover({
   resizeMode = "cover",
   saved,
   onToggleSave,
-  badgeSize = "medium",
+  badgeSize,
   priority = false,
   accessible = true,
   accessibilityLabel,
@@ -52,16 +57,17 @@ export function BookCover({
     setFailed(false);
   }, [url, priority]);
 
-  const showBadge = Boolean(saved) || Boolean(onToggleSave);
-  // Square corners when the ribbon shows so it can sit flush on a straight edge.
-  const radiusClass = showBadge ? "rounded-none" : "rounded-md";
+  const showBadge = saved !== false || Boolean(onToggleSave);
   const dimensionClass = sizeStyle ? undefined : sizeClassName;
+  const frameWidth = sizeStyle?.width ?? coverWidthFromClass(sizeClassName);
+  const ribbonSize = coverRibbonSize(frameWidth, badgeSize);
+  const clip = { borderRadius: BOOK_COVER_RADIUS_PX, overflow: "hidden" as const };
 
-  const cover = displayUrl && !failed ? (
+  const art = displayUrl && !failed ? (
     <Image
       source={{ uri: displayUrl }}
-      className={[dimensionClass, radiusClass, "bg-primary/20"].filter(Boolean).join(" ")}
-      style={sizeStyle}
+      className="h-full w-full bg-primary/20"
+      style={sizeStyle ? { width: sizeStyle.width, height: sizeStyle.height } : undefined}
       resizeMode={resizeMode}
       accessible={accessible}
       accessibilityLabel={
@@ -81,39 +87,32 @@ export function BookCover({
       }}
     />
   ) : (
-    <View
-      className={[dimensionClass, radiusClass, "bg-primary/25 items-center justify-center p-1"]
-        .filter(Boolean)
-        .join(" ")}
-      style={sizeStyle}
-    >
+    <View className="h-full w-full items-center justify-center bg-primary/25 p-1">
       <Text numberOfLines={3} className="text-center text-[10px] font-medium text-puce-red">
         {title?.trim() || "No cover"}
       </Text>
     </View>
   );
 
-  if (!showBadge) return cover;
-
   return (
     <View className="relative" style={{ overflow: "visible" }}>
-      {cover}
-      <View
-        pointerEvents={onToggleSave ? "box-none" : "none"}
-        style={{
-          position: "absolute",
-          top: SAVED_BOOK_BADGE_INSET,
-          left: SAVED_BOOK_BADGE_INSET,
-          zIndex: SAVED_BOOK_BADGE_Z,
-          overflow: "visible",
-        }}
-      >
-        <SavedBookBadge
-          isSaved={Boolean(saved)}
-          onToggle={onToggleSave}
-          size={badgeSize}
-        />
+      <View className={dimensionClass} style={sizeStyle ? { ...sizeStyle, ...clip } : clip}>
+        {art}
       </View>
+      {showBadge ? (
+        <View
+          pointerEvents={onToggleSave ? "box-none" : "none"}
+          style={{
+            position: "absolute",
+            top: SAVED_BOOK_BADGE_INSET,
+            left: SAVED_BOOK_BADGE_INSET,
+            zIndex: SAVED_BOOK_BADGE_Z,
+            overflow: "visible",
+          }}
+        >
+          <SavedBookBadge isSaved={saved !== false} onToggle={onToggleSave} size={ribbonSize} />
+        </View>
+      ) : null}
     </View>
   );
 }

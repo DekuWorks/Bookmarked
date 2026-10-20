@@ -223,7 +223,7 @@ export function ClubOverviewPanel({
           <div className="flex items-center gap-4">
             <Link
               href={bookDetailsPath(activeRead.book.id)}
-              className="h-28 w-20 shrink-0 overflow-visible rounded-md shadow-sm"
+              className="h-28 w-20 shrink-0 overflow-visible shadow-sm"
             >
               <BookCover
                 title={activeRead.book.title}

@@ -1,6 +1,8 @@
+"use client";
+
 import { BookCover } from "@/components/books/BookCover";
 import { ButtonLink } from "@/components/ui/ButtonLink";
-import { ProgressBar } from "@/components/ui/ProgressBar";
+import { MotionProgressBar } from "@/components/reading-room/MotionProgressBar";
 import { bookDetailsPath } from "@/lib/routes/book";
 import type { LibraryBookRow } from "@/lib/services/library";
 import { currentlyReadingProgressLabel } from "@bookmarked/utils/overviewShelfPreview";
@@ -28,24 +30,25 @@ export function CurrentlyReadingCard({ item }: Props) {
     : null;
 
   return (
-    <article className="flex h-full min-h-[220px] gap-4 rounded-2xl border border-border bg-background p-4 shadow-sm md:gap-6 md:p-5">
-      <div className="w-24 shrink-0 self-start md:w-32">
+    <article className="rr-cr-card flex h-full min-h-[220px] gap-4 rounded-2xl border border-border bg-background p-4 shadow-sm md:min-h-[280px] md:gap-6 md:p-5 lg:min-h-[320px]">
+      <div className="w-24 shrink-0 self-start md:w-40 lg:w-44">
         <BookCover
           title={title}
           author={book?.author}
           coverUrl={book?.cover_url}
           alt={`${title} cover`}
           objectFit="contain"
-          sizes="128px"
+          sizes="(min-width: 1024px) 176px, (min-width: 768px) 160px, 96px"
           className="shadow-sm"
+          bookmarked
         />
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
-        <h3 className="line-clamp-2 font-display text-xl font-semibold leading-snug text-text md:text-2xl">
+        <h3 className="line-clamp-3 font-display text-xl font-semibold leading-snug text-text md:text-2xl">
           {title}
         </h3>
         {book?.author ? (
-          <p className="mt-1 line-clamp-1 text-sm text-text-muted">{book.author}</p>
+          <p className="mt-1 line-clamp-2 text-sm text-text-muted">{book.author}</p>
         ) : null}
         <p className="mt-4 text-xs font-medium uppercase tracking-wide text-text-muted">Progress</p>
         <p className="mt-1 text-sm font-semibold tabular-nums text-puce-red">{progress.value}</p>
@@ -57,7 +60,7 @@ export function CurrentlyReadingCard({ item }: Props) {
           aria-valuenow={progress.percent}
           aria-label={`Progress, ${progress.value}`}
         >
-          <ProgressBar value={progress.percent} />
+          <MotionProgressBar value={progress.percent} />
         </div>
         {href ? (
           <ButtonLink href={href} variant="primary" size="sm" className="mt-4 w-full md:mt-auto">

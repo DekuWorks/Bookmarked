@@ -15,9 +15,18 @@ type Props = {
   visible: boolean;
   onClose: () => void;
   onAdded: () => void;
+  onMoveStart?: (row: LibraryBookRow) => void;
+  onMoveFailed?: (row: LibraryBookRow) => void;
 };
 
-export function CurrentlyReadingAddSheet({ userId, visible, onClose, onAdded }: Props) {
+export function CurrentlyReadingAddSheet({
+  userId,
+  visible,
+  onClose,
+  onAdded,
+  onMoveStart,
+  onMoveFailed,
+}: Props) {
   const router = useRouter();
   const [tbrOpen, setTbrOpen] = useState(false);
   const [movingId, setMovingId] = useState<string | null>(null);
@@ -58,6 +67,7 @@ export function CurrentlyReadingAddSheet({ userId, visible, onClose, onAdded }: 
     const book = row.books;
     if (!book?.id) return;
     setMovingId(book.id);
+    onMoveStart?.(row);
     const result = await setShelfStatus(
       userId,
       {
@@ -71,6 +81,7 @@ export function CurrentlyReadingAddSheet({ userId, visible, onClose, onAdded }: 
     );
     setMovingId(null);
     if (result.error) {
+      onMoveFailed?.(row);
       Alert.alert("Couldn't move book", result.error);
       return;
     }

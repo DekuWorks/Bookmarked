@@ -418,6 +418,35 @@ export {
 } from "./readingRoomTabs";
 
 export {
+  GOAL_MILESTONES,
+  READING_ROOM_DASHBOARD_CLASS,
+  READING_ROOM_MOTION,
+  carouselIndexAfterMove,
+  carouselIndexAfterMoves,
+  currentlyReadingCoverSize,
+  goalBarFillPercent,
+  highestMilestoneCrossed,
+  motionDuration,
+  observeGoalProgress,
+  progressMotion,
+  readingGoalRealPercent,
+  relocateLibraryBook,
+  relocateOverviewBook,
+  sameUserBookIds,
+  shelfEnterIds,
+  shelfExitIds,
+  type GoalMilestone,
+  type GoalObserveState,
+} from "./readingRoomMotion";
+
+export {
+  BOOK_COVER_RADIUS_PX,
+  coverRibbonSize,
+  coverWidthFromClass,
+  type CoverRibbonSize,
+} from "./bookCover";
+
+export {
   buildFeedDiscoveryMarkers,
   interleaveFeedWithDiscovery,
   type FeedDiscoveryMarker,

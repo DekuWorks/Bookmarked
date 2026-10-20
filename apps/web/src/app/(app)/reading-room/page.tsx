@@ -15,9 +15,15 @@ import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { useUserBooksRealtime } from "@/lib/hooks/useUserBooksRealtime";
 import { useStaleCatalogRefresh } from "@/lib/hooks/useStaleCatalogRefresh";
 
+let roomCache: { userId: string; data: ReadingRoomData } | null = null;
+
 export default function ReadingRoomPage() {
   const user = useAuthUser();
-  const [data, setData] = useState<ReadingRoomData | null>(null);
+  const [loaded, setLoaded] = useState<{ userId: string; data: ReadingRoomData } | null>(null);
+  const [settledUserId, setSettledUserId] = useState<string | null>(null);
+  const cached = user?.id && roomCache?.userId === user.id ? roomCache.data : null;
+  const visible = user?.id && loaded?.userId === user.id ? loaded.data : cached;
+  const dataSettled = Boolean(user?.id && settledUserId === user.id);
 
   const loadReadingRoom = useCallback(async () => {
     if (!user) return;
@@ -30,31 +36,39 @@ export default function ReadingRoomPage() {
         profile?.yearly_reading_goal ?? null,
         profile?.favorite_genres
       );
-      setData(room);
+      roomCache = { userId: user.id, data: room };
+      setLoaded({ userId: user.id, data: room });
+      setSettledUserId(user.id);
     } catch (error) {
       console.error("[reading-room] load failed:", error);
-      setData((current) => current ?? emptyReadingRoomData());
+      setLoaded((current) => {
+        if (current?.userId === user.id) return current;
+        const fallback =
+          roomCache?.userId === user.id ? roomCache.data : emptyReadingRoomData();
+        return { userId: user.id, data: fallback };
+      });
     }
   }, [user]);
 
   useEffect(() => {
     if (!user) return;
+    if (roomCache && roomCache.userId !== user.id) roomCache = null;
     void loadReadingRoom();
   }, [user, loadReadingRoom]);
 
   const libraryBooks = useMemo(
-    () => data?.shelves.flatMap((shelf) => shelf.items) ?? [],
-    [data?.shelves]
+    () => visible?.shelves.flatMap((shelf) => shelf.items) ?? [],
+    [visible?.shelves]
   );
 
   useUserBooksRealtime(user?.id, loadReadingRoom);
   useStaleCatalogRefresh(libraryBooks, loadReadingRoom);
 
-  if (user === undefined || (user && !data)) {
+  if (user === undefined || (user && !visible)) {
     return <LoadingState message="Loading reading room…" />;
   }
 
-  if (!user || !data) return null;
+  if (!user || !visible) return null;
 
   return (
     <div className="reading-room-bg -mx-4 space-y-8 overflow-x-hidden px-4 py-2 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
@@ -62,7 +76,8 @@ export default function ReadingRoomPage() {
 
       <ReadingRoomTabs
         userId={user.id}
-        data={data}
+        data={visible}
+        dataSettled={dataSettled}
         onRefresh={() => void loadReadingRoom()}
       />
     </div>

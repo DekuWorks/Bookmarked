@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { SavedBookBadge } from "@/components/books/SavedBookBadge";
 import { cn } from "@/lib/utils/cn";
+import { BOOK_COVER_RADIUS_PX } from "@bookmarked/utils/bookCover";
 import {
   COVER_IMAGE_REFERRER_POLICY,
   resolveCoverDisplaySource,
@@ -24,7 +25,7 @@ type Props = {
   /** Where contained artwork sits inside the frame. */
   objectPosition?: "center" | "bottom";
   priority?: boolean;
-  /** When true, shows the brand logo shelf badge on the cover. */
+  /** When false, hides the Bookmarked ribbon. Omitted covers show it. */
   isSaved?: boolean;
   /** @deprecated Prefer `isSaved`. */
   bookmarked?: boolean;
@@ -70,7 +71,7 @@ export function BookCover({
   objectPosition = "center",
   priority,
   isSaved,
-  bookmarked = false,
+  bookmarked = true,
   onToggleSave,
   bookmarkBadgeSize = "medium",
 }: Props) {
@@ -97,12 +98,9 @@ export function BookCover({
 
   return (
     <div className={cn("relative aspect-[2/3] w-full overflow-visible", className)}>
-      {/* Square top when saved so the ribbon sits flush on a straight edge. */}
       <div
-        className={cn(
-          "absolute inset-0 overflow-hidden border border-border bg-background",
-          saved ? "rounded-none" : "rounded-xl"
-        )}
+        className="absolute inset-0 overflow-hidden border border-border bg-background"
+        style={{ borderRadius: BOOK_COVER_RADIUS_PX }}
       >
         {showImage && src ? (
           <Image
