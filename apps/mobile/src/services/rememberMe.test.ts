@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const asyncStore = new Map<string, string>();
+const nativeProbe = vi.hoisted(() => ({ present: true }));
 
 vi.mock("@react-native-async-storage/async-storage", () => ({
   default: {
@@ -12,6 +13,11 @@ vi.mock("@react-native-async-storage/async-storage", () => ({
       asyncStore.delete(key);
     }),
   },
+}));
+
+vi.mock("expo-modules-core", () => ({
+  requireOptionalNativeModule: (name: string) =>
+    name === "ExpoSecureStore" && nativeProbe.present ? { ok: true } : null,
 }));
 
 vi.mock("expo-secure-store", () => {
@@ -30,6 +36,7 @@ vi.mock("expo-secure-store", () => {
 describe("rememberMe storage", () => {
   beforeEach(() => {
     asyncStore.clear();
+    nativeProbe.present = true;
     vi.resetModules();
   });
 
@@ -59,6 +66,16 @@ describe("rememberMe storage", () => {
     expect(asyncStore.get(REMEMBERED_EMAIL_KEY)).toBe("reader@example.com");
     await persistRememberedEmail(false, "reader@example.com");
     await expect(getRememberedEmail()).resolves.toBe("");
+  });
+
+  it("uses AsyncStorage when the native secure store module is missing", async () => {
+    nativeProbe.present = false;
+    const { createRememberMeStorage, setRememberMe } = await import("./rememberMe");
+    await setRememberMe(true);
+    const storage = createRememberMeStorage();
+    await storage.setItem("sb-test-auth-token", "session");
+    expect(asyncStore.get("sb-test-auth-token")).toBe("session");
+    await expect(storage.getItem("sb-test-auth-token")).resolves.toBe("session");
   });
 
   it("logout clears persisted state", async () => {

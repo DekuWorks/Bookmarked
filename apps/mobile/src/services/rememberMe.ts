@@ -21,15 +21,76 @@ let rememberMeEnabled = true;
 let rememberMeHydrated = false;
 let secureStore: SecureStoreLike | null | undefined;
 
+function readSecureStoreModule(mod: unknown): SecureStoreLike | null {
+  const record = mod as { default?: unknown } | null;
+  const candidates = [mod, record?.default];
+  for (const candidate of candidates) {
+    if (!candidate || typeof candidate !== "object") continue;
+    const api = candidate as SecureStoreLike;
+    if (
+      typeof api.getItemAsync === "function" &&
+      typeof api.setItemAsync === "function" &&
+      typeof api.deleteItemAsync === "function"
+    ) {
+      return api;
+    }
+  }
+  return null;
+}
+
+function hasNativeSecureStore(): boolean {
+  try {
+    const core = require("expo-modules-core") as {
+      requireOptionalNativeModule?: (name: string) => unknown;
+    };
+    return Boolean(core.requireOptionalNativeModule?.("ExpoSecureStore"));
+  } catch {
+    return false;
+  }
+}
+
 async function loadSecureStore(): Promise<SecureStoreLike | null> {
   if (secureStore !== undefined) return secureStore;
+  // The installed binary may not include ExpoSecureStore. Importing the JS
+  // package anyway throws "Cannot find native module" during evaluation.
+  if (!hasNativeSecureStore()) {
+    secureStore = null;
+    return null;
+  }
   try {
-    const mod = (await import("expo-secure-store")) as SecureStoreLike;
-    secureStore = mod;
-    return mod;
+    const api = readSecureStoreModule(await import("expo-secure-store"));
+    secureStore = api;
+    return api;
   } catch {
     secureStore = null;
     return null;
+  }
+}
+
+async function secureGet(store: SecureStoreLike, key: string): Promise<string | null> {
+  try {
+    return await store.getItemAsync(key);
+  } catch {
+    secureStore = null;
+    return AsyncStorage.getItem(key);
+  }
+}
+
+async function secureSet(store: SecureStoreLike, key: string, value: string): Promise<void> {
+  try {
+    await store.setItemAsync(key, value);
+  } catch {
+    secureStore = null;
+    await AsyncStorage.setItem(key, value);
+  }
+}
+
+async function secureDelete(store: SecureStoreLike | null, key: string): Promise<void> {
+  if (!store) return;
+  try {
+    await store.deleteItemAsync(key);
+  } catch {
+    secureStore = null;
   }
 }
 
@@ -85,9 +146,7 @@ export async function clearPersistedAuthSession(keys: string[]): Promise<void> {
   await Promise.all(
     keys.map(async (key) => {
       await AsyncStorage.removeItem(key);
-      if (store) {
-        await store.deleteItemAsync(key).catch(() => undefined);
-      }
+      await secureDelete(store, key);
     })
   );
 }
@@ -111,7 +170,7 @@ export function createRememberMeStorage(options?: {
       }
       const store = await loadSecureStore();
       if (store) {
-        return store.getItemAsync(key);
+        return secureGet(store, key);
       }
       return AsyncStorage.getItem(key);
     },
@@ -125,7 +184,7 @@ export function createRememberMeStorage(options?: {
       }
       const store = await loadSecureStore();
       if (store) {
-        await store.setItemAsync(key, value);
+        await secureSet(store, key, value);
         return;
       }
       await AsyncStorage.setItem(key, value);
@@ -134,16 +193,12 @@ export function createRememberMeStorage(options?: {
       memory.delete(key);
       await AsyncStorage.removeItem(key);
       const store = await loadSecureStore();
-      if (store) {
-        await store.deleteItemAsync(key).catch(() => undefined);
-      }
+      await secureDelete(store, key);
       for (const extra of extraKeys) {
         if (extra === key) continue;
         memory.delete(extra);
         await AsyncStorage.removeItem(extra);
-        if (store) {
-          await store.deleteItemAsync(extra).catch(() => undefined);
-        }
+        await secureDelete(store, extra);
       }
     },
   };
