@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BackCluster } from "@/components/navigation/HistoryMenuButton";
 import { useEffect, useState } from "react";
 import { ProfileSetupForm } from "@/components/auth/ProfileSetupForm";
 import { createClient } from "@/lib/supabase/client";
@@ -31,9 +32,11 @@ export default function ProfileSetupPage() {
   return (
     <div className={`${layout.pageStack} max-w-lg`}>
       {isEditing ? (
-        <Link href="/profile" className="inline-block text-sm font-medium text-primary hover:underline">
-          ← Back to profile
-        </Link>
+        <BackCluster>
+          <Link href="/profile" className="inline-block text-sm font-medium text-primary hover:underline">
+            ← Back to profile
+          </Link>
+        </BackCluster>
       ) : null}
       <h1 className="mt-2 text-3xl font-bold text-puce-red sm:text-4xl">
         {isEditing ? "Edit your profile" : "Set up your profile"}

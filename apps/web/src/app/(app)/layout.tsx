@@ -3,6 +3,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { ClientAuthGuard } from "@/components/auth/ClientAuthGuard";
 import { BrowserNotificationsProvider } from "@/components/notifications/BrowserNotificationsProvider";
+import { NavHistoryProvider } from "@/lib/navigation/NavHistoryProvider";
 import { ToastProvider } from "@/components/ui/Toast";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { layout } from "@/lib/constants/layout";
@@ -23,7 +24,9 @@ export default function AppShellLayout({
         >
           <Suspense fallback={<LoadingState message="Loading your library…" />}>
             <ClientAuthGuard>
-              <BrowserNotificationsProvider>{children}</BrowserNotificationsProvider>
+              <NavHistoryProvider>
+                <BrowserNotificationsProvider>{children}</BrowserNotificationsProvider>
+              </NavHistoryProvider>
             </ClientAuthGuard>
           </Suspense>
         </main>

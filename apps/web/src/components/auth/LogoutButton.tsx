@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { clearSupabaseAuthStorage, isRememberMeEnabled, persistRememberedEmail } from "@/lib/auth/rememberMe";
+import { NAV_HISTORY_STORAGE_KEY } from "@bookmarked/utils/navigationHistory";
 import { staticRedirect } from "@/lib/navigation/staticRedirect";
 import { Button } from "@/components/ui/Button";
 
@@ -14,6 +15,7 @@ export function LogoutButton() {
     try {
       const supabase = createClient();
       await supabase.auth.signOut();
+      sessionStorage.removeItem(NAV_HISTORY_STORAGE_KEY);
       clearSupabaseAuthStorage();
       if (!isRememberMeEnabled()) persistRememberedEmail(false);
       staticRedirect("/");

@@ -1,8 +1,12 @@
-import type { ReactNode } from "react";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useMemo, type ReactNode } from "react";
+import { useIsFocused } from "@react-navigation/native";
+import { useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { resolveNavScreen, type NavQuery } from "../../../../packages/utils/navigationHistory";
 import { originBackHref, parseNavOrigin } from "../../../../packages/utils/navigationOrigin";
+import { HistoryMenuButton } from "../navigation/HistoryMenuButton";
+import { useNavHistory } from "../navigation/NavHistoryProvider";
 
 type Props = {
   title: string;
@@ -36,11 +40,34 @@ export function ScreenHeader({
 }: Props) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const focused = useIsFocused();
+  const pathname = usePathname();
+  const { renameCurrent } = useNavHistory();
   const params = useLocalSearchParams<{
+    id?: string | string[];
+    tab?: string | string[];
     origin?: string | string[];
     q?: string | string[];
     scroll?: string | string[];
+    slug?: string | string[];
+    section?: string | string[];
   }>();
+  const screenKey = useMemo(() => {
+    const search: NavQuery = {
+      id: firstParam(params.id),
+      tab: firstParam(params.tab),
+      origin: firstParam(params.origin),
+      q: firstParam(params.q),
+      scroll: firstParam(params.scroll),
+      slug: firstParam(params.slug),
+      section: firstParam(params.section),
+    };
+    return resolveNavScreen("mobile", pathname, search)?.key ?? "";
+  }, [params.id, params.origin, params.q, params.scroll, params.section, params.slug, params.tab, pathname]);
+
+  useEffect(() => {
+    if (focused && screenKey) renameCurrent(screenKey, title);
+  }, [focused, renameCurrent, screenKey, title]);
   const originHref = originBackHref(parseNavOrigin(firstParam(params.origin)), "mobile", {
     query: firstParam(params.q),
     scroll: firstParam(params.scroll),
@@ -84,6 +111,7 @@ export function ScreenHeader({
         ) : (
           <View className="w-2" />
         )}
+        {back ? <HistoryMenuButton /> : null}
         {left ? <View className="mr-2">{left}</View> : null}
         {onTitlePress ? (
           <Pressable

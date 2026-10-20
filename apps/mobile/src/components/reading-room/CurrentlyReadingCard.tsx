@@ -19,6 +19,11 @@ export function CurrentlyReadingCard({ item }: Props) {
     totalPages: item.total_pages,
     pageCount: book?.page_count ?? null,
     progressPercent: item.progress_percent,
+    trackingFormat: item.tracking_format,
+    catalogFormat: book?.format,
+    listeningProgressSeconds: item.listening_progress_seconds,
+    audiobookDurationSeconds: item.audiobook_duration_seconds,
+    catalogDurationSeconds: book?.audiobook_duration_seconds,
   });
 
   return (

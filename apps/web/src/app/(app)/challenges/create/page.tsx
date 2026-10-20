@@ -13,6 +13,7 @@ import { layout } from "@/lib/constants/layout";
 import { challengeDetailPath, challengesPath } from "@/lib/routes/challenges";
 import { createChallenge } from "@/lib/services/challenges/ChallengeService";
 import { uploadChallengeCover } from "@/lib/services/entityAvatar";
+import { BackCluster } from "@/components/navigation/HistoryMenuButton";
 import { originBackLink } from "@bookmarked/utils/navigationOrigin";
 import {
   CHALLENGE_GOAL_TYPES,
@@ -77,9 +78,11 @@ export default function CreateChallengePage() {
 
   return (
     <div className={layout.pageStack}>
-      <Link href={back.href} className="text-sm font-medium text-primary hover:underline">
-        {back.label}
-      </Link>
+      <BackCluster>
+        <Link href={back.href} className="text-sm font-medium text-primary hover:underline">
+          {back.label}
+        </Link>
+      </BackCluster>
       <header className={layout.pageHeader}>
         <h1 className="text-3xl font-bold text-puce-red">Create Challenge</h1>
       </header>

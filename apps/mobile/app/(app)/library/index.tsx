@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { originBackHref, parseNavOriginParam } from "../../../../../packages/utils/navigationOrigin";
+import { HistoryMenuButton } from "../../../src/navigation/HistoryMenuButton";
 import { Pressable, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -53,6 +54,7 @@ export default function LibraryScreen() {
               <Text className="text-2xl text-puce-red">‹</Text>
             </Pressable>
           ) : null}
+          <HistoryMenuButton />
           <Text className="flex-1 text-3xl font-black text-puce-red">Library</Text>
           <Pressable
             onPress={() => router.push("/search")}

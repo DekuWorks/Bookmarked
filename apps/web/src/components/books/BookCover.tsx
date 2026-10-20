@@ -21,6 +21,8 @@ type Props = {
   alt?: string;
   /** `contain` shows complete artwork; default `cover` fills the 2:3 frame. */
   objectFit?: "cover" | "contain";
+  /** Where contained artwork sits inside the frame. */
+  objectPosition?: "center" | "bottom";
   priority?: boolean;
   /** When true, shows the brand logo shelf badge on the cover. */
   isSaved?: boolean;
@@ -65,6 +67,7 @@ export function BookCover({
   sizes = "(max-width: 768px) 50vw, 220px",
   alt,
   objectFit = "cover",
+  objectPosition = "center",
   priority,
   isSaved,
   bookmarked = false,
@@ -106,7 +109,13 @@ export function BookCover({
             src={src}
             alt={alt ?? `Cover of ${title}`}
             fill
-            className={objectFit === "contain" ? "object-contain object-center" : "object-cover"}
+            className={
+              objectFit === "contain"
+                ? objectPosition === "bottom"
+                  ? "object-contain object-bottom"
+                  : "object-contain object-center"
+                : "object-cover"
+            }
             sizes={sizes}
             unoptimized
             priority={priority}

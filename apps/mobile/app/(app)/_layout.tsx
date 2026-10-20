@@ -3,6 +3,7 @@ import { BACKGROUND_TINT } from "../../src/constants/theme";
 import { LoadingState } from "../../src/components/LoadingState";
 import { useProfile } from "../../src/hooks/useProfile";
 import { FloatingTabBar } from "../../src/navigation/FloatingTabBar";
+import { NavHistoryProvider } from "../../src/navigation/NavHistoryProvider";
 import { TabBarScrollProvider } from "../../src/navigation/TabBarScroll";
 import { useAuthStore } from "../../src/store/authStore";
 
@@ -27,6 +28,7 @@ export default function AppTabsLayout() {
   // the navigation tree (same class of bug as ThemeShell remounting nav context).
   return (
     <TabBarScrollProvider>
+      <NavHistoryProvider>
       <Tabs
         tabBar={(props) => (isLoading ? null : <FloatingTabBar {...props} />)}
         screenOptions={{
@@ -70,6 +72,7 @@ export default function AppTabsLayout() {
         <Tabs.Screen name="home-hub" options={{ href: null }} />
         <Tabs.Screen name="concierge" options={{ href: null }} />
       </Tabs>
+      </NavHistoryProvider>
     </TabBarScrollProvider>
   );
 }

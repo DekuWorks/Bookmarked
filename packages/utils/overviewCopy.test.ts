@@ -32,7 +32,7 @@ describe("overviewCopy", () => {
     expect(OVERVIEW_ACTIVITY_VIEW_ALL).toBe("View all activity");
     expect(CURRENTLY_READING_ADD_COPY.cardLabel).toBe("Add Book to Currently Reading Shelf");
     expect(CURRENTLY_READING_ADD_COPY.chooseFromTbr).toBe("Choose from TBR");
-    expect(CURRENTLY_READING_ADD_COPY.searchForABook).toBe("Search for a Book");
+    expect(CURRENTLY_READING_ADD_COPY.searchForABook).toBe("Search for a New Book");
     expect(CURRENTLY_READING_ADD_COPY.tbrEmpty).toBe("Your TBR is empty.");
   });
 });

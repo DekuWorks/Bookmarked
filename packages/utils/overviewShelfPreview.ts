@@ -1,3 +1,10 @@
+import {
+  formatAudiobookProgressLabel,
+  formatListeningTime,
+  resolveAudiobookDurationSeconds,
+  resolveTrackingFormat,
+} from "./listeningTime";
+
 /** Overview shelf previews: TBR, Finished, DNF. Full counts, capped covers. */
 
 export const SHELF_PREVIEW_LIMIT = 5;
@@ -10,11 +17,14 @@ export const OVERVIEW_PREVIEW_SHELVES = [
 
 export type OverviewPreviewShelfStatus = (typeof OVERVIEW_PREVIEW_SHELVES)[number]["status"];
 
+/** Square frame. Artwork stays 2:3 and sits on the bottom edge of the frame. */
 export const SHELF_PREVIEW_COVER = {
-  widthPx: 44,
-  heightPx: 66,
-  tabletWidthPx: 56,
-  tabletHeightPx: 84,
+  framePx: 56,
+  tabletFramePx: 72,
+  widthPx: 36,
+  heightPx: 54,
+  tabletWidthPx: 48,
+  tabletHeightPx: 72,
   fit: "contain",
 } as const;
 
@@ -45,12 +55,34 @@ export type ReadingProgressInput = {
   totalPages?: number | null;
   pageCount?: number | null;
   progressPercent?: number | null;
+  trackingFormat?: string | null;
+  catalogFormat?: string | null;
+  listeningProgressSeconds?: number | null;
+  audiobookDurationSeconds?: number | null;
+  catalogDurationSeconds?: number | null;
 };
 
 export function currentlyReadingProgressLabel(input: ReadingProgressInput): {
   value: string;
   percent: number;
 } {
+  const format = resolveTrackingFormat({
+    userFormat: input.trackingFormat,
+    catalogFormat: input.catalogFormat,
+  });
+  if (format === "audiobook") {
+    const current = Math.max(0, Math.round(Number(input.listeningProgressSeconds) || 0));
+    const total = resolveAudiobookDurationSeconds({
+      userDurationSeconds: input.audiobookDurationSeconds,
+      catalogDurationSeconds: input.catalogDurationSeconds,
+    });
+    if (total > 0) {
+      const percent = Math.min(100, Math.max(0, Math.round((current / total) * 100)));
+      return { value: formatAudiobookProgressLabel(current, total), percent };
+    }
+    const percent = Math.min(100, Math.max(0, Math.round(Number(input.progressPercent) || 0)));
+    return { value: formatListeningTime(current), percent };
+  }
   const total = input.totalPages ?? input.pageCount ?? null;
   const current = input.progressPages;
   if (total != null && total > 0 && current != null && Number.isFinite(current)) {

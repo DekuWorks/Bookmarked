@@ -14,7 +14,7 @@ export function ChallengesCTA() {
       onPress={() =>
         router.push(withOriginQuery("/challenges", { origin: "reading_room_overview" }) as never)
       }
-      className="flex-row items-center gap-3 rounded-2xl border border-brand-border bg-surface p-4 active:opacity-80"
+      className="w-full flex-row items-center gap-3 rounded-2xl border border-brand-border bg-surface p-4 active:opacity-80"
     >
       <Ionicons name="trophy-outline" size={32} color="#B89DBB" />
       <View className="min-w-0 flex-1">

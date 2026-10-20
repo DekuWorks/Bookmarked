@@ -70,6 +70,7 @@ export type LibraryBookRow = {
     published_date: string | null;
     subjects: string[] | null;
     format: "book" | "ebook" | "audiobook" | null;
+    audiobook_duration_seconds?: number | null;
   } | null;
 };
 

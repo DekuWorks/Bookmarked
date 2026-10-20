@@ -179,7 +179,10 @@ export default function HomeReadingRoom() {
           equalWidth
           options={READING_ROOM_TAB_OPTIONS}
           value={tab}
-          onChange={setTab}
+          onChange={(next) => {
+            setTab(next);
+            router.setParams({ tab: next === "overview" ? "" : next });
+          }}
         />
 
         {tab === "overview" && userId ? (

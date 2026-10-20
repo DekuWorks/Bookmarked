@@ -27,7 +27,7 @@ export function ChallengesCTA() {
   return (
     <Link
       href={challengesPath("reading_room_overview")}
-      className="flex items-center gap-4 rounded-2xl border border-border bg-surface/90 p-4 shadow-sm transition hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange md:p-5"
+      className="flex w-full items-center gap-4 rounded-2xl border border-border bg-surface/90 p-4 shadow-sm transition hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange md:p-5"
     >
       <TrophyMark />
       <span className="min-w-0 flex-1">

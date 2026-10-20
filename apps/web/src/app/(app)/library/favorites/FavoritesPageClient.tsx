@@ -11,6 +11,7 @@ import { bookDetailsPath } from "@/lib/routes/book";
 import { getUserLibraryBooks, type LibraryBookRow } from "@/lib/services/library";
 import { FAVORITES_LISTING } from "@bookmarked/utils/overviewCopy";
 import { resolveTrackingFormat } from "@bookmarked/utils/listeningTime";
+import { BackCluster } from "@/components/navigation/HistoryMenuButton";
 import { originBackLink } from "@bookmarked/utils/navigationOrigin";
 
 export default function FavoritesPageClient() {
@@ -59,9 +60,11 @@ export default function FavoritesPageClient() {
   return (
     <div className={layout.pageStackWide}>
       <header className="flex flex-col items-center gap-3 text-center">
-        <Link href={back.href} className="text-sm font-medium text-primary hover:underline">
-          {back.label}
-        </Link>
+        <BackCluster>
+          <Link href={back.href} className="text-sm font-medium text-primary hover:underline">
+            {back.label}
+          </Link>
+        </BackCluster>
         <h1 className="font-display text-3xl font-bold tracking-tight text-puce-red sm:text-4xl">
           {FAVORITES_LISTING.title}
         </h1>
