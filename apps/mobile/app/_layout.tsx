@@ -1,5 +1,8 @@
 import "../global.css";
 import "react-native-gesture-handler";
+// After gesture-handler, which loads React Native and installs MessageQueue.
+// Must stay above every app import that uses Reanimated.
+import "react-native-reanimated";
 import { useEffect, useState } from "react";
 import { Appearance, View } from "react-native";
 import { Stack } from "expo-router";
