@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { BackCluster } from "@/components/navigation/HistoryMenuButton";
+import { UNIVERSAL_BACK_LINK_LABEL } from "@bookmarked/utils/navigationOrigin";
 import { QuoteGraphicsStudio } from "@/components/quotes/QuoteGraphicsStudio";
 import { QUOTE_GRAPHICS_PAGE_SUBTITLE } from "@bookmarked/utils/quoteGraphics";
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -32,8 +33,12 @@ export default function QuoteGraphicsPage() {
         <p className="mt-1 text-text-muted">{QUOTE_GRAPHICS_PAGE_SUBTITLE}</p>
       </header>
       <BackCluster>
-        <Link href="/notes/" className="text-sm font-medium text-primary hover:underline">
-          ← Back to notes
+        <Link
+          href="/notes/"
+          className="text-sm font-medium text-primary hover:underline"
+          aria-label="Back to notes"
+        >
+          {UNIVERSAL_BACK_LINK_LABEL}
         </Link>
       </BackCluster>
       <QuoteGraphicsStudio userId={user.id} />

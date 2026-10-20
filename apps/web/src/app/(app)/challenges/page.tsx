@@ -16,7 +16,7 @@ import {
   type ChallengeCardModel,
 } from "@/lib/services/challenges/ChallengeService";
 import { BackCluster } from "@/components/navigation/HistoryMenuButton";
-import { originBackLink } from "@bookmarked/utils/navigationOrigin";
+import { originBackLink, UNIVERSAL_BACK_LINK_LABEL } from "@bookmarked/utils/navigationOrigin";
 import { useSearchParams } from "next/navigation";
 
 export default function ChallengesPage() {
@@ -25,7 +25,7 @@ export default function ChallengesPage() {
   const searchParams = useSearchParams();
   const back = originBackLink(searchParams.get("origin"), "web", {
     href: "/profile/",
-    label: "← Back to Profile",
+    label: UNIVERSAL_BACK_LINK_LABEL,
   });
   const [catalog, setCatalog] = useState<{
     featured: ChallengeCardModel[];

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { BackCluster } from "@/components/navigation/HistoryMenuButton";
+import { UNIVERSAL_BACK_LINK_LABEL } from "@bookmarked/utils/navigationOrigin";
 import { useRouter } from "next/navigation";
 import { BookCover } from "@/components/books/BookCover";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
@@ -433,9 +434,9 @@ export function ClubDiscussionsPanel({
             type="button"
             onClick={handleBackFromThread}
             className="text-left text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-royal-orange"
-            aria-label={fromDeepLink ? "Go back" : "Back to discussions"}
+            aria-label={fromDeepLink ? "Back to" : "Back to discussions"}
           >
-            {fromDeepLink ? "← Back" : "← Back to discussions"}
+            {UNIVERSAL_BACK_LINK_LABEL}
           </button>
         </BackCluster>
 

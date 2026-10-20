@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { BackCluster } from "@/components/navigation/HistoryMenuButton";
+import { UNIVERSAL_BACK_LINK_LABEL } from "@bookmarked/utils/navigationOrigin";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BookSpine } from "@/components/library/BookSpine";
 import { EmptyShelfMessage } from "@/components/library/EmptyShelfMessage";
@@ -151,8 +152,9 @@ function CustomShelfContent() {
             <Link
               href="/library"
               className="inline-block text-sm font-medium text-primary hover:underline"
+              aria-label="Back to library"
             >
-              ← Back to library
+              {UNIVERSAL_BACK_LINK_LABEL}
             </Link>
           </BackCluster>
           <h1 className="mt-2 flex items-center justify-center gap-2 text-3xl font-bold text-puce-red sm:text-4xl">

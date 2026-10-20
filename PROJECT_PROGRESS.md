@@ -1817,6 +1817,63 @@ Back was a single origin or `history.back()`. There was no list of earlier scree
 
 ---
 
+## FIX — Universal Back Button Label
+
+Branch: `feature/universal-back-label` (from `origin/main` at `2a4d230`). Not committed. No Android. The history stack was not rebuilt.
+
+The shared Back control printed a fixed destination ("Back to Library", "Back to Overview", and the same pattern for Profile, Challenges, and other screens) even when the click already returned to the real previous page.
+
+### What changed
+
+Visible text on the shared control is exactly "Back to", with the existing arrow and the history chevron: `← Back to` and `▾`. Dropdown items still use the real page titles. The main click still uses the existing origin href, `router.back()`, or the safe fallback. Route params and origin are unchanged.
+
+| Surface | Change |
+|---------|--------|
+| Web `BackNav` | Stops appending the destination word. Accessible name uses the explicit href label, or the previous history title when the click is history back. |
+| `originBackLink` | Href is unchanged. Returned label is always `← Back to`, including the missing-origin fallback. |
+| Web screens that wrap `BackCluster` | Challenges, challenge detail, create challenge, Favorites, settings, profile edit, quote graphics, Wrapped, custom shelf header, club discussion thread, and the message header. |
+| iOS `ScreenHeader` | Adds the visible words "Back to" beside the existing `‹`. VoiceOver can still name the real destination. |
+| iOS Library header | Removes the hardcoded accessible name "Back to Overview". Visible text is "Back to". The origin href is unchanged. |
+| iOS club stack | System back title is "Back to" instead of "Clubs". The menu stays on the right. |
+
+### Labels removed from the shared control
+
+- `← Back to {label}` inside `BackNav` (library, overview, feed, profile, book clubs, and the shelf fallback "Library")
+- `← Back to ${destination}` from `originBackLink` (Overview, Library, Feed, Search, Challenges, Profile, and the rest of the origin list)
+- Fallback strings "← Back to Library", "← Back to Profile", "← Back to Challenges"
+- "← Back to profile", "← Back to notes", "← Back to Progress", "← Back to library" on the custom-shelf history control, "← Back to discussions", and "← Inbox"
+
+### Left alone
+
+These are not the shared history control. They still name a fixed place:
+
+- Custom shelf error links on web, and the in-body "← Back to library" under the iOS custom shelf and a reader's shelf
+- "Back to feed", "Back to inbox", and "Back to library" on not-found states
+- The separate "Back to notes" button on iOS quote graphics
+- "Back to log in" on the password screen
+
+### Tests
+
+- `apps/web` vitest: `navigationHistory.test.ts` (23), `navigationOrigin.test.ts` (13), `overviewSprint.test.ts` (9). 45 passed.
+- New cases cover Overview → Reviews → Book (previous is Reviews), Overview → Library → TBR → Book (previous is TBR, menu order TBR / Library / Overview), Overview → Challenges (href stays Overview, label is "← Back to"), Community / Discover / Profile (previous page is the real prior screen, no "Back to Library" in those screens), and a direct book link (empty history, fallback href kept, label is "← Back to").
+- Web `tsc --noEmit`: pass. iOS `tsc --noEmit`: pass.
+- ESLint on `BackNav` and the label-only pages: pass. `library/custom/page.tsx`, Favorites, settings, and `ClubDiscussionsPanel` still report existing `set-state-in-effect` findings in their load effects. Those effects were not part of this change.
+
+### Verification
+
+- Signed-in web on localhost:3000. Reviews → book details showed visible text `← Back to` and the chevron. VoiceOver name was "Back to Reviews". The menu listed Reviews, then Woman Down. The main button returned to `/reading-room/?tab=reviews`.
+- Challenges opened with `origin=reading_room_overview` showed `← Back to` and still linked to `/reading-room/`.
+- Library opened with the same origin showed `← Back to`. The accessible name was "Back to overview". The page text did not contain "Back to Library" or "Back to Overview".
+- iPhone and iPad Simulator were not launched. No `expo run:ios` and no EAS build. iOS uses the same label constant in `ScreenHeader`, the Library header, and the club back title.
+
+### Remaining
+
+- In-body links listed above still say "Back to library" or similar. They are separate from the history button.
+- A direct deep link with an empty menu still falls back to the existing href (often Library). The visible words do not name Library.
+- Simulator swipe-back was not exercised. The gesture code was not changed.
+
+---
+
 ## Next up (recommended)
 
 | Priority | Item | Notes |

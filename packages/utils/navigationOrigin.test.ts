@@ -6,6 +6,7 @@ import {
   parseNavOriginParam,
   resolveOriginBack,
   restoreSearchHref,
+  UNIVERSAL_BACK_LINK_LABEL,
   withOriginQuery,
 } from "./navigationOrigin";
 
@@ -84,7 +85,8 @@ describe("originBackLink", () => {
       label: "← Back to Library",
     });
     expect(back.href).toBe("/reading-room/");
-    expect(back.label).toBe("← Back to Overview");
+    expect(back.label).toBe(UNIVERSAL_BACK_LINK_LABEL);
+    expect(back.label).toBe("← Back to");
   });
 
   it("falls back to Library when origin is missing", () => {
@@ -93,6 +95,7 @@ describe("originBackLink", () => {
       label: "← Back to Library",
     });
     expect(back.href).toBe("/library");
+    expect(back.label).toBe("← Back to");
     expect(back.origin).toBeNull();
   });
 });

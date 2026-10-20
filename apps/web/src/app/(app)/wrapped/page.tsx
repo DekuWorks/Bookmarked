@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { BackCluster } from "@/components/navigation/HistoryMenuButton";
+import { UNIVERSAL_BACK_LINK_LABEL } from "@bookmarked/utils/navigationOrigin";
 import { Button } from "@/components/ui/Button";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
@@ -103,8 +104,12 @@ export default function WrappedPage() {
 
       <p className="text-center">
         <BackCluster>
-          <Link href="/reading-room/?tab=progress" className="text-sm font-medium text-primary hover:underline">
-            ← Back to Progress
+          <Link
+            href="/reading-room/?tab=progress"
+            className="text-sm font-medium text-primary hover:underline"
+            aria-label="Back to Progress"
+          >
+            {UNIVERSAL_BACK_LINK_LABEL}
           </Link>
         </BackCluster>
       </p>
