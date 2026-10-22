@@ -11,6 +11,8 @@ import { useAuthStore } from "../store/authStore";
 
 type Props = {
   status: ReadingGoalStatus;
+  /** Overview already draws the summary and bar. Keep save, edit, and clear. */
+  showProgress?: boolean;
 };
 
 function withTarget(status: ReadingGoalStatus, target: number | null): ReadingGoalStatus {
@@ -34,7 +36,7 @@ function withTarget(status: ReadingGoalStatus, target: number | null): ReadingGo
   };
 }
 
-export function ReadingGoalPanel({ status }: Props) {
+export function ReadingGoalPanel({ status, showProgress = true }: Props) {
   const userId = useAuthStore((s) => s.user?.id);
   const queryClient = useQueryClient();
   const [localStatus, setLocalStatus] = useState(status);
@@ -84,15 +86,19 @@ export function ReadingGoalPanel({ status }: Props) {
   if (hasGoal && !editing) {
     return (
       <View className="gap-2">
-        <Text className="text-ink">
-          {localStatus.completed} of {localStatus.target} books in {localStatus.year}
-        </Text>
-        <ProgressBar percent={localStatus.percent ?? 0} />
-        <Text className="text-xs text-ink-muted">
-          {localStatus.met
-            ? "Goal met — congratulations!"
-            : `${localStatus.remaining} to go this year`}
-        </Text>
+        {showProgress ? (
+          <>
+            <Text className="text-ink">
+              {localStatus.completed} of {localStatus.target} books in {localStatus.year}
+            </Text>
+            <ProgressBar percent={localStatus.percent ?? 0} />
+            <Text className="text-xs text-ink-muted">
+              {localStatus.met
+                ? "Goal met — congratulations!"
+                : `${localStatus.remaining} to go this year`}
+            </Text>
+          </>
+        ) : null}
         <View className="mt-1 flex-row gap-4">
           <Pressable
             onPress={() => {

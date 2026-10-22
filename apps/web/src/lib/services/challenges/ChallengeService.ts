@@ -445,7 +445,7 @@ export async function joinChallenge(challengeId: string): Promise<{ error?: stri
       console.warn("[ChallengeService] count query:", countError.message);
     }
 
-    const access = toSubscriptionAccessFromRow(subscription);
+    const access = toSubscriptionAccessFromRow(subscription, { userId: user.id });
     if (!canJoinReadingChallenge(count ?? 0, access)) {
       return { error: ENTITLEMENT_LIMIT_MESSAGES.reading_challenges };
     }
@@ -538,7 +538,7 @@ export async function createChallenge(input: {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  if (!canCreateReadingChallenge(toSubscriptionAccessFromRow(subscription))) {
+  if (!canCreateReadingChallenge(toSubscriptionAccessFromRow(subscription, { userId: user.id }))) {
     return { error: ENTITLEMENT_LIMIT_MESSAGES.create_reading_challenge, limitReached: true };
   }
 

@@ -3,7 +3,7 @@ export type PremiumFeatureLink = {
   tier: "free" | "plus" | "home";
   title: string;
   description: string;
-  /** Web path (Reading Room Progress tab sections where applicable). */
+  /** Web path (Reading Room Stats sections where applicable). */
   webHref?: string;
   /** Mobile route — `tab` query opens Reading Room on the home screen. */
   mobileHref?: string;
@@ -23,8 +23,8 @@ export const PREMIUM_FEATURE_LINKS: PremiumFeatureLink[] = [
     title: "Bookmarked Plus",
     description:
       "Reading Insights, Monthly Wrapped, AI Companion, Quote Scanner, club polls, and unlimited quotes, clubs, and challenges. Unlimited still has abuse and rate protection.",
-    webHref: "/reading-room/?tab=progress#reading-activity",
-    mobileHref: "/?tab=progress",
+    webHref: "/reading-room/?tab=stats#reading-activity",
+    mobileHref: "/?tab=stats",
   },
   {
     id: "reading-dna",

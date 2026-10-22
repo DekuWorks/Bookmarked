@@ -2,18 +2,18 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useSearchParams } from "next/navigation";
 import { AnalyticsGrid } from "@/components/analytics/AnalyticsGrid";
 import { ReadingActivityPanel } from "@/components/analytics/ReadingActivityPanel";
 import { AiCompanionPanel } from "@/components/premium/AiCompanionPanel";
 import { AiInsightsPanel } from "@/components/premium/AiInsightsPanel";
 import { PlusInsightsPanel } from "@/components/premium/PlusInsightsPanel";
-import { PremiumFeatureLock } from "@/components/premium/PremiumFeatureLock";
+import { PlusBadge } from "@/components/premium/PlusBadge";
+import { PlusLockedFeature } from "@/components/premium/PlusLockedFeature";
 import { NotesPanel } from "@/components/reading-room/NotesPanel";
 import { OverviewTab } from "@/components/reading-room/OverviewTab";
 import { ReadingCalendar } from "@/components/calendar/ReadingCalendar";
-import { ReadingGoalPanel } from "@/components/reading-goal/ReadingGoalPanel";
 import { TrailPanel } from "@/components/reading-room/TrailPanel";
 import type { ReadingRoomData } from "@/lib/services/readingRoom";
 import { listUserReviews, type UserReviewWithBook } from "@/lib/services/readingRoom";
@@ -22,16 +22,34 @@ import {
   type UserReadingSession,
 } from "@/lib/services/readingSessions";
 import { useSubscription } from "@/lib/hooks/useSubscription";
+import { StatsSectionSkeleton } from "@/components/reading-room/StatsSectionSkeleton";
 import { LoadingState } from "@/components/ui/LoadingState";
 import {
-  parseReadingRoomTab,
   READING_ROOM_TAB_OPTIONS,
   readingRoomTabHref,
   type ReadingRoomTab,
 } from "@/lib/reading-room/readingRoomTabs";
-import { readingRoomTabLabel } from "@bookmarked/utils/readingRoomTabs";
+import { STATS_PLUS_FEATURES } from "@bookmarked/utils/plusLockedCopy";
+import {
+  legacyProgressLocation,
+  readingRoomTabLabel,
+  resolveReadingRoomDestination,
+} from "@bookmarked/utils/readingRoomTabs";
 
 export type { ReadingRoomTab };
+
+function subscribeLocation(onStoreChange: () => void) {
+  window.addEventListener("hashchange", onStoreChange);
+  window.addEventListener("popstate", onStoreChange);
+  return () => {
+    window.removeEventListener("hashchange", onStoreChange);
+    window.removeEventListener("popstate", onStoreChange);
+  };
+}
+
+function currentLocationHash(): string {
+  return window.location.hash.replace(/^#/, "");
+}
 
 const ReviewsPanel = dynamic(
   () => import("@/components/reading-room/ReviewsPanel").then((m) => ({ default: m.ReviewsPanel })),
@@ -52,7 +70,9 @@ type Props = {
 
 function ReadingRoomTabsContent({ userId, data, dataSettled, onRefresh }: Props) {
   const searchParams = useSearchParams();
-  const tab = parseReadingRoomTab(searchParams.get("tab"));
+  const rawTab = searchParams.get("tab");
+  const locationHash = useSyncExternalStore(subscribeLocation, currentLocationHash, () => "");
+  const tab = resolveReadingRoomDestination(rawTab, locationHash);
   const { canAccess, loading: subscriptionLoading } = useSubscription(userId);
   const hasAdvancedAnalytics = canAccess("advanced_analytics");
   const hasAiInsights = canAccess("ai_insights");
@@ -119,18 +139,24 @@ function ReadingRoomTabsContent({ userId, data, dataSettled, onRefresh }: Props)
   }
 
   useEffect(() => {
-    if (tab !== "stats" || typeof window === "undefined") return;
-
-    const scrollToHash = () => {
-      const hash = window.location.hash.replace(/^#/, "");
-      if (!hash) return;
-      const target = document.getElementById(hash);
-      target?.scrollIntoView({ behavior: "smooth", block: "start" });
-    };
-
-    const frame = window.requestAnimationFrame(scrollToHash);
+    let scrollHash = locationHash;
+    if (rawTab === "progress") {
+      const next = legacyProgressLocation(rawTab, locationHash);
+      if (next) {
+        scrollHash = next.hash;
+        const url = `${readingRoomTabHref(next.tab)}${next.hash ? `#${next.hash}` : ""}`;
+        const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+        if (current !== url) window.history.replaceState(null, "", url);
+      }
+    }
+    if (!scrollHash) return;
+    const frame = window.requestAnimationFrame(() => {
+      const target = document.getElementById(scrollHash);
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      target?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    });
     return () => window.cancelAnimationFrame(frame);
-  }, [tab]);
+  }, [locationHash, rawTab]);
 
   return (
     <div className="space-y-6">
@@ -188,12 +214,24 @@ function ReadingRoomTabsContent({ userId, data, dataSettled, onRefresh }: Props)
 
         {tab === "stats" ? (
           <div className="space-y-6">
-            <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
-              <h2 className="text-lg font-semibold text-puce-red">Reading Goal</h2>
+            <section
+              id="reading-calendar"
+              className="rr-stats-card min-w-0 scroll-mt-24 overflow-hidden rounded-2xl border border-border bg-surface/90 p-4 shadow-sm sm:p-5 md:p-6"
+            >
+              <ReadingCalendar userId={userId} />
+            </section>
+
+            <section
+              id="reading-statistics"
+              className="rr-stats-card scroll-mt-24 rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6"
+              style={{ animationDelay: "40ms" }}
+            >
+              <h2 className="font-display text-xl text-puce-red">Reading Statistics</h2>
               <div className="mt-4">
-                <ReadingGoalPanel
-                  status={data.readingGoal}
-                  onSaved={() => void onRefresh()}
+                <AnalyticsGrid
+                  analytics={data.analytics}
+                  readingGoal={data.readingGoal}
+                  compact
                 />
               </div>
               <p className="mt-4 text-center">
@@ -203,66 +241,70 @@ function ReadingRoomTabsContent({ userId, data, dataSettled, onRefresh }: Props)
               </p>
             </section>
 
-            <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
-              <ReadingCalendar userId={userId} />
-            </section>
-
-            <section className="rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6">
-              <h2 className="text-lg font-semibold text-puce-red">Reading Statistics</h2>
-              <div className="mt-4">
-                <AnalyticsGrid
-                  analytics={data.analytics}
-                  readingGoal={data.readingGoal}
-                  compact
-                />
-              </div>
-            </section>
-
-            <section
-              id="reading-activity"
-              className="scroll-mt-24 rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6"
-            >
-              <h2 className="text-lg font-semibold text-puce-red">Activity</h2>
-              <div className="mt-4">
-                {subscriptionLoading ? (
-                  <LoadingState message="Checking subscription…" />
-                ) : hasAdvancedAnalytics ? (
-                  <div className="space-y-8">
-                    <ReadingActivityPanel userId={userId} />
-                    <PlusInsightsPanel userId={userId} />
-                  </div>
+            {subscriptionLoading ? (
+              <section
+                className="rr-stats-card rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6"
+                style={{ animationDelay: "80ms" }}
+              >
+                <StatsSectionSkeleton label="Checking subscription" />
+              </section>
+            ) : (
+              <>
+                {hasAdvancedAnalytics ? (
+                  <section
+                    id="reading-activity"
+                    className="rr-stats-card scroll-mt-24 rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6"
+                    style={{ animationDelay: "80ms" }}
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 id="advanced-reading-analytics-heading" className="font-display text-xl text-puce-red">
+                        {STATS_PLUS_FEATURES.analytics.title}
+                      </h2>
+                      <PlusBadge />
+                    </div>
+                    <div className="mt-4 space-y-8">
+                      <ReadingActivityPanel userId={userId} />
+                      <PlusInsightsPanel userId={userId} />
+                    </div>
+                  </section>
                 ) : (
-                  <PremiumFeatureLock
-                    title="Advanced reading analytics"
-                    description="Unlock reading heatmaps, pace trends, and weekly activity charts with Bookmarked Plus."
-                    compact
-                  />
-                )}
-              </div>
-            </section>
-
-            <section
-              id="ai-insights"
-              className="scroll-mt-24 rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6"
-            >
-              <h2 className="text-lg font-semibold text-puce-red">AI Insights</h2>
-              <div className="mt-4">
-                {subscriptionLoading ? (
-                  <LoadingState message="Checking subscription…" />
-                ) : hasAiInsights ? (
-                  <div className="space-y-6">
-                    <AiInsightsPanel userId={userId} />
-                    <AiCompanionPanel />
+                  <div id="reading-activity" className="rr-stats-card scroll-mt-24" style={{ animationDelay: "80ms" }}>
+                    <PlusLockedFeature
+                      title={STATS_PLUS_FEATURES.analytics.title}
+                      description={STATS_PLUS_FEATURES.analytics.description}
+                      headingId="advanced-reading-analytics-heading"
+                    />
                   </div>
-                ) : (
-                  <PremiumFeatureLock
-                    title="AI reading insights"
-                    description="Get personalized reflections and reading patterns powered by your trail."
-                    compact
-                  />
                 )}
-              </div>
-            </section>
+
+                {hasAiInsights ? (
+                  <section
+                    id="ai-insights"
+                    className="rr-stats-card scroll-mt-24 rounded-2xl border border-border bg-surface/90 p-5 shadow-sm md:p-6"
+                    style={{ animationDelay: "120ms" }}
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 id="ai-insights-heading" className="font-display text-xl text-puce-red">
+                        {STATS_PLUS_FEATURES.insights.title}
+                      </h2>
+                      <PlusBadge />
+                    </div>
+                    <div className="mt-4 space-y-6">
+                      <AiInsightsPanel userId={userId} />
+                      <AiCompanionPanel />
+                    </div>
+                  </section>
+                ) : (
+                  <div id="ai-insights" className="rr-stats-card scroll-mt-24" style={{ animationDelay: "120ms" }}>
+                    <PlusLockedFeature
+                      title={STATS_PLUS_FEATURES.insights.title}
+                      description={STATS_PLUS_FEATURES.insights.description}
+                      headingId="ai-insights-heading"
+                    />
+                  </div>
+                )}
+              </>
+            )}
           </div>
         ) : null}
 

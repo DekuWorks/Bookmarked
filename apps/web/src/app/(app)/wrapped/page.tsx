@@ -105,9 +105,9 @@ export default function WrappedPage() {
       <p className="text-center">
         <BackCluster>
           <Link
-            href="/reading-room/?tab=progress"
+            href="/reading-room/?tab=stats"
             className="text-sm font-medium text-primary hover:underline"
-            aria-label="Back to Progress"
+            aria-label="Back to Stats"
           >
             {UNIVERSAL_BACK_LINK_LABEL}
           </Link>

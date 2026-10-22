@@ -208,7 +208,7 @@ export async function createCustomShelf(
 
   if (countError) return { error: countError.message };
 
-  if (!canCreateCustomShelf(shelfCount ?? 0, toSubscriptionAccessFromRow(subscription))) {
+  if (!canCreateCustomShelf(shelfCount ?? 0, toSubscriptionAccessFromRow(subscription, { userId }))) {
     return { error: ENTITLEMENT_LIMIT_MESSAGES.custom_shelves };
   }
 

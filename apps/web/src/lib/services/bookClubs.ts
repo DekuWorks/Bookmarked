@@ -630,7 +630,7 @@ export async function createClub(
     ]);
 
     if (countError) return { error: countError.message };
-    if (!canJoinBookClub(count ?? 0, toSubscriptionAccessFromRow(subscription))) {
+    if (!canJoinBookClub(count ?? 0, toSubscriptionAccessFromRow(subscription, { userId: user.id }))) {
       return { error: ENTITLEMENT_LIMIT_MESSAGES.joined_book_clubs };
     }
 
@@ -744,7 +744,7 @@ export async function joinClub(clubId: string): Promise<{ error?: string }> {
 
     if (countError) return { error: countError.message };
 
-    if (!canJoinBookClub(count ?? 0, toSubscriptionAccessFromRow(subscription))) {
+    if (!canJoinBookClub(count ?? 0, toSubscriptionAccessFromRow(subscription, { userId: user.id }))) {
       return { error: ENTITLEMENT_LIMIT_MESSAGES.joined_book_clubs };
     }
 

@@ -4,6 +4,12 @@ import type {
   SubscriptionStatus,
   SubscriptionTier,
 } from "../types";
+import {
+  hasComplimentaryPlus,
+  type ComplimentaryIdentity,
+} from "./complimentaryPlus";
+
+export type { ComplimentaryIdentity };
 
 export type SubscriptionAccess = {
   subscription_tier: SubscriptionTier;
@@ -485,17 +491,45 @@ export function getReadingDnaAccess(
   return getEntitlements(access).readingDNAAccess;
 }
 
+const COMPLIMENTARY_PLUS_ACCESS: SubscriptionAccess = {
+  subscription_tier: "plus",
+  subscription_status: "active",
+  subscription_expires_at: null,
+};
+
+/**
+ * Same subscription shape as a real Plus row. Allowlisted accounts get active
+ * Plus when their stored row would not already grant Plus or Home. Everyone
+ * else's row, including an expired paid row, is returned unchanged.
+ */
+export function applyComplimentaryPlus(
+  access: SubscriptionAccess,
+  identity: ComplimentaryIdentity | null | undefined
+): SubscriptionAccess {
+  if (!hasComplimentaryPlus(identity)) return access;
+  if (
+    subscriptionIsActive(access) &&
+    (access.subscription_tier === "plus" || access.subscription_tier === "home")
+  ) {
+    return access;
+  }
+  return COMPLIMENTARY_PLUS_ACCESS;
+}
+
 /** Normalize a DB subscription row into SubscriptionAccess (never trust client tier alone). */
 export function toSubscriptionAccessFromRow(
   row: {
+    user_id?: string | null;
+    username?: string | null;
     subscription_tier?: string | null;
     subscription_status?: string | null;
     subscription_expires_at?: string | null;
-  } | null | undefined
+  } | null | undefined,
+  identity?: ComplimentaryIdentity | null
 ): SubscriptionAccess {
   const tier = row?.subscription_tier;
   const status = row?.subscription_status;
-  return {
+  const access: SubscriptionAccess = {
     subscription_tier:
       tier === "plus" || tier === "home" || tier === "free" ? tier : "free",
     subscription_status:
@@ -509,6 +543,11 @@ export function toSubscriptionAccessFromRow(
         : "inactive",
     subscription_expires_at: row?.subscription_expires_at ?? null,
   };
+
+  return applyComplimentaryPlus(access, {
+    userId: identity?.userId ?? row?.user_id,
+    username: identity?.username ?? row?.username,
+  });
 }
 
 /** Official upgrade-page display prices. iOS buttons still prefer StoreKit displayPrice. */

@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { GoalMilestoneNote } from "@/components/reading-room/GoalMilestone";
 import { MotionProgressBar } from "@/components/reading-room/MotionProgressBar";
+import { ReadingGoalPanel } from "@/components/reading-goal/ReadingGoalPanel";
 import type { ReadingGoalStatus } from "@/lib/services/readingGoal";
 import { OVERVIEW_SECTION_TITLES } from "@bookmarked/utils/overviewCopy";
 import { readingGoalPercentLabel, readingGoalSummary } from "@bookmarked/utils/overviewShelfPreview";
@@ -19,9 +19,10 @@ type Props = {
   status: ReadingGoalStatus;
   /** False while cached data is showing, before the first network result. */
   dataSettled: boolean;
+  onSaved?: () => void;
 };
 
-export function ReadingGoalCard({ status, dataSettled }: Props) {
+export function ReadingGoalCard({ status, dataSettled, onSaved }: Props) {
   const real = readingGoalRealPercent(status.completed, status.target);
   const percent = readingGoalPercentLabel(real);
   const observe = useRef<GoalObserveState>({ settled: false, baseline: null });
@@ -42,7 +43,8 @@ export function ReadingGoalCard({ status, dataSettled }: Props) {
 
   return (
     <section
-      className={`rounded-2xl border border-border bg-surface/90 p-4 shadow-sm md:p-5 ${glow ? "rr-goal-glow" : ""}`}
+      id="reading-goal"
+      className={`scroll-mt-24 rounded-2xl border border-border bg-surface/90 p-4 shadow-sm md:p-5 ${glow ? "rr-goal-glow" : ""}`}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
@@ -53,14 +55,7 @@ export function ReadingGoalCard({ status, dataSettled }: Props) {
         </div>
         {percent ? (
           <p className="text-lg font-semibold tabular-nums text-primary">{percent}</p>
-        ) : (
-          <Link
-            href="/reading-room/?tab=stats"
-            className="shrink-0 text-sm font-semibold text-primary hover:underline"
-          >
-            Set goal
-          </Link>
-        )}
+        ) : null}
       </div>
       {real != null ? (
         <div
@@ -76,6 +71,14 @@ export function ReadingGoalCard({ status, dataSettled }: Props) {
         </div>
       ) : null}
       <GoalMilestoneNote eventId={celebration?.id ?? 0} milestone={celebration?.milestone ?? null} />
+      <div className="mt-4">
+        <ReadingGoalPanel
+          status={status}
+          variant="compact"
+          showProgress={false}
+          onSaved={onSaved}
+        />
+      </div>
     </section>
   );
 }

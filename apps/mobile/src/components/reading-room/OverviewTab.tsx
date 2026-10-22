@@ -13,7 +13,6 @@ type Props = {
   readingGoal: ReadingGoalStatus;
   dataSettled: boolean;
   focusGeneration: number;
-  onSetGoal?: () => void;
   onRefresh: () => void;
   onMoveStart?: (row: LibraryBookRow) => void;
   onMoveFailed?: (row: LibraryBookRow) => void;
@@ -26,7 +25,6 @@ export function OverviewTab({
   readingGoal,
   dataSettled,
   focusGeneration,
-  onSetGoal,
   onRefresh,
   onMoveStart,
   onMoveFailed,
@@ -46,7 +44,6 @@ export function OverviewTab({
         status={readingGoal}
         dataSettled={dataSettled}
         focusGeneration={focusGeneration}
-        onSetGoal={onSetGoal}
       />
       <ShelfPreviewSection shelves={shelves} />
       <ChallengesCTA />

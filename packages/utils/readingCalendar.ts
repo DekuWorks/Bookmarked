@@ -16,7 +16,7 @@ import {
 export const READING_CALENDAR_WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
 export const READING_CALENDAR_COPY = {
-  title: "Reading calendar",
+  title: "Reading Calendar",
   subtitle: "Covers mark days you actually read — sessions and progress, not shelf moves.",
   emptyMonth: "No reading sessions this month yet.",
   multiBook: (count: number) => `${count} books`,

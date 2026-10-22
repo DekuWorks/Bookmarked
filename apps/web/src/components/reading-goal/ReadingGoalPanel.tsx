@@ -39,6 +39,11 @@ type Props = {
   status: ReadingGoalStatus;
   variant?: "default" | "compact";
   className?: string;
+  /**
+   * Overview already draws the goal summary and bar.
+   * Controls-only keeps the same save path without a second progress display.
+   */
+  showProgress?: boolean;
   /** Called after a successful save/clear so parents can reload profile data. */
   onSaved?: () => void;
 };
@@ -47,6 +52,7 @@ export function ReadingGoalPanel({
   status,
   variant = "default",
   className,
+  showProgress = true,
   onSaved,
 }: Props) {
   const [localStatus, setLocalStatus] = useState(status);
@@ -99,26 +105,30 @@ export function ReadingGoalPanel({
     >
       {hasGoal && !editing ? (
         <div className="space-y-3">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <p className={cn("font-medium text-puce-red", compact && "text-sm")}>
-              {localStatus.completed} of {localStatus.target} books in{" "}
-              {localStatus.year}
-            </p>
-            {localStatus.met ? (
-              <span className="rounded-full bg-primary/25 px-2.5 py-0.5 text-xs font-semibold text-puce-red">
-                Goal reached!
-              </span>
-            ) : (
-              <p className="text-sm text-text-muted">
-                {localStatus.remaining} to go
-              </p>
-            )}
-          </div>
-          <ProgressBar
-            value={localStatus.completed}
-            max={localStatus.target ?? 100}
-            label={`${localStatus.percent}% of your ${localStatus.year} goal`}
-          />
+          {showProgress ? (
+            <>
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <p className={cn("font-medium text-puce-red", compact && "text-sm")}>
+                  {localStatus.completed} of {localStatus.target} books in{" "}
+                  {localStatus.year}
+                </p>
+                {localStatus.met ? (
+                  <span className="rounded-full bg-primary/25 px-2.5 py-0.5 text-xs font-semibold text-puce-red">
+                    Goal reached!
+                  </span>
+                ) : (
+                  <p className="text-sm text-text-muted">
+                    {localStatus.remaining} to go
+                  </p>
+                )}
+              </div>
+              <ProgressBar
+                value={localStatus.completed}
+                max={localStatus.target ?? 100}
+                label={`${localStatus.percent}% of your ${localStatus.year} goal`}
+              />
+            </>
+          ) : null}
           <div className="flex flex-wrap gap-2">
             <Button
               type="button"

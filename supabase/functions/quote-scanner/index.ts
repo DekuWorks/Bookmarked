@@ -4,6 +4,10 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import {
+  subscriptionIsActive,
+  toSubscriptionAccessFromRow,
+} from "../_shared/complimentaryPlus.ts";
 
 const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
@@ -17,20 +21,6 @@ function jsonResponse(body: unknown, status = 200): Response {
     status,
     headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
   });
-}
-
-function subscriptionIsActive(row: {
-  subscription_tier: string;
-  subscription_status: string;
-  subscription_expires_at: string | null;
-}): boolean {
-  if (!["plus", "home"].includes(row.subscription_tier)) return false;
-  const status = row.subscription_status;
-  if (status === "expired" || status === "inactive") return false;
-  const entitled = ["active", "trialing", "past_due", "grace_period", "canceled"].includes(status);
-  if (!entitled) return false;
-  if (!row.subscription_expires_at) return status !== "canceled";
-  return new Date(row.subscription_expires_at).getTime() > Date.now();
 }
 
 Deno.serve(async (req) => {
@@ -58,7 +48,8 @@ Deno.serve(async (req) => {
     .eq("user_id", userData.user.id)
     .maybeSingle();
 
-  if (!subscription || !subscriptionIsActive(subscription)) {
+  const access = toSubscriptionAccessFromRow(subscription, { userId: userData.user.id });
+  if (!subscriptionIsActive(access)) {
     return jsonResponse({ error: "Plus required" }, 403);
   }
 

@@ -131,6 +131,7 @@ export {
   PLUS_FEATURE_KEYS,
   HOME_ONLY_FEATURES,
   MEMBERSHIP_FEATURES,
+  applyComplimentaryPlus,
   canAccessFeature,
   canCreateCustomShelf,
   canCreateQuoteGraphic,
@@ -160,6 +161,7 @@ export {
   PLUS_UNLIMITED_FAIR_USE_COPY,
   isEntitlementLimitError,
   type ChallengeJoinKind,
+  type ComplimentaryIdentity,
   type ClubMembershipKind,
   type EntitlementCheckResult,
   type EntitlementLimitFeature,
@@ -270,6 +272,7 @@ export {
   IAP_PREMIUM_YEARLY_IOS_PRODUCTION,
   IAP_PREMIUM_PRICE_LABEL,
   IAP_PREMIUM_YEARLY_PRICE_LABEL,
+  canStartPlusPurchase,
   isAllowedPremiumSku,
   resolveIosPremiumProductId,
   type IapPremiumSku,
@@ -411,9 +414,12 @@ export {
 } from "./clubPermissions";
 
 export {
+  isProgressGoalHash,
+  legacyProgressLocation,
   parseReadingRoomTab,
   readingRoomTabLabel,
   READING_ROOM_TAB_OPTIONS,
+  resolveReadingRoomDestination,
   type ReadingRoomTab,
 } from "./readingRoomTabs";
 
@@ -426,8 +432,10 @@ export {
   currentlyReadingCoverSize,
   goalBarFillPercent,
   highestMilestoneCrossed,
+  calendarMonthMotion,
   motionDuration,
   observeGoalProgress,
+  statsCardMotion,
   progressMotion,
   readingGoalRealPercent,
   relocateLibraryBook,

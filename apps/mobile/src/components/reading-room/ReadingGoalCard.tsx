@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { ProgressBar } from "../ProgressBar";
+import { ReadingGoalPanel } from "../ReadingGoalPanel";
 import type { ReadingGoalStatus } from "../../services/readingGoal";
 import { OVERVIEW_SECTION_TITLES } from "../../../../../packages/utils/overviewCopy";
 import { readingGoalPercentLabel, readingGoalSummary } from "../../../../../packages/utils/overviewShelfPreview";
@@ -17,10 +18,9 @@ type Props = {
   status: ReadingGoalStatus;
   dataSettled: boolean;
   focusGeneration: number;
-  onSetGoal?: () => void;
 };
 
-export function ReadingGoalCard({ status, dataSettled, focusGeneration, onSetGoal }: Props) {
+export function ReadingGoalCard({ status, dataSettled, focusGeneration }: Props) {
   const reducedMotion = usePrefersReducedMotion();
   const real = readingGoalRealPercent(status.completed, status.target);
   const percent = readingGoalPercentLabel(real);
@@ -70,11 +70,7 @@ export function ReadingGoalCard({ status, dataSettled, focusGeneration, onSetGoa
         </View>
         {percent ? (
           <Text className="text-lg font-semibold text-primary">{percent}</Text>
-        ) : (
-          <Pressable accessibilityRole="button" onPress={onSetGoal} className="min-h-11 justify-center">
-            <Text className="text-sm font-semibold text-primary">Set goal</Text>
-          </Pressable>
-        )}
+        ) : null}
       </View>
       {real != null ? (
         <View
@@ -97,6 +93,9 @@ export function ReadingGoalCard({ status, dataSettled, focusGeneration, onSetGoa
           {reducedMotion ? "Goal milestone reached" : "Goal milestone reached ✦"}
         </Text>
       ) : null}
+      <View className="mt-3">
+        <ReadingGoalPanel status={status} showProgress={false} />
+      </View>
     </View>
   );
 }

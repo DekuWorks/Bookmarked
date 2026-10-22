@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
+import { getUserSubscription, toSubscriptionAccess } from "@/lib/services/subscription";
+import { canAccessFeature } from "@/lib/utils/subscription";
 import type { AiCompanionAction } from "@bookmarked/utils/aiCompanionSafety";
 
 export async function requestAiCompanion(input: {
@@ -12,6 +14,15 @@ export async function requestAiCompanion(input: {
   dnaSummary?: Record<string, unknown> | null;
 }) {
   const supabase = createClient();
+  try {
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) return { error: "You must be signed in." };
+    const access = toSubscriptionAccess(await getUserSubscription(userData.user.id));
+    if (!canAccessFeature("ai_companion", access)) return { error: "Premium required" };
+  } catch {
+    return { error: "Premium required" };
+  }
+
   const { data, error } = await supabase.functions.invoke<{
     result?: { title?: string; body?: string };
     error?: string;

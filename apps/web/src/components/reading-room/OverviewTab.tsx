@@ -67,7 +67,11 @@ export function OverviewTab({ data, dataSettled, onRefresh }: Props) {
         onMoveStart={beginMove}
         onMoveFailed={failMove}
       />
-      <ReadingGoalCard status={view.readingGoal} dataSettled={dataSettled} />
+      <ReadingGoalCard
+        status={view.readingGoal}
+        dataSettled={dataSettled}
+        onSaved={onRefresh}
+      />
       <ShelfPreviewSection shelves={view.shelves} />
       <ChallengesCTA />
     </div>
