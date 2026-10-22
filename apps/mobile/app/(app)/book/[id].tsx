@@ -26,6 +26,7 @@ import {
   parseReviewAudience,
   type ReviewAudience,
 } from "../../../../../packages/utils/reviewVisibility";
+import { ReadingDatesSection } from "../../../src/components/ReadingDatesSection";
 import { ReadingJournalSection } from "../../../src/components/ReadingJournalSection";
 import { ReadingNotesSection } from "../../../src/components/ReadingNotesSection";
 import { SavedPill } from "../../../src/components/SavedPill";
@@ -178,11 +179,13 @@ function ReviewItem({
 }
 
 export default function BookScreen() {
-  const { id, origin: originParam, section } = useLocalSearchParams<{
+  const { id, origin: originParam, section, trail } = useLocalSearchParams<{
     id: string;
     origin?: string;
     section?: string;
+    trail?: string;
   }>();
+  const trailValue = Array.isArray(trail) ? trail[0] : trail;
   const bookId = String(id);
   const origin = parseNavOrigin(typeof originParam === "string" ? originParam : null);
   const backHref = originBackHref(origin, "mobile") ?? "/search";
@@ -195,6 +198,7 @@ export default function BookScreen() {
 
   const scrollRef = useRef<ScrollView>(null);
   const reviewsY = useRef(0);
+  const trailY = useRef(0);
   const [rateOpen, setRateOpen] = useState(false);
   const [finishOpen, setFinishOpen] = useState(false);
   const [ratePromptOpen, setRatePromptOpen] = useState(false);
@@ -249,6 +253,15 @@ export default function BookScreen() {
     }, 250);
     return () => clearTimeout(handle);
   }, [section, details.data]);
+
+  useEffect(() => {
+    const wantsTrail = trailValue === "open" || section === "trail" || section === "journal";
+    if (!wantsTrail || !details.data) return;
+    const handle = setTimeout(() => {
+      scrollRef.current?.scrollTo({ y: Math.max(0, trailY.current - 12), animated: true });
+    }, 280);
+    return () => clearTimeout(handle);
+  }, [details.data, section, trailValue]);
 
   async function invalidate() {
     await queryClient.invalidateQueries({ queryKey: ["book-details", bookId, userId] });
@@ -810,10 +823,22 @@ export default function BookScreen() {
           </Pressable>
         ) : null}
 
-        {userBook?.finished_at ? (
-          <Text className="text-center text-xs text-ink-muted">
-            Finished on {new Date(userBook.finished_at).toLocaleDateString()}
-          </Text>
+        {userBook ? (
+          <View
+            onLayout={(event) => {
+              trailY.current = event.nativeEvent.layout.y;
+            }}
+            className="gap-4"
+          >
+            <ReadingDatesSection startedAt={userBook.started_at} finishedAt={userBook.finished_at} />
+            <ReadingJournalSection
+              bookId={book.id}
+              userBookId={userBook.id}
+              sessions={readingSessions}
+              total={data?.readingSessionTotal ?? readingSessions.length}
+              onSessionUpdate={handleSessionUpdate}
+            />
+          </View>
         ) : null}
 
         {/* Shelf actions */}
@@ -1026,11 +1051,6 @@ export default function BookScreen() {
 
         {userBook ? (
           <>
-            <ReadingJournalSection
-              sessions={readingSessions}
-              loading={details.isLoading}
-              onSessionUpdate={handleSessionUpdate}
-            />
             <ReadingNotesSection
               userId={userId as string}
               userBookId={userBook.id}

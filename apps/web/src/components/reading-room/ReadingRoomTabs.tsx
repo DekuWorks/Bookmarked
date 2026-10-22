@@ -3,7 +3,7 @@
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AnalyticsGrid } from "@/components/analytics/AnalyticsGrid";
 import { ReadingActivityPanel } from "@/components/analytics/ReadingActivityPanel";
 import { AiCompanionPanel } from "@/components/premium/AiCompanionPanel";
@@ -14,7 +14,6 @@ import { PlusLockedFeature } from "@/components/premium/PlusLockedFeature";
 import { NotesPanel } from "@/components/reading-room/NotesPanel";
 import { OverviewTab } from "@/components/reading-room/OverviewTab";
 import { ReadingCalendar } from "@/components/calendar/ReadingCalendar";
-import { TrailPanel } from "@/components/reading-room/TrailPanel";
 import type { ReadingRoomData } from "@/lib/services/readingRoom";
 import { listUserReviews, type UserReviewWithBook } from "@/lib/services/readingRoom";
 import {
@@ -30,6 +29,7 @@ import {
   type ReadingRoomTab,
 } from "@/lib/reading-room/readingRoomTabs";
 import { STATS_PLUS_FEATURES } from "@bookmarked/utils/plusLockedCopy";
+import { legacyTrailLocation } from "@bookmarked/utils/bookTrail";
 import {
   legacyProgressLocation,
   readingRoomTabLabel,
@@ -69,6 +69,7 @@ type Props = {
 };
 
 function ReadingRoomTabsContent({ userId, data, dataSettled, onRefresh }: Props) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const rawTab = searchParams.get("tab");
   const locationHash = useSyncExternalStore(subscribeLocation, currentLocationHash, () => "");
@@ -101,7 +102,17 @@ function ReadingRoomTabsContent({ userId, data, dataSettled, onRefresh }: Props)
   }, [userId]);
 
   useEffect(() => {
-    if (tab === "trail" || tab === "history") {
+    const legacy = legacyTrailLocation({
+      tab: rawTab,
+      bookId: searchParams.get("book") ?? searchParams.get("bookId"),
+      platform: "web",
+    });
+    if (!legacy) return;
+    router.replace(legacy.href);
+  }, [rawTab, router, searchParams]);
+
+  useEffect(() => {
+    if (tab === "history") {
       void loadSessions();
     }
   }, [tab, loadSessions]);
@@ -307,8 +318,6 @@ function ReadingRoomTabsContent({ userId, data, dataSettled, onRefresh }: Props)
             )}
           </div>
         ) : null}
-
-        {tab === "trail" ? <TrailPanel sessions={sessions} /> : null}
 
         {keepNotes ? (
           <div hidden={tab !== "notes"}>

@@ -8,6 +8,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
+import { legacyTrailLocation } from "../../../../packages/utils/bookTrail";
 import { resolveReadingRoomDestination } from "../../../../packages/utils/readingRoomTabs";
 import { BrandTopHeader } from "../../src/components/BrandTopHeader";
 import { ScreenGradientWash } from "../../src/components/ScreenGradientWash";
@@ -23,7 +24,6 @@ import { HistoryPanel } from "../../src/components/reading-room/HistoryPanel";
 import { NotesPanel } from "../../src/components/reading-room/NotesPanel";
 import { OverviewTab } from "../../src/components/reading-room/OverviewTab";
 import { ReviewsPanel } from "../../src/components/reading-room/ReviewsPanel";
-import { TrailPanel } from "../../src/components/reading-room/TrailPanel";
 import {
   READING_ROOM_TAB_OPTIONS,
   type ReadingRoomTab,
@@ -77,6 +77,15 @@ export default function HomeReadingRoom() {
 
   useEffect(() => {
     const raw = firstParam(tabParam);
+    const legacy = legacyTrailLocation({
+      tab: raw,
+      bookId: firstParam(bookParam),
+      platform: "mobile",
+    });
+    if (legacy) {
+      router.replace(legacy.href as never);
+      return;
+    }
     const section = firstParam(sectionParam);
     const next = resolveReadingRoomDestination(raw, section);
     setTab(next);
@@ -84,7 +93,7 @@ export default function HomeReadingRoom() {
       redirectedProgress.current = true;
       router.setParams({ tab: next === "overview" ? "" : next });
     }
-  }, [router, sectionParam, tabParam]);
+  }, [bookParam, router, sectionParam, tabParam]);
 
   useEffect(() => {
     if (tab !== "notes") setNotesPickerOpen(false);
@@ -133,7 +142,7 @@ export default function HomeReadingRoom() {
   const sessionsQuery = useQuery({
     queryKey: readingSessionsQueryKey(userId ?? ""),
     queryFn: () => listUserReadingSessions(userId as string),
-    enabled: Boolean(userId) && (tab === "trail" || tab === "history"),
+    enabled: Boolean(userId) && tab === "history",
   });
 
   const loadReviews = useCallback(async () => {
@@ -147,7 +156,7 @@ export default function HomeReadingRoom() {
       setFocusGeneration((current) => current + 1);
       if (!userId) return;
       void queryClient.invalidateQueries({ queryKey: [READING_CALENDAR_QUERY_KEY] });
-      if (tab === "trail" || tab === "history") {
+      if (tab === "history") {
         void queryClient.invalidateQueries({ queryKey: readingSessionsQueryKey(userId) });
       }
     }, [queryClient, tab, userId])
@@ -174,7 +183,7 @@ export default function HomeReadingRoom() {
       void analytics.refetch();
       void queryClient.invalidateQueries({ queryKey: [READING_CALENDAR_QUERY_KEY] });
     }
-    if (tab === "trail" || tab === "history") {
+    if (tab === "history") {
       void queryClient.invalidateQueries({
         queryKey: readingSessionsQueryKey(userId ?? ""),
       });
@@ -305,8 +314,6 @@ export default function HomeReadingRoom() {
               <ReadingInsightsSection />
             </>
           ) : null}
-
-          {tab === "trail" ? <TrailPanel sessions={sessions} /> : null}
 
           {keepNotes && userId ? (
             <View style={{ display: tab === "notes" ? "flex" : "none" }}>

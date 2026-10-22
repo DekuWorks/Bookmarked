@@ -52,6 +52,9 @@ export function SessionMoodPicker({ value, values, onChange, disabled, className
 
   useEffect(() => {
     if (!open) return;
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(listId)?.querySelector<HTMLButtonElement>('[role="option"]')?.focus();
+    });
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.preventDefault();
@@ -60,8 +63,11 @@ export function SessionMoodPicker({ value, values, onChange, disabled, className
       }
     }
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [listId, open]);
 
   const tags = mergeMoodTags(custom);
   const label =
@@ -144,6 +150,24 @@ export function SessionMoodPicker({ value, values, onChange, disabled, className
           aria-multiselectable="true"
           aria-label="Mood Tags"
           className="absolute z-20 mt-1 max-h-72 w-full overflow-auto rounded-lg border border-border bg-surface p-2 shadow-md"
+          onKeyDown={(event) => {
+            const options = event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="option"]');
+            if (!options.length) return;
+            const current = Array.from(options).findIndex((option) => option === document.activeElement);
+            if (event.key === "ArrowDown") {
+              event.preventDefault();
+              options[Math.min(options.length - 1, Math.max(0, current) + 1)]?.focus();
+            } else if (event.key === "ArrowUp") {
+              event.preventDefault();
+              options[Math.max(0, current - 1)]?.focus();
+            } else if (event.key === "Home") {
+              event.preventDefault();
+              options[0]?.focus();
+            } else if (event.key === "End") {
+              event.preventDefault();
+              options[options.length - 1]?.focus();
+            }
+          }}
         >
           {tags.map((feeling) => {
             const active = selected.some((item) => item.toLowerCase() === feeling.toLowerCase());
@@ -194,7 +218,7 @@ export function SessionMoodPicker({ value, values, onChange, disabled, className
               type="button"
               disabled={disabled}
               onClick={() => setCreating((next) => !next)}
-              className="text-xs font-medium text-primary hover:underline"
+              className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:underline"
             >
               {creating ? "Cancel" : "Create Custom Mood Tag"}
             </button>
