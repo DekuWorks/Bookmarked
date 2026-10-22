@@ -14,6 +14,7 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
 const founderId = "8bd36e7e-dd38-4385-8afb-ab595fe712f6";
 const ellieId = "e3243532-077e-4df6-929a-94733bfd0e14";
+const dekuworksId = "89ed2bcf-a37d-4e2c-aa0e-6577af9979d1";
 
 const freeRow = {
   subscription_tier: "free" as const,
@@ -34,13 +35,16 @@ const activeHome = {
 };
 
 describe("complimentary Plus allowlist", () => {
-  it("entitles the confirmed founder and Ellie accounts", () => {
+  it("entitles the confirmed founder, Ellie, and dekuworks accounts", () => {
     for (const identity of [
       { username: "CaiteeD" },
       { username: "caiteed" },
       { userId: founderId },
       { username: "ellienoblin" },
       { userId: ellieId },
+      { username: "dekuworks" },
+      { username: "DekuWorks" },
+      { userId: dekuworksId },
     ]) {
       const access = applyComplimentaryPlus(freeRow, identity);
       expect(subscriptionIsActive(access)).toBe(true);
