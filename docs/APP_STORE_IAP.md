@@ -12,7 +12,7 @@ Bookmarked Premium on iOS uses **App Store subscriptions** (`expo-iap`). Web bil
 | Home monthly | `com.dekuworks.bookmarked.home.monthly` (**must be created** in App Store Connect) |
 | Home yearly | `com.dekuworks.bookmarked.home.yearly` (**must be created** in App Store Connect) |
 | Sandbox override | `EXPO_PUBLIC_APPLE_PREMIUM_SANDBOX_PRODUCT_ID` (only if separate SKU) |
-| Display price | Plus $5.99 / $59.99 · Home $9.99 / $99.99 |
+| Display price | Plus $4.99 / $49.99 · Home $9.99 / $99.99 |
 | Env override (mobile) | `EXPO_PUBLIC_APPLE_PREMIUM_PRODUCT_ID` · `EXPO_PUBLIC_APPLE_HOME_PRODUCT_ID` |
 
 ## App Store Connect setup

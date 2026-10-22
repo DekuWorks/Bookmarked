@@ -4,7 +4,12 @@ import { PlusBadge } from "@/components/premium/PlusBadge";
 import { cn } from "@/lib/utils/cn";
 import { PLUS_ANNUAL_SAVINGS_COPY, PLUS_DISPLAY_PRICES } from "@bookmarked/utils/plusPricing";
 import { HOME_ANNUAL_SAVINGS_COPY, HOME_DISPLAY_PRICES } from "@bookmarked/utils/homePricing";
+import { PRICING_TIER_LIMITS } from "@bookmarked/utils/pricingTiers";
 import { PLUS_UNLIMITED_FAIR_USE_COPY } from "@bookmarked/utils/subscription";
+
+function formatLimit(value: number, suffix = ""): string {
+  return Number.isFinite(value) ? `${value}${suffix}` : "Unlimited";
+}
 
 type Row = {
   label: string;
@@ -14,10 +19,30 @@ type Row = {
 };
 
 const ROWS: Row[] = [
-  { label: "Custom shelves", free: "1", plus: "Unlimited", home: "Unlimited" },
-  { label: "Saved quotes", free: "25", plus: "Unlimited", home: "Unlimited" },
-  { label: "Quote graphics", free: "3 / month", plus: "Unlimited", home: "Unlimited" },
-  { label: "Book clubs", free: "3", plus: "Unlimited", home: "Unlimited" },
+  {
+    label: "Custom shelves",
+    free: formatLimit(PRICING_TIER_LIMITS.free.customShelves),
+    plus: formatLimit(PRICING_TIER_LIMITS.plus.customShelves),
+    home: formatLimit(PRICING_TIER_LIMITS.home.customShelves),
+  },
+  {
+    label: "Saved quotes",
+    free: formatLimit(PRICING_TIER_LIMITS.free.savedQuotes),
+    plus: formatLimit(PRICING_TIER_LIMITS.plus.savedQuotes),
+    home: formatLimit(PRICING_TIER_LIMITS.home.savedQuotes),
+  },
+  {
+    label: "Quote graphics",
+    free: formatLimit(PRICING_TIER_LIMITS.free.quoteGraphicsPerMonth, " / month"),
+    plus: formatLimit(PRICING_TIER_LIMITS.plus.quoteGraphicsPerMonth),
+    home: formatLimit(PRICING_TIER_LIMITS.home.quoteGraphicsPerMonth),
+  },
+  {
+    label: "Book clubs",
+    free: formatLimit(PRICING_TIER_LIMITS.free.joinedBookClubs),
+    plus: formatLimit(PRICING_TIER_LIMITS.plus.joinedBookClubs),
+    home: formatLimit(PRICING_TIER_LIMITS.home.joinedBookClubs),
+  },
   { label: "Reading DNA", free: "Top 3 traits", plus: "Full dashboard", home: "Advanced" },
   { label: "Insights & Wrapped", free: "Yearly recap", plus: "Monthly + yearly", home: "Monthly + yearly" },
   { label: "Quote scanner / AI companion", free: "—", plus: "Included", home: "Included" },

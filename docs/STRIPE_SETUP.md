@@ -23,8 +23,8 @@ Set with `./scripts/supabase-cli.sh secrets set KEY=value` (never commit to the 
 | Secret | Purpose |
 |--------|---------|
 | `STRIPE_SECRET_KEY` | Create Checkout Sessions (`sk_live_…` for production) |
-| `STRIPE_PRICE_ID` | Plus monthly price (`price_…`, **$5.99/mo**) — from catalog script, do not invent |
-| `STRIPE_PRICE_ID_YEARLY` | Plus yearly price (`price_…`, **$59.99/yr**) — optional until yearly catalog exists |
+| `STRIPE_PRICE_ID` | Plus monthly price (`price_…`, **$4.99/mo**) — from catalog script, do not invent |
+| `STRIPE_PRICE_ID_YEARLY` | Plus yearly price (`price_…`, **$49.99/yr**) — optional until yearly catalog exists |
 | `STRIPE_WEBHOOK_SECRET` | Verify Stripe webhook signatures (`whsec_…`) |
 | `SUBSCRIPTION_WEBHOOK_SECRET` | Optional — manual / relay payloads (admin grants) |
 
@@ -36,16 +36,16 @@ Optional web build env (not required for checkout — redirect is server-side):
 
 ## Catalog (Bookmarked Plus)
 
-Upgrade UI offers **monthly ($5.99)** and **yearly ($59.99)**. Edge Function `create-checkout-session` accepts `{ interval: "month" | "year" }`.
+Display prices are **monthly ($4.99)** and **yearly ($49.99)**. The site does not start checkout. Edge Function `create-checkout-session` still accepts `{ interval: "month" | "year" }` if Stripe is configured.
 
 | Field | Value |
 |-------|-------|
 | Product name | `Bookmarked Plus` (script also reuses legacy `Bookmarked Premium`) |
-| Billing monthly | USD $5.99 (`599` cents), lookup `bookmarked_plus_monthly` |
-| Billing yearly | USD $59.99 (`5999` cents), lookup `bookmarked_plus_yearly` |
+| Billing monthly | USD $4.99 (`499` cents), lookup `bookmarked_plus_monthly` |
+| Billing yearly | USD $49.99 (`4999` cents), lookup `bookmarked_plus_yearly` |
 | Product metadata | `app=bookmarked`, `tier=plus`, `plan_code=plus` |
 
-> Existing live `$4.99` prices remain until you run the catalog script and rotate secrets. Do **not** invent new live `price_` IDs in docs.
+> Official Plus display price is $4.99/month and $49.99/year. Do **not** invent new live `price_` IDs in docs. Web upgrade does not start checkout.
 
 ### Create catalog (test or live)
 

@@ -59,7 +59,7 @@ Complete · Partially complete · Missing · Bugged · Requires DB · Requires U
 
 ## Priority Plus gaps
 
-1. Align pricing copy + Stripe products to $5.99 / $59.99.
+1. Align pricing copy + Stripe products to $4.99 / $49.99.
 2. Full Reading DNA dashboard parity (web + iOS) matching mockup.
 3. Wire quotes / clubs / challenges limit helpers.
 4. Soft paywall component kit (Phase 4).

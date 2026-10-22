@@ -14,7 +14,7 @@ import {
   type ReadingNoteInput,
 } from "@/lib/services/readingNotes";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
-import { isEntitlementLimitError } from "@/lib/utils/subscription";
+import { ENTITLEMENT_LIMIT_MESSAGES, isEntitlementLimitError } from "@/lib/utils/subscription";
 import type { ReadingNote, ReadingNoteCategory, ReadingNoteVisibility } from "@/types";
 import { noteContentIsValid } from "@bookmarked/utils/quoteTitle";
 
@@ -110,7 +110,7 @@ export function ReadingNoteForm({ userBookId, initialNote, onSaved, onCancel }: 
         open={limitOpen}
         onClose={() => setLimitOpen(false)}
         featureLabel="Saved quotes"
-        limitMessage="Free members can save 25 quotes. Upgrade to Bookmarked Plus for unlimited quote vault space."
+        limitMessage={ENTITLEMENT_LIMIT_MESSAGES.saved_quotes}
       />
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
         <Textarea

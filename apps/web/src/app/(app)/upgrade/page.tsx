@@ -14,7 +14,6 @@ import { PremiumFeatureLock } from "@/components/premium/PremiumFeatureLock";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useSubscriptionActivationPoll } from "@/lib/hooks/useSubscriptionActivationPoll";
-import { layout } from "@/lib/constants/layout";
 import { staticRedirect } from "@/lib/navigation/staticRedirect";
 import { createBillingPortalSession } from "@/lib/services/stripePortal";
 import { IOS_SUBSCRIBE_COPY } from "@bookmarked/utils/subscription";
@@ -50,7 +49,6 @@ export default function UpgradePage() {
   const optimisticSubscribed = checkoutSucceeded && timedOut && !isPremium;
   const showSubscribedUI = isPremium || optimisticSubscribed;
   const awaitingActivation = checkoutSucceeded && !showSubscribedUI;
-  const showPricing = !showSubscribedUI && !awaitingActivation;
 
   useEffect(() => {
     if (user === null) {
@@ -99,18 +97,7 @@ export default function UpgradePage() {
     subscription?.subscription_provider === "stripe" && Boolean(subscription.stripe_customer_id);
 
   return (
-    <div className={showPricing ? "mx-auto w-full max-w-6xl space-y-8 text-center" : layout.pageStack}>
-      {showPricing ? null : (
-        <header className={layout.pageHeader}>
-          <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Bookmarked Membership</h1>
-          <p className="mx-auto mt-2 max-w-xl text-pretty text-text-muted">
-            Free keeps the essentials. Bookmarked Plus is reading intelligence. Bookmarked Home is
-            real-world community, local discovery, experiences, identity, and concierge — not more
-            analytics. Subscribe in the iOS app; web unlocks automatically.
-          </p>
-        </header>
-      )}
-
+    <div className="mx-auto w-full max-w-6xl space-y-8 text-center">
       {awaitingActivation && activating ? (
         <section className="surface-card border-primary/30 bg-primary/10 p-4 text-center text-sm text-text-muted">
           <p className="font-medium text-puce-red">Activating Bookmarked Plus…</p>
@@ -162,31 +149,29 @@ export default function UpgradePage() {
             </p>
           ) : null}
         </section>
-      ) : showPricing ? (
-        <>
-          <MembershipPricingCards
-            onSubscribeIntent={() => {
-              const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-              document.getElementById("how-to-subscribe")?.scrollIntoView({
-                behavior: reduce ? "auto" : "smooth",
-                block: "start",
-              });
-            }}
-          />
-          <PremiumFeatureList />
-          <div id="how-to-subscribe" className="scroll-mt-28 text-left">
-            <IosSubscribePanel
-              title="How to subscribe"
-              copy={{
-                headline: IOS_SUBSCRIBE_COPY.headline,
-                body: "Bookmarked Plus and Bookmarked Home are purchased in the iOS app. After you subscribe there, membership unlocks automatically on bookmarked.online — no second purchase.",
-                cta: IOS_SUBSCRIBE_COPY.cta,
-                note: IOS_SUBSCRIBE_COPY.note,
-              }}
-            />
-          </div>
-        </>
       ) : null}
+
+      <MembershipPricingCards
+        onSubscribeIntent={() => {
+          const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+          document.getElementById("how-to-subscribe")?.scrollIntoView({
+            behavior: reduce ? "auto" : "smooth",
+            block: "start",
+          });
+        }}
+      />
+      {showSubscribedUI ? null : <PremiumFeatureList />}
+      <div id="how-to-subscribe" className="scroll-mt-28 text-left">
+        <IosSubscribePanel
+          title="How to subscribe"
+          copy={{
+            headline: IOS_SUBSCRIBE_COPY.headline,
+            body: "Bookmarked Plus and Bookmarked Home are purchased in the iOS app. After you subscribe there, membership unlocks automatically on bookmarked.online — no second purchase.",
+            cta: IOS_SUBSCRIBE_COPY.cta,
+            note: IOS_SUBSCRIBE_COPY.note,
+          }}
+        />
+      </div>
 
       {!showSubscribedUI && !awaitingActivation ? (
         <PremiumFeatureLock

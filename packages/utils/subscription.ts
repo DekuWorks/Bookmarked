@@ -8,6 +8,13 @@ import {
   hasComplimentaryPlus,
   type ComplimentaryIdentity,
 } from "./complimentaryPlus";
+import {
+  FREE_BOOK_CLUB_LIMIT,
+  FREE_CUSTOM_SHELF_LIMIT,
+  FREE_QUOTE_GRAPHICS_PER_MONTH,
+  FREE_SAVED_QUOTE_LIMIT,
+  PRICING_TIER_LIMITS,
+} from "./pricingTiers";
 
 export type { ComplimentaryIdentity };
 
@@ -38,10 +45,10 @@ export type TierEntitlements = {
 /** Canonical numeric/boolean limits per membership tier. */
 export const ENTITLEMENTS = {
   free: {
-    customShelves: 1,
-    savedQuotes: 25,
-    quoteGraphicsPerMonth: 3,
-    joinedBookClubs: 3,
+    customShelves: PRICING_TIER_LIMITS.free.customShelves,
+    savedQuotes: PRICING_TIER_LIMITS.free.savedQuotes,
+    quoteGraphicsPerMonth: PRICING_TIER_LIMITS.free.quoteGraphicsPerMonth,
+    joinedBookClubs: PRICING_TIER_LIMITS.free.joinedBookClubs,
     readingChallengesPerYear: 3,
     advancedReadingInsights: false,
     monthlyWrapped: false,
@@ -53,10 +60,10 @@ export const ENTITLEMENTS = {
     readingDNAAccess: "top_three",
   },
   plus: {
-    customShelves: Infinity,
-    savedQuotes: Infinity,
-    quoteGraphicsPerMonth: Infinity,
-    joinedBookClubs: Infinity,
+    customShelves: PRICING_TIER_LIMITS.plus.customShelves,
+    savedQuotes: PRICING_TIER_LIMITS.plus.savedQuotes,
+    quoteGraphicsPerMonth: PRICING_TIER_LIMITS.plus.quoteGraphicsPerMonth,
+    joinedBookClubs: PRICING_TIER_LIMITS.plus.joinedBookClubs,
     readingChallengesPerYear: Infinity,
     advancedReadingInsights: true,
     monthlyWrapped: true,
@@ -68,10 +75,10 @@ export const ENTITLEMENTS = {
     readingDNAAccess: "full",
   },
   home: {
-    customShelves: Infinity,
-    savedQuotes: Infinity,
-    quoteGraphicsPerMonth: Infinity,
-    joinedBookClubs: Infinity,
+    customShelves: PRICING_TIER_LIMITS.home.customShelves,
+    savedQuotes: PRICING_TIER_LIMITS.home.savedQuotes,
+    quoteGraphicsPerMonth: PRICING_TIER_LIMITS.home.quoteGraphicsPerMonth,
+    joinedBookClubs: PRICING_TIER_LIMITS.home.joinedBookClubs,
     readingChallengesPerYear: Infinity,
     advancedReadingInsights: true,
     monthlyWrapped: true,
@@ -300,13 +307,13 @@ export function isPremiumSubscriber(
 
 export const ENTITLEMENT_LIMIT_MESSAGES = {
   custom_shelves:
-    "Free members can create 1 custom shelf. Upgrade to Bookmarked Plus for unlimited shelves.",
+    `Free members can create ${FREE_CUSTOM_SHELF_LIMIT} custom shelf. Upgrade to Bookmarked Plus for unlimited shelves.`,
   saved_quotes:
-    "Free members can save 25 quotes. Upgrade to Bookmarked Plus for unlimited quote vault space.",
+    `Free members can save ${FREE_SAVED_QUOTE_LIMIT} quotes. Upgrade to Bookmarked Plus for unlimited quote vault space.`,
   quote_graphics:
-    "Free members can create 3 quote graphics per month. Upgrade to Bookmarked Plus for unlimited graphics.",
+    `Free members can create ${FREE_QUOTE_GRAPHICS_PER_MONTH} quote graphics per month. Upgrade to Bookmarked Plus for unlimited graphics.`,
   joined_book_clubs:
-    "Free members can be in 3 book clubs. Creating or joining both count. Upgrade to Bookmarked Plus for unlimited clubs.",
+    `Free members can be in ${FREE_BOOK_CLUB_LIMIT} book clubs. Creating or joining both count. Upgrade to Bookmarked Plus for unlimited clubs.`,
   reading_challenges:
     "Free members can join 3 community, club, or friend challenges per year. Official Bookmarked challenges do not use a slot. Upgrade to Bookmarked Plus for unlimited challenges.",
   create_reading_challenge:
