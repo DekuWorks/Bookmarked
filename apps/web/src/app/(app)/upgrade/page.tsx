@@ -7,16 +7,17 @@ import { Button } from "@/components/ui/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useToast } from "@/components/ui/Toast";
+import { MembershipPricingCards } from "@/components/premium/MembershipPricingCards";
 import { PlusBadge } from "@/components/premium/PlusBadge";
 import { PremiumFeatureList } from "@/components/premium/PremiumFeatureList";
 import { PremiumFeatureLock } from "@/components/premium/PremiumFeatureLock";
-import { SubscriptionComparison } from "@/components/premium/SubscriptionComparison";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { useSubscription } from "@/lib/hooks/useSubscription";
 import { useSubscriptionActivationPoll } from "@/lib/hooks/useSubscriptionActivationPoll";
 import { layout } from "@/lib/constants/layout";
 import { staticRedirect } from "@/lib/navigation/staticRedirect";
 import { createBillingPortalSession } from "@/lib/services/stripePortal";
+import { IOS_SUBSCRIBE_COPY } from "@bookmarked/utils/subscription";
 
 function clearCheckoutQueryParam(): void {
   if (typeof window === "undefined") return;
@@ -49,6 +50,7 @@ export default function UpgradePage() {
   const optimisticSubscribed = checkoutSucceeded && timedOut && !isPremium;
   const showSubscribedUI = isPremium || optimisticSubscribed;
   const awaitingActivation = checkoutSucceeded && !showSubscribedUI;
+  const showPricing = !showSubscribedUI && !awaitingActivation;
 
   useEffect(() => {
     if (user === null) {
@@ -95,18 +97,19 @@ export default function UpgradePage() {
 
   const showStripeManage =
     subscription?.subscription_provider === "stripe" && Boolean(subscription.stripe_customer_id);
-  const showPricing = !showSubscribedUI && !awaitingActivation;
 
   return (
-    <div className={layout.pageStack}>
-      <header className={layout.pageHeader}>
-        <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Bookmarked Membership</h1>
-        <p className="mx-auto mt-2 max-w-xl text-pretty text-text-muted">
-          Free keeps the essentials. Bookmarked Plus is reading intelligence. Bookmarked Home is
-          real-world community, local discovery, experiences, identity, and concierge — not more
-          analytics. Subscribe in the iOS app; web unlocks automatically.
-        </p>
-      </header>
+    <div className={showPricing ? "mx-auto w-full max-w-6xl space-y-8 text-center" : layout.pageStack}>
+      {showPricing ? null : (
+        <header className={layout.pageHeader}>
+          <h1 className="text-3xl font-bold text-puce-red sm:text-4xl">Bookmarked Membership</h1>
+          <p className="mx-auto mt-2 max-w-xl text-pretty text-text-muted">
+            Free keeps the essentials. Bookmarked Plus is reading intelligence. Bookmarked Home is
+            real-world community, local discovery, experiences, identity, and concierge — not more
+            analytics. Subscribe in the iOS app; web unlocks automatically.
+          </p>
+        </header>
+      )}
 
       {awaitingActivation && activating ? (
         <section className="surface-card border-primary/30 bg-primary/10 p-4 text-center text-sm text-text-muted">
@@ -160,29 +163,29 @@ export default function UpgradePage() {
           ) : null}
         </section>
       ) : showPricing ? (
-        <section className="surface-card overflow-hidden p-4 sm:p-6">
-          <div className="text-center">
-            <p className="text-sm font-medium uppercase tracking-wide text-primary">
-              Bookmarked Plus
-            </p>
-            <p className="mt-2 text-lg font-semibold text-puce-red">Subscribe in the iOS app</p>
-            <p className="mt-2 text-sm text-text-muted">
-              Plus: $5.99/month or $59.99/year. Home: $9.99/month or $99.99/year (about $8.33/month;
-              save $19.89, ~16.6%). Membership then unlocks here on the same account — no second
-              purchase and no web checkout.
-            </p>
-          </div>
-
-          <div className="mt-6">
-            <SubscriptionComparison />
-          </div>
-
+        <>
+          <MembershipPricingCards
+            onSubscribeIntent={() => {
+              const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+              document.getElementById("how-to-subscribe")?.scrollIntoView({
+                behavior: reduce ? "auto" : "smooth",
+                block: "start",
+              });
+            }}
+          />
           <PremiumFeatureList />
-
-          <div className="mt-6">
-            <IosSubscribePanel title="How to get Plus" />
+          <div id="how-to-subscribe" className="scroll-mt-28 text-left">
+            <IosSubscribePanel
+              title="How to subscribe"
+              copy={{
+                headline: IOS_SUBSCRIBE_COPY.headline,
+                body: "Bookmarked Plus and Bookmarked Home are purchased in the iOS app. After you subscribe there, membership unlocks automatically on bookmarked.online — no second purchase.",
+                cta: IOS_SUBSCRIBE_COPY.cta,
+                note: IOS_SUBSCRIBE_COPY.note,
+              }}
+            />
           </div>
-        </section>
+        </>
       ) : null}
 
       {!showSubscribedUI && !awaitingActivation ? (
