@@ -14,7 +14,7 @@ import {
   listQuoteGraphicSources,
   listQuoteGraphics,
 } from "@/lib/services/quoteGraphics";
-import { isEntitlementLimitError } from "@/lib/utils/subscription";
+import { ENTITLEMENT_LIMIT_MESSAGES, isEntitlementLimitError } from "@/lib/utils/subscription";
 import {
   QUOTE_GRAPHICS_EMPTY_COPY,
   QUOTE_GRAPHICS_SELECT_BOOK_FIRST,
@@ -139,7 +139,7 @@ export function QuoteGraphicsStudio({ userId, unlimited = false }: Props) {
         open={limitOpen}
         onClose={() => setLimitOpen(false)}
         featureLabel="Quote graphics"
-        limitMessage="Free members can create 3 quote graphics per month. Upgrade to Bookmarked Plus for unlimited graphics."
+        limitMessage={ENTITLEMENT_LIMIT_MESSAGES.quote_graphics}
       />
 
       <h2 className="text-center font-display text-xl text-puce-red">Quote Graphics</h2>

@@ -17,6 +17,7 @@ import {
 } from "@/lib/constants/shelfIcons";
 import type { ShelfVisibility, UserShelf } from "@/types";
 import { cn } from "@/lib/utils/cn";
+import { ENTITLEMENT_LIMIT_MESSAGES } from "@/lib/utils/subscription";
 
 function isCustomShelfLimitError(message: string): boolean {
   return /1 custom shelf|unlimited shelves/i.test(message);
@@ -132,7 +133,7 @@ export function CreateShelfModal({
       open={limitOpen}
       onClose={() => setLimitOpen(false)}
       featureLabel="Custom shelves"
-      limitMessage="Free members can create 1 custom shelf. Upgrade to Bookmarked Plus for unlimited shelves."
+      limitMessage={ENTITLEMENT_LIMIT_MESSAGES.custom_shelves}
     />
     <Modal open={open} onClose={handleClose} title="Create a shelf">
       <form onSubmit={(e) => void handleSubmit(e)}>

@@ -1,10 +1,11 @@
 import { filterNotesBookOptionsByQuery, type NotesBookFilterOption } from "./notesBookFilter";
+import { FREE_QUOTE_GRAPHICS_PER_MONTH } from "./pricingTiers";
 
 export const QUOTE_GRAPHICS_PAGE_SUBTITLE =
-  "Turn your favorite quotes into beautiful, shareable graphics. Free members can create 3 per month, while Plus members enjoy unlimited creations.";
+  `Turn your favorite quotes into beautiful, shareable graphics. Free members can create ${FREE_QUOTE_GRAPHICS_PER_MONTH} per month, while Plus members enjoy unlimited creations.`;
 
 export const QUOTE_GRAPHICS_MONTHLY_LIMIT_COPY =
-  "Your monthly limit only counts successfully created graphics—failed attempts won’t use one of your 3 Free creations.";
+  `Your monthly limit only counts successfully created graphics—failed attempts won’t use one of your ${FREE_QUOTE_GRAPHICS_PER_MONTH} Free creations.`;
 
 export const QUOTE_GRAPHICS_PLUS_LIMIT_COPY =
   "Plus members can create unlimited quote graphics. Failed attempts are not counted.";

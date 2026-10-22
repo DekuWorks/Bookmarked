@@ -28,6 +28,7 @@ const PUBLIC_LINKS: NavLinkItem[] = [
   { href: "/#about", label: "About" },
   { href: "/#features", label: "Features" },
   { href: "/#contact", label: "Contact" },
+  { href: "/#pricing", label: "Pricing" },
 ];
 
 export function Navbar({ variant = "public" }: Props) {

@@ -1237,7 +1237,7 @@ Official Free-tier product on **web + iOS (iPhone/iPad)**. Android not in scope.
 
 Official Plus product on **web + iOS (iPhone/iPad)**. Android not in scope. No `expo run:ios`. No TestFlight. No commit in this pass.
 
-**Product rule — subscribe only on iOS.** Web never starts Stripe Checkout. Display copy uses $5.99/month and $59.99/year; iOS subscribe buttons prefer StoreKit `displayPrice`. Once Plus is on `user_subscriptions`, bookmarked.online unlocks automatically.
+**Product rule — subscribe only on iOS.** Web never starts Stripe Checkout. Display copy uses Plus $4.99/month and $49.99/year, and Home $9.99/month and $99.99/year; iOS subscribe buttons prefer StoreKit `displayPrice`. Once Plus is on `user_subscriptions`, bookmarked.online unlocks automatically.
 
 ### What shipped
 
@@ -1305,7 +1305,7 @@ Official Bookmarked Home on **web + iOS**. Android not in scope. No `expo run:io
 | Area | Status | Pointers |
 |------|--------|----------|
 | Entitlement inheritance Home ⊃ Plus ⊃ Free | Already working → extended | `packages/utils/subscription.ts` + Home-only keys |
-| Plus $5.99 name Premium vs Plus | Flagged | Code stays `plus`; IAP still uses `*.premium.*` |
+| Plus $4.99 name Premium vs Plus | Flagged | Code stays `plus`; IAP still uses `*.premium.*` |
 | Book Map | Missing → implemented | `/book-map/`, iOS `book-map`, `book_map_places` |
 | Reader Map | Missing → implemented | opt-in default off; coarse RPC; age-gated |
 | Location / map SDKs | None wired | `MapProvider` OSM-tile default; no Amazon Location install |
@@ -2103,6 +2103,26 @@ The allowlist is code. Web, iOS, and the edge functions share it and return the 
 | Leighton | Locked | Two profiles: `leighton` (`leighton cook`) and `leighton.cook` (`Leighton Cook`). Not guessed. |
 
 Files: `packages/utils/complimentaryPlus.ts`, `packages/utils/subscription.ts` (`applyComplimentaryPlus` / `toSubscriptionAccessFromRow`), web and iOS subscription services plus the shelf, quote, club, challenge, and usage checks, `supabase/functions/_shared/complimentaryPlus.ts`, `ai-insights`, `quote-scanner`, `ai-reading-companion`. Tests: `packages/utils/complimentaryPlus.test.ts`.
+
+## PRICING TIER CATALOG
+
+Shared Free / Plus / Home feature list for web and iOS. The public landing page shows the three prices at `#pricing`, including for signed-in members. `/upgrade/` keeps the same cards when the viewer is already subscribed.
+
+Prices on the cards: Free $0, Plus $4.99/month or $49.99/year (about $4.17/month), Home $9.99/month or $99.99/year (about $8.33/month). Yearly Plus is $4.99 × 10. The savings line is the real 12-month difference (~16.5%), not “Save 20%”.
+
+Files:
+
+- `packages/utils/pricingTiers.ts` and `packages/utils/pricingTiers.test.ts` — catalog and limits (1 custom shelf, 25 quotes, 3 quote graphics per month, 3 book clubs; unlimited on Plus and Home)
+- `packages/utils/index.ts` — re-export
+- `packages/utils/subscription.ts` — existing shelf, quote, quote-graphic, and club checks read those limits
+- `packages/utils/plusPricing.ts` — Plus display prices
+- `packages/utils/quoteGraphics.ts`, `packages/utils/premiumFeatures.ts`, `packages/utils/iap.ts` — display copy and StoreKit fallback labels. Purchase buttons still prefer StoreKit `displayPrice`. No new product IDs.
+- `apps/web/src/components/premium/MembershipPricingCards.tsx` — same component on `/` (last section before the footer) and `/upgrade/`
+- `apps/web/src/app/page.tsx`
+- `apps/mobile/app/(app)/upgrade.tsx` and `apps/mobile/src/components/SubscriptionComparison.tsx` — same catalog. StoreKit purchase flow unchanged.
+- Existing limit modals for shelves, quotes, and quote graphics now use `ENTITLEMENT_LIMIT_MESSAGES`
+
+Unbuilt Home items (Book Map as a new product, Zoom, merch store, concierge) are described on the pricing page and were not implemented. No new gates for AI, Book Map, or merch. No web checkout. No Android. No production database write.
 
 ## SPRINT 3 — TRAIL MIGRATION
 

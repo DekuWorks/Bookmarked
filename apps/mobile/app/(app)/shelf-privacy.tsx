@@ -33,6 +33,7 @@ import { supabase } from "../../src/services/supabase";
 import { useAuthStore } from "../../src/store/authStore";
 import type { ShelfStatus, ShelfVisibility, UserShelf } from "../../src/types";
 import { validateShelfVisibility } from "../../../../packages/utils/profileValidation";
+import { ENTITLEMENT_LIMIT_MESSAGES } from "../../src/utils/subscription";
 
 function visibilityForProfile(
   profile: {
@@ -206,7 +207,7 @@ export default function ShelfPrivacyScreen() {
         open={limitOpen}
         onClose={() => setLimitOpen(false)}
         featureLabel="Custom shelves"
-        limitMessage="Free members can create 1 custom shelf. Upgrade to Bookmarked Plus for unlimited shelves."
+        limitMessage={ENTITLEMENT_LIMIT_MESSAGES.custom_shelves}
       />
       <ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: TAB_BAR_SPACE }}

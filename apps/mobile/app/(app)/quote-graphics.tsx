@@ -12,7 +12,7 @@ import {
   listQuoteGraphics,
 } from "../../src/services/quoteGraphics";
 import { useAuthStore } from "../../src/store/authStore";
-import { isEntitlementLimitError } from "../../src/utils/subscription";
+import { ENTITLEMENT_LIMIT_MESSAGES, isEntitlementLimitError } from "../../src/utils/subscription";
 import {
   QUOTE_GRAPHICS_EMPTY_COPY,
   QUOTE_GRAPHICS_PAGE_SUBTITLE,
@@ -102,7 +102,7 @@ export default function QuoteGraphicsRoute() {
         open={limitOpen}
         onClose={() => setLimitOpen(false)}
         featureLabel="Quote graphics"
-        limitMessage="Free members can create 3 quote graphics per month. Upgrade to Bookmarked Plus for unlimited graphics."
+        limitMessage={ENTITLEMENT_LIMIT_MESSAGES.quote_graphics}
       />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: TAB_BAR_SPACE }}>
         <Text style={{ fontFamily: SANS_FONT, color: colors.inkMuted }}>

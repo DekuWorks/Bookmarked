@@ -1,15 +1,17 @@
 /**
  * Official Plus upgrade-page display prices.
+ * Monthly is $4.99. Yearly is $4.99 × 10 = $49.99.
+ * The monthly equivalent is $49.99 / 12. Do not label that as "Save 20%".
  * iOS subscribe buttons must prefer StoreKit `displayPrice` over these.
  * Web never starts checkout — these are copy only.
  */
 
 export const PLUS_DISPLAY_PRICES = {
-  monthlyUsd: 5.99,
-  yearlyUsd: 59.99,
-  monthlyLabel: "$5.99/month",
-  yearlyLabel: "$59.99/year",
-  yearlyMonthlyEquivalentLabel: "$5.00/month",
+  monthlyUsd: 4.99,
+  yearlyUsd: 49.99,
+  monthlyLabel: "$4.99/month",
+  yearlyLabel: "$49.99/year",
+  yearlyMonthlyEquivalentLabel: "$4.17/month",
 } as const;
 
 /** 12 × monthly − yearly. Do not invent a different discount. */

@@ -42,6 +42,12 @@ export function Footer() {
           >
             Contact
           </Link>
+          <Link
+            href="/#pricing"
+            className="inline-flex min-h-[44px] items-center justify-center hover:text-orange-yellow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-yellow rounded-sm"
+          >
+            Pricing
+          </Link>
         </nav>
       </div>
       <div className="border-t border-white/10 px-4 py-4 text-center text-xs text-white/60">

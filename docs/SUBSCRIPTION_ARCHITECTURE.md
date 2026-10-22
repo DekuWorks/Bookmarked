@@ -2,7 +2,7 @@
 
 Source of truth for Free / Plus / Home entitlements and billing boundaries.
 
-**Product rule (2026-09-06):** Subscribe **only on iOS** (App Store IAP). Do not add a web checkout, Stripe/web IAP, or “Subscribe on web” for Challenges or other Plus gates being wired. After IAP, `apple-iap-verify` writes `user_subscriptions`; web reads that same row so bookmarked.online unlocks without a second purchase. Web upsell copy sends people to the iOS app. Server `user_has_paid_entitlement` / row checks are mandatory. Upgrade-page **display** prices are $5.99/month and $59.99/year; iOS subscribe buttons still prefer StoreKit `displayPrice`.
+**Product rule (2026-09-06):** Subscribe **only on iOS** (App Store IAP). Do not add a web checkout, Stripe/web IAP, or “Subscribe on web” for Challenges or other Plus gates being wired. After IAP, `apple-iap-verify` writes `user_subscriptions`; web reads that same row so bookmarked.online unlocks without a second purchase. Web upsell copy sends people to the iOS app. Server `user_has_paid_entitlement` / row checks are mandatory. Upgrade-page **display** prices are Plus $4.99/month and $49.99/year, Home $9.99/month and $99.99/year; iOS subscribe buttons still prefer StoreKit `displayPrice`.
 
 ## Platforms
 
@@ -78,7 +78,7 @@ Server snapshot after purchase/restore via `refresh_subscription_entitlements(us
 
 | Plan | Monthly | Yearly | Env secrets |
 |---|---|---|---|
-| Plus | $5.99 | $59.99 | `STRIPE_PRICE_ID`, `STRIPE_PRICE_ID_YEARLY` |
+| Plus | $4.99 | $49.99 | `STRIPE_PRICE_ID`, `STRIPE_PRICE_ID_YEARLY` |
 | Home | $9.99 | $99.99 | IAP SKUs `com.dekuworks.bookmarked.home.monthly` / `.yearly`. App Store Connect must create them. Do not invent live Stripe IDs. |
 
 Run `./scripts/setup-stripe-catalog.sh` to create/reuse prices — **do not invent live Stripe IDs**.

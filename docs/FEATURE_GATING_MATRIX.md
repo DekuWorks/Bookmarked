@@ -58,7 +58,7 @@ Complete · Partially complete · Missing · Bugged · Requires DB · Requires U
 
 | Plan | Brief | Current upgrade UI |
 |---|---|---|
-| Plus | $5.99 / $59.99 display; App Store localises buttons | iOS IAP + Restore. Web iOS-subscribe copy only. |
+| Plus | $4.99 / $49.99 display; App Store localises buttons | iOS IAP + Restore. Web iOS-subscribe copy only. |
 | Home | $9.99 / $99.99 display; App Store localises buttons | iOS Home SKUs wired (`com.dekuworks.bookmarked.home.*`). App Store Connect must create them. No live Stripe IDs. |
 
 ## Downgrade policy

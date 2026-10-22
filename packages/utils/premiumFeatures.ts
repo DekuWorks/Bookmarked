@@ -1,3 +1,5 @@
+import { FREE_BOOK_CLUB_LIMIT } from "./pricingTiers";
+
 export type PremiumFeatureLink = {
   id: string;
   tier: "free" | "plus" | "home";
@@ -15,14 +17,14 @@ export const PREMIUM_FEATURE_LINKS: PremiumFeatureLink[] = [
     tier: "free",
     title: "Free",
     description:
-      "Tracker, library, goals, feed, reviews, one custom shelf, basic AI, stats, and your top 3 Reading DNA traits.",
+      `Default bookshelves, one custom shelf, reading tracker, reviews, quotes, up to ${FREE_BOOK_CLUB_LIMIT} book clubs, and yearly Wrapped.`,
   },
   {
     id: "reading-insights",
     tier: "plus",
     title: "Bookmarked Plus",
     description:
-      "Reading Insights, Monthly Wrapped, AI Companion, Quote Scanner, club polls, and unlimited quotes, clubs, and challenges. Unlimited still has abuse and rate protection.",
+      "Everything in Free, plus reading insights, the AI Reading Companion, unlimited quotes and clubs, and monthly Wrapped.",
     webHref: "/reading-room/?tab=stats#reading-activity",
     mobileHref: "/?tab=stats",
   },
@@ -38,7 +40,7 @@ export const PREMIUM_FEATURE_LINKS: PremiumFeatureLink[] = [
     tier: "home",
     title: "Bookmarked Home",
     description:
-      "Real-world community, Book Map, local Reader Map, experiences, Reading DNA identity, and concierge — not more analytics.",
+      "Everything in Plus, plus Book Map, Reader Map, exclusive experiences, and member access.",
     webHref: "/home-hub/",
     mobileHref: "/home-hub",
   },

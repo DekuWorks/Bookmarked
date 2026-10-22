@@ -6,7 +6,7 @@
 export const HOME_PRODUCT_DECISIONS = {
   plusDisplayName: {
     id: 1,
-    question: "$5.99 official name Premium vs Plus?",
+    question: "$4.99 official name Premium vs Plus?",
     status: "open",
     codeStays: "plus",
     note: "DB/code stay `plus`. User-facing Plus is shipped. Premium is a legacy alias only.",

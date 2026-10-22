@@ -14,6 +14,8 @@ import { useSubscriptionActivationPoll } from "../../src/hooks/useSubscriptionAc
 import { createBillingPortalSession } from "../../src/services/stripePortal";
 import { useAuthStore } from "../../src/store/authStore";
 import { TAB_BAR_SPACE } from "../../src/navigation/TabBarScroll";
+import { HOME_DISPLAY_PRICES } from "../../../../packages/utils/homePricing";
+import { PLUS_DISPLAY_PRICES } from "../../../../packages/utils/plusPricing";
 
 const APPLE_SUBSCRIPTIONS_URL = "https://apps.apple.com/account/subscriptions";
 
@@ -81,7 +83,6 @@ export default function UpgradeRoute() {
   const showStripeManage =
     subscription?.subscription_provider === "stripe" && Boolean(subscription.stripe_customer_id);
   const showAppleManage = subscription?.subscription_provider === "apple";
-  const showPricing = !showSubscribedUI && !awaitingActivation;
 
   return (
     <View className="flex-1 bg-background">
@@ -146,34 +147,31 @@ export default function UpgradeRoute() {
               </Text>
             ) : null}
           </View>
-        ) : showPricing ? (
-          <View className="rounded-2xl border border-brand-border bg-surface p-6">
-            <Text className="text-center text-sm font-medium uppercase tracking-wide text-primary">
-              Bookmarked Plus
-            </Text>
-            <Text className="mt-2 text-center text-lg font-semibold text-puce-red">
-              Subscribe with Apple
-            </Text>
-            <Text className="mt-1 text-center text-sm text-ink-muted">
-              Plus: $5.99/month or $59.99/year. Home: $9.99/month or $99.99/year (about $8.33/month;
-              save $19.89, ~16.6%). Subscribe buttons use the App Store price.
-            </Text>
-
-            <View className="mt-6">
-              <SubscriptionComparison />
-            </View>
-
-            <PremiumFeatureList />
-
-            {userId ? (
-              <PremiumUpgradeActions userId={userId} onSubscriptionUpdated={() => void refetch()} />
-            ) : (
-              <Text className="mt-6 text-center text-sm text-ink-muted">
-                Sign in to subscribe.
-              </Text>
-            )}
-          </View>
         ) : null}
+
+        <View className="rounded-2xl border border-brand-border bg-surface p-6">
+          <Text className="text-center text-sm font-medium uppercase tracking-wide text-primary">
+            Bookmarked Plus
+          </Text>
+          <Text className="mt-2 text-center text-lg font-semibold text-puce-red">
+            Subscribe with Apple
+          </Text>
+          <Text className="mt-1 text-center text-sm text-ink-muted">
+            {`Plus: ${PLUS_DISPLAY_PRICES.monthlyLabel} or ${PLUS_DISPLAY_PRICES.yearlyLabel} (about ${PLUS_DISPLAY_PRICES.yearlyMonthlyEquivalentLabel}). Home: ${HOME_DISPLAY_PRICES.monthlyLabel} or ${HOME_DISPLAY_PRICES.yearlyLabel} (about ${HOME_DISPLAY_PRICES.yearlyMonthlyEquivalentLabel}). Subscribe buttons use the App Store price.`}
+          </Text>
+
+          <View className="mt-6">
+            <SubscriptionComparison />
+          </View>
+
+          <PremiumFeatureList />
+
+          {userId ? (
+            <PremiumUpgradeActions userId={userId} onSubscriptionUpdated={() => void refetch()} />
+          ) : (
+            <Text className="mt-6 text-center text-sm text-ink-muted">Sign in to subscribe.</Text>
+          )}
+        </View>
 
         {!showSubscribedUI && !awaitingActivation ? (
           <PremiumFeatureLock

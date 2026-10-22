@@ -12,9 +12,9 @@ Subscribe **only on iOS**. Web never starts Stripe Checkout. After IAP writes `u
 | `plus` | Plus |
 | `home` | Home |
 
-**Premium vs Plus:** the $5.99 plan code stays `plus`. “Premium” is a legacy alias in IAP SKUs (`*.premium.*`) and older docs. Do not create a third paid DB tier.
+**Premium vs Plus:** the $4.99 plan code stays `plus`. “Premium” is a legacy alias in IAP SKUs (`*.premium.*`) and older docs. Do not create a third paid DB tier.
 
-Official Home display prices: $9.99/month, $99.99/year (≈ $8.33/month; save $19.89 / ~16.6%) from `homePricing`. iOS buttons prefer StoreKit `displayPrice`. Web never starts Stripe Checkout.
+Official Plus display prices: $4.99/month, $49.99/year (about $4.17/month) from `plusPricing`. Yearly is $4.99 × 10. Official Home display prices: $9.99/month, $99.99/year (≈ $8.33/month; save $19.89 / ~16.6%) from `homePricing`. The feature list and the four Free count limits live in `packages/utils/pricingTiers.ts`. iOS buttons prefer StoreKit `displayPrice`. Web never starts Stripe Checkout.
 
 ## Free allowances
 

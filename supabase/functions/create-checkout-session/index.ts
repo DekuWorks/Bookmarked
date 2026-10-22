@@ -4,8 +4,8 @@
  *
  * Secrets:
  * - STRIPE_SECRET_KEY
- * - STRIPE_PRICE_ID — Plus monthly ($5.99/mo) price_…
- * - STRIPE_PRICE_ID_YEARLY — Plus yearly ($59.99/yr) price_… (optional until catalog cutover)
+ * - STRIPE_PRICE_ID — Plus monthly ($4.99/mo) price_…
+ * - STRIPE_PRICE_ID_YEARLY — Plus yearly ($49.99/yr) price_… (optional until catalog cutover)
  */
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
@@ -125,8 +125,8 @@ Deno.serve(async (req) => {
         year: config.yearlyConfigured,
       },
       pricing: {
-        month: "$5.99",
-        year: "$59.99",
+        month: "$4.99",
+        year: "$49.99",
       },
     });
   }
@@ -142,7 +142,7 @@ Deno.serve(async (req) => {
       {
         available: false,
         error: "Stripe checkout is not configured",
-        hint: "Set STRIPE_SECRET_KEY and STRIPE_PRICE_ID ($5.99/mo) in Supabase project secrets. Optionally STRIPE_PRICE_ID_YEARLY ($59.99/yr).",
+        hint: "Set STRIPE_SECRET_KEY and STRIPE_PRICE_ID ($4.99/mo) in Supabase project secrets. Optionally STRIPE_PRICE_ID_YEARLY ($49.99/yr).",
       },
       503
     );
@@ -190,7 +190,7 @@ Deno.serve(async (req) => {
       {
         available: true,
         error: "Yearly Plus checkout is not configured yet",
-        hint: "Create the $59.99/yr Stripe price and set STRIPE_PRICE_ID_YEARLY. See docs/STRIPE_SETUP.md.",
+        hint: "Create the $49.99/yr Stripe price and set STRIPE_PRICE_ID_YEARLY. See docs/STRIPE_SETUP.md.",
       },
       503
     );

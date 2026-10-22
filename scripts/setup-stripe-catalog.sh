@@ -6,7 +6,7 @@
 #   STRIPE_SECRET_KEY=sk_test_… ./scripts/setup-stripe-catalog.sh
 #   STRIPE_SECRET_KEY=sk_live_… ./scripts/setup-stripe-catalog.sh --live
 #
-# Pricing (product brief): Plus $5.99/mo · $59.99/yr
+# Pricing (product brief): Plus $4.99/mo · $49.99/yr
 # Does not invent or hardcode live price IDs — prints placeholders to set as secrets.
 
 set -euo pipefail
@@ -68,8 +68,8 @@ fi
 
 PRODUCT_NAME="Bookmarked Plus"
 PRODUCT_DESCRIPTION="Unlimited shelves, full Reading DNA, advanced insights, and Plus features across web and iOS."
-MONTHLY_AMOUNT_CENTS=599
-YEARLY_AMOUNT_CENTS=5999
+MONTHLY_AMOUNT_CENTS=499
+YEARLY_AMOUNT_CENTS=4999
 PRICE_CURRENCY=usd
 MONTHLY_LOOKUP_KEY="bookmarked_plus_monthly"
 YEARLY_LOOKUP_KEY="bookmarked_plus_yearly"
@@ -207,8 +207,8 @@ else
   echo "    Created product: ${product_id}"
 fi
 
-monthly_price_id="$(ensure_price "$product_id" "$MONTHLY_AMOUNT_CENTS" "month" "$MONTHLY_LOOKUP_KEY" "monthly price (\$5.99 USD)")"
-yearly_price_id="$(ensure_price "$product_id" "$YEARLY_AMOUNT_CENTS" "year" "$YEARLY_LOOKUP_KEY" "yearly price (\$59.99 USD)")"
+monthly_price_id="$(ensure_price "$product_id" "$MONTHLY_AMOUNT_CENTS" "month" "$MONTHLY_LOOKUP_KEY" "monthly price (\$4.99 USD)")"
+yearly_price_id="$(ensure_price "$product_id" "$YEARLY_AMOUNT_CENTS" "year" "$YEARLY_LOOKUP_KEY" "yearly price (\$49.99 USD)")"
 
 mode_label="test"
 if [[ "$STRIPE_SECRET_KEY" =~ ^sk_live_ ]]; then
@@ -220,8 +220,8 @@ cat <<EOF
 Catalog ready (${mode_label} mode).
 
   Product : ${PRODUCT_NAME} (${product_id})
-  Monthly : \$5.99/month (${monthly_price_id})
-  Yearly  : \$59.99/year (${yearly_price_id})
+  Monthly : \$4.99/month (${monthly_price_id})
+  Yearly  : \$49.99/year (${yearly_price_id})
   Lookups : ${MONTHLY_LOOKUP_KEY}, ${YEARLY_LOOKUP_KEY}
 
 Next steps (set real IDs from this run — do not invent placeholders in production):

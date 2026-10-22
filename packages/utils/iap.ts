@@ -6,7 +6,7 @@ export const IAP_PREMIUM_YEARLY_IOS_PRODUCTION = "com.dekuworks.bookmarked.premi
 
 /**
  * Home monthly SKU. App Store Connect must create this product — not live until then.
- * Follows the Plus `premium` prefix already shipped for $5.99.
+ * Follows the Plus `premium` prefix already shipped. Display fallback is $4.99.
  */
 export const IAP_HOME_MONTHLY_IOS_PRODUCTION = "com.dekuworks.bookmarked.home.monthly";
 
@@ -26,8 +26,9 @@ export const IAP_PREMIUM_MONTHLY_IOS = IAP_PREMIUM_MONTHLY_IOS_PRODUCTION;
 /** Google Play subscription SKU (future — billing uses web link on Android for now). */
 export const IAP_PREMIUM_MONTHLY_ANDROID = "bookmarked_premium_monthly";
 
-export const IAP_PREMIUM_PRICE_LABEL = "$5.99 / month";
-export const IAP_PREMIUM_YEARLY_PRICE_LABEL = "$59.99 / year";
+/** Fallback copy only. Purchase buttons must prefer StoreKit displayPrice. */
+export const IAP_PREMIUM_PRICE_LABEL = "$4.99 / month";
+export const IAP_PREMIUM_YEARLY_PRICE_LABEL = "$49.99 / year";
 export const IAP_HOME_PRICE_LABEL = "$9.99 / month";
 export const IAP_HOME_YEARLY_PRICE_LABEL = "$99.99 / year";
 

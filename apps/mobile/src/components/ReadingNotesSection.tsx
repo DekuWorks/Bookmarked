@@ -24,7 +24,7 @@ import {
   listNoteCategories,
   type ReadingNoteCategoryMeta,
 } from "../services/noteCategories";
-import { isEntitlementLimitError } from "../utils/subscription";
+import { ENTITLEMENT_LIMIT_MESSAGES, isEntitlementLimitError } from "../utils/subscription";
 import type { ReadingNote, ReadingNoteCategory, ReadingNoteVisibility } from "../types";
 import { formatNoteLocation } from "../../../../packages/utils/noteLocation";
 import { ShareNoteButton } from "./ShareNoteButton";
@@ -171,7 +171,7 @@ export function ReadingNotesSection({
         open={limitOpen}
         onClose={() => setLimitOpen(false)}
         featureLabel="Saved quotes"
-        limitMessage="Free members can save 25 quotes. Upgrade to Bookmarked Plus for unlimited quote vault space."
+        limitMessage={ENTITLEMENT_LIMIT_MESSAGES.saved_quotes}
       />
       <View className="mb-2 flex-row items-center justify-between">
         <Text className="text-base font-bold text-puce-red">
