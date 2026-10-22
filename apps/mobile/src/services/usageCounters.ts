@@ -24,7 +24,7 @@ async function loadAccess(userId: string) {
     .select("subscription_tier, subscription_status, subscription_expires_at")
     .eq("user_id", userId)
     .maybeSingle();
-  return toSubscriptionAccessFromRow(data);
+  return toSubscriptionAccessFromRow(data, { userId });
 }
 
 export async function getUsageSnapshot(

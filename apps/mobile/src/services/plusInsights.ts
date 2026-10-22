@@ -1,5 +1,7 @@
 import { supabase } from "./supabase";
 import { getUserLibraryBooks } from "./library";
+import { getUserSubscription, toSubscriptionAccess } from "./subscription";
+import { canAccessFeature } from "../utils/subscription";
 import { listUserReadingSessions } from "./readingSessions";
 import { finishEventsFromLibraryBooks, type YearlyGoalFinishEvent } from "../../../../packages/utils/yearlyReadingGoal";
 import {
@@ -14,7 +16,15 @@ import {
 import { computeMoodAnalytics } from "../../../../packages/utils/moodAnalytics";
 import { flattenSessionMoodsForAnalytics } from "../../../../packages/utils/sessionMoods";
 
+async function assertAdvancedAnalytics(userId: string): Promise<void> {
+  const access = toSubscriptionAccess(await getUserSubscription(userId));
+  if (!canAccessFeature("advanced_analytics", access)) {
+    throw new Error("Premium required");
+  }
+}
+
 export async function loadPlusInsightSessions(userId: string): Promise<PlusInsightSession[]> {
+  await assertAdvancedAnalytics(userId);
   const sessions = await listUserReadingSessions(userId, 800);
   return sessions.map((session) => ({
     session_date: session.session_date,
@@ -33,6 +43,7 @@ export async function loadPlusInsightSessions(userId: string): Promise<PlusInsig
 }
 
 export async function loadPlusInsightsDashboard(userId: string) {
+  await assertAdvancedAnalytics(userId);
   const [sessions, books] = await Promise.all([
     loadPlusInsightSessions(userId),
     getUserLibraryBooks(userId),
@@ -73,6 +84,7 @@ export async function loadPlusInsightsDashboard(userId: string) {
 }
 
 export async function listFavoriteAuthors(userId: string) {
+  await assertAdvancedAnalytics(userId);
   const { data, error } = await supabase
     .from("user_favorite_authors")
     .select("id, author_name, note, created_at")
@@ -83,6 +95,11 @@ export async function listFavoriteAuthors(userId: string) {
 }
 
 export async function addFavoriteAuthor(userId: string, authorName: string, note?: string) {
+  try {
+    await assertAdvancedAnalytics(userId);
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Premium required" };
+  }
   const { error } = await supabase.from("user_favorite_authors").insert({
     user_id: userId,
     author_name: authorName,
@@ -94,6 +111,7 @@ export async function addFavoriteAuthor(userId: string, authorName: string, note
 }
 
 export async function listAdvancedGoals(userId: string) {
+  await assertAdvancedAnalytics(userId);
   const { data, error } = await supabase
     .from("advanced_reading_goals")
     .select("id, title, kind, target_amount, progress_amount, is_active, params")
@@ -110,6 +128,11 @@ export async function createAdvancedGoal(input: {
   kind: string;
   targetAmount: number;
 }) {
+  try {
+    await assertAdvancedAnalytics(input.userId);
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Premium required" };
+  }
   const { error } = await supabase.from("advanced_reading_goals").insert({
     user_id: input.userId,
     title: input.title,

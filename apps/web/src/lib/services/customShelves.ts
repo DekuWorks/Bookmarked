@@ -292,7 +292,7 @@ export async function createCustomShelf(
     return { error: countError.message };
   }
 
-  if (!canCreateCustomShelf(shelfCount ?? 0, toSubscriptionAccessFromRow(subscription))) {
+  if (!canCreateCustomShelf(shelfCount ?? 0, toSubscriptionAccessFromRow(subscription, { userId: user.id }))) {
     return { error: ENTITLEMENT_LIMIT_MESSAGES.custom_shelves };
   }
 

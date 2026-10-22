@@ -5,6 +5,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { hasComplimentaryPlus } from "../_shared/complimentaryPlus.ts";
 
 const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
@@ -117,12 +118,16 @@ Deno.serve(async (req) => {
     );
   }
 
+  const complimentary = hasComplimentaryPlus({ userId: userData.user.id });
   const usage = await supabase.rpc("try_increment_ai_companion_usage", { p_limit: 20 });
   if (usage.error) return jsonResponse({ error: usage.error.message }, 400);
   const usageRow = usage.data as { ok?: boolean; error?: string } | null;
   if (!usageRow?.ok) {
-    const status = usageRow?.error === "plus_required" ? 403 : 429;
-    return jsonResponse({ error: usageRow?.error ?? "rate_limited" }, status);
+    const plusGrant = complimentary && usageRow?.error === "plus_required";
+    if (!plusGrant) {
+      const status = usageRow?.error === "plus_required" ? 403 : 429;
+      return jsonResponse({ error: usageRow?.error ?? "rate_limited" }, status);
+    }
   }
 
   const cacheKey = [

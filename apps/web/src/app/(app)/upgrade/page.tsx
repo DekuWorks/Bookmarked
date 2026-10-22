@@ -138,7 +138,7 @@ export default function UpgradePage() {
           <PremiumFeatureList />
 
           <div className="mt-6 flex flex-wrap justify-center gap-2">
-            <ButtonLink href="/reading-room/?tab=progress" variant="outline" size="sm">
+            <ButtonLink href="/reading-room/?tab=stats" variant="outline" size="sm">
               Open Reading Room
             </ButtonLink>
             {showStripeManage ? (

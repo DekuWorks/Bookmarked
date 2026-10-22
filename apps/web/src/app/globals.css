@@ -758,6 +758,26 @@ body {
   animation: rr-goal-spark 900ms ease-out forwards;
 }
 
+.rr-stats-card,
+.rr-calendar-month {
+  animation: rr-panel-in 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.rr-plus-lock {
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 220ms ease,
+    border-color 220ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .rr-plus-lock:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--color-primary) 70%, var(--color-border));
+    box-shadow: 0 8px 18px color-mix(in srgb, var(--color-puce-red) 12%, transparent);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .reading-room-tab-indicator,
   .rr-carousel-track,
@@ -776,10 +796,19 @@ body {
   }
 
   .reading-room-panel-in,
+  .rr-stats-card,
+  .rr-calendar-month,
   .shelf-cover-in,
   .shelf-cover-out,
   .rr-goal-spark {
     animation: none;
+  }
+
+  .rr-plus-lock,
+  .rr-plus-lock:hover {
+    transition: none;
+    transform: none;
+    box-shadow: none;
   }
 
   .rr-goal-glow {

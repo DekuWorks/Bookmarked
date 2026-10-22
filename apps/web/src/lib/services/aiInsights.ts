@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { getUserLibraryBooks } from "@/lib/services/library";
+import { getUserSubscription, toSubscriptionAccess } from "@/lib/services/subscription";
+import { canAccessFeature } from "@/lib/utils/subscription";
 import { getProfile } from "@/lib/services/profile";
 import { fetchReadingStreakTimestamps } from "@/lib/services/readingInsights";
 import { listUserReviews } from "@/lib/services/readingRoom";
@@ -85,7 +87,21 @@ async function tryOpenAiInsights(input: GenerateAiInsightsInput): Promise<AiInsi
   return generateAiInsights(input);
 }
 
+const EMPTY_AI_INSIGHTS: AiInsightsResult = {
+  highlights: [],
+  patterns: [],
+  prompts: [],
+  hasData: false,
+};
+
 export async function getAiInsights(userId: string): Promise<AiInsightsResult> {
+  try {
+    const access = toSubscriptionAccess(await getUserSubscription(userId));
+    if (!canAccessFeature("ai_insights", access)) return EMPTY_AI_INSIGHTS;
+  } catch {
+    return EMPTY_AI_INSIGHTS;
+  }
+
   const [sessions, books, reviews, streakTimestamps, profile] = await Promise.all([
     listUserReadingSessions(userId, 500),
     getUserLibraryBooks(userId),

@@ -173,6 +173,30 @@ export function relocateLibraryBook<T extends { id: string; shelf_status: string
   return [next, ...books.filter((book) => book.id !== bookId)];
 }
 
+/** Stats cards and calendar months share the tab-content timing. First paint can still run. */
+export function statsCardMotion(reducedMotion: boolean): {
+  durationMs: number;
+  shiftPx: number;
+  delayMs: (index: number) => number;
+} {
+  const durationMs = motionDuration(READING_ROOM_MOTION.tabContentMs, reducedMotion);
+  return {
+    durationMs,
+    shiftPx: reducedMotion ? 0 : READING_ROOM_MOTION.tabContentShiftPx,
+    delayMs: (index) => (reducedMotion ? 0 : Math.max(0, Math.floor(index)) * 40),
+  };
+}
+
+export function calendarMonthMotion(reducedMotion: boolean): {
+  durationMs: number;
+  shiftPx: number;
+} {
+  return {
+    durationMs: motionDuration(READING_ROOM_MOTION.tabContentMs, reducedMotion),
+    shiftPx: reducedMotion ? 0 : READING_ROOM_MOTION.tabContentShiftPx,
+  };
+}
+
 /** Previous desktop cover was 128px wide. Phone stays 96. */
 export function currentlyReadingCoverSize(
   width: number,

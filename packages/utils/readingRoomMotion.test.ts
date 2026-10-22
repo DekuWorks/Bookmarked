@@ -4,12 +4,14 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { previewShelfItems, SHELF_PREVIEW_LIMIT, bookCountLabel } from "./overviewShelfPreview";
 import {
+  calendarMonthMotion,
   carouselIndexAfterMoves,
   currentlyReadingCoverSize,
   goalBarFillPercent,
   highestMilestoneCrossed,
   motionDuration,
   observeGoalProgress,
+  statsCardMotion,
   progressMotion,
   readingGoalRealPercent,
   READING_ROOM_MOTION,
@@ -149,5 +151,37 @@ describe("reading room motion", () => {
     expect(iphone).toEqual({ width: 96, height: 144 });
     expect(ipad.width).toBeGreaterThan(iphone.width);
     expect(ipad.height / ipad.width).toBeCloseTo(1.5);
+  });
+
+  it("uses the existing tab timing for stats polish and turns it off for reduced motion", () => {
+    const still = statsCardMotion(true);
+    const moving = statsCardMotion(false);
+    expect(still.durationMs).toBe(0);
+    expect(still.shiftPx).toBe(0);
+    expect(still.delayMs(3)).toBe(0);
+    expect(moving.durationMs).toBe(READING_ROOM_MOTION.tabContentMs);
+    expect(moving.shiftPx).toBe(READING_ROOM_MOTION.tabContentShiftPx);
+    expect(moving.delayMs(3)).toBe(120);
+    expect(calendarMonthMotion(true).durationMs).toBe(0);
+    expect(calendarMonthMotion(false).shiftPx).toBe(READING_ROOM_MOTION.tabContentShiftPx);
+
+    expect(source("apps/web/src/components/reading-room/ReadingGoalCard.tsx")).toContain(
+      "MotionProgressBar"
+    );
+    expect(source("apps/mobile/src/components/reading-room/ReadingGoalCard.tsx")).toContain(
+      "<ProgressBar percent={real} animate />"
+    );
+    expect(source("apps/web/src/components/premium/PlusLockedFeature.tsx")).toContain("rr-plus-lock");
+    expect(source("apps/web/src/components/calendar/ReadingCalendar.tsx")).toContain("rr-calendar-month");
+    expect(source("apps/web/src/components/reading-room/StatsSectionSkeleton.tsx")).toContain(
+      'aria-busy="true"'
+    );
+    expect(source("apps/mobile/src/components/PlusLockedFeature.tsx")).toContain(
+      "usePrefersReducedMotion"
+    );
+    expect(source("apps/mobile/src/components/ReadingInsightsSection.tsx")).toContain("canAccess");
+    expect(source("apps/mobile/src/components/ReadingInsightsSection.tsx")).not.toContain("purchasedLocally");
+    expect(source("apps/web/src/app/globals.css")).toContain(".rr-plus-lock:hover");
+    expect(source("apps/web/src/app/globals.css")).toContain(".rr-stats-card,\n  .rr-calendar-month");
   });
 });

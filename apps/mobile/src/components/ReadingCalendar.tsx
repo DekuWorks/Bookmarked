@@ -1,22 +1,32 @@
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import {
   READING_CALENDAR_COPY,
   addCalendarMonths,
   buildReadingCalendarMonth,
 } from "../../../../packages/utils/readingCalendar";
+import { calendarMonthMotion } from "../../../../packages/utils/readingRoomMotion";
 import { readingCalendarQueryKey } from "../constants/readingSessionQueries";
+import { usePrefersReducedMotion } from "../hooks/usePrefersReducedMotion";
 import { listSessionsForCalendar } from "../services/readingSessions";
 import { BookCover } from "./BookCover";
-import { LoadingState } from "./LoadingState";
+import { StatsSectionSkeleton } from "./StatsSectionSkeleton";
 import { useThemeColors } from "../store/themeStore";
 
 type Props = {
   userId: string;
+  /** Parent section cards already supply the heading. */
+  showTitle?: boolean;
 };
 
-export function ReadingCalendar({ userId }: Props) {
+export function ReadingCalendar({ userId, showTitle = true }: Props) {
   const colors = useThemeColors();
   const now = new Date();
   const [cursor, setCursor] = useState({ year: now.getFullYear(), month: now.getMonth() + 1 });
@@ -36,17 +46,50 @@ export function ReadingCalendar({ userId }: Props) {
   );
 
   const showLoading = sessionsQuery.isLoading && !sessionsQuery.data;
+  const reducedMotion = usePrefersReducedMotion();
+  const monthOpacity = useSharedValue(1);
+  const monthShift = useSharedValue(0);
+  const skipMonthMotion = useRef(true);
+
+  useEffect(() => {
+    if (skipMonthMotion.current) {
+      skipMonthMotion.current = false;
+      return;
+    }
+    const motion = calendarMonthMotion(reducedMotion);
+    if (motion.durationMs === 0) {
+      monthOpacity.value = 1;
+      monthShift.value = 0;
+      return;
+    }
+    monthOpacity.value = 0;
+    monthShift.value = motion.shiftPx;
+    const timing = { duration: motion.durationMs, easing: Easing.out(Easing.cubic) };
+    monthOpacity.value = withTiming(1, timing);
+    monthShift.value = withTiming(0, timing);
+  }, [cursor.month, cursor.year, monthOpacity, monthShift, reducedMotion]);
+
+  const monthStyle = useAnimatedStyle(() => ({
+    opacity: monthOpacity.value,
+    transform: [{ translateY: monthShift.value }],
+  }));
 
   return (
     <View className="gap-3">
-      <View>
-        <Text className="text-base font-semibold" style={{ color: colors.puceRed }}>
-          {READING_CALENDAR_COPY.title}
-        </Text>
-        <Text className="mt-1 text-sm" style={{ color: colors.inkMuted }}>
+      {showTitle ? (
+        <View>
+          <Text accessibilityRole="header" className="text-base font-semibold" style={{ color: colors.puceRed }}>
+            {READING_CALENDAR_COPY.title}
+          </Text>
+          <Text className="mt-1 text-sm" style={{ color: colors.inkMuted }}>
+            {READING_CALENDAR_COPY.subtitle}
+          </Text>
+        </View>
+      ) : (
+        <Text className="text-sm" style={{ color: colors.inkMuted }}>
           {READING_CALENDAR_COPY.subtitle}
         </Text>
-      </View>
+      )}
       <View className="flex-row items-center justify-between">
         <Pressable
           accessibilityRole="button"
@@ -73,9 +116,9 @@ export function ReadingCalendar({ userId }: Props) {
         </Pressable>
       </View>
       {showLoading ? (
-        <LoadingState message="Loading calendar…" />
+        <StatsSectionSkeleton label="Loading reading calendar" />
       ) : (
-        <View>
+        <Animated.View style={monthStyle}>
           <View className="flex-row">
             {month.weekdayLabels.map((label) => (
               <Text
@@ -130,7 +173,7 @@ export function ReadingCalendar({ userId }: Props) {
               {READING_CALENDAR_COPY.emptyMonth}
             </Text>
           ) : null}
-        </View>
+        </Animated.View>
       )}
     </View>
   );

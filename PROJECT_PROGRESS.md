@@ -1988,6 +1988,121 @@ Book covers use the shared `BookCover` on web and iOS. Corner radius is 3px (`BO
 
 ---
 
+## SPRINT 2 — PROGRESS TAB MIGRATION
+
+Branch: `feature/sprint-2-progress-migration` (from `origin/main` at `1401ba5`, PR #54). Not committed. No Android. No new web checkout. No card handling. No Supabase migration, RLS rewrite, or data deletion.
+
+The Progress tab was already off the Reading Room bar after Sprint 1. This pass moves what that tab still owned: goal editing stays on the Overview card, and Stats is Calendar, Statistics, Advanced Reading Analytics, and AI Insights.
+
+### Where the data lives
+
+| Feature | Source | Notes |
+|---------|--------|-------|
+| Reading goal | `yearly_reading_goal` on the profile, via `upsertYearlyReadingGoal` / `updateYearlyReadingGoal` | Same row. Overview card shows it. Settings still has the full editor. Stats no longer has a second editor. |
+| Completed count | Finished books for the year, `computeReadingGoal` | Same status object on Overview and in the statistics grid (`1/5` matches `1 out of 5`). |
+| Calendar | `listSessionsForCalendar` → `reading_sessions` | Existing activity kinds. No new session rows. |
+| Statistics | `loadReadingAnalytics` / `data.analytics` | Existing metrics only. |
+| Advanced analytics | `ReadingActivityPanel` + `PlusInsightsPanel` | Mounted only when `canAccess("advanced_analytics")`. Service reads check the subscription row first. |
+| AI Insights | `getAiInsights` → edge `ai-insights`, plus `AiCompanionPanel` | Edge already returns 403 without Plus. Client now returns empty and does not call the edge when the account is not entitled. Companion checks `ai_companion` before invoke. |
+| Plus status | `user_subscriptions` through `useSubscription` / `canAccessFeature` | No client-only unlock flag. |
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Progress Tab Removal | ✅ | Bar is Overview, Reviews, Notes, Stats. Trail and History stay off the bar. `?tab=progress` becomes Stats. `?tab=progress#reading-goal` becomes Overview `#reading-goal`. |
+| Reading Goal → Overview | ✅ | Under Currently Reading. Heading, completed count, annual target, percent, existing bar, Edit and Clear. No second editor on Stats. The existing goal fill animation was left in place. |
+| Reading Calendar → Stats | ✅ | Dates, previous/next, empty month. Activity rules unchanged. Web and iPhone both moved October 2026 to November 2026. |
+| Reading Statistics → Stats | ✅ | Existing metrics only. Web and iPhone both showed books read 2, currently reading 1, want to read 16, pages 208, reviews 1, average 3.5, favourite genre Religion, streak 0 (best 1), 2026 goal 1/5. |
+| Advanced Analytics → Stats | ✅ | Third Stats section. Free account sees the locked card. Unlocked panels were not opened. |
+| AI Insights → Stats | ✅ | Fourth Stats section. Same lock. `getAiInsights` still checks the subscription before the edge call. |
+| Bookmarked Plus Locked Feature UI | ✅ | Plus mark, name, description. iPhone showed Subscribe — $5.99, Subscribe yearly — $59.99, and Restore purchases from the existing StoreKit products. |
+| Web Subscription Instructions | ✅ | Exact iOS-subscribe sentence. No checkout and no invented App Store URL. |
+| iOS Native Subscription | ✅ code | Unlock still waits for `apple-iap-verify` and a subscription refetch. A purchase was not completed. |
+| Cross-Platform Entitlement Sync | ✅ | Same `user_subscriptions` row. No RLS change and no deleted rows. |
+| Stats UI Polish | ✅ | Card entrance, calendar month motion, skeletons for calendar, statistics, and subscription loads, web hover and iOS press on locked cards, and a fade when a verified entitlement mounts the real section. Reduced motion turns the duration off. 21st.dev search did not respond, so this uses the existing motion tokens only. |
+| Responsive Testing | ✅ phone | Web dark Stats, the earlier 390px check, and iPhone 17 Pro Max. iPad Pro was booted, but Bookmarked is not installed on it, so it was not run. |
+| Accessibility Testing | ✅ controls touched | Tabs, calendar buttons, goal bar, skeleton labels, and Subscribe labels. VoiceOver was not run. Reduced motion is covered in tests and CSS, not by toggling the OS setting. |
+| Regression Testing | ✅ targeted | Sprint 2 and motion tests. Goal, sessions, reviews, and subscription rows were not deleted. Full-app regression was not re-run. |
+
+### Files
+
+Shared:
+
+- `packages/utils/readingRoomTabs.ts` — `resolveReadingRoomDestination`, `legacyProgressLocation`
+- `packages/utils/plusLockedCopy.ts` — Stats section names and the web Plus sentence
+- `packages/utils/iap.ts` — `canStartPlusPurchase`
+- `packages/utils/premiumFeatures.ts` — Plus links now open Stats
+- `packages/utils/readingRoomMotion.ts` — `statsCardMotion`, `calendarMonthMotion`
+- `packages/utils/sprint2Progress.test.ts`, `readingRoomTabs.test.ts`, `readingRoomMotion.test.ts`
+
+Web:
+
+- `apps/web/src/components/reading-room/ReadingRoomTabs.tsx`
+- `apps/web/src/components/reading-room/ReadingGoalCard.tsx` — existing editor, no second progress bar
+- `apps/web/src/components/premium/PlusLockedFeature.tsx`
+- `apps/web/src/components/calendar/ReadingCalendar.tsx` — narrow layout, month fade, calendar skeleton
+- `apps/web/src/components/reading-room/StatsSectionSkeleton.tsx`
+- `apps/web/src/app/globals.css` — stats entrance, month fade, locked-card hover, reduced motion
+- `apps/web/src/lib/services/aiInsights.ts`, `aiCompanion.ts`, `plusInsights.ts` — entitlement check before premium reads
+- Upgrade and Wrapped links now go to `?tab=stats`
+
+iOS:
+
+- `apps/mobile/app/(app)/index.tsx`
+- `apps/mobile/src/components/ReadingInsightsSection.tsx`
+- `apps/mobile/src/components/PlusLockedFeature.tsx`
+- `apps/mobile/src/hooks/useAppleSubscriptionPurchase.ts` — shared with the membership screen
+- `apps/mobile/src/components/PremiumUpgradeActions.tsx` — same purchase hook, same products
+- `apps/mobile/src/components/StatsEnter.tsx`, `StatsSectionSkeleton.tsx`
+- Goal card, calendar month fade, and the same service checks as web
+
+### Subscription
+
+No RLS or schema change. Plus still comes from `user_subscriptions`. A successful StoreKit button does not unlock the UI. `verifyApplePurchaseOnServer` has to succeed, then `refetch` loads the row, then `canAccess` opens the panels. Restore still calls `restorePurchases`. Cancel stays silent. Pending and other StoreKit errors stay on the locked card. The product button stays disabled until that Plus SKU is in the StoreKit list.
+
+### Tests
+
+`apps/web` vitest, 22 Oct 2026:
+
+- `sprint2Progress.test.ts` (7), `readingRoomTabs.test.ts` (7), `readingRoomMotion.test.ts` (9). 23 passed.
+
+Covered: four tabs and no Progress label, goal under the carousel, calendar then statistics, web lock copy with no checkout, iOS purchase only when the product is listed, active Plus access, expired Plus access with the session list left intact, goal hash to Overview and other Progress hashes to Stats, reduced-motion duration 0 for the new stats and calendar motion, and the existing goal bar left on Overview.
+
+Web `tsc --noEmit`: pass. iOS `tsc --noEmit`: pass.
+
+ESLint on the polish files added no new findings. `ReadingRoomTabs` and `ReadingCalendar` still report the existing `set-state-in-effect` findings. Those effects were not rewritten. iOS has no project ESLint script.
+
+### Browser
+
+Signed in on `http://localhost:3000`, dark theme, 22 Oct 2026. Stats showed the calendar, statistics, and both locked Plus cards. Next month changed the calendar to November 2026.
+
+iPhone 17 Pro Max (iOS 26.0), light theme, Metro on port 8081. The installed app was relaunched. No `expo run:ios` and no EAS build. Stats showed the same numbers as web, then Advanced Reading Analytics with Subscribe — $5.99, Subscribe yearly — $59.99, and Restore purchases. AI Insights was below it, also locked. Next month changed the calendar to November 2026. Nothing was purchased.
+
+### Outstanding
+
+- iPad Pro was booted, but Bookmarked is not installed there, so iPad was not run.
+- A live Plus account was not used, so the unlocked analytics and AI panels were not opened. The free locked state was.
+- Web stayed on the signed-in dark theme. iPhone was light. The other theme was not toggled on each platform.
+- VoiceOver was not run. Reduced motion was not toggled in the OS.
+
+---
+
+## Complimentary Plus — team accounts
+
+No production database write. No `user_subscriptions` row was inserted, and `user_has_paid_entitlement` was not changed. Postgres shelf, club, quote, and challenge triggers still read that function, so those inserts can still fail for a free row until a later migration. This grant does not deploy Supabase functions by itself.
+
+The allowlist is code. Web, iOS, and the edge functions share it and return the existing Plus subscription shape (`plus` / `active`). A random account, an expired paid row, and the unmatched names stay locked.
+
+| Person | Result | Public profile |
+|--------|--------|----------------|
+| Caitlynn Dandridge | Granted | Username `CaiteeD`. Display name on the profile is `Caitlyn Dandridge`. |
+| Ellie | Granted | Username `ellienoblin`. Display name `Ellie Noblin`. One public match. |
+| zmokeafterdark | Locked | No public profile with that username. Email was not looked up. |
+| Leighton | Locked | Two profiles: `leighton` (`leighton cook`) and `leighton.cook` (`Leighton Cook`). Not guessed. |
+
+Files: `packages/utils/complimentaryPlus.ts`, `packages/utils/subscription.ts` (`applyComplimentaryPlus` / `toSubscriptionAccessFromRow`), web and iOS subscription services plus the shelf, quote, club, challenge, and usage checks, `supabase/functions/_shared/complimentaryPlus.ts`, `ai-insights`, `quote-scanner`, `ai-reading-companion`. Tests: `packages/utils/complimentaryPlus.test.ts`.
+
 ## Next up (recommended)
 
 | Priority | Item | Notes |

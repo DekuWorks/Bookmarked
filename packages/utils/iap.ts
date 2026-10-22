@@ -53,6 +53,15 @@ export type IapPremiumSku = (typeof IAP_ALLOWED_PREMIUM_SKUS)[number];
 export type IapHomeSku = (typeof IAP_ALLOWED_HOME_SKUS)[number];
 export type IapSku = (typeof IAP_ALLOWED_SKUS)[number];
 
+/** StoreKit purchase may start only when the Plus product is actually listed. */
+export function canStartPlusPurchase(input: {
+  iapEnabled: boolean;
+  connected: boolean;
+  productListed: boolean;
+}): boolean {
+  return input.iapEnabled && input.connected && input.productListed;
+}
+
 export function isAllowedPremiumSku(sku: string): sku is IapSku {
   return (IAP_ALLOWED_SKUS as readonly string[]).includes(sku);
 }

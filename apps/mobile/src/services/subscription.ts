@@ -1,3 +1,4 @@
+import { toSubscriptionAccessFromRow } from "../utils/subscription";
 import { supabase } from "./supabase";
 import type { UserSubscription } from "../types";
 
@@ -40,17 +41,5 @@ export function toSubscriptionAccess(
   UserSubscription,
   "subscription_tier" | "subscription_status" | "subscription_expires_at"
 > {
-  if (!subscription) {
-    return {
-      subscription_tier: DEFAULT_SUBSCRIPTION.subscription_tier,
-      subscription_status: DEFAULT_SUBSCRIPTION.subscription_status,
-      subscription_expires_at: DEFAULT_SUBSCRIPTION.subscription_expires_at,
-    };
-  }
-
-  return {
-    subscription_tier: subscription.subscription_tier,
-    subscription_status: subscription.subscription_status,
-    subscription_expires_at: subscription.subscription_expires_at,
-  };
+  return toSubscriptionAccessFromRow(subscription);
 }

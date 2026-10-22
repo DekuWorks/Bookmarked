@@ -384,7 +384,7 @@ export async function createReadingNote(
 
     if (countError) return { error: countError.message };
 
-    const check = checkSavedQuoteLimit(count ?? 0, toSubscriptionAccessFromRow(subscription));
+    const check = checkSavedQuoteLimit(count ?? 0, toSubscriptionAccessFromRow(subscription, { userId }));
     if (!check.allowed) {
       return { error: check.reason ?? ENTITLEMENT_LIMIT_MESSAGES.saved_quotes };
     }

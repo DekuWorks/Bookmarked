@@ -8,15 +8,16 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
-import { parseReadingRoomTab } from "../../../../packages/utils/readingRoomTabs";
+import { resolveReadingRoomDestination } from "../../../../packages/utils/readingRoomTabs";
 import { BrandTopHeader } from "../../src/components/BrandTopHeader";
 import { ScreenGradientWash } from "../../src/components/ScreenGradientWash";
 import { LoadingState } from "../../src/components/LoadingState";
 import { AnalyticsGrid } from "../../src/components/AnalyticsGrid";
 import { ReadingCalendar } from "../../src/components/ReadingCalendar";
-import { ReadingGoalPanel } from "../../src/components/ReadingGoalPanel";
 import { ReadingInsightsSection } from "../../src/components/ReadingInsightsSection";
 import { SectionCard } from "../../src/components/SectionCard";
+import { StatsEnter } from "../../src/components/StatsEnter";
+import { StatsSectionSkeleton } from "../../src/components/StatsSectionSkeleton";
 import { SegmentedTabs } from "../../src/components/SegmentedTabs";
 import { HistoryPanel } from "../../src/components/reading-room/HistoryPanel";
 import { NotesPanel } from "../../src/components/reading-room/NotesPanel";
@@ -44,16 +45,17 @@ import { useThemeColors } from "../../src/store/themeStore";
 import { usePrefersReducedMotion } from "../../src/hooks/usePrefersReducedMotion";
 import { READING_ROOM_MOTION, relocateLibraryBook } from "../../../../packages/utils/readingRoomMotion";
 
-function parseReadingRoomTabParam(value: string | string[] | undefined): ReadingRoomTab {
+function firstParam(value: string | string[] | undefined): string | null {
   const raw = Array.isArray(value) ? value[0] : value;
-  return parseReadingRoomTab(raw ?? null);
+  return raw ?? null;
 }
 
 export default function HomeReadingRoom() {
   const router = useRouter();
-  const { tab: tabParam, book: bookParam } = useLocalSearchParams<{
+  const { tab: tabParam, book: bookParam, section: sectionParam } = useLocalSearchParams<{
     tab?: string;
     book?: string;
+    section?: string;
   }>();
   const colors = useThemeColors();
   const queryClient = useQueryClient();
@@ -71,9 +73,18 @@ export default function HomeReadingRoom() {
   const firstPanel = useRef(true);
   const moveSnapshot = useRef<LibraryBookRow[] | null>(null);
 
+  const redirectedProgress = useRef(false);
+
   useEffect(() => {
-    setTab(parseReadingRoomTabParam(tabParam));
-  }, [tabParam]);
+    const raw = firstParam(tabParam);
+    const section = firstParam(sectionParam);
+    const next = resolveReadingRoomDestination(raw, section);
+    setTab(next);
+    if (raw === "progress" && !redirectedProgress.current) {
+      redirectedProgress.current = true;
+      router.setParams({ tab: next === "overview" ? "" : next });
+    }
+  }, [router, sectionParam, tabParam]);
 
   useEffect(() => {
     if (tab !== "notes") setNotesPickerOpen(false);
@@ -254,7 +265,6 @@ export default function HomeReadingRoom() {
                 readingGoal={goal}
                 dataSettled={library.isSuccess}
                 focusGeneration={focusGeneration}
-                onSetGoal={() => setTab("stats")}
                 onRefresh={() => void library.refetch()}
                 onMoveStart={beginMove}
                 onMoveFailed={failMove}
@@ -264,30 +274,34 @@ export default function HomeReadingRoom() {
 
           {tab === "stats" ? (
             <>
-              <SectionCard title="Reading Goal">
-                <ReadingGoalPanel status={goal} />
-              </SectionCard>
-              <Pressable
-                onPress={() => router.push("/wrapped")}
-                accessibilityRole="button"
-                className="self-start"
-              >
-                <Text className="text-sm font-semibold text-primary-dark">Your year in books ›</Text>
-              </Pressable>
               {userId ? (
-                <SectionCard title="Reading calendar">
-                  <ReadingCalendar userId={userId} />
-                </SectionCard>
+                <StatsEnter index={0}>
+                  <SectionCard title="Reading Calendar">
+                    <ReadingCalendar userId={userId} showTitle={false} />
+                  </SectionCard>
+                </StatsEnter>
               ) : null}
+              <StatsEnter index={1}>
               <SectionCard title="Reading Statistics">
                 {analytics.isLoading ? (
-                  <LoadingState message="Loading statistics…" />
+                  <StatsSectionSkeleton label="Loading reading statistics" />
                 ) : analytics.data ? (
                   <AnalyticsGrid analytics={analytics.data} readingGoal={goal} />
                 ) : (
                   <Text className="text-ink-muted">Sign in to view your reading statistics.</Text>
                 )}
+                <Pressable
+                  onPress={() => router.push("/wrapped")}
+                  accessibilityRole="link"
+                  accessibilityLabel="Your year in books"
+                  className="mt-4 min-h-11 justify-center self-center"
+                >
+                  <Text className="text-center text-sm font-semibold text-primary-dark">
+                    Your year in books
+                  </Text>
+                </Pressable>
               </SectionCard>
+              </StatsEnter>
               <ReadingInsightsSection />
             </>
           ) : null}

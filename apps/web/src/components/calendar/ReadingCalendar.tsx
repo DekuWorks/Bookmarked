@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { BookCover } from "@/components/books/BookCover";
 import { Button } from "@/components/ui/Button";
-import { LoadingState } from "@/components/ui/LoadingState";
+import { StatsSectionSkeleton } from "@/components/reading-room/StatsSectionSkeleton";
 import { listSessionsForCalendar } from "@/lib/services/readingSessions";
 import { cn } from "@/lib/utils/cn";
 import {
@@ -50,15 +50,15 @@ export function ReadingCalendar({ userId }: Props) {
   );
 
   return (
-    <section aria-labelledby="reading-calendar-heading" className="space-y-4">
+    <section aria-labelledby="reading-calendar-heading" className="min-w-0 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h3 id="reading-calendar-heading" className="text-lg font-semibold text-puce-red">
+        <div className="min-w-0">
+          <h3 id="reading-calendar-heading" className="font-display text-xl text-puce-red">
             {READING_CALENDAR_COPY.title}
           </h3>
           <p className="mt-1 text-sm text-text-muted">{READING_CALENDAR_COPY.subtitle}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 sm:w-auto">
           <Button
             type="button"
             variant="outline"
@@ -68,7 +68,7 @@ export function ReadingCalendar({ userId }: Props) {
           >
             Previous
           </Button>
-          <p className="min-w-[10rem] text-center text-sm font-semibold text-puce-red" aria-live="polite">
+          <p className="truncate text-center text-sm font-semibold text-puce-red" aria-live="polite">
             {month.label}
           </p>
           <Button
@@ -84,22 +84,23 @@ export function ReadingCalendar({ userId }: Props) {
       </div>
 
       {sessions === null ? (
-        <LoadingState message="Loading calendar…" />
+        <StatsSectionSkeleton label="Loading reading calendar" />
       ) : error ? (
         <p className="text-sm text-text-muted" role="alert">
           {error}
         </p>
       ) : (
         <div
-          className="overflow-x-auto"
+          key={`${cursor.year}-${cursor.month}`}
+          className="rr-calendar-month min-w-0 max-w-full"
           role="grid"
           aria-label={`${month.label} reading calendar`}
         >
-          <div className="grid min-w-[320px] grid-cols-7 gap-1">
+          <div className="grid w-full grid-cols-7 gap-1">
             {month.weekdayLabels.map((label) => (
               <div
                 key={label}
-                className="px-1 py-1 text-center text-xs font-semibold uppercase tracking-wide text-text-muted"
+                className="truncate px-0.5 py-1 text-center text-[10px] font-semibold uppercase text-text-muted sm:text-xs"
               >
                 {label}
               </div>
@@ -116,7 +117,7 @@ export function ReadingCalendar({ userId }: Props) {
                     : day.dateKey
                 }
                 className={cn(
-                  "min-h-[4.5rem] rounded-lg border p-1",
+                  "min-h-16 min-w-0 rounded-lg border p-0.5 sm:min-h-[4.5rem] sm:p-1",
                   day.inMonth ? "border-border bg-surface" : "border-transparent bg-transparent opacity-40",
                   day.qualifying ? "border-primary/40" : ""
                 )}
