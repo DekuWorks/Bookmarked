@@ -1,5 +1,10 @@
 import { supabase } from "./supabase";
 import type { ReadingSession } from "../types";
+import {
+  bookTrailPageRange,
+  BOOK_TRAIL_PREVIEW_LIMIT,
+  sortBookTrailSessions,
+} from "../../../../packages/utils/bookTrail";
 import { calculateAudiobookSessionDuration } from "../../../../packages/utils/listeningTime";
 import { localDateKey } from "../../../../packages/utils/readingStreak";
 import { sessionMoodsWritePatch, withSessionMoodsWrite } from "../../../../packages/utils/sessionMoods";
@@ -172,7 +177,78 @@ export type UpdateReadingSessionInput = {
   note?: string | null;
   mood?: string | null;
   moods?: string[] | null;
+  /** Limits the update to this user-book. Not written onto the row. */
+  userBookId?: string;
 };
+
+export type BookTrailQueryResult = {
+  sessions: ReadingSession[];
+  total: number;
+};
+
+async function listScopedBookTrail(
+  userId: string,
+  userBookId: string,
+  range: { from: number; to: number }
+): Promise<BookTrailQueryResult> {
+  if (!userId || !userBookId) return { sessions: [], total: 0 };
+  const { data, error, count } = await supabase
+    .from("reading_sessions")
+    .select("*", { count: "exact" })
+    .eq("user_id", userId)
+    .eq("user_book_id", userBookId)
+    .order("session_date", { ascending: false })
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
+    .range(range.from, range.to);
+
+  if (error) {
+    console.error("[readingSessions] book trail failed:", error.message);
+    return { sessions: [], total: 0 };
+  }
+
+  return {
+    sessions: sortBookTrailSessions((data ?? []) as ReadingSession[]),
+    total: typeof count === "number" ? count : 0,
+  };
+}
+
+/** Preview for Book Detail. Does not load the rest of the trail. */
+export async function listBookTrailPreview(
+  userId: string,
+  userBookId: string
+): Promise<BookTrailQueryResult> {
+  return listScopedBookTrail(userId, userBookId, {
+    from: 0,
+    to: BOOK_TRAIL_PREVIEW_LIMIT - 1,
+  });
+}
+
+/** One page of the full trail, newest first. */
+export async function listBookTrailPage(
+  userId: string,
+  userBookId: string,
+  page: number
+): Promise<BookTrailQueryResult> {
+  return listScopedBookTrail(userId, userBookId, bookTrailPageRange(page));
+}
+
+export async function getBookTrailPage(
+  userId: string,
+  bookId: string,
+  page: number
+): Promise<BookTrailQueryResult & { title: string | null; userBookId: string | null }> {
+  const empty = { title: null, userBookId: null, sessions: [] as ReadingSession[], total: 0 };
+  if (!userId || !bookId) return empty;
+  const [{ data: book }, { data: userBook }] = await Promise.all([
+    supabase.from("books").select("title").eq("id", bookId).maybeSingle(),
+    supabase.from("user_books").select("id").eq("user_id", userId).eq("book_id", bookId).maybeSingle(),
+  ]);
+  const title = book?.title ?? null;
+  if (!userBook?.id) return { ...empty, title };
+  const trail = await listBookTrailPage(userId, userBook.id, page);
+  return { title, userBookId: userBook.id, ...trail };
+}
 
 export type ReadingStatsInRange = {
   total_pages: number;
@@ -239,6 +315,10 @@ export async function updateReadingSession(
   sessionId: string,
   input: UpdateReadingSessionInput
 ): Promise<{ error?: string; session?: ReadingSession }> {
+  const { data: authData } = await supabase.auth.getUser();
+  const userId = authData.user?.id;
+  if (!userId) return { error: "You need to sign in." };
+
   const patch: { note?: string | null; mood?: string | null; moods?: string[] } = {};
 
   if (input.note !== undefined) {
@@ -259,12 +339,13 @@ export async function updateReadingSession(
     const nextPatch = includeMoodsColumn
       ? patch
       : Object.fromEntries(Object.entries(patch).filter(([key]) => key !== "moods"));
-    return supabase
+    let query = supabase
       .from("reading_sessions")
       .update(nextPatch)
       .eq("id", sessionId)
-      .select("*")
-      .single();
+      .eq("user_id", userId);
+    if (input.userBookId) query = query.eq("user_book_id", input.userBookId);
+    return query.select("*").single();
   });
 
   if (error) return { error: error.message };

@@ -615,6 +615,31 @@ export {
 } from "./readingRoomTrail";
 
 export {
+  BOOK_TRAIL_PAGE_SIZE,
+  BOOK_TRAIL_PREVIEW_LIMIT,
+  applyBookTrailNoteEdit,
+  bookDetailHref,
+  bookTrailOpenAfterLoad,
+  bookTrailPageRange,
+  bookTrailSessionDisplay,
+  bookTrailSessionDisplayText,
+  compareBookTrailSessionsNewestFirst,
+  filterBookTrailSessions,
+  formatBookTrailSessionSummary,
+  fullBookTrailHref,
+  fullTrailBackTarget,
+  initialBookTrailOpen,
+  legacyTrailLocation,
+  previewBookTrailSessions,
+  sortBookTrailSessions,
+  visibleTrailMoods,
+  visibleTrailNote,
+  withTrailOpenHref,
+  type BookTrailPlatform,
+  type BookTrailSession,
+} from "./bookTrail";
+
+export {
   MAX_BIO_LENGTH,
   MAX_DISPLAY_NAME_LENGTH,
   MAX_READING_GOAL,

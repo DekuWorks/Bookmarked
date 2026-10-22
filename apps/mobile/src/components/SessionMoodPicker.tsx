@@ -176,8 +176,10 @@ export function SessionMoodPicker({ value, values, onChange, disabled }: Props) 
               );
             })}
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={creating ? "Cancel custom mood" : "Create Custom Mood Tag"}
               onPress={() => setCreating((next) => !next)}
-              className="mt-3 min-h-[44px] justify-center"
+              className="mt-3 min-h-11 justify-center"
             >
               <Text className="text-sm font-semibold text-primary-dark">
                 {creating ? "Cancel" : "Create Custom Mood Tag"}
@@ -189,14 +191,17 @@ export function SessionMoodPicker({ value, values, onChange, disabled }: Props) 
                   value={draft}
                   onChangeText={setDraft}
                   maxLength={32}
+                  accessibilityLabel="Custom mood tag"
                   placeholder="Name this mood"
                   placeholderTextColor="#A99DAE"
-                  className="min-h-[40px] flex-1 rounded-xl border border-brand-border bg-background px-3 text-sm text-ink"
+                  className="min-h-11 flex-1 rounded-xl border border-brand-border bg-background px-3 text-sm text-ink"
                 />
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Save custom mood tag"
                   disabled={saving || !draft.trim()}
                   onPress={() => void handleCreate()}
-                  className="min-h-[40px] justify-center rounded-xl bg-puce-red px-3"
+                  className="min-h-11 justify-center rounded-xl bg-puce-red px-3"
                 >
                   <Text className="text-sm font-semibold text-white">Save</Text>
                 </Pressable>

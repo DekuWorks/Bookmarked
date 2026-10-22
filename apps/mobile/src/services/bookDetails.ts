@@ -1,6 +1,6 @@
 import { supabase } from "./supabase";
 import { getBookReviews } from "./reviews";
-import { listReadingSessions } from "./readingSessions";
+import { listBookTrailPreview } from "./readingSessions";
 import { listNotesByBook } from "./readingNotes";
 import { computeAverageRating, type CommunityRating } from "../../../../packages/utils";
 import { isPublicReview } from "../../../../packages/utils/reviewVisibility";
@@ -21,6 +21,7 @@ export type BookDetailsData = {
   ownReviews: Review[];
   communityRating: CommunityRating | null;
   readingSessions: ReadingSession[];
+  readingSessionTotal: number;
   notes: ReadingNote[];
 };
 
@@ -63,8 +64,8 @@ export async function getBookDetails(
   ]);
 
   const typedUserBook = (userBook as UserBook | null) ?? null;
-  const [readingSessions, notes] = await Promise.all([
-    typedUserBook ? listReadingSessions(typedUserBook.id) : Promise.resolve([]),
+  const [trail, notes] = await Promise.all([
+    typedUserBook ? listBookTrailPreview(userId, typedUserBook.id) : Promise.resolve({ sessions: [], total: 0 }),
     typedUserBook ? listNotesByBook(typedUserBook.id) : Promise.resolve([]),
   ]);
 
@@ -74,7 +75,8 @@ export async function getBookDetails(
     reviews: reviews.filter((r) => isPublicReview(r.visibility)),
     ownReviews: reviews.filter((r) => r.user_id === userId),
     communityRating,
-    readingSessions,
+    readingSessions: trail.sessions,
+    readingSessionTotal: trail.total,
     notes,
   };
 }

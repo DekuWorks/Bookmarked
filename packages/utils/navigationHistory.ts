@@ -4,6 +4,7 @@
  * Display is the three previous screens, most recent first.
  */
 
+import { withTrailOpenHref } from "./bookTrail";
 import { parseReadingRoomTab, readingRoomTabLabel, type ReadingRoomTab } from "./readingRoomTabs";
 
 export const NAV_HISTORY_DISPLAY_LIMIT = 3;
@@ -175,15 +176,32 @@ export function recordNavVisit(
   const current = state.index >= 0 ? state.entries[state.index] : undefined;
   if (current && sameScreen(current, entry)) {
     if (current.href === entry.href && current.title === entry.title && current.icon === entry.icon) {
-      return state;
+      return stampBookTrailReturn(state);
     }
     const entries = state.entries.slice();
     entries[state.index] = entry;
-    return { ...state, entries };
+    return stampBookTrailReturn({ ...state, entries });
   }
   const base = state.entries.slice(0, Math.max(0, state.index + 1));
   const entries = [...base, entry].slice(-NAV_HISTORY_MAX_ENTRIES);
-  return { userId, entries, index: entries.length - 1 };
+  return stampBookTrailReturn({ userId, entries, index: entries.length - 1 });
+}
+
+/** Full Trail sits above Book Detail. Back should reopen that book's trail. */
+function stampBookTrailReturn(state: NavHistoryState): NavHistoryState {
+  const current = state.index >= 0 ? state.entries[state.index] : undefined;
+  if (!current?.key.startsWith("book-trail:")) return state;
+  const bookId = current.key.slice("book-trail:".length);
+  if (!bookId) return state;
+  const prevIndex = state.index - 1;
+  const prev = state.entries[prevIndex];
+  if (!prev || prev.key !== `book:${bookId}`) return state;
+  if (/(?:^|[?&])trail=open(?:&|$)/.test(prev.href)) return state;
+  const href = withTrailOpenHref(prev.href);
+  if (!isSafeNavHref(href) || href === prev.href) return state;
+  const entries = state.entries.slice();
+  entries[prevIndex] = { ...prev, href };
+  return { ...state, entries };
 }
 
 /**
@@ -209,7 +227,7 @@ export function syncNavVisit(state: NavHistoryState, entry: NavHistoryEntry | nu
   if (best >= 0) {
     const entries = state.entries.slice();
     entries[best] = { ...entries[best], href: entry.href, title: entries[best]?.title || entry.title };
-    return { ...state, entries, index: best };
+    return stampBookTrailReturn({ ...state, entries, index: best });
   }
   return recordNavVisit(state, entry, state.userId);
 }
@@ -380,13 +398,25 @@ export function resolveNavScreen(
     );
   }
 
+  if (path === "/book/trail") {
+    const id = queryValue(search, "id");
+    if (!id) return null;
+    return entry(
+      `book-trail:${id}`,
+      "Trail",
+      hrefFor(platform, "/book/trail", search, ["id", "origin"]),
+      "book",
+      "book"
+    );
+  }
+
   if (path === "/book") {
     const id = queryValue(search, "id");
     if (!id) return null;
     return entry(
       `book:${id}`,
       "Book",
-      hrefFor(platform, "/book", search, ["id", "origin", "section"]),
+      hrefFor(platform, "/book", search, ["id", "origin", "section", "trail"]),
       "book",
       "book"
     );
@@ -399,7 +429,7 @@ export function resolveNavScreen(
     return entry(
       `book:${id}`,
       "Book",
-      hrefFor(platform, `/book/${id}`, search, ["origin", "section"]),
+      hrefFor(platform, `/book/${id}`, search, ["origin", "section", "trail"]),
       "book",
       "book"
     );
