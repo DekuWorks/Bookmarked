@@ -2104,6 +2104,99 @@ The allowlist is code. Web, iOS, and the edge functions share it and return the 
 
 Files: `packages/utils/complimentaryPlus.ts`, `packages/utils/subscription.ts` (`applyComplimentaryPlus` / `toSubscriptionAccessFromRow`), web and iOS subscription services plus the shelf, quote, club, challenge, and usage checks, `supabase/functions/_shared/complimentaryPlus.ts`, `ai-insights`, `quote-scanner`, `ai-reading-companion`. Tests: `packages/utils/complimentaryPlus.test.ts`.
 
+## SPRINT 3 — TRAIL MIGRATION
+
+Branch: `feature/sprint-3-trail-migration` in worktree `/Users/marcusbrown/Bookmarked-sprint-3` (from `origin/main` at `b6de167`). Not committed. No Android. No Book Detail redesign. No production database write. No RLS change. No migration. Pricing-tier work on `feature/pricing-tier-catalog` was left in the other checkout.
+
+Trail is no longer a Reading Room tab. Session rows stay in `reading_sessions`. The book’s own sessions sit on Book Detail, directly under Reading Dates.
+
+### Checklist
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Trail removed from Reading Room | ✅ | Bar stays Overview, Reviews, Notes, Stats. `?tab=trail` and `?tab=journal` parse as Overview, then the client sends a book id to that book’s Trail. `/journal` redirects to `/reading-room/`. TrailPanel deleted on web and iOS. Shared session grouping in `readingRoomTrail.ts` kept. |
+| Trail under Reading Dates | ✅ code | Web: `ReadingJournalSection` still follows `ReadingDatesEditor`. iOS: new read-only `ReadingDatesSection`, then Trail. Other Book Detail blocks were not rearranged. Not opened on the Sprint 3 server (see Browser). |
+| Collapsed on first open | ✅ | `initialBookTrailOpen` is true only for `trail=open`. Loading sessions does not open it. Heading plus chevron, `aria-expanded` / `accessibilityState.expanded`. User can close it again. |
+| Newest first | ✅ | Sort is session day, then `created_at`, then id. A backdated `session_date` stays on that day. Note and mood are not sort keys. |
+| Session summary | ✅ | Existing page line when the session has page numbers. Audiobook sessions use the listening-time line and do not invent pages. Missing percent is left off. |
+| Mood tags | ✅ code | Existing `SessionMoodPicker` dropdown / sheet, including Create Custom Mood Tag. No permanent mood-bubble row. Save still goes through the user-scoped mood-tag service. A live custom-tag save was not done. |
+| Session notes | ✅ code | Optional. Empty trimmed note is stored as null. `updateReadingSession` writes only `note` / `mood` / `moods`, and filters by the signed-in user and, when present, that user-book. It does not write the date, pages, or percent, and it does not insert a session. Not saved against a live row. |
+| No empty placeholders | ✅ | A blank note or mood is omitted. Controls stay: mood menu, and Add note / Edit note. There is no “No Note” or “No Mood” string. A book with zero sessions still says “No reading sessions yet…” once the section is opened. |
+| Preview limit 5 | ✅ | Book Detail asks for rows 0–4 plus an exact count. Older rows stay in the table. The count is what “View Full Trail” uses. |
+| View Full Trail | ✅ code | Book-specific pages, newest first, same mood and note editors. Page size is the existing 10. No new table. The signed-in page was not opened. |
+| Back returns to the same book, Trail open | ✅ code | Uses the Sprint 1 history (`Back to`, up to 3 entries). Full Trail is a separate key (`book-trail:{id}`). The book href is stamped with `trail=open`. Not clicked in the browser. |
+| Responsive | ❌ not run on this build | Desktop, tablet, and phone layouts were not exercised on the Sprint 3 server. iPhone Metro on 8081 is the other checkout, so it was not reloaded. iPad Pro 12.9-inch (3rd generation) is booted and Bookmarked is not installed. No `expo run:ios` and no EAS. |
+| Accessibility | ⚠️ attributes only | Disclosure is a button with `aria-expanded` and a VoiceOver label (“Trail, N sessions, expanded/collapsed”). Web mood list has arrow keys. Note field is labelled. Touch targets use a 44px class. `motion-reduce` turns the chevron transition off. VoiceOver was not run. The OS reduced-motion and light/dark settings were not toggled. |
+| Scoped session ids | ✅ | Preview and full-trail queries use `user_id` and `user_book_id`. RLS was not edited. |
+
+### Routes
+
+| Surface | URL |
+|---------|-----|
+| Reading Room | `/reading-room/` tabs Overview, Reviews, Notes, Stats. `?tab=history` still opens History. |
+| Web book, Trail collapsed | `/book/?id={bookId}` |
+| Web book, Trail open | `/book/?id={bookId}&trail=open` |
+| Web legacy Trail with a book | `/book/?id={bookId}&section=trail&trail=open` |
+| Web legacy Trail without a book | `/reading-room/` |
+| Web full trail | `/book/trail/?id={bookId}` |
+| iOS book | `/book/{bookId}` and `/book/{bookId}?trail=open` |
+| iOS full trail | `/book/trail?id={bookId}` |
+| iOS legacy Trail without a book | `/` |
+
+Nav keys: `book:{id}` and `book-trail:{id}`. `trail=open` updates the book href. It does not add another history entry.
+
+### Queries
+
+`reading_sessions` only. Filter `user_id` and `user_book_id`. Order `session_date` desc, `created_at` desc, `id` desc. Preview range 0–4 with `count: exact`. Full trail uses the same query, 10 rows per page. Note edits do not change `session_date`, `created_at`, pages, or percent.
+
+### Files
+
+Shared:
+
+- `packages/utils/bookTrail.ts`, `bookTrail.test.ts`
+- `packages/utils/readingRoomTabs.ts` — trail and journal are not tabs
+- `packages/utils/navigationHistory.ts` — `/book/trail` and the `trail=open` stamp
+- `packages/utils/index.ts`
+
+Web:
+
+- `apps/web/src/components/books/ReadingJournalSection.tsx`, `BookDetailsPage.tsx`, `FullBookTrail.tsx`, `SessionMoodPicker.tsx`
+- `apps/web/src/app/(app)/book/trail/page.tsx`
+- `apps/web/src/app/(app)/journal/page.tsx`
+- `apps/web/src/components/reading-room/ReadingRoomTabs.tsx`
+- Deleted `apps/web/src/components/reading-room/TrailPanel.tsx`
+- `apps/web/src/lib/services/readingSessions.ts`, `bookDetails.ts`
+
+iOS:
+
+- `apps/mobile/src/components/ReadingJournalSection.tsx`, `ReadingDatesSection.tsx`, `SessionMoodPicker.tsx`
+- `apps/mobile/app/(app)/book/[id].tsx`, `book/trail.tsx`, `index.tsx`
+- Deleted `apps/mobile/src/components/reading-room/TrailPanel.tsx`
+- `apps/mobile/src/services/readingSessions.ts`, `bookDetails.ts`
+
+### Tests
+
+`apps/web` vitest, 22 Oct 2026: 5 files, 51 passed. `bookTrail.test.ts` covers collapsed-by-default, newest-first with an id tie-break, preview 5 of 12 with the full list still 12, no “No Note” / “No Mood” text, audiobook listening time, a note edit that keeps the date, progress, and count, one user-book filter, and the full-trail back href with `trail=open`.
+
+Web `tsc --noEmit`: pass. iOS `tsc --noEmit`: pass.
+
+### Browser
+
+`http://localhost:3000` is the pricing-tier checkout (`/Users/marcusbrown/Bookmarked/apps/web`), signed in. Reading Room tabs there are Overview, Reviews, Notes, Stats. The current book’s detail already shows Reading dates, then a Trail block. That is the old checkout, not this branch.
+
+Sprint 3 runs at `http://localhost:3010`. This browser has no session on that port, so `/reading-room/?tab=trail` landed on the login page. The collapsed Trail, the expand control, and Full Trail were not clicked on this build.
+
+iPhone 17 Pro Max is booted and Bookmarked is installed. Metro on 8081 is `/Users/marcusbrown/Bookmarked/apps/mobile`, so it was not reloaded. iPad does not have the app. VoiceOver was not run.
+
+### Known gaps
+
+- iOS Reading Dates are display-only (started / finished when those timestamps exist). The web date editor is unchanged. There is no new iOS date writer.
+- Signed-in expand, mood save, note save, and Full Trail back were not exercised in the browser or simulator.
+- iPad was not run. VoiceOver was not run.
+- A local `node_modules` symlink in the worktree is gitignored via `.git/info/exclude` and is not part of the change. Do not commit it.
+
+---
+
 ## Next up (recommended)
 
 | Priority | Item | Notes |

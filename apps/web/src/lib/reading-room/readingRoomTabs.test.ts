@@ -10,18 +10,19 @@ describe("parseReadingRoomTab", () => {
     expect(parseReadingRoomTab("unknown")).toBe("overview");
   });
 
-  it("maps legacy journal tab to trail", () => {
-    expect(parseReadingRoomTab("journal")).toBe("trail");
+  it("maps legacy journal and trail tabs onto Overview", () => {
+    expect(parseReadingRoomTab("journal")).toBe("overview");
+    expect(parseReadingRoomTab("trail")).toBe("overview");
   });
 
   it("maps legacy dashboard tab to overview", () => {
     expect(parseReadingRoomTab("dashboard")).toBe("overview");
   });
 
-  it("maps the old Progress tab onto Stats and keeps Trail", () => {
+  it("maps the old Progress tab onto Stats", () => {
     expect(parseReadingRoomTab("progress")).toBe("stats");
     expect(parseReadingRoomTab("stats")).toBe("stats");
-    expect(parseReadingRoomTab("trail")).toBe("trail");
+    expect(parseReadingRoomTab("trail")).toBe("overview");
   });
 });
 
@@ -32,7 +33,6 @@ describe("readingRoomTabHref", () => {
 
   it("adds tab query for other tabs", () => {
     expect(readingRoomTabHref("stats")).toBe("/reading-room/?tab=stats");
-    expect(readingRoomTabHref("trail")).toBe("/reading-room/?tab=trail");
     expect(readingRoomTabHref("history")).toBe("/reading-room/?tab=history");
   });
 });

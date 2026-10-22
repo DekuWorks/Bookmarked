@@ -35,7 +35,7 @@ function first(value: unknown): string | undefined {
   return undefined;
 }
 
-const QUERY_KEYS = ["id", "tab", "origin", "q", "scroll", "slug", "section", "cat", "shelf", "username"] as const;
+const QUERY_KEYS = ["id", "tab", "origin", "q", "scroll", "slug", "section", "trail", "cat", "shelf", "username"] as const;
 
 export function NavHistoryProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

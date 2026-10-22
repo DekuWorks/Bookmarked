@@ -97,10 +97,17 @@ function BookDetailsContent() {
     document.getElementById("book-reviews")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [focusReviews, data]);
 
+  const trailOpen = searchParams.get("trail") === "open";
+
   useEffect(() => {
-    if ((focusSection !== "trail" && focusSection !== "journal") || !data) return;
-    document.getElementById("reading-trail")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [focusSection, data]);
+    if (!data) return;
+    if (focusSection !== "trail" && focusSection !== "journal" && !trailOpen) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.getElementById("reading-trail")?.scrollIntoView({
+      behavior: reduce ? "auto" : "smooth",
+      block: "start",
+    });
+  }, [data, focusSection, trailOpen]);
 
   useEffect(() => {
     if (focusSection !== "notes" || !data) return;
@@ -139,6 +146,7 @@ function BookDetailsContent() {
     communityRating,
     badges,
     readingSessions,
+    readingSessionTotal,
   } = data;
   const trackingFormat = resolveTrackingFormat({
     userFormat: userBook?.tracking_format,
@@ -400,7 +408,12 @@ function BookDetailsContent() {
             finishedAt={userBook.finished_at}
             onDatesChange={loadBookDetails}
           />
-          <ReadingJournalSection sessions={readingSessions} />
+          <ReadingJournalSection
+            bookId={book.id}
+            userBookId={userBook.id}
+            sessions={readingSessions}
+            total={readingSessionTotal}
+          />
           <ReadingNotesSection
             userBookId={userBook.id}
             book={{ id: book.id, title: book.title, cover_url: book.cover_url }}

@@ -73,6 +73,7 @@ function searchRecord(params: URLSearchParams): Record<string, string | undefine
     scroll: params.get("scroll") ?? undefined,
     slug: params.get("slug") ?? undefined,
     section: params.get("section") ?? undefined,
+    trail: params.get("trail") ?? undefined,
     cat: params.get("cat") ?? undefined,
     shelf: params.get("shelf") ?? undefined,
     username: params.get("username") ?? undefined,

@@ -13,8 +13,9 @@ describe("parseReadingRoomTab", () => {
     expect(parseReadingRoomTab("unknown")).toBe("overview");
   });
 
-  it("maps legacy journal tab to trail", () => {
-    expect(parseReadingRoomTab("journal")).toBe("trail");
+  it("maps legacy journal and trail tabs onto Overview", () => {
+    expect(parseReadingRoomTab("journal")).toBe("overview");
+    expect(parseReadingRoomTab("trail")).toBe("overview");
   });
 
   it("maps legacy dashboard tab to overview", () => {
@@ -26,9 +27,10 @@ describe("parseReadingRoomTab", () => {
     expect(parseReadingRoomTab("stats")).toBe("stats");
   });
 
-  it("keeps Trail and History reachable without showing them in the tab bar", () => {
-    expect(parseReadingRoomTab("trail")).toBe("trail");
+  it("keeps History reachable without showing it in the tab bar", () => {
     expect(parseReadingRoomTab("history")).toBe("history");
+    expect(READING_ROOM_TAB_OPTIONS.map((option) => option.id)).not.toContain("history");
+    expect(READING_ROOM_TAB_OPTIONS.map((option) => option.id)).not.toContain("trail");
   });
 
   it("shows Overview, Reviews, Notes, and Stats, and no Progress tab", () => {

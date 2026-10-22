@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/client";
 import { enrichBookCatalogEntry } from "@/lib/services/bookMetadata";
 import { getCommunityRating, type CommunityRating } from "@/lib/services/communityRatings";
 import { getBookBadges, type BookBadge } from "@/lib/services/bookBadges";
-import { listReadingSessions } from "@/lib/services/readingSessions";
+import { listBookTrailPreview } from "@/lib/services/readingSessions";
 import type { Book, ReadingSession, Review, UserBook } from "@/types";
 
 export type BookDetailsData = {
@@ -13,6 +13,7 @@ export type BookDetailsData = {
   communityRating: CommunityRating | null;
   badges: BookBadge[];
   readingSessions: ReadingSession[];
+  readingSessionTotal: number;
 };
 
 export async function getBookDetails(
@@ -48,9 +49,9 @@ export async function getBookDetails(
   const ownReviews = reviewList.filter((r) => r.user_id === userId);
   const publicReviews = reviewList.filter((r) => r.visibility === "public");
 
-  const readingSessions = userBook
-    ? await listReadingSessions(userBook.id)
-    : [];
+  const trail = userBook
+    ? await listBookTrailPreview(userId, userBook.id)
+    : { sessions: [], total: 0 };
 
   return {
     book: enriched,
@@ -59,6 +60,7 @@ export async function getBookDetails(
     ownReviews,
     communityRating,
     badges,
-    readingSessions,
+    readingSessions: trail.sessions,
+    readingSessionTotal: trail.total,
   };
 }
