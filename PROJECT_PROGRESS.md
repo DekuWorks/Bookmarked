@@ -2098,6 +2098,7 @@ The allowlist is code. Web, iOS, and the edge functions share it and return the 
 |--------|--------|----------------|
 | Caitlynn Dandridge | Granted | Username `CaiteeD`. Display name on the profile is `Caitlyn Dandridge`. |
 | Ellie | Granted | Username `ellienoblin`. Display name `Ellie Noblin`. One public match. |
+| dekuworks | Granted | Username on the profile is `DekuWorks`. One public match. Comparison is case-insensitive, so `dekuworks` matches. No production row. |
 | zmokeafterdark | Locked | No public profile with that username. Email was not looked up. |
 | Leighton | Locked | Two profiles: `leighton` (`leighton cook`) and `leighton.cook` (`Leighton Cook`). Not guessed. |
 

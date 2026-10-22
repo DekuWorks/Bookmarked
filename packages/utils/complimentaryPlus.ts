@@ -19,6 +19,7 @@ export type ComplimentaryIdentity = {
 export const COMPLIMENTARY_PLUS_GRANTS = [
   { userId: "8bd36e7e-dd38-4385-8afb-ab595fe712f6", username: "CaiteeD" },
   { userId: "e3243532-077e-4df6-929a-94733bfd0e14", username: "ellienoblin" },
+  { userId: "89ed2bcf-a37d-4e2c-aa0e-6577af9979d1", username: "DekuWorks" },
 ] as const;
 
 function normalizeIdentifier(value: string | null | undefined): string {
