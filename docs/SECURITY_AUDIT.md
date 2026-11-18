@@ -123,7 +123,8 @@ Also added owner UPDATE/DELETE policies.
 | `books` UPDATE open to any authenticated user | Medium | Catalog vandalism risk; consider service-role-only |
 | `follows` graph visible to all authenticated | Low | Intentional for social features |
 | `reading_notes` `friends_only` = one-way follow | Low | Document if product expects mutual |
-| Stripe/webhook signature verification | Medium | Deferred to billing go-live |
+| Stripe webhook HMAC | ✅ Implemented | Timestamp tolerance still missing — see `docs/EDGE_FUNCTION_SECURITY_FINDINGS.md` |
+| Apple IAP / ASN JWS verification | Critical | Decode-only; forged purchases/notifications — see edge findings doc |
 | No automated RLS E2E tests | Medium | Manual QA + direct PostgREST probing |
 
 ---
@@ -162,5 +163,6 @@ Full matrix: `docs/BOOK_CLUB_PERMISSIONS.md`.
 - `docs/DATABASE_SCHEMA.md` — tables, indexes, constraints
 - `docs/BOOK_CLUB_DATABASE.md` / `docs/BOOK_CLUB_PERMISSIONS.md`
 - `docs/TECHNICAL_DEBT.md` — static export, implicit auth, billing stubs
+- `docs/EDGE_FUNCTION_SECURITY_FINDINGS.md` — 2026-11-18 edge function / billing / SSRF review
 
-**Last updated:** August 2026
+**Last updated:** 2026-11-18
